@@ -1,0 +1,61 @@
+{
+  "name": "json2ubl-ts",
+  "version": "1.0.0",
+  "description": "JSON verilerinden resmi UBL-TR 2.1 XML belgeleri oluşturan kapsamlı TypeScript kütüphanesi",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "examples": "tsx examples/run-all.ts",
+    "examples:filter": "tsx examples/run-all.ts"
+  },
+  "keywords": [
+    "ubl",
+    "xml",
+    "ubltr",
+    "json",
+    "e-fatura",
+    "e-irsaliye",
+    "gib",
+    "invoice",
+    "despatch"
+  ],
+  "author": "rahat-fatura",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rahat-fatura/json2ubl-ts.git"
+  },
+  "homepage": "https://github.com/rahat-fatura/json2ubl-ts#readme",
+  "bugs": {
+    "url": "https://github.com/rahat-fatura/json2ubl-ts/issues"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/uuid": "^11.0.0",
+    "eslint": "^8.56.0",
+    "tsup": "^8.0.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "dependencies": {
+    "uuid": "^13.0.0"
+  }
+}

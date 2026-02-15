@@ -1,0 +1,8 @@
+__tests__/
+examples/
+.github/
+*.test.ts
+tsup.config.ts
+tsconfig.json
+.gitignore
+coverage/

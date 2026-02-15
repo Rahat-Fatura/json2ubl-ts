@@ -1,0 +1,58 @@
+/** e-Fatura profil türleri */
+export enum InvoiceProfileId {
+  TEMELFATURA = 'TEMELFATURA',
+  TICARIFATURA = 'TICARIFATURA',
+  YOLCUBERABERFATURA = 'YOLCUBERABERFATURA',
+  IHRACAT = 'IHRACAT',
+  OZELFATURA = 'OZELFATURA',
+  KAMU = 'KAMU',
+  HKS = 'HKS',
+  ENERJI = 'ENERJI',
+  ILAC_TIBBICIHAZ = 'ILAC_TIBBICIHAZ',
+  YATIRIMTESVIK = 'YATIRIMTESVIK',
+  IDIS = 'IDIS',
+  EARSIVFATURA = 'EARSIVFATURA',
+}
+
+/** Fatura tip kodları */
+export enum InvoiceTypeCode {
+  SATIS = 'SATIS',
+  IADE = 'IADE',
+  TEVKIFAT = 'TEVKIFAT',
+  TEVKIFATIADE = 'TEVKIFATIADE',
+  ISTISNA = 'ISTISNA',
+  OZELMATRAH = 'OZELMATRAH',
+  IHRACKAYITLI = 'IHRACKAYITLI',
+  SGK = 'SGK',
+  KOMISYONCU = 'KOMISYONCU',
+  HKSSATIS = 'HKSSATIS',
+  HKSKOMISYONCU = 'HKSKOMISYONCU',
+  KONAKLAMAVERGISI = 'KONAKLAMAVERGISI',
+  SARJ = 'SARJ',
+  SARJANLIK = 'SARJANLIK',
+  TEKNOLOJIDESTEK = 'TEKNOLOJIDESTEK',
+  YTBSATIS = 'YTBSATIS',
+  YTBIADE = 'YTBIADE',
+  YTBISTISNA = 'YTBISTISNA',
+  YTBTEVKIFAT = 'YTBTEVKIFAT',
+  YTBTEVKIFATIADE = 'YTBTEVKIFATIADE',
+}
+
+/** e-İrsaliye profil türleri */
+export enum DespatchProfileId {
+  TEMELIRSALIYE = 'TEMELIRSALIYE',
+  HKSIRSALIYE = 'HKSIRSALIYE',
+  IDISIRSALIYE = 'IDISIRSALIYE',
+}
+
+/** İrsaliye tip kodları */
+export enum DespatchTypeCode {
+  SEVK = 'SEVK',
+  MATBUDAN = 'MATBUDAN',
+}
+
+/** Vergi kimlik tipi */
+export type TaxIdType = 'VKN' | 'TCKN';
+
+/** BuyerCustomer parti tipi */
+export type BuyerPartyType = 'EXPORT' | 'TAXFREE';
