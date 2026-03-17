@@ -12,6 +12,17 @@ import { configManager } from './config-manager';
 import type { WithholdingTaxDefinition } from './withholding-config';
 import type { ExemptionDefinition } from './exemption-config';
 
+// ─── Alıcı Mükellefiyet Durumu ──────────────────────────────────────────────
+
+/**
+ * Alıcının e-belge mükellefiyet durumu.
+ * Dışarıdan sorgulanıp InvoiceSession'a verilir.
+ *
+ * - `einvoice` → e-Fatura mükellefi: EARSIVFATURA ve IHRACAT hariç tüm profiller
+ * - `earchive` → e-Arşiv mükellefi: sadece EARSIVFATURA profili
+ */
+export type CustomerLiability = 'einvoice' | 'earchive';
+
 // ─── Profil-Tip Uyumluluk Kuralları ─────────────────────────────────────────
 
 /** Profil bazında izin verilen fatura tipleri (Schematron kuralları) */
@@ -46,6 +57,57 @@ const TYPE_PROFILE_MAP: Record<string, string[]> = {
   SARJ: ['ENERJI'],
   SARJANLIK: ['ENERJI'],
 };
+
+// ─── Liability Bazlı Filtreleme ──────────────────────────────────────────────
+
+/**
+ * Liability'ye göre izin verilen profilleri filtreler.
+ *
+ * - einvoice → EARSIVFATURA ve IHRACAT hariç
+ * - earchive → sadece EARSIVFATURA
+ * - undefined → filtreleme yok (tüm profiller)
+ *
+ * isExport=true ise IHRACAT profili korunur (sadece constructor'da).
+ */
+export function filterProfilesByLiability(
+  profiles: string[],
+  liability?: CustomerLiability,
+  isExport?: boolean,
+): string[] {
+  if (!liability) return profiles;
+
+  if (liability === 'earchive') {
+    return profiles.filter(p => p === 'EARSIVFATURA');
+  }
+
+  // einvoice: EARSIVFATURA ve IHRACAT hariç (isExport ise IHRACAT kalır)
+  return profiles.filter(p => {
+    if (p === 'EARSIVFATURA') return false;
+    if (p === 'IHRACAT') return !!isExport;
+    return true;
+  });
+}
+
+/**
+ * Liability'ye göre izin verilen tipleri filtreler.
+ * Profil kısıtlandığında, o profile ait olmayan tipler de kısıtlanır.
+ */
+export function filterTypesByLiability(
+  types: string[],
+  _profile: string,
+  liability?: CustomerLiability,
+): string[] {
+  if (!liability) return types;
+
+  // earchive iken profil EARSIVFATURA olmalı — tipler o profile göre
+  if (liability === 'earchive') {
+    const earsivTypes = PROFILE_TYPE_MAP['EARSIVFATURA'] ?? [];
+    return types.filter(t => earsivTypes.includes(t));
+  }
+
+  // einvoice → mevcut profile uyumlu tipler aynen döner
+  return types;
+}
 
 // ─── UI Field Visibility ─────────────────────────────────────────────────────
 
@@ -116,30 +178,46 @@ export interface InvoiceUIState {
 
 /**
  * Belirli bir fatura tipi için izin verilen profilleri döndürür.
+ * liability ve isExport verilirse filtreleme uygulanır.
  */
-export function getAllowedProfilesForType(type: string): string[] {
-  return TYPE_PROFILE_MAP[type] ?? ['TEMELFATURA', 'TICARIFATURA'];
+export function getAllowedProfilesForType(
+  type: string,
+  liability?: CustomerLiability,
+  isExport?: boolean,
+): string[] {
+  const base = TYPE_PROFILE_MAP[type] ?? ['TEMELFATURA', 'TICARIFATURA'];
+  return filterProfilesByLiability(base, liability, isExport);
 }
 
 /**
  * Belirli bir profil için izin verilen tipleri döndürür.
+ * liability verilirse filtreleme uygulanır.
  */
-export function getAllowedTypesForProfile(profile: string): string[] {
-  return PROFILE_TYPE_MAP[profile] ?? ['SATIS'];
+export function getAllowedTypesForProfile(
+  profile: string,
+  liability?: CustomerLiability,
+): string[] {
+  const base = PROFILE_TYPE_MAP[profile] ?? ['SATIS'];
+  return filterTypesByLiability(base, profile, liability);
 }
 
 /**
  * Tip değiştiğinde profilin hala geçerli olup olmadığını kontrol eder.
- * Geçerli değilse uyumlu bir profil önerir.
+ * Geçerli değilse liability'ye uyumlu bir profil önerir.
  */
-export function resolveProfileForType(currentProfile: string | undefined, newType: string): string {
-  const allowed = getAllowedProfilesForType(newType);
+export function resolveProfileForType(
+  currentProfile: string | undefined,
+  newType: string,
+  liability?: CustomerLiability,
+  isExport?: boolean,
+): string {
+  const allowed = getAllowedProfilesForType(newType, liability, isExport);
   if (currentProfile && allowed.includes(currentProfile)) return currentProfile;
 
   // IADE → otomatik TEMELFATURA (Schematron kuralı)
-  if (newType === 'IADE') return 'TEMELFATURA';
-  if (newType === 'SGK') return 'TEMELFATURA';
-  if (newType === 'TEKNOLOJIDESTEK') return 'EARSIVFATURA';
+  if (newType === 'IADE') return allowed.includes('TEMELFATURA') ? 'TEMELFATURA' : allowed[0] ?? 'TICARIFATURA';
+  if (newType === 'SGK') return allowed.includes('TEMELFATURA') ? 'TEMELFATURA' : allowed[0] ?? 'TICARIFATURA';
+  if (newType === 'TEKNOLOJIDESTEK') return allowed.includes('EARSIVFATURA') ? 'EARSIVFATURA' : allowed[0] ?? 'TICARIFATURA';
   if (newType === 'SARJ' || newType === 'SARJANLIK') return 'ENERJI';
 
   return allowed[0] ?? 'TICARIFATURA';
@@ -149,8 +227,12 @@ export function resolveProfileForType(currentProfile: string | undefined, newTyp
  * Profil değiştiğinde tipin hala geçerli olup olmadığını kontrol eder.
  * Geçerli değilse uyumlu bir tip önerir.
  */
-export function resolveTypeForProfile(currentType: string | undefined, newProfile: string): string {
-  const allowed = getAllowedTypesForProfile(newProfile);
+export function resolveTypeForProfile(
+  currentType: string | undefined,
+  newProfile: string,
+  liability?: CustomerLiability,
+): string {
+  const allowed = getAllowedTypesForProfile(newProfile, liability);
   if (currentType && allowed.includes(currentType)) return currentType;
   return allowed[0] ?? 'SATIS';
 }
@@ -270,15 +352,18 @@ export function validateInvoiceState(state: {
 
 /**
  * Tam UI state'i tek seferde hesaplar.
+ * liability/isExport verilirse profil ve tip listeleri buna göre filtrelenir.
  */
 export function deriveUIState(
   type: string,
   profile: string,
   currencyCode?: string,
+  liability?: CustomerLiability,
+  isExport?: boolean,
 ): InvoiceUIState {
   return {
-    allowedProfiles: getAllowedProfilesForType(type),
-    allowedTypes: getAllowedTypesForProfile(profile),
+    allowedProfiles: getAllowedProfilesForType(type, liability, isExport),
+    allowedTypes: getAllowedTypesForProfile(profile, liability),
     fields: deriveFieldVisibility(type, profile, currencyCode),
     availableWithholdingTaxes: [...configManager.withholdingTaxes],
     availableExemptions: getAvailableExemptions(type),

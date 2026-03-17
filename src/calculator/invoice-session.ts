@@ -32,7 +32,7 @@ import { EventEmitter } from 'events';
 import type { SimpleInvoiceInput, SimplePartyInput, SimpleLineInput, SimpleBillingReferenceInput, SimplePaymentMeansInput, SimpleOzelMatrahInput, SimpleSgkInput, SimpleBuyerCustomerInput, SimplePeriodInput } from './simple-types';
 import type { CalculatedDocument } from './document-calculator';
 import { calculateDocument } from './document-calculator';
-import type { InvoiceUIState, ValidationWarning, FieldVisibility } from './invoice-rules';
+import type { InvoiceUIState, ValidationWarning, FieldVisibility, CustomerLiability } from './invoice-rules';
 import { deriveUIState, resolveProfileForType, resolveTypeForProfile, validateInvoiceState, getAvailableExemptions, getAllowedProfilesForType, getAllowedTypesForProfile } from './invoice-rules';
 import type { InvoiceInput } from '../types/invoice-input';
 import { mapSimpleToInvoiceInput } from './simple-invoice-mapper';
@@ -59,6 +59,8 @@ export interface SessionEvents {
   'warnings': ValidationWarning[];
   /** Herhangi bir veri değişikliğinde (debounce için) */
   'changed': SimpleInvoiceInput;
+  /** Liability değiştiğinde */
+  'liability-changed': { liability: CustomerLiability | undefined; previousLiability: CustomerLiability | undefined };
   /** Hata oluştuğunda */
   'error': Error;
 }
@@ -67,15 +69,49 @@ export type SessionEventName = keyof SessionEvents;
 
 // ─── Session Sınıfı ─────────────────────────────────────────────────────────
 
+/** InvoiceSession oluşturma seçenekleri */
+export interface InvoiceSessionOptions {
+  /** Otomatik hesaplama (varsayılan: true) */
+  autoCalculate?: boolean;
+  /** Başlangıç fatura verileri */
+  initialInput?: Partial<SimpleInvoiceInput>;
+  /**
+   * Alıcının e-belge mükellefiyet durumu.
+   * - `einvoice` → EARSIVFATURA ve IHRACAT hariç tüm profiller
+   * - `earchive` → sadece EARSIVFATURA profili
+   */
+  liability?: CustomerLiability;
+  /**
+   * İhracat fatura session'ı.
+   * Sadece başlangıçta `true` verilebilir.
+   * `true` ise profil IHRACAT olarak sabitlenir ve değiştirilemez.
+   * Runtime'da setProfile('IHRACAT') ile geçiş yapILAMAZ.
+   */
+  isExport?: boolean;
+}
+
 export class InvoiceSession extends EventEmitter {
   private _input: SimpleInvoiceInput;
   private _calculation: CalculatedDocument | null = null;
   private _uiState: InvoiceUIState;
   private _autoCalculate: boolean;
+  private _liability?: CustomerLiability;
+  private readonly _isExport: boolean;
 
-  constructor(options?: { autoCalculate?: boolean; initialInput?: Partial<SimpleInvoiceInput> }) {
+  constructor(options?: InvoiceSessionOptions) {
     super();
     this._autoCalculate = options?.autoCalculate ?? true;
+    this._liability = options?.liability;
+    this._isExport = options?.isExport ?? false;
+
+    // İhracat session'ı ise profil IHRACAT olarak zorla
+    const initialProfile = this._isExport
+      ? 'IHRACAT'
+      : options?.initialInput?.profile;
+
+    const initialType = this._isExport
+      ? (options?.initialInput?.type ?? 'SATIS')
+      : options?.initialInput?.type;
 
     // Boş başlangıç input'u
     this._input = {
@@ -83,12 +119,23 @@ export class InvoiceSession extends EventEmitter {
       customer: options?.initialInput?.customer ?? { taxNumber: '', name: '', address: '', district: '', city: '' },
       lines: options?.initialInput?.lines ?? [],
       ...options?.initialInput,
+      profile: initialProfile,
+      type: initialType,
     };
 
+    // Liability'ye göre varsayılan profili belirle
+    const effectiveProfile = this._input.profile
+      ?? (this._liability === 'earchive' ? 'EARSIVFATURA' : 'TICARIFATURA');
+    const effectiveType = this._input.type ?? 'SATIS';
+    this._input.profile = effectiveProfile;
+    this._input.type = effectiveType;
+
     this._uiState = deriveUIState(
-      this._input.type ?? 'SATIS',
-      this._input.profile ?? 'TICARIFATURA',
+      effectiveType,
+      effectiveProfile,
       this._input.currencyCode,
+      this._liability,
+      this._isExport,
     );
   }
 
@@ -117,6 +164,47 @@ export class InvoiceSession extends EventEmitter {
   /** Mevcut validasyon uyarıları */
   get warnings(): ValidationWarning[] {
     return this._uiState.warnings;
+  }
+
+  /** Alıcı mükellefiyet durumu */
+  get liability(): CustomerLiability | undefined {
+    return this._liability;
+  }
+
+  /** İhracat session'ı mı? (sadece constructor'da belirlenir) */
+  get isExport(): boolean {
+    return this._isExport;
+  }
+
+  /**
+   * Alıcı mükellefiyet durumunu değiştirir.
+   * Profil/tip uyumsuzsa otomatik olarak uyumlu değere geçer.
+   *
+   * Örn: liability='earchive' yapılırsa ve mevcut profil TICARIFATURA ise
+   * → profil otomatik EARSIVFATURA olur.
+   */
+  setLiability(liability: CustomerLiability | undefined): void {
+    const previousLiability = this._liability;
+    this._liability = liability;
+
+    if (previousLiability === liability) return;
+
+    const currentProfile = this._input.profile ?? 'TICARIFATURA';
+    const currentType = this._input.type ?? 'SATIS';
+
+    // Mevcut profil yeni liability ile uyumlu mu kontrol et
+    const allowedProfiles = getAllowedProfilesForType(currentType, liability, this._isExport);
+
+    if (!allowedProfiles.includes(currentProfile)) {
+      // Uyumsuz — uyumlu profile geç
+      const newProfile = resolveProfileForType(undefined, currentType, liability, this._isExport);
+      const newType = resolveTypeForProfile(currentType, newProfile, liability);
+      this._input = { ...this._input, profile: newProfile, type: newType };
+    }
+
+    this.updateUIState();
+    this.emit('liability-changed', { liability, previousLiability });
+    this.onChanged();
   }
 
   // ─── Taraf Yönetimi ─────────────────────────────────────────────────────
@@ -150,7 +238,10 @@ export class InvoiceSession extends EventEmitter {
     const previousType = this._input.type ?? 'SATIS';
     const previousProfile = this._input.profile ?? 'TICARIFATURA';
 
-    const newProfile = resolveProfileForType(this._input.profile, type);
+    // İhracat session'ında profil değişmez, tip IHRACAT profiline uyumlu olmalı
+    const newProfile = this._isExport
+      ? 'IHRACAT'
+      : resolveProfileForType(this._input.profile, type, this._liability, false);
     this._input = { ...this._input, type, profile: newProfile };
 
     this.updateUIState();
@@ -170,10 +261,32 @@ export class InvoiceSession extends EventEmitter {
    * Tip uyumsuzsa otomatik olarak uyumlu tipe geçer.
    */
   setProfile(profile: string): void {
+    // İhracat session'ında profil değiştirilemez
+    if (this._isExport) {
+      this.emit('error', new Error('İhracat session\'larında profil değiştirilemez. Profil IHRACAT olarak sabitlenmiştir.'));
+      return;
+    }
+
+    // IHRACAT profiline geçiş session üzerinden yapılamaz
+    if (profile === 'IHRACAT') {
+      this.emit('error', new Error('IHRACAT profiline geçiş yapmak için yeni bir InvoiceSession({ isExport: true }) oluşturun.'));
+      return;
+    }
+
+    // Liability kısıtı: earchive sadece EARSIVFATURA, einvoice EARSIVFATURA hariç
+    if (this._liability === 'earchive' && profile !== 'EARSIVFATURA') {
+      this.emit('error', new Error('e-Arşiv mükelleflerinde sadece EARSIVFATURA profili kullanılabilir.'));
+      return;
+    }
+    if (this._liability === 'einvoice' && profile === 'EARSIVFATURA') {
+      this.emit('error', new Error('e-Fatura mükelleflerinde EARSIVFATURA profili kullanılamaz.'));
+      return;
+    }
+
     const previousProfile = this._input.profile ?? 'TICARIFATURA';
     const previousType = this._input.type ?? 'SATIS';
 
-    const newType = resolveTypeForProfile(this._input.type, profile);
+    const newType = resolveTypeForProfile(this._input.type, profile, this._liability);
     this._input = { ...this._input, profile, type: newType };
 
     this.updateUIState();
@@ -366,7 +479,11 @@ export class InvoiceSession extends EventEmitter {
    * UI'da profil dropdown'ını doldurmak için.
    */
   getAllowedProfiles(type?: string): string[] {
-    return getAllowedProfilesForType(type ?? this._input.type ?? 'SATIS');
+    return getAllowedProfilesForType(
+      type ?? this._input.type ?? 'SATIS',
+      this._liability,
+      this._isExport,
+    );
   }
 
   /**
@@ -374,7 +491,10 @@ export class InvoiceSession extends EventEmitter {
    * UI'da tip dropdown'ını doldurmak için.
    */
   getAllowedTypes(profile?: string): string[] {
-    return getAllowedTypesForProfile(profile ?? this._input.profile ?? 'TICARIFATURA');
+    return getAllowedTypesForProfile(
+      profile ?? this._input.profile ?? 'TICARIFATURA',
+      this._liability,
+    );
   }
 
   /**
@@ -410,7 +530,7 @@ export class InvoiceSession extends EventEmitter {
   private updateUIState(): void {
     const type = this._input.type ?? this._calculation?.type ?? 'SATIS';
     const profile = this._input.profile ?? this._calculation?.profile ?? 'TICARIFATURA';
-    this._uiState = deriveUIState(type, profile, this._input.currencyCode);
+    this._uiState = deriveUIState(type, profile, this._input.currencyCode, this._liability, this._isExport);
     this.emit('ui-state-changed', this._uiState);
   }
 
