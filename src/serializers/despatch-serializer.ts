@@ -2,7 +2,7 @@ import type { DespatchInput } from '../types/despatch-input';
 import { DESPATCH_NAMESPACES, UBL_CONSTANTS } from '../config/namespaces';
 import { cbcTag, joinLines, xmlDeclaration, despatchOpenTag, ublExtensionsPlaceholder } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
-import { serializeParty, serializeSignature } from './party-serializer';
+import { serializeParty } from './party-serializer';
 import { serializeAddress } from './delivery-serializer';
 import { serializeDespatchLine } from './line-serializer';
 import { serializeAdditionalDocument, serializeOrderReference } from './reference-serializer';
@@ -66,16 +66,7 @@ export function serializeDespatch(input: DespatchInput, prettyPrint: boolean = t
     }
   }
 
-  // 14. Signature
-  if (input.signatureInfo) {
-    parts.push(serializeSignature(input.signatureInfo, ind));
-  } else {
-    parts.push(serializeSignature({
-      id: input.supplier.vknTckn,
-      signatoryParty: input.supplier,
-      digitalSignatureUri: `#Signature_${input.id}`,
-    }, ind));
-  }
+  // 14. Signature — business logic tarafından eklenir, serializer üretmez
 
   // 15. DespatchSupplierParty
   parts.push(`${ind}<cac:DespatchSupplierParty>`);

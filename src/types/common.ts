@@ -51,10 +51,10 @@ export interface PartyInput {
   passportId?: string;
 }
 
-/** BuyerCustomerParty — §3.3 IHRACAT / §3.4 YOLCUBERABERFATURA */
+/** BuyerCustomerParty — §3.3 IHRACAT / §3.4 YOLCUBERABERFATURA / §3.6 KAMU */
 export interface BuyerCustomerInput {
-  /** PARTYTYPE schemeID değeri */
-  partyType: 'EXPORT' | 'TAXFREE';
+  /** PARTYTYPE schemeID değeri (IHRACAT: EXPORT, YOLCU: TAXFREE, KAMU: undefined) */
+  partyType?: 'EXPORT' | 'TAXFREE';
   party: PartyInput;
 }
 

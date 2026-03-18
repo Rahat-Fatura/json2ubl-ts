@@ -133,7 +133,7 @@ export function serializeAccountingCustomerParty(party: PartyInput, indent: stri
   ]);
 }
 
-/** BuyerCustomerParty → XML (§3.3 IHRACAT / §3.4 YOLCU) */
+/** BuyerCustomerParty → XML (§3.3 IHRACAT / §3.4 YOLCU / §3.6 KAMU) */
 export function serializeBuyerCustomerParty(buyer: BuyerCustomerInput, indent: string = ''): string {
   const i2 = indent + '  ';
   const lines: string[] = [];
@@ -141,10 +141,12 @@ export function serializeBuyerCustomerParty(buyer: BuyerCustomerInput, indent: s
   lines.push(`${indent}<cac:BuyerCustomerParty>`);
   lines.push(`${i2}<cac:Party>`);
 
-  // PartyIdentification ile PARTYTYPE
-  lines.push(`${i2}  <cac:PartyIdentification>`);
-  lines.push(`${i2}    ${cbcTag('ID', buyer.partyType, { schemeID: 'PARTYTYPE' })}`);
-  lines.push(`${i2}  </cac:PartyIdentification>`);
+  // PartyIdentification ile PARTYTYPE (sadece IHRACAT/YOLCU için)
+  if (buyer.partyType) {
+    lines.push(`${i2}  <cac:PartyIdentification>`);
+    lines.push(`${i2}    ${cbcTag('ID', buyer.partyType, { schemeID: 'PARTYTYPE' })}`);
+    lines.push(`${i2}  </cac:PartyIdentification>`);
+  }
 
   // Party içeriği (PartyIdentification hariç, zaten yukarda)
   const party = buyer.party;

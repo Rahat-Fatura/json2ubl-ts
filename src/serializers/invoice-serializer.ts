@@ -3,7 +3,7 @@ import { INVOICE_NAMESPACES, UBL_CONSTANTS } from '../config/namespaces';
 import { cbcTag, joinLines, xmlDeclaration, invoiceOpenTag, ublExtensionsPlaceholder } from '../utils/xml-helpers';
 import {
   serializeAccountingSupplierParty, serializeAccountingCustomerParty,
-  serializeBuyerCustomerParty, serializeTaxRepresentativeParty, serializeSignature,
+  serializeBuyerCustomerParty, serializeTaxRepresentativeParty,
 } from './party-serializer';
 import { serializeTaxTotal, serializeWithholdingTaxTotal } from './tax-serializer';
 import {
@@ -79,10 +79,15 @@ export function serializeInvoice(input: InvoiceInput, prettyPrint: boolean = tru
     parts.push(`${ind}${cbcTag('PricingCurrencyCode', input.pricingCurrencyCode)}`);
   }
 
-  // 15. LineCountNumeric
+  // 15. AccountingCost (opsiyonel — SGK faturaları için)
+  if (input.accountingCost) {
+    parts.push(`${ind}${cbcTag('AccountingCost', input.accountingCost)}`);
+  }
+
+  // 16. LineCountNumeric
   parts.push(`${ind}${cbcTag('LineCountNumeric', String(input.lines.length))}`);
 
-  // 16. InvoicePeriod (opsiyonel)
+  // 17. InvoicePeriod (opsiyonel)
   if (input.invoicePeriod) {
     parts.push(serializePeriod(input.invoicePeriod, ind));
   }
@@ -125,17 +130,7 @@ export function serializeInvoice(input: InvoiceInput, prettyPrint: boolean = tru
     }
   }
 
-  // 23. Signature
-  if (input.signatureInfo) {
-    parts.push(serializeSignature(input.signatureInfo, ind));
-  } else {
-    // Varsayılan: supplier VKN/TCKN ile otomatik signature
-    parts.push(serializeSignature({
-      id: input.supplier.vknTckn,
-      signatoryParty: input.supplier,
-      digitalSignatureUri: `#Signature_${input.id}`,
-    }, ind));
-  }
+  // 23. Signature — business logic tarafından eklenir, serializer üretmez
 
   // 24. AccountingSupplierParty
   parts.push(serializeAccountingSupplierParty(input.supplier, ind));

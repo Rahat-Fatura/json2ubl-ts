@@ -154,20 +154,33 @@ function validateKamu(input: InvoiceInput): ValidationError[] {
   const errors: ValidationError[] = [];
   const p = InvoiceProfileId.KAMU;
 
+  // PaymentMeans zorunlu (Schematron: KamuFaturaCheck)
   if (!input.paymentMeans || input.paymentMeans.length === 0) {
     errors.push(profileRequirement(p, 'paymentMeans', 'KAMU profilinde PaymentMeans zorunludur'));
-    return errors;
+  } else {
+    input.paymentMeans.forEach((pm, i) => {
+      const iban = pm.payeeFinancialAccount?.id;
+      if (!isNonEmpty(iban)) {
+        errors.push(profileRequirement(p, `paymentMeans[${i}].payeeFinancialAccount.id`, 'IBAN zorunludur'));
+      } else if (!TR_IBAN_REGEX.test(iban)) {
+        errors.push(invalidFormat(`paymentMeans[${i}].payeeFinancialAccount.id`,
+          'TR IBAN formatı: ^TR\\d{7}[A-Z0-9]{17}$', iban));
+      }
+    });
   }
 
-  input.paymentMeans.forEach((pm, i) => {
-    const iban = pm.payeeFinancialAccount?.id;
-    if (!isNonEmpty(iban)) {
-      errors.push(profileRequirement(p, `paymentMeans[${i}].payeeFinancialAccount.id`, 'IBAN zorunludur'));
-    } else if (!TR_IBAN_REGEX.test(iban)) {
-      errors.push(invalidFormat(`paymentMeans[${i}].payeeFinancialAccount.id`,
-        'TR IBAN formatı: ^TR\\d{7}[A-Z0-9]{17}$', iban));
+  // BuyerCustomerParty zorunlu
+  if (!input.buyerCustomer) {
+    errors.push(profileRequirement(p, 'buyerCustomer', 'KAMU profilinde BuyerCustomerParty (alıcı kurum) zorunludur'));
+  } else {
+    const party = input.buyerCustomer.party;
+    if (!isNonEmpty(party?.vknTckn)) {
+      errors.push(profileRequirement(p, 'buyerCustomer.party.vknTckn', 'KAMU: Alıcı kurum VKN/TCKN zorunludur'));
     }
-  });
+    if (!isNonEmpty(party?.name) && !isNonEmpty(party?.firstName)) {
+      errors.push(profileRequirement(p, 'buyerCustomer.party.name', 'KAMU: Alıcı kurum adı zorunludur'));
+    }
+  }
 
   return errors;
 }
@@ -218,6 +231,7 @@ function validateYatirimTesvik(input: InvoiceInput): ValidationError[] {
 /** YATIRIMTESVIK kuralları — hem profil hem EARSIV+YTB tipi için ortak */
 export function validateYatirimTesvikRules(input: InvoiceInput, source: string): ValidationError[] {
   const errors: ValidationError[] = [];
+  const isIstisna = input.invoiceTypeCode === 'ISTISNA' || input.invoiceTypeCode === 'YTBISTISNA';
 
   // ContractDocumentReference zorunlu (YTBNO, 6 haneli numerik)
   if (!input.contractReference) {
@@ -243,7 +257,39 @@ export function validateYatirimTesvikRules(input: InvoiceInput, source: string):
         `Geçersiz ItemClassificationCode: ${code}. Geçerli değerler: 01, 02, 03, 04`));
     }
 
+    // ISTISNA tipinde ItemClassificationCode sadece 01 veya 02 olabilir
+    // Schematron: YatirimTesvikItemClassificationCodeIstisnaCheck
+    if (isIstisna && isNonEmpty(code) && code !== '01' && code !== '02') {
+      errors.push(profileRequirement(source, `lines[${i}].item.commodityClassification.itemClassificationCode`,
+        `ISTISNA tipinde Harcama Tipi sadece 01 veya 02 olabilir (gelen: ${code})`));
+    }
+
+    // ISTISNA + Kod 01 → TaxExemptionReasonCode 308 zorunlu
+    // Schematron: YatirimTesvikTaxExemptionReasonCode308Check
+    if (isIstisna && code === '01') {
+      const hasCode308 = line.taxTotal?.taxSubtotals?.some(
+        ts => ts.taxTypeCode === '0015' && ts.taxExemptionReasonCode === '308'
+      );
+      if (!hasCode308) {
+        errors.push(profileRequirement(source, `lines[${i}].taxTotal.taxExemptionReasonCode`,
+          'ISTISNA + Harcama Tipi 01 için TaxExemptionReasonCode 308 zorunludur'));
+      }
+    }
+
+    // ISTISNA + Kod 02 → TaxExemptionReasonCode 339 zorunlu
+    // Schematron: YatirimTesvikTaxExemptionReasonCode339Check
+    if (isIstisna && code === '02') {
+      const hasCode339 = line.taxTotal?.taxSubtotals?.some(
+        ts => ts.taxTypeCode === '0015' && ts.taxExemptionReasonCode === '339'
+      );
+      if (!hasCode339) {
+        errors.push(profileRequirement(source, `lines[${i}].taxTotal.taxExemptionReasonCode`,
+          'ISTISNA + Harcama Tipi 02 için TaxExemptionReasonCode 339 zorunludur'));
+      }
+    }
+
     // Kod 01 (Makine/Teçhizat): ModelName, ProductTraceID, SerialID zorunlu
+    // Schematron: YatirimTesvikItemInstanceCheck
     if (code === '01') {
       if (!isNonEmpty(line.item?.modelName)) {
         errors.push(profileRequirement(source, `lines[${i}].item.modelName`,

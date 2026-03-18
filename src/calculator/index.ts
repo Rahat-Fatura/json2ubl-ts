@@ -28,6 +28,7 @@ export type {
 export { mapSimpleToInvoiceInput } from "./simple-invoice-mapper";
 
 // Basit giriş tipleri
+export { BillingDocumentTypeCode } from "./simple-types";
 export type {
     SimpleInvoiceInput,
     SimplePartyInput,
@@ -48,7 +49,11 @@ export type {
     SimpleEArchiveInput,
     SimpleBuyerCustomerInput,
     SimplePeriodInput,
+    BillingDocumentTypeCodeValue,
 } from "./simple-types";
+
+// Not: BillingDocumentTypeCodeValue artık sadece 'IADE' literal tipi.
+// Schematron'da IADE grubu dışı tipler için kısıtlama yok, serbest string kabul edilir.
 
 // Dinamik config yöneticisi
 export { configManager, ConfigManager } from "./config-manager";
@@ -78,6 +83,7 @@ export {
     validateInvoiceState,
     filterProfilesByLiability,
     filterTypesByLiability,
+    getAvailableBillingDocumentTypeCodes,
 } from "./invoice-rules";
 export type {
     FieldVisibility,

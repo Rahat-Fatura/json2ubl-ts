@@ -10,6 +10,7 @@ import type { CalculatedDocument } from './document-calculator';
 import type { CalculatedLine } from './line-calculator';
 import { calculateDocument } from './document-calculator';
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
+import { EXEMPTION_MAP } from './exemption-config';
 import type { TaxIdType } from '../types/enums';
 import type { InvoiceInput, InvoiceLineInput } from '../types/invoice-input';
 import type {
@@ -22,6 +23,7 @@ import type {
   AllowanceChargeInput,
   BillingReferenceInput,
   OrderReferenceInput,
+  ContractReferenceInput,
   AdditionalDocumentInput,
   PaymentMeansInput,
   PeriodInput,
@@ -98,9 +100,9 @@ function buildInvoiceInput(
     }];
   }
 
-  // Fatura referansı (iade)
+  // Fatura referansı
   if (simple.billingReference) {
-    result.billingReferences = [buildBillingReference(simple)];
+    result.billingReferences = [buildBillingReference(simple, calc)];
   }
 
   // Sipariş referansı
@@ -127,9 +129,14 @@ function buildInvoiceInput(
     result.paymentMeans = [buildPaymentMeans(simple)];
   }
 
-  // İhracat — BuyerCustomerParty + Delivery
+  // BuyerCustomerParty (IHRACAT / KAMU / YOLCUBERABERFATURA)
   if (simple.buyerCustomer) {
-    result.buyerCustomer = buildBuyerCustomer(simple);
+    result.buyerCustomer = buildBuyerCustomer(simple, calc.profile);
+  }
+
+  // ContractDocumentReference (YATIRIMTESVIK — YTBNO)
+  if (simple.ytbNo) {
+    result.contractReference = buildContractReference(simple);
   }
 
   // Fatura dönemi
@@ -140,12 +147,7 @@ function buildInvoiceInput(
   // SGK
   if (simple.sgk) {
     result.accountingCost = simple.sgk.type;
-    if (simple.sgk.startDate && simple.sgk.endDate) {
-      result.invoicePeriod = {
-        startDate: simple.sgk.startDate,
-        endDate: simple.sgk.endDate,
-      };
-    }
+
   }
 
   return result;
@@ -331,7 +333,7 @@ function buildSingleLine(
     modelName: line.model,
   };
 
-  // Ek ürün tanımlayıcıları (TEKNOLOJIDESTEK IMEI vb.)
+  // Ek ürün tanımlayıcıları (TEKNOLOJIDESTEK IMEI, IDIS ETIKETNO vb.)
   if (line.additionalItemIdentifications?.length) {
     item.additionalItemIdentifications = line.additionalItemIdentifications.map(
       (aid): AdditionalItemIdInput => ({
@@ -339,6 +341,21 @@ function buildSingleLine(
         value: aid.value,
       }),
     );
+  }
+
+  // CommodityClassification (YATIRIMTESVIK — Harcama tipi)
+  if (line.itemClassificationCode) {
+    item.commodityClassification = {
+      itemClassificationCode: line.itemClassificationCode,
+    };
+  }
+
+  // ItemInstance (YATIRIMTESVIK — Kod 01 Makine bilgileri)
+  if (line.productTraceId || line.serialId) {
+    item.itemInstances = [{
+      productTraceId: line.productTraceId,
+      serialId: line.serialId,
+    }];
   }
 
   const result: InvoiceLineInput = {
@@ -415,13 +432,20 @@ function buildSingleLine(
 
 // ─── Referanslar ────────────────────────────────────────────────────────────────
 
-function buildBillingReference(simple: SimpleInvoiceInput): BillingReferenceInput {
+function buildBillingReference(simple: SimpleInvoiceInput, calc: CalculatedDocument): BillingReferenceInput {
+  const isIadeGroup = ['IADE', 'TEVKIFATIADE', 'YTBIADE', 'YTBTEVKIFATIADE'].includes(calc.type);
+
+  // Schematron IADEInvioceCheck: IADE grubu tiplerinde DocumentTypeCode='IADE' zorunlu
+  // Diğer tiplerde kullanıcının seçtiği değer geçerli
+  const documentTypeCode = isIadeGroup
+    ? 'IADE'
+    : simple.billingReference!.documentTypeCode;
+
   return {
     invoiceDocumentReference: {
       id: simple.billingReference!.id,
       issueDate: simple.billingReference!.issueDate,
-      // Schematron IADEInvioceCheck: DocumentTypeCode='IADE' zorunlu
-      documentTypeCode: simple.billingReference!.documentTypeCode ?? 'IADE',
+      documentTypeCode,
     },
   };
 }
@@ -483,8 +507,8 @@ function buildAdditionalDocuments(
     const issueDate = simple.datetime?.substring(0, 10);
     docs.push(
       { id: '.', issueDate, documentTypeCode: 'DOSYA_NO', documentType: simple.sgk.documentNo, documentDescription: 'Döküm No' },
-      { id: '.', issueDate, documentTypeCode: 'MUKELLEF_ADI', documentType: simple.sgk.companyName, documentDescription: `${simple.sgk.type} Adı` },
-      { id: '.', issueDate, documentTypeCode: 'MUKELLEF_KODU', documentType: simple.sgk.companyCode, documentDescription: `${simple.sgk.type} Sicil Numarası` },
+      { id: '.', issueDate, documentTypeCode: 'MUKELLEF_ADI', documentType: simple.sgk.companyName, documentDescription: `${EXEMPTION_MAP.get(simple.sgk.type)?.name ?? simple.sgk.type} Adı` },
+      { id: '.', issueDate, documentTypeCode: 'MUKELLEF_KODU', documentType: simple.sgk.companyCode, documentDescription: `${EXEMPTION_MAP.get(simple.sgk.type)?.name ?? simple.sgk.type} Sicil Numarası` },
     );
   }
 
@@ -533,12 +557,18 @@ function buildPaymentMeans(simple: SimpleInvoiceInput): PaymentMeansInput {
   };
 }
 
-// ─── İhracat BuyerCustomer ──────────────────────────────────────────────────────
+// ─── BuyerCustomerParty ─────────────────────────────────────────────────────────
 
-function buildBuyerCustomer(simple: SimpleInvoiceInput): BuyerCustomerInput {
+function resolveBuyerPartyType(profile: string): 'EXPORT' | 'TAXFREE' | undefined {
+  if (profile === 'IHRACAT') return 'EXPORT';
+  if (profile === 'YOLCUBERABERFATURA') return 'TAXFREE';
+  return undefined;
+}
+
+function buildBuyerCustomer(simple: SimpleInvoiceInput, profile: string): BuyerCustomerInput {
   const bc = simple.buyerCustomer!;
-  return {
-    partyType: 'EXPORT',
+  const partyType = resolveBuyerPartyType(profile);
+  const result: BuyerCustomerInput = {
     party: {
       vknTckn: bc.taxNumber,
       taxIdType: bc.taxNumber.length === 11 ? 'TCKN' : 'VKN',
@@ -552,6 +582,20 @@ function buildBuyerCustomer(simple: SimpleInvoiceInput): BuyerCustomerInput {
       email: bc.email,
       registrationName: bc.name,
     },
+  };
+  if (partyType) {
+    result.partyType = partyType;
+  }
+  return result;
+}
+
+// ─── Sözleşme Referansı (YATIRIMTESVIK) ──────────────────────────────────────────
+
+function buildContractReference(simple: SimpleInvoiceInput): ContractReferenceInput {
+  return {
+    id: simple.ytbNo!,
+    schemeId: 'YTBNO',
+    issueDate: simple.ytbIssueDate,
   };
 }
 

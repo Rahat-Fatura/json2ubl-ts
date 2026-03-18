@@ -406,9 +406,7 @@ export const scenario19_sgkFatura: SimpleInvoiceInput = {
     type: 'SAGLIK_HAS',
     documentNo: 'SGK-2025-001',
     companyName: 'Demo Yazılım AŞ',
-    companyCode: 'HST-001',
-    startDate: '2025-01-01',
-    endDate: '2025-01-31',
+    companyCode: 'HST-001'
   },
   invoicePeriod: {
     startDate: '2025-01-01',

@@ -11,6 +11,10 @@
 import { configManager } from './config-manager';
 import type { WithholdingTaxDefinition } from './withholding-config';
 import type { ExemptionDefinition } from './exemption-config';
+import { BillingDocumentTypeCode } from './simple-types';
+
+/** Schematron IADEInvioceCheck: BillingReference zorunlu olan IADE grubu tipleri */
+const IADE_GROUP = ['IADE', 'TEVKIFATIADE', 'YTBIADE', 'YTBTEVKIFATIADE'];
 
 // ─── Alıcı Mükellefiyet Durumu ──────────────────────────────────────────────
 
@@ -141,12 +145,14 @@ export interface FieldVisibility {
   showInvoicePeriod: boolean;
   /** Yatırım teşvik numarası gösterilsin mi? */
   showYatirimTesvikNo: boolean;
-  /** Satır bazında ek tanımlayıcılar (IMEI, KUNYENO vb.) gösterilsin mi? */
+  /** Satır bazında ek tanımlayıcılar (IMEI, KUNYENO, ETIKETNO vb.) gösterilsin mi? */
   showAdditionalItemIdentifications: boolean;
   /** Satır bazında CommodityClassification gösterilsin mi? */
   showCommodityClassification: boolean;
   /** TaxRepresentativeParty gösterilsin mi? */
   showTaxRepresentativeParty: boolean;
+  /** Satıcıda SEVKIYATNO gösterilsin mi? (IDIS profili) */
+  showSevkiyatNo: boolean;
 }
 
 // ─── Validation Warning ──────────────────────────────────────────────────────
@@ -170,6 +176,8 @@ export interface InvoiceUIState {
   availableWithholdingTaxes: WithholdingTaxDefinition[];
   /** Kullanılabilir istisna kodları (tip bazında filtrelenmiş) */
   availableExemptions: ExemptionDefinition[];
+  /** BillingReference DocumentTypeCode seçenekleri (tip bazında) */
+  availableBillingDocumentTypeCodes: { code: string; label: string; forced: boolean }[];
   /** Validasyon uyarıları */
   warnings: ValidationWarning[];
 }
@@ -254,6 +262,7 @@ export function deriveFieldVisibility(type: string, profile: string, currencyCod
   const isIlacTibbi = profile === 'ILAC_TIBBICIHAZ';
   const isTeknolojiDestek = type === 'TEKNOLOJIDESTEK';
   const isYolcuBeraber = profile === 'YOLCUBERABERFATURA';
+  const isIdis = profile === 'IDIS';
   const isForeign = currencyCode && currencyCode !== 'TRY';
 
   return {
@@ -262,18 +271,19 @@ export function deriveFieldVisibility(type: string, profile: string, currencyCod
     showExemptionCodeSelector: isIstisna || isIhracKayitli || isOzelMatrah,
     showOzelMatrah: isOzelMatrah,
     showSgkInfo: isSgk,
-    showBuyerCustomer: isIhracat || isYolcuBeraber,
+    showBuyerCustomer: isIhracat || isYolcuBeraber || isKamu,
     showLineDelivery: isIhracat || isIhracKayitli,
-    showPaymentMeans: true,
+    showPaymentMeans: isKamu,
     requireIban: isKamu,
     showExchangeRate: !!isForeign,
     showEArchiveInfo: isEarsiv,
     showOnlineSale: isEarsiv,
     showInvoicePeriod: isSgk,
     showYatirimTesvikNo: isYatirimTesvik,
-    showAdditionalItemIdentifications: isIlacTibbi || isTeknolojiDestek,
+    showAdditionalItemIdentifications: isIlacTibbi || isTeknolojiDestek || isIdis,
     showCommodityClassification: isYatirimTesvik,
     showTaxRepresentativeParty: isYolcuBeraber,
+    showSevkiyatNo: isIdis,
   };
 }
 
@@ -305,10 +315,14 @@ export function validateInvoiceState(state: {
   currencyCode?: string;
   exchangeRate?: number;
   billingReferenceId?: string;
+  hasPaymentMeans?: boolean;
+  paymentMeansCode?: string;
   paymentAccountNumber?: string;
   kdvExemptionCode?: string;
   hasWithholdingLines?: boolean;
   hasBuyerCustomer?: boolean;
+  ytbNo?: string;
+  hasSevkiyatNo?: boolean;
 }): ValidationWarning[] {
   const warnings: ValidationWarning[] = [];
 
@@ -320,6 +334,16 @@ export function validateInvoiceState(state: {
   // Döviz → exchangeRate zorunlu
   if (state.currencyCode && state.currencyCode !== 'TRY' && !state.exchangeRate) {
     warnings.push({ field: 'exchangeRate', message: 'TRY dışı para birimlerinde döviz kuru zorunludur.', severity: 'error' });
+  }
+
+  // KAMU → paymentMeans zorunlu
+  if (state.profile === 'KAMU' && !state.hasPaymentMeans) {
+    warnings.push({ field: 'paymentMeans', message: 'Kamu faturalarında ödeme bilgisi zorunludur.', severity: 'error' });
+  }
+
+  // KAMU → meansCode zorunlu
+  if (state.profile === 'KAMU' && state.hasPaymentMeans && !state.paymentMeansCode) {
+    warnings.push({ field: 'paymentMeans.meansCode', message: 'Kamu faturalarında ödeme yöntemi kodu zorunludur.', severity: 'error' });
   }
 
   // KAMU → IBAN zorunlu
@@ -342,12 +366,49 @@ export function validateInvoiceState(state: {
     warnings.push({ field: 'buyerCustomer', message: 'İhracat faturalarında yabancı alıcı bilgisi zorunludur.', severity: 'error' });
   }
 
+  // KAMU → buyerCustomer zorunlu
+  if (state.profile === 'KAMU' && !state.hasBuyerCustomer) {
+    warnings.push({ field: 'buyerCustomer', message: 'Kamu faturalarında aracı kurum bilgisi zorunludur.', severity: 'error' });
+  }
+
   // TEVKIFAT → en az bir satırda tevkifat kodu olmalı
   if (state.type === 'TEVKIFAT' && !state.hasWithholdingLines) {
     warnings.push({ field: 'lines', message: 'Tevkifat faturalarında en az bir satırda tevkifat kodu bulunmalıdır.', severity: 'warning' });
   }
 
+  // YATIRIMTESVIK → ytbNo zorunlu (6 haneli numerik)
+  if (state.profile === 'YATIRIMTESVIK' && !state.ytbNo) {
+    warnings.push({ field: 'ytbNo', message: 'Yatırım Teşvik faturalarında YTB numarası zorunludur.', severity: 'error' });
+  } else if (state.profile === 'YATIRIMTESVIK' && state.ytbNo && (state.ytbNo.length !== 6 || !/^\d{6}$/.test(state.ytbNo))) {
+    warnings.push({ field: 'ytbNo', message: 'YTB numarası 6 haneli numerik olmalıdır.', severity: 'error' });
+  }
+
+  // IDIS → SEVKIYATNO zorunlu
+  if (state.profile === 'IDIS' && !state.hasSevkiyatNo) {
+    warnings.push({ field: 'sender.identifications.SEVKIYATNO', message: 'IDIS faturalarında satıcıda SEVKIYATNO zorunludur.', severity: 'error' });
+  }
+
   return warnings;
+}
+
+/**
+ * Tip bazında BillingReference DocumentTypeCode bilgisini döndürür.
+ *
+ * Schematron IADEInvioceCheck kuralına göre:
+ * - IADE grubu tiplerinde `DocumentTypeCode='IADE'` zorunludur (forced: true).
+ * - Diğer tiplerde Schematron kısıtlaması yoktur, serbest metin kabul edilir (forced: false).
+ *
+ * @see schematrons/UBL-TR_Common_Schematron.xml — IADEInvioceCheck
+ */
+export function getAvailableBillingDocumentTypeCodes(type: string): { code: string; label: string; forced: boolean }[] {
+  const isIadeGroup = IADE_GROUP.includes(type);
+
+  if (isIadeGroup) {
+    return [{ code: BillingDocumentTypeCode.IADE, label: 'İade Faturası', forced: true }];
+  }
+
+  // IADE grubu dışında Schematron'da DocumentTypeCode kısıtlaması yok — serbest metin
+  return [];
 }
 
 /**
@@ -367,6 +428,7 @@ export function deriveUIState(
     fields: deriveFieldVisibility(type, profile, currencyCode),
     availableWithholdingTaxes: [...configManager.withholdingTaxes],
     availableExemptions: getAvailableExemptions(type),
+    availableBillingDocumentTypeCodes: getAvailableBillingDocumentTypeCodes(type),
     warnings: [],
   };
 }

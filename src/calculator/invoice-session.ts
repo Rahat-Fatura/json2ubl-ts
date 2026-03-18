@@ -221,7 +221,7 @@ export class InvoiceSession extends EventEmitter {
     this.onChanged();
   }
 
-  /** İhracat alıcısı (buyerCustomer) bilgisini günceller */
+  /** Alıcı kurum bilgisini günceller (IHRACAT / KAMU / YOLCUBERABERFATURA) */
   setBuyerCustomer(buyer: SimpleBuyerCustomerInput | undefined): void {
     this._input = { ...this._input, buyerCustomer: buyer };
     this.onChanged();
@@ -514,10 +514,14 @@ export class InvoiceSession extends EventEmitter {
       currencyCode: this._input.currencyCode,
       exchangeRate: this._input.exchangeRate,
       billingReferenceId: this._input.billingReference?.id,
+      hasPaymentMeans: !!this._input.paymentMeans,
+      paymentMeansCode: this._input.paymentMeans?.meansCode,
       paymentAccountNumber: this._input.paymentMeans?.accountNumber,
       kdvExemptionCode: this._input.kdvExemptionCode,
       hasWithholdingLines: this._input.lines.some(l => !!l.withholdingTaxCode),
       hasBuyerCustomer: !!this._input.buyerCustomer,
+      ytbNo: this._input.ytbNo,
+      hasSevkiyatNo: !!this._input.sender?.identifications?.some(id => id.schemeId === 'SEVKIYATNO'),
     });
 
     this._uiState = { ...this._uiState, warnings };

@@ -100,6 +100,9 @@ export function serializeAdditionalDocument(doc: AdditionalDocumentInput, indent
   if (isNonEmpty(doc.documentType)) {
     lines.push(`${i2}${cbcTag('DocumentType', doc.documentType)}`);
   }
+  if (isNonEmpty(doc.documentDescription)) {
+    lines.push(`${i2}${cbcTag('DocumentDescription', doc.documentDescription)}`);
+  }
 
   if (doc.attachment) {
     lines.push(`${i2}<cac:Attachment>`);
