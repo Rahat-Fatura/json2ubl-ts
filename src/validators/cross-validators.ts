@@ -4,6 +4,10 @@ import { PROFILE_TYPE_MATRIX } from '../config/constants';
 import { crossMatrixError } from './validation-result';
 import { validateExemptionCode } from './cross-check-matrix';
 import { validateIhrackayitli702 } from './ihrackayitli-validator';
+import {
+  validateYatirimTesvikKdvDocument,
+  validateYatirimTesvikKdvLine,
+} from './yatirim-tesvik-validator';
 
 /**
  * §4 Profil × Tip + TaxExemption kod × Tip çapraz matris kontrolü.
@@ -36,6 +40,10 @@ export function validateCrossMatrix(input: InvoiceInput): ValidationError[] {
 
   // §3 — IHRACKAYITLI + 702 özel kontrol (Sprint 5 B-07)
   errors.push(...validateIhrackayitli702(input));
+
+  // §4 — YatirimTesvikKDVCheck + LineKDVCheck (Sprint 5 B-08)
+  errors.push(...validateYatirimTesvikKdvDocument(input));
+  errors.push(...validateYatirimTesvikKdvLine(input));
 
   return errors;
 }

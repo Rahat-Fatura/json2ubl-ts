@@ -4,6 +4,9 @@ import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 
 function createMinimalInput(profileId: InvoiceProfileId, invoiceTypeCode: InvoiceTypeCode): InvoiceInput {
+  // Geçerli KDV (18%) — B-08 YatirimTesvikKDVCheck kapsam içi belgelerde gerekli.
+  // Test amacı yalnızca PROFILE_TYPE_MATRIX (CROSS_MATRIX) kontrolü olduğundan bu
+  // ek tutarlar diğer validator'ları sessiz bırakır.
   return {
     id: 'ABC2024000000001',
     uuid: '12345678-1234-1234-1234-123456789012',
@@ -13,9 +16,9 @@ function createMinimalInput(profileId: InvoiceProfileId, invoiceTypeCode: Invoic
     currencyCode: 'TRY',
     supplier: { vknTckn: '1234567890', taxIdType: 'VKN', name: 'Test' },
     customer: { vknTckn: '12345678901', taxIdType: 'TCKN', firstName: 'A', familyName: 'B' },
-    taxTotals: [{ taxAmount: 0, taxSubtotals: [{ taxableAmount: 0, taxAmount: 0, taxTypeCode: '0015' }] }],
-    legalMonetaryTotal: { lineExtensionAmount: 0, taxExclusiveAmount: 0, taxInclusiveAmount: 0, payableAmount: 0 },
-    lines: [{ id: '1', invoicedQuantity: 1, unitCode: 'C62', lineExtensionAmount: 0, taxTotal: { taxAmount: 0, taxSubtotals: [{ taxableAmount: 0, taxAmount: 0, taxTypeCode: '0015' }] }, item: { name: 'X' }, price: { priceAmount: 0 } }],
+    taxTotals: [{ taxAmount: 18, taxSubtotals: [{ taxableAmount: 100, taxAmount: 18, percent: 18, taxTypeCode: '0015' }] }],
+    legalMonetaryTotal: { lineExtensionAmount: 100, taxExclusiveAmount: 100, taxInclusiveAmount: 118, payableAmount: 118 },
+    lines: [{ id: '1', invoicedQuantity: 1, unitCode: 'C62', lineExtensionAmount: 100, taxTotal: { taxAmount: 18, taxSubtotals: [{ taxableAmount: 100, taxAmount: 18, percent: 18, taxTypeCode: '0015' }] }, item: { name: 'X' }, price: { priceAmount: 100 } }],
   };
 }
 
