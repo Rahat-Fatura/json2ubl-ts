@@ -283,11 +283,39 @@ export interface ShipmentStageInput {
 
 export interface TransportHandlingUnitInput {
   actualPackages?: ActualPackageInput[];
+  /**
+   * Gümrük beyannameleri — IHRACKAYITLI + 702 için zorunlu (B-07, B-14).
+   * Schematron satır 322/451: CustomsDeclaration/IssuerParty/PartyIdentification
+   * schemeID ∈ {SATICIDIBSATIRKOD, ALICIDIBSATIRKOD}.
+   */
+  customsDeclarations?: CustomsDeclarationInput[];
 }
 
 export interface ActualPackageInput {
   packagingTypeCode?: string;
   quantity?: number;
+}
+
+/**
+ * Gümrük beyannamesi — B-14 (Sprint 5.3).
+ * IHRACKAYITLI + 702 senaryosu için `issuerParty.partyIdentifications`
+ * en az bir `schemeID='ALICIDIBSATIRKOD'` 11 haneli girdi içermelidir.
+ */
+export interface CustomsDeclarationInput {
+  id?: string;
+  issuerParty?: CustomsDeclarationIssuerPartyInput;
+}
+
+export interface CustomsDeclarationIssuerPartyInput {
+  partyIdentifications?: PartyIdentificationInput[];
+}
+
+/** Taraf kimliği (schemeID'li) — CustomsDeclaration IssuerParty için */
+export interface PartyIdentificationInput {
+  /** Kimlik değeri (ör: 11 hane ALICIDIBSATIRKOD) */
+  id: string;
+  /** Şema tanımlayıcısı (SATICIDIBSATIRKOD | ALICIDIBSATIRKOD — Schematron satır 451) */
+  schemeID: string;
 }
 
 /** Ödeme yöntemi — §3.6 KAMU. M6: parent opsiyonel, verilirse paymentMeansCode zorunlu (B-70). */

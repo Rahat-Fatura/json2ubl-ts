@@ -3,6 +3,7 @@ import type { InvoiceInput } from '../types/invoice-input';
 import { PROFILE_TYPE_MATRIX } from '../config/constants';
 import { crossMatrixError } from './validation-result';
 import { validateExemptionCode } from './cross-check-matrix';
+import { validateIhrackayitli702 } from './ihrackayitli-validator';
 
 /**
  * §4 Profil × Tip + TaxExemption kod × Tip çapraz matris kontrolü.
@@ -32,6 +33,9 @@ export function validateCrossMatrix(input: InvoiceInput): ValidationError[] {
 
   // §2 — TaxExemption kod × Tip matrisi (Sprint 5 M5 + B-06)
   errors.push(...validateTaxExemptionMatrix(input));
+
+  // §3 — IHRACKAYITLI + 702 özel kontrol (Sprint 5 B-07)
+  errors.push(...validateIhrackayitli702(input));
 
   return errors;
 }

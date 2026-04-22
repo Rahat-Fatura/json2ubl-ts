@@ -409,6 +409,47 @@ export const SHIPMENT_SEQ = [
   'FreightAllowanceCharge',
 ] as const;
 
+// ─── TransportHandlingUnit / CustomsDeclaration ──────────────────────────
+// UBL-CommonAggregateComponents-2.1.xsd TransportHandlingUnitType
+// B-14 (Sprint 5.3): ActualPackage + CustomsDeclaration emit
+export const TRANSPORT_HANDLING_UNIT_SEQ = [
+  'ID',
+  'TransportHandlingUnitTypeCode',
+  'HandlingCode',
+  'HandlingInstructions',
+  'HazardousRiskIndicator',
+  'TotalGoodsItemQuantity',
+  'TotalPackageQuantity',
+  'DamageRemarks',
+  'ShippingMarks',
+  'TraceID',
+  'HandlingUnitDespatchLine',
+  'ActualPackage',
+  'ReceivedHandlingUnitReceiptLine',
+  'TransportEquipment',
+  'TransportMeans',
+  'HazardousGoodsTransit',
+  'MeasurementDimension',
+  'MinimumTemperature',
+  'MaximumTemperature',
+  'GoodsLocation',
+  'CustomsDeclaration',      // IHRACKAYITLI + 702 (B-07)
+  'ReferencedShipmentID',
+  'Package',
+  'FloorSpaceMeasurementDimension',
+  'PalletSpaceMeasurementDimension',
+  'ShipmentDocumentReference',
+  'Status',
+] as const;
+
+// UBL-CommonAggregateComponents-2.1.xsd CustomsDeclarationType
+export const CUSTOMS_DECLARATION_SEQ = [
+  'ID',
+  'ValidityPeriod',
+  'ApplicableTransportMeans',
+  'IssuerParty',
+] as const;
+
 // ─── PaymentMeans ─────────────────────────────────────────────────────────
 // B-70 fix: PaymentMeansCode required (PaymentMeans verildiyse)
 export const PAYMENT_MEANS_SEQ = [

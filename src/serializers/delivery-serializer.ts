@@ -121,6 +121,7 @@ function serializeShipment(shipment: DeliveryInput['shipment'], indent: string):
     ? joinLines(
         shipment.transportHandlingUnits.map(thu => {
           const thuLines: string[] = [`${i2}<cac:TransportHandlingUnit>`];
+          // XSD sequence: ActualPackage (12) → ... → CustomsDeclaration (21)
           if (thu.actualPackages) {
             for (const pkg of thu.actualPackages) {
               thuLines.push(`${i3}<cac:ActualPackage>`);
@@ -131,6 +132,28 @@ function serializeShipment(shipment: DeliveryInput['shipment'], indent: string):
                 thuLines.push(`${i3}  ${cbcOptionalTag('Quantity', String(pkg.quantity))}`);
               }
               thuLines.push(`${i3}</cac:ActualPackage>`);
+            }
+          }
+          // CustomsDeclaration — IHRACKAYITLI + 702 için (B-14, Schematron satır 322/451)
+          // Sequence: ID → ValidityPeriod → ApplicableTransportMeans → IssuerParty
+          if (thu.customsDeclarations) {
+            for (const cd of thu.customsDeclarations) {
+              thuLines.push(`${i3}<cac:CustomsDeclaration>`);
+              if (isNonEmpty(cd.id)) {
+                thuLines.push(`${i3}  ${cbcOptionalTag('ID', cd.id)}`);
+              }
+              if (cd.issuerParty?.partyIdentifications?.length) {
+                thuLines.push(`${i3}  <cac:IssuerParty>`);
+                for (const pi of cd.issuerParty.partyIdentifications) {
+                  thuLines.push(`${i3}    <cac:PartyIdentification>`);
+                  thuLines.push(
+                    `${i3}      ${cbcRequiredTag('ID', pi.id, 'CustomsDeclaration/IssuerParty/PartyIdentification', { schemeID: pi.schemeID })}`,
+                  );
+                  thuLines.push(`${i3}    </cac:PartyIdentification>`);
+                }
+                thuLines.push(`${i3}  </cac:IssuerParty>`);
+              }
+              thuLines.push(`${i3}</cac:CustomsDeclaration>`);
             }
           }
           thuLines.push(`${i2}</cac:TransportHandlingUnit>`);
