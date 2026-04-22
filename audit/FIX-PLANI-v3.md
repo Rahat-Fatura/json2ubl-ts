@@ -236,26 +236,35 @@ Her sprint için sabit disiplin:
 
 ---
 
-### Sprint 5 — Validator Kapsamı + TaxExemption Cross-Check (3 gün)
+### Sprint 5 — Validator Kapsamı + TaxExemption Cross-Check (3 gün) — **TAMAMLANDI (2026-04-22)**
 
-**Kapsanan Bulgular:** B-06, B-07, B-08, B-29..B-31, B-62..B-69, B-78, B-84..B-86, B-91, B-104
+**Uygulanan Bulgular:** B-06, B-07, B-08, M5, Açık Soru #14 (CustomsDeclaration).
 
-**Ana kararlar:**
-- M5: 351 non-ISTISNA; SATIS+351 doğru; ISTISNA+351 yanlış
-- M4 uyarınca 555 flag validator bypass
-- B-07 (IHRACKAYITLI+702), B-08 (YatirimTesvikKDVCheck/LineKDVCheck) — normatife göre direkt ekle
+**Sprint 5'te kapsam dışı bırakılanlar (Sprint 6+'e ertelendi):**
+B-29..B-31, B-62..B-69, B-78, B-84..B-86, B-91, B-104 — kullanıcı prompt'u sadece
+B-06/07/08 + M5 + Açık Soru #14 vurguladığı için geri kalanı Sprint 6+ kapsamında
+ele alınacak.
 
-**Alt görevler:**
-- `TAX_EXEMPTION_MATRIX`: 351 için `allowedTypes: non-ISTISNA`, `forbiddenTypes: ['ISTISNA', 'IADE', 'TEVKIFATIADE']`, `requiresZeroKdvLine: true`
-- 555 validator: `if (code === '555' && !options.allowReducedKdvRate) reject`
-- IHRACKAYITLI+702 kontrolü
-- YatirimTesvikKDVCheck + YatirimTesvikLineKDVCheck
+**Ana kararlar (uygulandı):**
+- M5: 351 full cross-check — `TAX_EXEMPTION_MATRIX['351']` allowed (SATIS/TEVKIFAT/
+  KOMISYONCU/HKS*/KONAKLAMAVERGISI/TEKNOLOJIDESTEK/YTBSATIS/YTBTEVKIFAT/**SGK**)
+  + forbidden (ISTISNA/IADE/YTBISTISNA/YTBIADE/TEVKIFATIADE/YTBTEVKIFATIADE/**IHRACKAYITLI**)
+  + `requiresZeroKdvLine: true`. Kullanıcı SGK+351 izinli, IHRACKAYITLI+351 yasak
+  dedi (ACIK-SORULAR #12 + Sprint 5 Soru 2 cevabı).
+- 555 validator: Sprint 2'de M4 flag ile bypass zaten uygulanmış; matris'te 555
+  entry yok (UNKNOWN_EXEMPTION_CODE dönerse M4 bypass'ı ayrı kontrolde).
+- B-07: `validateIhrackayitli702` + CustomsDeclaration input/serializer birleşik.
+- B-08: `validateYatirimTesvikKdvDocument` + `validateYatirimTesvikKdvLine` + Harcama
+  Tipi 03/04 ek kural.
+- **B-83 Sprint 8'e ertelendi** (kullanıcı cevabı — serializer tema uyumsuz).
 
-**Tüketici durumu:** edocument-service dev aşamasında. Yeni validator kuralları daha strict; tüketici reject senaryolarını günceller.
+**Commit tablosu:** Sprint 5.1 (2448eb6) → 5.2 (df4e6a0) → 5.3 (fc16d37, B-07+B-14 birleşik) →
+5.5 (8c63d6f) → 5.7 (implementation-log). Sprint 5.6 KamuFaturaCheck Sprint 1'de
+zaten uygulanmış olduğu için ek commit açılmadı.
 
-**Release:** yok. Commit + push.
+**Test artışı:** 375 → 503 (+128 test, 29 dosya).
 
-**Not:** v2'de 4 gün idi; "prod regression suite" atıfı kalkınca 3 güne iner. İş riski: validator mantığı genişler, test kapsamı zorunlu.
+**Detay:** `audit/sprint-05-implementation-log.md`.
 
 ---
 

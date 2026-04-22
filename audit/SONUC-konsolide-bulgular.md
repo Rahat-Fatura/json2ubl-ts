@@ -121,7 +121,7 @@ durum: finalize (revize 2026-04-22)
 - **Downstream:** B-06 (TaxExemption cross-check mimarisi çözünce 555 de çözülür)
 - **[MİMARİ REVİZE — Açık Soru #10 cevabı — M4]** Kütüphane 555 için iş mantığı uygulamaz (farklı KDV'den kesme logic'i tüketicinindir). `BuilderOptions.allowReducedKdvRate?: boolean` flag (default `false`). True ise 555 kabul, default reddeder. Kütüphane sadece gate. Detay FIX-PLANI-v2.md M4.
 
-### B-06 [KRİTİK][KÜTÜPHANE] TaxExemptionReasonCode cross-check (kod↔tip) mimarisi yok
+### B-06 [KRİTİK][KÜTÜPHANE] TaxExemptionReasonCode cross-check (kod↔tip) mimarisi yok — **ÇÖZÜLDÜ (Sprint 5.1+5.2)**
 - **Kaynak:** Denetim 03 §2 (K2)
 - **Dosya:** `src/validators/type-validators.ts:133-190`
 - **Normatif:** CommonSchematron:316,318,320 (TaxExemptionReasonCodeCheck)
@@ -129,8 +129,11 @@ durum: finalize (revize 2026-04-22)
 - **Etki:** Yanlış tip+kod kombinasyonları lib'den geçer, GİB reddeder.
 - **Breaking change:** Evet (yeni cross-check önceden geçen kombinasyonları reddedecek)
 - **Downstream:** B-05, B-45 (getAvailableExemptions), B-81 (mapper shouldAddExemption)
+- **Çözüm:** Sprint 5 — `src/validators/cross-check-matrix.ts` yeni dosya. `TAX_EXEMPTION_MATRIX`
+  M7 türetme pattern'i ile 79 entry. `validateExemptionCode` fonksiyonu 4 yolu kapsar
+  (UNKNOWN / FORBIDDEN / INVALID / REQUIRES_ZERO_KDV). `cross-validators.ts` §2 entegrasyonu.
 
-### B-07 [KRİTİK][KÜTÜPHANE] IHRACKAYITLI+702 senaryosu üç katmanda eksik
+### B-07 [KRİTİK][KÜTÜPHANE] IHRACKAYITLI+702 senaryosu üç katmanda eksik — **ÇÖZÜLDÜ (Sprint 5.3)**
 - **Kaynak:** Denetim 03 §3 (K3) + §Y4 + Denetim 04 §Y8 — validator+input+serializer zinciri
 - **Dosya:** `src/validators/type-validators.ts:176-190`, `src/serializers/delivery-serializer.ts:116-133`, `src/types/invoice-input.ts` (CustomsDeclaration eksik)
 - **Normatif:** CommonSchematron:322 (satır kuralı: 12-hane GTİP + 11-hane ALICIDIBSATIRKOD), :450-452 (schemeID whitelist); XSD TransportHandlingUnitType:3127
@@ -138,8 +141,12 @@ durum: finalize (revize 2026-04-22)
 - **Etki:** IHRACKAYITLI+702 senaryosu üretilemez.
 - **Breaking change:** Hayır (eksik özellik ekleniyor)
 - **Downstream:** —
+- **Çözüm:** Sprint 5.3 — `src/validators/ihrackayitli-validator.ts` yeni. GTİP (12) +
+  ALICIDIBSATIRKOD (11) + schemeID whitelist kontrolleri. Ayrıca input tiplerine
+  (`CustomsDeclarationInput`, `PartyIdentificationInput`) + `delivery-serializer.ts`
+  CustomsDeclaration XML emit eklendi. Açık Soru #14 de bu commit'te kapsandı.
 
-### B-08 [KRİTİK][KÜTÜPHANE] YatirimTesvikKDVCheck/YatirimTesvikLineKDVCheck kuralları yok
+### B-08 [KRİTİK][KÜTÜPHANE] YatirimTesvikKDVCheck/YatirimTesvikLineKDVCheck kuralları yok — **ÇÖZÜLDÜ (Sprint 5.5)**
 - **Kaynak:** Denetim 03 §4 (K4)
 - **Dosya:** `src/validators/profile-validators.ts:227-318`
 - **Normatif:** CommonSchematron:483-490 (fatura+satır seviyesi KDV zorunluluğu)
@@ -147,6 +154,11 @@ durum: finalize (revize 2026-04-22)
 - **Etki:** YATIRIMTESVIK fatura boş KDV'yle geçer, Schematron reddeder.
 - **Breaking change:** Evet (yeni kural önceden geçen faturaları reddedecek)
 - **Downstream:** B-78
+- **Çözüm:** Sprint 5.5 — `src/validators/yatirim-tesvik-validator.ts` yeni.
+  `isYatirimTesvikScope` (YATIRIMTESVIK veya EARSIVFATURA+YTB*, İADE hariç).
+  `validateYatirimTesvikKdvDocument` (belge tüm KDV subtotal amount>0 AND percent>0).
+  `validateYatirimTesvikKdvLine` (satır KDV + Harcama Tipi 03/04 ek kural).
+  Cross-validators entegrasyonu §4.
 
 ### B-09 [KRİTİK][KÜTÜPHANE] TaxExemptionReasonCode/Reason yanlış parent (TaxSubtotal→TaxCategory)
 - **Kaynak:** Denetim 04 §K1
