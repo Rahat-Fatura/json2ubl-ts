@@ -16,9 +16,9 @@ import { DEFAULT_CURRENCY_CODE } from './currency-config';
 // ─── Hesaplama Sonuç Tipleri ────────────────────────────────────────────────────
 
 export interface DocumentMonetary {
-  /** Σ line.lineExtensionForMonetary (indirim ÖNCESİ toplam) */
+  /** Σ line.lineExtensionAmount (indirim SONRASI; UBL-TR LegalMonetaryTotal.LineExtensionAmount kaynağı) */
   lineExtensionAmount: number;
-  /** Σ line.lineExtensionAmount (indirim SONRASI toplam) */
+  /** = lineExtensionAmount (belge-seviyesi AllowanceCharge yok → identity) */
   taxExclusiveAmount: number;
   /** Σ line.taxInclusiveForMonetary */
   taxInclusiveAmount: number;
@@ -104,7 +104,7 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
   for (const line of calculatedLines) {
     if (!typesArray.includes(line.type)) typesArray.push(line.type);
 
-    lineExtensionAmount += line.lineExtensionForMonetary;
+    lineExtensionAmount += line.lineExtensionAmount;
     taxExclusiveAmount += line.lineExtensionAmount;
     taxInclusiveAmount += line.taxInclusiveForMonetary;
     allowanceTotalAmount += line.allowanceObject.amount;

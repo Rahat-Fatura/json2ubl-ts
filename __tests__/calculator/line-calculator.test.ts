@@ -18,7 +18,6 @@ describe('line-calculator', () => {
       expect(result.unitCode).toBe('C62');
       expect(result.currencyCode).toBe('TRY');
       expect(result.type).toBe('SATIS');
-      expect(result.lineExtensionForMonetary).toBe(1000);
       expect(result.lineExtensionAmount).toBe(1000);
       // KDV: 1000 * 20% = 200
       expect(result.taxes.taxSubtotals).toHaveLength(1);
@@ -34,7 +33,6 @@ describe('line-calculator', () => {
       const result = calculateLine(line, 0, 'TRY');
 
       // 10 * 100 = 1000, iskonto: 1000 * 10% = 100
-      expect(result.lineExtensionForMonetary).toBe(1000);
       expect(result.allowanceObject.percent).toBe(10);
       expect(result.allowanceObject.base).toBe(1000);
       expect(result.allowanceObject.amount).toBe(100);
@@ -267,7 +265,7 @@ describe('line-calculator', () => {
       // gross = 5 * 200 = 1000
       // iskonto = 1000 * 10% = 100
       // lineExtensionAmount = 900
-      expect(result.lineExtensionForMonetary).toBe(1000);
+      expect(result.allowanceObject.base).toBe(1000);
       expect(result.lineExtensionAmount).toBe(900);
 
       // ÖTV = 900 * 20% = 180
@@ -316,8 +314,8 @@ describe('line-calculator', () => {
       expect(results).toHaveLength(2);
       expect(results[0].id).toBe(1);
       expect(results[1].id).toBe(2);
-      expect(results[0].lineExtensionForMonetary).toBe(200);
-      expect(results[1].lineExtensionForMonetary).toBe(150);
+      expect(results[0].lineExtensionAmount).toBe(200);
+      expect(results[1].lineExtensionAmount).toBe(150);
     });
   });
 });

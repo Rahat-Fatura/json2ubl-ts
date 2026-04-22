@@ -53,9 +53,7 @@ export interface CalculatedLine {
   currencyCode: string;
   /** Satırın otomatik tespit edilen tipi: SATIS | ISTISNA | TEVKIFAT */
   type: 'SATIS' | 'ISTISNA' | 'TEVKIFAT';
-  /** price × quantity (indirim öncesi) */
-  lineExtensionForMonetary: number;
-  /** price × quantity - indirim (indirim sonrası, vergi matrahı) */
+  /** price × quantity - indirim (indirim sonrası, vergi matrahı ve UBL-TR LineExtensionAmount kaynağı) */
   lineExtensionAmount: number;
   /** lineExtensionAmount + Σ taxForCalculate */
   taxInclusiveForMonetary: number;
@@ -88,18 +86,18 @@ export function calculateLine(
   index: number,
   currencyCode: string,
 ): CalculatedLine {
-  const lineExtensionForMonetary = line.price * line.quantity;
+  const grossAmount = line.price * line.quantity;
 
   // İskonto hesabı
   const allowanceObject: CalculatedAllowance = {
     percent: line.allowancePercent ?? 0,
-    base: line.allowancePercent ? lineExtensionForMonetary : 0,
+    base: line.allowancePercent ? grossAmount : 0,
     amount: line.allowancePercent
-      ? lineExtensionForMonetary * (line.allowancePercent / 100)
+      ? grossAmount * (line.allowancePercent / 100)
       : 0,
   };
 
-  const lineExtensionAmount = lineExtensionForMonetary - allowanceObject.amount;
+  const lineExtensionAmount = grossAmount - allowanceObject.amount;
   let lineExtensionAmountForCalculation = lineExtensionAmount;
 
   // Ek vergiler (KDV hariç: ÖTV, Damga V., ÖİV vb.)
@@ -216,7 +214,6 @@ export function calculateLine(
     unitCode,
     currencyCode,
     type,
-    lineExtensionForMonetary,
     lineExtensionAmount,
     taxInclusiveForMonetary,
     payableAmountForMonetary,

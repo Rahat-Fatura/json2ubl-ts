@@ -105,11 +105,30 @@ describe('document-calculator', () => {
       }));
 
       // gross=1000, iskonto=150, lineExtension=850
-      expect(result.monetary.lineExtensionAmount).toBe(1000);
+      // B-15: LegalMonetaryTotal.LineExtensionAmount artık iskonto SONRASI (UBL-TR normatif)
+      expect(result.monetary.lineExtensionAmount).toBe(850);
       expect(result.monetary.taxExclusiveAmount).toBe(850);
       expect(result.monetary.allowanceTotalAmount).toBe(150);
       expect(result.allowance).not.toBeNull();
       expect(result.allowance!.amount).toBe(150);
+    });
+
+    it('B-15: Σ line.lineExtensionAmount === monetary.lineExtensionAmount (çoğul iskontolu satır)', () => {
+      const result = calculateDocument(makeInput({
+        lines: [
+          { name: 'Ürün A', quantity: 2, price: 500, kdvPercent: 20, allowancePercent: 10 }, // 1000 - 100 = 900
+          { name: 'Ürün B', quantity: 1, price: 2000, kdvPercent: 20 },                      // 2000 (iskontosuz)
+          { name: 'Ürün C', quantity: 5, price: 100, kdvPercent: 20, allowancePercent: 20 }, //  500 - 100 = 400
+        ],
+      }));
+
+      const sumLineExtension = result.calculatedLines.reduce(
+        (sum, l) => sum + l.lineExtensionAmount,
+        0,
+      );
+      expect(result.monetary.lineExtensionAmount).toBe(sumLineExtension);
+      expect(result.monetary.lineExtensionAmount).toBe(900 + 2000 + 400);
+      expect(result.monetary.taxExclusiveAmount).toBe(result.monetary.lineExtensionAmount);
     });
   });
 
