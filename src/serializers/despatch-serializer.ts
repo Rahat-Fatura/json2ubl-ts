@@ -1,6 +1,6 @@
 import type { DespatchInput } from '../types/despatch-input';
 import { DESPATCH_NAMESPACES, UBL_CONSTANTS } from '../config/namespaces';
-import { cbcTag, joinLines, xmlDeclaration, despatchOpenTag, ublExtensionsPlaceholder } from '../utils/xml-helpers';
+import { cbcTag, joinLines, xmlDeclaration, despatchOpenTag } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
 import { serializeParty } from './party-serializer';
 import { serializeAddress } from './delivery-serializer';
@@ -18,7 +18,7 @@ export function serializeDespatch(input: DespatchInput, prettyPrint: boolean = t
   parts.push(despatchOpenTag(DESPATCH_NAMESPACES));
 
   // 1. UBLExtensions
-  parts.push(indentBlock(ublExtensionsPlaceholder(), ind));
+  // parts.push(indentBlock(ublExtensionsPlaceholder(), ind));
 
   // 2-3. UBLVersionID, CustomizationID
   parts.push(`${ind}${cbcTag('UBLVersionID', UBL_CONSTANTS.ublVersionId)}`);
@@ -168,6 +168,6 @@ function serializeShipmentBlock(input: DespatchInput, indent: string): string {
   return joinLines(lines);
 }
 
-function indentBlock(xml: string, indentStr: string): string {
-  return xml.split('\n').map(line => indentStr + line).join('\n');
-}
+// function indentBlock(xml: string, indentStr: string): string {
+//   return xml.split('\n').map(line => indentStr + line).join('\n');
+// }
