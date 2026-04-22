@@ -25,6 +25,6 @@ export const DESPATCH_NAMESPACES = {
 /** Sabit UBL-TR değerleri */
 export const UBL_CONSTANTS = {
   ublVersionId: '2.1',
-  customizationId: 'TR1.2.1',
+  customizationId: 'TR1.2',
   copyIndicator: 'false',
 } as const;

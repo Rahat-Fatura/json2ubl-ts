@@ -17,21 +17,9 @@ export const PROFILE_TYPE_MATRIX: Record<InvoiceProfileId, ReadonlySet<InvoiceTy
     InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH, InvoiceTypeCode.IHRACKAYITLI,
     InvoiceTypeCode.SGK, InvoiceTypeCode.KOMISYONCU, InvoiceTypeCode.KONAKLAMAVERGISI,
   ]),
-  [InvoiceProfileId.IHRACAT]: new Set([
-    InvoiceTypeCode.SATIS, InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE,
-    InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH, InvoiceTypeCode.IHRACKAYITLI,
-    InvoiceTypeCode.SGK, InvoiceTypeCode.KOMISYONCU, InvoiceTypeCode.KONAKLAMAVERGISI,
-  ]),
-  [InvoiceProfileId.YOLCUBERABERFATURA]: new Set([
-    InvoiceTypeCode.SATIS, InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE,
-    InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH, InvoiceTypeCode.IHRACKAYITLI,
-    InvoiceTypeCode.SGK, InvoiceTypeCode.KOMISYONCU, InvoiceTypeCode.KONAKLAMAVERGISI,
-  ]),
-  [InvoiceProfileId.OZELFATURA]: new Set([
-    InvoiceTypeCode.SATIS, InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE,
-    InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH, InvoiceTypeCode.IHRACKAYITLI,
-    InvoiceTypeCode.SGK, InvoiceTypeCode.KOMISYONCU, InvoiceTypeCode.KONAKLAMAVERGISI,
-  ]),
+  [InvoiceProfileId.IHRACAT]: new Set([InvoiceTypeCode.ISTISNA]),
+  [InvoiceProfileId.YOLCUBERABERFATURA]: new Set([InvoiceTypeCode.ISTISNA]),
+  [InvoiceProfileId.OZELFATURA]: new Set([InvoiceTypeCode.ISTISNA]),
   [InvoiceProfileId.KAMU]: new Set([
     InvoiceTypeCode.SATIS, InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE,
     InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH, InvoiceTypeCode.IHRACKAYITLI,

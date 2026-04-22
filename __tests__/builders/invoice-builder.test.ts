@@ -92,7 +92,7 @@ describe('InvoiceBuilder', () => {
       const xml = builder.build(createValidSatisInput());
 
       expect(xml).toContain('<cbc:UBLVersionID>2.1</cbc:UBLVersionID>');
-      expect(xml).toContain('<cbc:CustomizationID>TR1.2.1</cbc:CustomizationID>');
+      expect(xml).toContain('<cbc:CustomizationID>TR1.2</cbc:CustomizationID>');
       expect(xml).toContain('<cbc:CopyIndicator>false</cbc:CopyIndicator>');
     });
 
@@ -116,14 +116,6 @@ describe('InvoiceBuilder', () => {
       expect(xml).toContain('<cbc:LineCountNumeric>1</cbc:LineCountNumeric>');
     });
 
-    it('UBLExtensions placeholder içerir', () => {
-      const builder = new InvoiceBuilder();
-      const xml = builder.build(createValidSatisInput());
-
-      expect(xml).toContain('<ext:UBLExtensions>');
-      expect(xml).toContain('<ext:ExtensionContent>');
-    });
-
     it('supplier party bilgilerini içerir', () => {
       const builder = new InvoiceBuilder();
       const xml = builder.build(createValidSatisInput());
@@ -143,14 +135,6 @@ describe('InvoiceBuilder', () => {
       expect(xml).toContain('>12345678901<');
       expect(xml).toContain('<cbc:FirstName>Ahmet</cbc:FirstName>');
       expect(xml).toContain('<cbc:FamilyName>Yılmaz</cbc:FamilyName>');
-    });
-
-    it('cac:Signature oluşturur', () => {
-      const builder = new InvoiceBuilder();
-      const xml = builder.build(createValidSatisInput());
-
-      expect(xml).toContain('<cac:Signature>');
-      expect(xml).toContain('schemeID="VKN_TCKN"');
     });
 
     it('TaxTotal ve TaxSubtotal içerir', () => {

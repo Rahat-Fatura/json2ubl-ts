@@ -198,6 +198,7 @@ describe('document-calculator', () => {
 
     it('buyerCustomer varsa profil IHRACAT olmalı', () => {
       const result = calculateDocument(makeInput({
+        type: 'ISTISNA',
         buyerCustomer: {
           name: 'Foreign Co',
           taxNumber: '1234567890',

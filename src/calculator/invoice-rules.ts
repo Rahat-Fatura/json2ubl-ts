@@ -12,6 +12,8 @@ import { configManager } from './config-manager';
 import type { WithholdingTaxDefinition } from './withholding-config';
 import type { ExemptionDefinition } from './exemption-config';
 import { BillingDocumentTypeCode } from './simple-types';
+import { PROFILE_TYPE_MATRIX } from '../config/constants';
+import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 
 /** Schematron IADEInvioceCheck: BillingReference zorunlu olan IADE grubu tipleri */
 const IADE_GROUP = ['IADE', 'TEVKIFATIADE', 'YTBIADE', 'YTBTEVKIFATIADE'];
@@ -27,40 +29,32 @@ const IADE_GROUP = ['IADE', 'TEVKIFATIADE', 'YTBIADE', 'YTBTEVKIFATIADE'];
  */
 export type CustomerLiability = 'einvoice' | 'earchive';
 
-// ─── Profil-Tip Uyumluluk Kuralları ─────────────────────────────────────────
+// ─── Profil-Tip Uyumluluk Kuralları (PROFILE_TYPE_MATRIX'ten türetilir) ────
 
-/** Profil bazında izin verilen fatura tipleri (Schematron kuralları) */
-const PROFILE_TYPE_MAP: Record<string, string[]> = {
-  TEMELFATURA: ['SATIS', 'IADE', 'ISTISNA', 'IHRACKAYITLI', 'OZELMATRAH', 'TEVKIFAT', 'SGK', 'KOMISYONCU', 'KONAKLAMAVERGISI'],
-  TICARIFATURA: ['SATIS', 'IADE', 'ISTISNA', 'IHRACKAYITLI', 'OZELMATRAH', 'TEVKIFAT', 'SGK', 'KOMISYONCU', 'KONAKLAMAVERGISI'],
-  EARSIVFATURA: ['SATIS', 'IADE', 'ISTISNA', 'IHRACKAYITLI', 'OZELMATRAH', 'TEVKIFAT', 'KOMISYONCU', 'TEKNOLOJIDESTEK', 'KONAKLAMAVERGISI',
-    'HKSSATIS', 'HKSKOMISYONCU', 'YTBSATIS', 'YTBIADE', 'YTBISTISNA', 'YTBTEVKIFAT', 'YTBTEVKIFATIADE'],
-  IHRACAT: ['SATIS', 'ISTISNA', 'IHRACKAYITLI'],
-  YOLCUBERABERFATURA: ['SATIS', 'ISTISNA'],
-  KAMU: ['SATIS', 'ISTISNA', 'TEVKIFAT', 'IHRACKAYITLI', 'OZELMATRAH', 'KONAKLAMAVERGISI'],
-  OZELFATURA: ['SATIS', 'ISTISNA'],
-  HKS: ['SATIS', 'KOMISYONCU'],
-  ILAC_TIBBICIHAZ: ['SATIS', 'ISTISNA', 'TEVKIFAT', 'TEVKIFATIADE', 'IADE', 'IHRACKAYITLI'],
-  YATIRIMTESVIK: ['SATIS', 'ISTISNA', 'IADE', 'TEVKIFAT', 'TEVKIFATIADE'],
-  ENERJI: ['SARJ', 'SARJANLIK'],
-  IDIS: ['SATIS', 'ISTISNA', 'IADE', 'TEVKIFAT', 'TEVKIFATIADE', 'IHRACKAYITLI'],
-};
+function deriveProfileTypeMap(
+  matrix: Record<InvoiceProfileId, ReadonlySet<InvoiceTypeCode>>,
+): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const profile of Object.keys(matrix) as InvoiceProfileId[]) {
+    out[profile] = Array.from(matrix[profile]);
+  }
+  return out;
+}
 
-/** Tip bazında izin verilen profiller */
-const TYPE_PROFILE_MAP: Record<string, string[]> = {
-  SATIS: ['TEMELFATURA', 'TICARIFATURA', 'EARSIVFATURA', 'IHRACAT', 'YOLCUBERABERFATURA', 'KAMU', 'OZELFATURA', 'HKS', 'ILAC_TIBBICIHAZ', 'YATIRIMTESVIK', 'IDIS'],
-  IADE: ['TEMELFATURA', 'EARSIVFATURA', 'ILAC_TIBBICIHAZ', 'YATIRIMTESVIK', 'IDIS'],
-  TEVKIFAT: ['TEMELFATURA', 'TICARIFATURA', 'EARSIVFATURA', 'KAMU', 'ILAC_TIBBICIHAZ', 'YATIRIMTESVIK', 'IDIS'],
-  ISTISNA: ['TEMELFATURA', 'TICARIFATURA', 'EARSIVFATURA', 'IHRACAT', 'YOLCUBERABERFATURA', 'KAMU', 'OZELFATURA', 'ILAC_TIBBICIHAZ', 'YATIRIMTESVIK', 'IDIS'],
-  IHRACKAYITLI: ['TEMELFATURA', 'TICARIFATURA', 'EARSIVFATURA', 'IHRACAT', 'KAMU', 'ILAC_TIBBICIHAZ', 'IDIS'],
-  OZELMATRAH: ['TEMELFATURA', 'TICARIFATURA', 'EARSIVFATURA', 'KAMU'],
-  SGK: ['TEMELFATURA', 'TICARIFATURA'],
-  TEKNOLOJIDESTEK: ['EARSIVFATURA'],
-  KOMISYONCU: ['TEMELFATURA', 'TICARIFATURA', 'EARSIVFATURA', 'HKS'],
-  KONAKLAMAVERGISI: ['TEMELFATURA', 'TICARIFATURA', 'EARSIVFATURA', 'KAMU'],
-  SARJ: ['ENERJI'],
-  SARJANLIK: ['ENERJI'],
-};
+function deriveTypeProfileMap(
+  matrix: Record<InvoiceProfileId, ReadonlySet<InvoiceTypeCode>>,
+): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const profile of Object.keys(matrix) as InvoiceProfileId[]) {
+    for (const type of matrix[profile]) {
+      (out[type] ??= []).push(profile);
+    }
+  }
+  return out;
+}
+
+const PROFILE_TYPE_MAP: Record<string, string[]> = deriveProfileTypeMap(PROFILE_TYPE_MATRIX);
+const TYPE_PROFILE_MAP: Record<string, string[]> = deriveTypeProfileMap(PROFILE_TYPE_MATRIX);
 
 // ─── Liability Bazlı Filtreleme ──────────────────────────────────────────────
 

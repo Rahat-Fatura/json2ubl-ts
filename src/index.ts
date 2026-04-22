@@ -19,7 +19,6 @@ export {
     UBL_CONSTANTS,
 } from "./config/namespaces";
 export {
-    PROFILE_TYPE_MATRIX,
     IADE_GROUP_TYPES,
     TEVKIFAT_GROUP_TYPES,
     ISTISNA_GROUP_TYPES,

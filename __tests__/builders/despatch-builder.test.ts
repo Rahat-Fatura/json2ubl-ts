@@ -69,7 +69,7 @@ describe('DespatchBuilder', () => {
       const xml = builder.build(createValidDespatchInput());
 
       expect(xml).toContain('<cbc:UBLVersionID>2.1</cbc:UBLVersionID>');
-      expect(xml).toContain('<cbc:CustomizationID>TR1.2.1</cbc:CustomizationID>');
+      expect(xml).toContain('<cbc:CustomizationID>TR1.2</cbc:CustomizationID>');
     });
 
     it('profil ve tip bilgilerini içerir', () => {
