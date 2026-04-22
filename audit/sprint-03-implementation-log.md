@@ -172,8 +172,10 @@ AR-1 split başarıyla uygulandı.
 
 ## Commit
 
-- **Hash:** (bu sprint commit'i sonra eklenecek)
+- **Hash:** `2e49395`
 - **Mesaj:** `Sprint 3: XSD sequence + M6 parent-child + AR-1 cbcTag split`
+- **Pre-cleanup commit:** `35d80af` (chore: consolidate sprint 1-2 leftover serializer cleanups)
+- **Değişim:** 25 dosya, +2670 / −630 satır
 
 ## Sonraki Sprint
 
