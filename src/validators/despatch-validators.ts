@@ -43,7 +43,10 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
     errors.push(invalidFormat('issueDate', 'YYYY-MM-DD', input.issueDate));
   }
 
-  if (input.issueTime && !TIME_REGEX.test(input.issueTime)) {
+  // B-18: issueTime XSD zorunlu (M6 parent-child — parent Despatch zorunlu ⇒ issueTime zorunlu)
+  if (!isNonEmpty(input.issueTime)) {
+    errors.push(missingField('issueTime', 'Düzenleme saati (cbc:IssueTime) zorunludur (B-18)'));
+  } else if (!TIME_REGEX.test(input.issueTime)) {
     errors.push(invalidFormat('issueTime', 'HH:mm:ss', input.issueTime));
   }
 

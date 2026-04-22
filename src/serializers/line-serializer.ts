@@ -1,123 +1,127 @@
 import type { InvoiceLineInput } from '../types/invoice-input';
 import type { DespatchLineInput } from '../types/despatch-input';
-import { cbcTag, cbcAmountTag, cbcQuantityTag, joinLines } from '../utils/xml-helpers';
+import {
+  cbcOptionalTag,
+  cbcOptionalAmountTag,
+  cbcOptionalQuantityTag,
+  cbcRequiredTag,
+  joinLines,
+} from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
 import { serializeTaxTotal, serializeWithholdingTaxTotal } from './tax-serializer';
 import { serializeAllowanceCharge } from './common-serializer';
 import { serializeLineDelivery } from './delivery-serializer';
+import { INVOICE_LINE_SEQ, ITEM_SEQ, PRICE_SEQ, DESPATCH_LINE_SEQ, emitInOrder } from './xsd-sequence';
 
-/** InvoiceLine → XML fragment */
+/**
+ * InvoiceLine → XML fragment.
+ * Sequence: INVOICE_LINE_SEQ. B-10 fix: Delivery, AllowanceCharge ÖNCESİ.
+ */
 export function serializeInvoiceLine(line: InvoiceLineInput, currencyCode: string, indent: string = ''): string {
-  const i2 = indent + '  ';
-  const i3 = indent + '    ';
-  const i4 = indent + '      ';
-  const lines: string[] = [];
+  const inner = emitInOrder(INVOICE_LINE_SEQ, {
+    ID: () => cbcRequiredTag('ID', line.id, 'InvoiceLine'),
+    InvoicedQuantity: () => cbcOptionalQuantityTag('InvoicedQuantity', line.invoicedQuantity, line.unitCode),
+    LineExtensionAmount: () => cbcOptionalAmountTag('LineExtensionAmount', line.lineExtensionAmount, currencyCode),
+    Delivery: () => (line.delivery ? serializeLineDelivery(line.delivery, indent + '  ') : ''),
+    AllowanceCharge: () =>
+      line.allowanceCharges
+        ? joinLines(line.allowanceCharges.map(ac => serializeAllowanceCharge(ac, currencyCode, indent + '  ')))
+        : '',
+    TaxTotal: () => serializeTaxTotal(line.taxTotal, currencyCode, indent + '  '),
+    WithholdingTaxTotal: () =>
+      line.withholdingTaxTotal ? serializeWithholdingTaxTotal(line.withholdingTaxTotal, currencyCode, indent + '  ') : '',
+    Item: () => serializeItem(line.item, indent + '  '),
+    Price: () => serializePrice(line.price.priceAmount, currencyCode, indent + '  '),
+  });
 
-  lines.push(`${indent}<cac:InvoiceLine>`);
-  lines.push(`${i2}${cbcTag('ID', line.id)}`);
-  lines.push(`${i2}${cbcQuantityTag('InvoicedQuantity', line.invoicedQuantity, line.unitCode)}`);
-  lines.push(`${i2}${cbcAmountTag('LineExtensionAmount', line.lineExtensionAmount, currencyCode)}`);
-
-  // AllowanceCharges
-  if (line.allowanceCharges) {
-    for (const ac of line.allowanceCharges) {
-      lines.push(serializeAllowanceCharge(ac, currencyCode, i2));
-    }
-  }
-
-  // TaxTotal
-  lines.push(serializeTaxTotal(line.taxTotal, currencyCode, i2));
-
-  // WithholdingTaxTotal
-  if (line.withholdingTaxTotal) {
-    lines.push(serializeWithholdingTaxTotal(line.withholdingTaxTotal, currencyCode, i2));
-  }
-
-  // Delivery (§3.3 IHRACAT satır seviyesi)
-  if (line.delivery) {
-    lines.push(serializeLineDelivery(line.delivery, i2));
-  }
-
-  // Item
-  lines.push(`${i2}<cac:Item>`);
-  lines.push(`${i3}${cbcTag('Name', line.item.name)}`);
-  if (isNonEmpty(line.item.description)) {
-    lines.push(`${i3}${cbcTag('Description', line.item.description)}`);
-  }
-  if (isNonEmpty(line.item.modelName)) {
-    lines.push(`${i3}${cbcTag('ModelName', line.item.modelName)}`);
-  }
-
-  // AdditionalItemIdentification (HKS, ILAC, TEKNOLOJI, IDIS)
-  if (line.item.additionalItemIdentifications) {
-    for (const aid of line.item.additionalItemIdentifications) {
-      lines.push(`${i3}<cac:AdditionalItemIdentification>`);
-      lines.push(`${i4}${cbcTag('ID', aid.value, { schemeID: aid.schemeId })}`);
-      lines.push(`${i3}</cac:AdditionalItemIdentification>`);
-    }
-  }
-
-  // CommodityClassification (§3.10 YATIRIMTESVIK)
-  if (line.item.commodityClassification) {
-    lines.push(`${i3}<cac:CommodityClassification>`);
-    lines.push(`${i4}${cbcTag('ItemClassificationCode', line.item.commodityClassification.itemClassificationCode)}`);
-    lines.push(`${i3}</cac:CommodityClassification>`);
-  }
-
-  // ItemInstance (§3.10 YATIRIMTESVIK Kod 01)
-  if (line.item.itemInstances) {
-    for (const inst of line.item.itemInstances) {
-      lines.push(`${i3}<cac:ItemInstance>`);
-      if (isNonEmpty(inst.productTraceId)) {
-        lines.push(`${i4}${cbcTag('ProductTraceID', inst.productTraceId)}`);
-      }
-      if (isNonEmpty(inst.serialId)) {
-        lines.push(`${i4}${cbcTag('SerialID', inst.serialId)}`);
-      }
-      lines.push(`${i3}</cac:ItemInstance>`);
-    }
-  }
-
-  lines.push(`${i2}</cac:Item>`);
-
-  // Price
-  lines.push(`${i2}<cac:Price>`);
-  lines.push(`${i3}${cbcAmountTag('PriceAmount', line.price.priceAmount, currencyCode)}`);
-  lines.push(`${i2}</cac:Price>`);
-
-  lines.push(`${indent}</cac:InvoiceLine>`);
-  return joinLines(lines);
+  const body = joinLines(inner.map(s => (s.startsWith(indent) ? s : indent + '  ' + s)));
+  return [`${indent}<cac:InvoiceLine>`, body, `${indent}</cac:InvoiceLine>`].join('\n');
 }
 
-/** DespatchLine → XML fragment */
+/**
+ * Item → XML fragment. Sequence: ITEM_SEQ.
+ * B-13 fix: Description Name ÖNCESİ.
+ */
+function serializeItem(item: InvoiceLineInput['item'], indent: string): string {
+  const i2 = indent + '  ';
+  const inner = emitInOrder(ITEM_SEQ, {
+    Description: () => cbcOptionalTag('Description', item.description),
+    Name: () => cbcRequiredTag('Name', item.name, 'Item'),
+    ModelName: () => cbcOptionalTag('ModelName', item.modelName),
+    AdditionalItemIdentification: () =>
+      item.additionalItemIdentifications
+        ? joinLines(
+            item.additionalItemIdentifications.map(aid =>
+              [
+                `${i2}<cac:AdditionalItemIdentification>`,
+                `${i2}  ${cbcRequiredTag('ID', aid.value, 'AdditionalItemIdentification', { schemeID: aid.schemeId })}`,
+                `${i2}</cac:AdditionalItemIdentification>`,
+              ].join('\n'),
+            ),
+          )
+        : '',
+    CommodityClassification: () =>
+      item.commodityClassification
+        ? [
+            `${i2}<cac:CommodityClassification>`,
+            `${i2}  ${cbcOptionalTag('ItemClassificationCode', item.commodityClassification.itemClassificationCode)}`,
+            `${i2}</cac:CommodityClassification>`,
+          ].join('\n')
+        : '',
+    ItemInstance: () =>
+      item.itemInstances
+        ? joinLines(
+            item.itemInstances.map(inst => {
+              const il: string[] = [];
+              if (isNonEmpty(inst.productTraceId)) il.push(`${i2}  ${cbcOptionalTag('ProductTraceID', inst.productTraceId)}`);
+              if (isNonEmpty(inst.serialId)) il.push(`${i2}  ${cbcOptionalTag('SerialID', inst.serialId)}`);
+              return [`${i2}<cac:ItemInstance>`, ...il, `${i2}</cac:ItemInstance>`].join('\n');
+            }),
+          )
+        : '',
+  });
+
+  const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
+  return [`${indent}<cac:Item>`, body, `${indent}</cac:Item>`].join('\n');
+}
+
+function serializePrice(priceAmount: number, currencyCode: string, indent: string): string {
+  const inner = emitInOrder(PRICE_SEQ, {
+    PriceAmount: () => cbcOptionalAmountTag('PriceAmount', priceAmount, currencyCode),
+  });
+  const body = joinLines(inner.map(s => indent + '  ' + s));
+  return [`${indent}<cac:Price>`, body, `${indent}</cac:Price>`].join('\n');
+}
+
+/** DespatchLine → XML fragment. Sequence: DESPATCH_LINE_SEQ. */
 export function serializeDespatchLine(line: DespatchLineInput, indent: string = ''): string {
   const i2 = indent + '  ';
   const i3 = indent + '    ';
   const i4 = indent + '      ';
-  const lines: string[] = [];
 
-  lines.push(`${indent}<cac:DespatchLine>`);
-  lines.push(`${i2}${cbcTag('ID', line.id)}`);
-  lines.push(`${i2}${cbcQuantityTag('DeliveredQuantity', line.deliveredQuantity, line.unitCode)}`);
+  const orderLineRef = [
+    `${i2}<cac:OrderLineReference>`,
+    `${i3}${cbcOptionalTag('LineID', line.id)}`,
+    `${i2}</cac:OrderLineReference>`,
+  ].join('\n');
 
-  // OrderLineReference (zorunlu element)
-  lines.push(`${i2}<cac:OrderLineReference>`);
-  lines.push(`${i3}${cbcTag('LineID', line.id)}`);
-  lines.push(`${i2}</cac:OrderLineReference>`);
-
-  // Item
-  lines.push(`${i2}<cac:Item>`);
-  lines.push(`${i3}${cbcTag('Name', line.item.name)}`);
-
+  const itemInner: string[] = [];
+  itemInner.push(`${i3}${cbcRequiredTag('Name', line.item.name, 'Item')}`);
   if (line.item.additionalItemIdentifications) {
     for (const aid of line.item.additionalItemIdentifications) {
-      lines.push(`${i3}<cac:AdditionalItemIdentification>`);
-      lines.push(`${i4}${cbcTag('ID', aid.value, { schemeID: aid.schemeId })}`);
-      lines.push(`${i3}</cac:AdditionalItemIdentification>`);
+      itemInner.push(`${i3}<cac:AdditionalItemIdentification>`);
+      itemInner.push(`${i4}${cbcRequiredTag('ID', aid.value, 'AdditionalItemIdentification', { schemeID: aid.schemeId })}`);
+      itemInner.push(`${i3}</cac:AdditionalItemIdentification>`);
     }
   }
 
-  lines.push(`${i2}</cac:Item>`);
-  lines.push(`${indent}</cac:DespatchLine>`);
-  return joinLines(lines);
+  const inner = emitInOrder(DESPATCH_LINE_SEQ, {
+    ID: () => cbcRequiredTag('ID', line.id, 'DespatchLine'),
+    DeliveredQuantity: () => cbcOptionalQuantityTag('DeliveredQuantity', line.deliveredQuantity, line.unitCode),
+    OrderLineReference: () => orderLineRef,
+    Item: () => [`${i2}<cac:Item>`, ...itemInner, `${i2}</cac:Item>`].join('\n'),
+  });
+
+  const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
+  return [`${indent}<cac:DespatchLine>`, body, `${indent}</cac:DespatchLine>`].join('\n');
 }

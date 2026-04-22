@@ -1,6 +1,7 @@
 import type { PartyInput, BuyerCustomerInput, TaxRepresentativeInput, SignatureInput } from '../types/common';
-import { cbcTag, joinLines } from '../utils/xml-helpers';
+import { cbcOptionalTag, cbcRequiredTag, joinLines } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
+import { ADDRESS_SEQ, PERSON_SEQ, emitInOrder } from './xsd-sequence';
 
 /** Party → XML fragment (cac:Party içeriği) */
 export function serializeParty(party: PartyInput, indent: string = ''): string {
@@ -14,18 +15,18 @@ export function serializeParty(party: PartyInput, indent: string = ''): string {
 
   // WebsiteURI
   if (isNonEmpty(party.websiteUri)) {
-    lines.push(`${i2}${cbcTag('WebsiteURI', party.websiteUri)}`);
+    lines.push(`${i2}${cbcOptionalTag('WebsiteURI', party.websiteUri)}`);
   }
 
   // PartyIdentification (VKN/TCKN + ek tanımlayıcılar)
   lines.push(`${i2}<cac:PartyIdentification>`);
-  lines.push(`${i3}${cbcTag('ID', party.vknTckn, { schemeID: party.taxIdType })}`);
+  lines.push(`${i3}${cbcOptionalTag('ID', party.vknTckn, { schemeID: party.taxIdType })}`);
   lines.push(`${i2}</cac:PartyIdentification>`);
 
   if (party.additionalIdentifiers) {
     for (const aid of party.additionalIdentifiers) {
       lines.push(`${i2}<cac:PartyIdentification>`);
-      lines.push(`${i3}${cbcTag('ID', aid.value, { schemeID: aid.schemeId })}`);
+      lines.push(`${i3}${cbcOptionalTag('ID', aid.value, { schemeID: aid.schemeId })}`);
       lines.push(`${i2}</cac:PartyIdentification>`);
     }
   }
@@ -33,7 +34,7 @@ export function serializeParty(party: PartyInput, indent: string = ''): string {
   // PartyName (VKN ise)
   if (isNonEmpty(party.name)) {
     lines.push(`${i2}<cac:PartyName>`);
-    lines.push(`${i3}${cbcTag('Name', party.name)}`);
+    lines.push(`${i3}${cbcOptionalTag('Name', party.name)}`);
     lines.push(`${i2}</cac:PartyName>`);
   }
 
@@ -44,7 +45,7 @@ export function serializeParty(party: PartyInput, indent: string = ''): string {
   if (isNonEmpty(party.taxOffice)) {
     lines.push(`${i2}<cac:PartyTaxScheme>`);
     lines.push(`${i3}<cac:TaxScheme>`);
-    lines.push(`${i4}${cbcTag('Name', party.taxOffice)}`);
+    lines.push(`${i4}${cbcOptionalTag('Name', party.taxOffice)}`);
     lines.push(`${i3}</cac:TaxScheme>`);
     lines.push(`${i2}</cac:PartyTaxScheme>`);
   }
@@ -52,67 +53,95 @@ export function serializeParty(party: PartyInput, indent: string = ''): string {
   // PartyLegalEntity
   if (isNonEmpty(party.registrationName)) {
     lines.push(`${i2}<cac:PartyLegalEntity>`);
-    lines.push(`${i3}${cbcTag('RegistrationName', party.registrationName)}`);
+    lines.push(`${i3}${cbcOptionalTag('RegistrationName', party.registrationName)}`);
     lines.push(`${i2}</cac:PartyLegalEntity>`);
   }
 
   // Contact
   if (isNonEmpty(party.telephone) || isNonEmpty(party.telefax) || isNonEmpty(party.email)) {
     lines.push(`${i2}<cac:Contact>`);
-    if (isNonEmpty(party.telephone)) lines.push(`${i3}${cbcTag('Telephone', party.telephone)}`);
-    if (isNonEmpty(party.telefax)) lines.push(`${i3}${cbcTag('Telefax', party.telefax)}`);
-    if (isNonEmpty(party.email)) lines.push(`${i3}${cbcTag('ElectronicMail', party.email)}`);
+    if (isNonEmpty(party.telephone)) lines.push(`${i3}${cbcOptionalTag('Telephone', party.telephone)}`);
+    if (isNonEmpty(party.telefax)) lines.push(`${i3}${cbcOptionalTag('Telefax', party.telefax)}`);
+    if (isNonEmpty(party.email)) lines.push(`${i3}${cbcOptionalTag('ElectronicMail', party.email)}`);
     lines.push(`${i2}</cac:Contact>`);
   }
 
-  // Person (TCKN ise)
+  // Person (TCKN ise) — B-20 fix: PERSON_SEQ (FirstName → FamilyName → Title → MiddleName → NameSuffix → NationalityID)
   if (party.taxIdType === 'TCKN') {
-    lines.push(`${i2}<cac:Person>`);
-    if (isNonEmpty(party.firstName)) lines.push(`${i3}${cbcTag('FirstName', party.firstName)}`);
-    if (isNonEmpty(party.middleName)) lines.push(`${i3}${cbcTag('MiddleName', party.middleName)}`);
-    if (isNonEmpty(party.familyName)) lines.push(`${i3}${cbcTag('FamilyName', party.familyName)}`);
-    if (isNonEmpty(party.nationalityId)) lines.push(`${i3}${cbcTag('NationalityID', party.nationalityId)}`);
-    if (isNonEmpty(party.passportId)) {
-      lines.push(`${i3}<cac:IdentityDocumentReference>`);
-      lines.push(`${i4}${cbcTag('ID', party.passportId)}`);
-      lines.push(`${i3}</cac:IdentityDocumentReference>`);
-    }
-    lines.push(`${i2}</cac:Person>`);
+    lines.push(serializePersonBlock(
+      {
+        firstName: party.firstName,
+        familyName: party.familyName,
+        middleName: party.middleName,
+        nationalityId: party.nationalityId,
+        passportId: party.passportId,
+      },
+      i2,
+    ));
   }
 
   lines.push(`${i}</cac:Party>`);
   return joinLines(lines);
 }
 
-/** PostalAddress → XML fragment */
+/**
+ * PostalAddress → XML fragment.
+ * Sequence: ADDRESS_SEQ. B-34 fix: Party verildiyse her zaman emit (hasAddress flag kaldırıldı).
+ * B-35 fix: CityName + CitySubdivisionName runtime required.
+ */
 function serializePostalAddress(party: PartyInput, indent: string): string[] {
+  const inner = emitInOrder(ADDRESS_SEQ, {
+    Room: () => cbcOptionalTag('Room', party.room),
+    StreetName: () => cbcOptionalTag('StreetName', party.streetName),
+    BuildingName: () => cbcOptionalTag('BuildingName', party.buildingName),
+    BuildingNumber: () => cbcOptionalTag('BuildingNumber', party.buildingNumber),
+    CitySubdivisionName: () => cbcRequiredTag('CitySubdivisionName', party.citySubdivisionName, 'PostalAddress'),
+    CityName: () => cbcRequiredTag('CityName', party.cityName, 'PostalAddress'),
+    PostalZone: () => cbcOptionalTag('PostalZone', party.postalZone),
+    Region: () => cbcOptionalTag('Region', party.region),
+    Country: () =>
+      isNonEmpty(party.country)
+        ? [
+            `${indent}  <cac:Country>`,
+            `${indent}    ${cbcOptionalTag('Name', party.country)}`,
+            `${indent}  </cac:Country>`,
+          ].join('\n')
+        : '',
+  });
+  const body = joinLines(inner.map(s => (s.startsWith(indent + '  ') ? s : indent + '  ' + s)));
+  return [
+    `${indent}<cac:PostalAddress>`,
+    body,
+    `${indent}</cac:PostalAddress>`,
+  ];
+}
+
+/**
+ * Person bloğu → XML. B-20 fix: PERSON_SEQ sırası (FirstName → FamilyName → Title → MiddleName → ...).
+ */
+function serializePersonBlock(
+  p: { firstName?: string; familyName?: string; middleName?: string; nationalityId?: string; passportId?: string },
+  indent: string,
+): string {
   const i2 = indent + '  ';
   const i3 = indent + '    ';
-  const lines: string[] = [];
+  const identityRefXml = isNonEmpty(p.passportId)
+    ? [
+        `${i2}<cac:IdentityDocumentReference>`,
+        `${i3}${cbcRequiredTag('ID', p.passportId, 'IdentityDocumentReference')}`,
+        `${i2}</cac:IdentityDocumentReference>`,
+      ].join('\n')
+    : '';
 
-  const hasAddress = isNonEmpty(party.room) || isNonEmpty(party.streetName) ||
-    isNonEmpty(party.buildingName) || isNonEmpty(party.buildingNumber) ||
-    isNonEmpty(party.citySubdivisionName) || isNonEmpty(party.cityName) ||
-    isNonEmpty(party.postalZone) || isNonEmpty(party.region) || isNonEmpty(party.country);
-
-  if (!hasAddress) return lines;
-
-  lines.push(`${indent}<cac:PostalAddress>`);
-  if (isNonEmpty(party.room)) lines.push(`${i2}${cbcTag('Room', party.room)}`);
-  if (isNonEmpty(party.streetName)) lines.push(`${i2}${cbcTag('StreetName', party.streetName)}`);
-  if (isNonEmpty(party.buildingName)) lines.push(`${i2}${cbcTag('BuildingName', party.buildingName)}`);
-  if (isNonEmpty(party.buildingNumber)) lines.push(`${i2}${cbcTag('BuildingNumber', party.buildingNumber)}`);
-  if (isNonEmpty(party.citySubdivisionName)) lines.push(`${i2}${cbcTag('CitySubdivisionName', party.citySubdivisionName)}`);
-  if (isNonEmpty(party.cityName)) lines.push(`${i2}${cbcTag('CityName', party.cityName)}`);
-  if (isNonEmpty(party.postalZone)) lines.push(`${i2}${cbcTag('PostalZone', party.postalZone)}`);
-  if (isNonEmpty(party.region)) lines.push(`${i2}${cbcTag('Region', party.region)}`);
-  if (isNonEmpty(party.country)) {
-    lines.push(`${i2}<cac:Country>`);
-    lines.push(`${i3}${cbcTag('Name', party.country)}`);
-    lines.push(`${i2}</cac:Country>`);
-  }
-  lines.push(`${indent}</cac:PostalAddress>`);
-  return lines;
+  const inner = emitInOrder(PERSON_SEQ, {
+    FirstName: () => cbcOptionalTag('FirstName', p.firstName),
+    FamilyName: () => cbcOptionalTag('FamilyName', p.familyName),
+    MiddleName: () => cbcOptionalTag('MiddleName', p.middleName),
+    NationalityID: () => cbcOptionalTag('NationalityID', p.nationalityId),
+    IdentityDocumentReference: () => identityRefXml,
+  });
+  const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
+  return [`${indent}<cac:Person>`, body, `${indent}</cac:Person>`].join('\n');
 }
 
 /** AccountingSupplierParty → XML */
@@ -144,7 +173,7 @@ export function serializeBuyerCustomerParty(buyer: BuyerCustomerInput, indent: s
   // PartyIdentification ile PARTYTYPE (sadece IHRACAT/YOLCU için)
   if (buyer.partyType) {
     lines.push(`${i2}  <cac:PartyIdentification>`);
-    lines.push(`${i2}    ${cbcTag('ID', buyer.partyType, { schemeID: 'PARTYTYPE' })}`);
+    lines.push(`${i2}    ${cbcOptionalTag('ID', buyer.partyType, { schemeID: 'PARTYTYPE' })}`);
     lines.push(`${i2}  </cac:PartyIdentification>`);
   }
 
@@ -154,35 +183,35 @@ export function serializeBuyerCustomerParty(buyer: BuyerCustomerInput, indent: s
   // VKN/TCKN
   if (isNonEmpty(party.vknTckn)) {
     lines.push(`${i2}  <cac:PartyIdentification>`);
-    lines.push(`${i2}    ${cbcTag('ID', party.vknTckn, { schemeID: party.taxIdType })}`);
+    lines.push(`${i2}    ${cbcOptionalTag('ID', party.vknTckn, { schemeID: party.taxIdType })}`);
     lines.push(`${i2}  </cac:PartyIdentification>`);
   }
 
   if (isNonEmpty(party.name)) {
     lines.push(`${i2}  <cac:PartyName>`);
-    lines.push(`${i2}    ${cbcTag('Name', party.name)}`);
+    lines.push(`${i2}    ${cbcOptionalTag('Name', party.name)}`);
     lines.push(`${i2}  </cac:PartyName>`);
   }
 
   // PartyLegalEntity
   if (isNonEmpty(party.registrationName)) {
     lines.push(`${i2}  <cac:PartyLegalEntity>`);
-    lines.push(`${i2}    ${cbcTag('RegistrationName', party.registrationName)}`);
+    lines.push(`${i2}    ${cbcOptionalTag('RegistrationName', party.registrationName)}`);
     lines.push(`${i2}  </cac:PartyLegalEntity>`);
   }
 
-  // Person (TAXFREE için)
+  // Person (TAXFREE için) — B-20 fix: PERSON_SEQ
   if (party.taxIdType === 'TCKN' || isNonEmpty(party.firstName) || isNonEmpty(party.nationalityId)) {
-    lines.push(`${i2}  <cac:Person>`);
-    if (isNonEmpty(party.firstName)) lines.push(`${i2}    ${cbcTag('FirstName', party.firstName)}`);
-    if (isNonEmpty(party.familyName)) lines.push(`${i2}    ${cbcTag('FamilyName', party.familyName)}`);
-    if (isNonEmpty(party.nationalityId)) lines.push(`${i2}    ${cbcTag('NationalityID', party.nationalityId)}`);
-    if (isNonEmpty(party.passportId)) {
-      lines.push(`${i2}    <cac:IdentityDocumentReference>`);
-      lines.push(`${i2}      ${cbcTag('ID', party.passportId)}`);
-      lines.push(`${i2}    </cac:IdentityDocumentReference>`);
-    }
-    lines.push(`${i2}  </cac:Person>`);
+    lines.push(serializePersonBlock(
+      {
+        firstName: party.firstName,
+        familyName: party.familyName,
+        middleName: party.middleName,
+        nationalityId: party.nationalityId,
+        passportId: party.passportId,
+      },
+      i2 + '  ',
+    ));
   }
 
   lines.push(`${i2}</cac:Party>`);
@@ -197,16 +226,16 @@ export function serializeTaxRepresentativeParty(trp: TaxRepresentativeInput, ind
 
   lines.push(`${indent}<cac:TaxRepresentativeParty>`);
   lines.push(`${i2}<cac:PartyIdentification>`);
-  lines.push(`${i2}  ${cbcTag('ID', trp.intermediaryVknTckn, { schemeID: 'ARACIKURUMVKN' })}`);
+  lines.push(`${i2}  ${cbcOptionalTag('ID', trp.intermediaryVknTckn, { schemeID: 'ARACIKURUMVKN' })}`);
   lines.push(`${i2}</cac:PartyIdentification>`);
   lines.push(`${i2}<cac:PartyIdentification>`);
-  lines.push(`${i2}  ${cbcTag('ID', trp.intermediaryLabel, { schemeID: 'ARACIKURUMETIKET' })}`);
+  lines.push(`${i2}  ${cbcOptionalTag('ID', trp.intermediaryLabel, { schemeID: 'ARACIKURUMETIKET' })}`);
   lines.push(`${i2}</cac:PartyIdentification>`);
 
   if (trp.additionalIdentifiers) {
     for (const aid of trp.additionalIdentifiers) {
       lines.push(`${i2}<cac:PartyIdentification>`);
-      lines.push(`${i2}  ${cbcTag('ID', aid.value, { schemeID: aid.schemeId })}`);
+      lines.push(`${i2}  ${cbcOptionalTag('ID', aid.value, { schemeID: aid.schemeId })}`);
       lines.push(`${i2}</cac:PartyIdentification>`);
     }
   }
@@ -222,7 +251,7 @@ export function serializeSignature(sig: SignatureInput, indent: string = ''): st
   const lines: string[] = [];
 
   lines.push(`${indent}<cac:Signature>`);
-  lines.push(`${i2}${cbcTag('ID', sig.id, { schemeID: 'VKN_TCKN' })}`);
+  lines.push(`${i2}${cbcOptionalTag('ID', sig.id, { schemeID: 'VKN_TCKN' })}`);
 
   if (sig.signatoryParty) {
     lines.push(`${i2}<cac:SignatoryParty>`);
@@ -236,7 +265,7 @@ export function serializeSignature(sig: SignatureInput, indent: string = ''): st
   if (isNonEmpty(sig.digitalSignatureUri)) {
     lines.push(`${i2}<cac:DigitalSignatureAttachment>`);
     lines.push(`${i3}<cac:ExternalReference>`);
-    lines.push(`${i3}  ${cbcTag('URI', sig.digitalSignatureUri)}`);
+    lines.push(`${i3}  ${cbcOptionalTag('URI', sig.digitalSignatureUri)}`);
     lines.push(`${i3}</cac:ExternalReference>`);
     lines.push(`${i2}</cac:DigitalSignatureAttachment>`);
   }

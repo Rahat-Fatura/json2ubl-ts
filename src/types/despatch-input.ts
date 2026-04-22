@@ -22,6 +22,8 @@ export interface DespatchInput {
   despatchTypeCode: DespatchTypeCode;
   /** Düzenleme tarihi: YYYY-MM-DD */
   issueDate: string;
+  /** Düzenleme saati: HH:mm:ss — XSD zorunlu (B-18) */
+  issueTime: string;
   /** Gönderici */
   supplier: PartyInput;
   /** Alıcı */
@@ -32,8 +34,6 @@ export interface DespatchInput {
   lines: DespatchLineInput[];
 
   // === OPSİYONEL ===
-  /** Düzenleme saati: HH:mm:ss */
-  issueTime?: string;
   /** Notlar */
   notes?: string[];
   /** Sipariş referansı */

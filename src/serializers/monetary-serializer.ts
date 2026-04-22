@@ -1,79 +1,75 @@
 import type { MonetaryTotalInput, ExchangeRateInput, PaymentMeansInput } from '../types/common';
-import { cbcTag, cbcAmountTag, joinLines } from '../utils/xml-helpers';
+import { cbcOptionalTag, cbcOptionalAmountTag, cbcRequiredTag, joinLines } from '../utils/xml-helpers';
 import { formatDecimal, isNonEmpty } from '../utils/formatters';
+import {
+  LEGAL_MONETARY_TOTAL_SEQ,
+  EXCHANGE_RATE_SEQ,
+  PAYMENT_MEANS_SEQ,
+  emitInOrder,
+} from './xsd-sequence';
 
-/** LegalMonetaryTotal → XML fragment */
+/** LegalMonetaryTotal → XML fragment. Sequence: LEGAL_MONETARY_TOTAL_SEQ. */
 export function serializeLegalMonetaryTotal(mt: MonetaryTotalInput, currencyCode: string, indent: string = ''): string {
-  const i2 = indent + '  ';
-  const lines: string[] = [];
-
-  lines.push(`${indent}<cac:LegalMonetaryTotal>`);
-  lines.push(`${i2}${cbcAmountTag('LineExtensionAmount', mt.lineExtensionAmount, currencyCode)}`);
-  lines.push(`${i2}${cbcAmountTag('TaxExclusiveAmount', mt.taxExclusiveAmount, currencyCode)}`);
-  lines.push(`${i2}${cbcAmountTag('TaxInclusiveAmount', mt.taxInclusiveAmount, currencyCode)}`);
-
-  if (mt.allowanceTotalAmount !== undefined) {
-    lines.push(`${i2}${cbcAmountTag('AllowanceTotalAmount', mt.allowanceTotalAmount, currencyCode)}`);
-  }
-  if (mt.chargeTotalAmount !== undefined) {
-    lines.push(`${i2}${cbcAmountTag('ChargeTotalAmount', mt.chargeTotalAmount, currencyCode)}`);
-  }
-  if (mt.payableRoundingAmount !== undefined) {
-    lines.push(`${i2}${cbcAmountTag('PayableRoundingAmount', mt.payableRoundingAmount, currencyCode)}`);
-  }
-
-  lines.push(`${i2}${cbcAmountTag('PayableAmount', mt.payableAmount, currencyCode)}`);
-  lines.push(`${indent}</cac:LegalMonetaryTotal>`);
-
-  return joinLines(lines);
+  const inner = emitInOrder(LEGAL_MONETARY_TOTAL_SEQ, {
+    LineExtensionAmount: () => cbcOptionalAmountTag('LineExtensionAmount', mt.lineExtensionAmount, currencyCode),
+    TaxExclusiveAmount: () => cbcOptionalAmountTag('TaxExclusiveAmount', mt.taxExclusiveAmount, currencyCode),
+    TaxInclusiveAmount: () => cbcOptionalAmountTag('TaxInclusiveAmount', mt.taxInclusiveAmount, currencyCode),
+    AllowanceTotalAmount: () =>
+      mt.allowanceTotalAmount !== undefined
+        ? cbcOptionalAmountTag('AllowanceTotalAmount', mt.allowanceTotalAmount, currencyCode)
+        : '',
+    ChargeTotalAmount: () =>
+      mt.chargeTotalAmount !== undefined ? cbcOptionalAmountTag('ChargeTotalAmount', mt.chargeTotalAmount, currencyCode) : '',
+    PayableRoundingAmount: () =>
+      mt.payableRoundingAmount !== undefined
+        ? cbcOptionalAmountTag('PayableRoundingAmount', mt.payableRoundingAmount, currencyCode)
+        : '',
+    PayableAmount: () => cbcOptionalAmountTag('PayableAmount', mt.payableAmount, currencyCode),
+  });
+  const body = joinLines(inner.map(s => indent + '  ' + s));
+  return [`${indent}<cac:LegalMonetaryTotal>`, body, `${indent}</cac:LegalMonetaryTotal>`].join('\n');
 }
 
-/** PricingExchangeRate → XML fragment (§1.3) */
+/** PricingExchangeRate → XML fragment (§1.3). Sequence: EXCHANGE_RATE_SEQ. */
 export function serializeExchangeRate(er: ExchangeRateInput, indent: string = ''): string {
-  const i2 = indent + '  ';
-  const lines: string[] = [];
-
-  lines.push(`${indent}<cac:PricingExchangeRate>`);
-  lines.push(`${i2}${cbcTag('SourceCurrencyCode', er.sourceCurrencyCode)}`);
-  lines.push(`${i2}${cbcTag('TargetCurrencyCode', er.targetCurrencyCode)}`);
-  lines.push(`${i2}${cbcTag('CalculationRate', formatDecimal(er.calculationRate, 6))}`);
-  if (isNonEmpty(er.date)) {
-    lines.push(`${i2}${cbcTag('Date', er.date)}`);
-  }
-  lines.push(`${indent}</cac:PricingExchangeRate>`);
-
-  return joinLines(lines);
+  const inner = emitInOrder(EXCHANGE_RATE_SEQ, {
+    SourceCurrencyCode: () => cbcOptionalTag('SourceCurrencyCode', er.sourceCurrencyCode),
+    TargetCurrencyCode: () => cbcOptionalTag('TargetCurrencyCode', er.targetCurrencyCode),
+    CalculationRate: () => cbcOptionalTag('CalculationRate', formatDecimal(er.calculationRate, 6)),
+    Date: () => (isNonEmpty(er.date) ? cbcOptionalTag('Date', er.date) : ''),
+  });
+  const body = joinLines(inner.map(s => indent + '  ' + s));
+  return [`${indent}<cac:PricingExchangeRate>`, body, `${indent}</cac:PricingExchangeRate>`].join('\n');
 }
 
-/** PaymentMeans → XML fragment (§3.6 KAMU) */
+/**
+ * PaymentMeans → XML fragment (§3.6 KAMU).
+ * Sequence: PAYMENT_MEANS_SEQ. B-70 fix: PaymentMeansCode required (PaymentMeans verildiyse).
+ */
 export function serializePaymentMeans(pm: PaymentMeansInput, indent: string = ''): string {
   const i2 = indent + '  ';
   const i3 = indent + '    ';
-  const lines: string[] = [];
 
-  lines.push(`${indent}<cac:PaymentMeans>`);
-  if (isNonEmpty(pm.paymentMeansCode)) {
-    lines.push(`${i2}${cbcTag('PaymentMeansCode', pm.paymentMeansCode)}`);
-  }
-  if (isNonEmpty(pm.paymentDueDate)) {
-    lines.push(`${i2}${cbcTag('PaymentDueDate', pm.paymentDueDate)}`);
-  }
-  if (isNonEmpty(pm.paymentChannelCode)) {
-    lines.push(`${i2}${cbcTag('PaymentChannelCode', pm.paymentChannelCode)}`);
-  }
-
-  if (pm.payeeFinancialAccount) {
-    lines.push(`${i2}<cac:PayeeFinancialAccount>`);
-    lines.push(`${i3}${cbcTag('ID', pm.payeeFinancialAccount.id)}`);
+  const payeeFinancialAccountXml = (): string => {
+    if (!pm.payeeFinancialAccount) return '';
+    const parts: string[] = [`${i2}<cac:PayeeFinancialAccount>`];
+    parts.push(`${i3}${cbcRequiredTag('ID', pm.payeeFinancialAccount.id, 'PayeeFinancialAccount')}`);
     if (isNonEmpty(pm.payeeFinancialAccount.currencyCode)) {
-      lines.push(`${i3}${cbcTag('CurrencyCode', pm.payeeFinancialAccount.currencyCode)}`);
+      parts.push(`${i3}${cbcOptionalTag('CurrencyCode', pm.payeeFinancialAccount.currencyCode)}`);
     }
     if (isNonEmpty(pm.payeeFinancialAccount.paymentNote)) {
-      lines.push(`${i3}${cbcTag('PaymentNote', pm.payeeFinancialAccount.paymentNote)}`);
+      parts.push(`${i3}${cbcOptionalTag('PaymentNote', pm.payeeFinancialAccount.paymentNote)}`);
     }
-    lines.push(`${i2}</cac:PayeeFinancialAccount>`);
-  }
+    parts.push(`${i2}</cac:PayeeFinancialAccount>`);
+    return parts.join('\n');
+  };
 
-  lines.push(`${indent}</cac:PaymentMeans>`);
-  return joinLines(lines);
+  const inner = emitInOrder(PAYMENT_MEANS_SEQ, {
+    PaymentMeansCode: () => cbcRequiredTag('PaymentMeansCode', pm.paymentMeansCode, 'PaymentMeans'),
+    PaymentDueDate: () => cbcOptionalTag('PaymentDueDate', pm.paymentDueDate),
+    PaymentChannelCode: () => cbcOptionalTag('PaymentChannelCode', pm.paymentChannelCode),
+    PayeeFinancialAccount: () => payeeFinancialAccountXml(),
+  });
+  const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
+  return [`${indent}<cac:PaymentMeans>`, body, `${indent}</cac:PaymentMeans>`].join('\n');
 }

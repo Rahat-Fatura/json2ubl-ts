@@ -1,137 +1,150 @@
 import type { DeliveryInput, LineDeliveryInput, AddressInput } from '../types/common';
-import { cbcTag, joinLines } from '../utils/xml-helpers';
+import { cbcOptionalTag, cbcRequiredTag, joinLines } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
+import { DELIVERY_SEQ, ADDRESS_SEQ, SHIPMENT_SEQ, emitInOrder } from './xsd-sequence';
 
-/** Delivery → XML fragment (§3.3 IHRACAT) */
+/**
+ * Delivery → XML fragment (§3.3 IHRACAT).
+ * Sequence: DELIVERY_SEQ. B-14 paraleli: DeliveryAddress → Shipment (bu kapsamda DespatchAdvice Delivery farklı, bkz. despatch-serializer).
+ */
 export function serializeDelivery(del: DeliveryInput, indent: string = ''): string {
   const i2 = indent + '  ';
-  const lines: string[] = [];
 
-  lines.push(`${indent}<cac:Delivery>`);
-
-  if (del.deliveryAddress) {
-    lines.push(serializeAddress(del.deliveryAddress, 'DeliveryAddress', i2));
-  }
-
-  if (del.deliveryTerms) {
-    lines.push(`${i2}<cac:DeliveryTerms>`);
-    lines.push(`${i2}  ${cbcTag('ID', del.deliveryTerms.id, { schemeID: 'INCOTERMS' })}`);
-    lines.push(`${i2}</cac:DeliveryTerms>`);
-  }
-
-  if (del.shipment) {
-    lines.push(serializeShipment(del.shipment, i2));
-  }
-
-  lines.push(`${indent}</cac:Delivery>`);
-  return joinLines(lines);
+  const inner = emitInOrder(DELIVERY_SEQ, {
+    DeliveryAddress: () => (del.deliveryAddress ? serializeAddress(del.deliveryAddress, 'DeliveryAddress', i2) : ''),
+    DeliveryTerms: () =>
+      del.deliveryTerms
+        ? [
+            `${i2}<cac:DeliveryTerms>`,
+            `${i2}  ${cbcRequiredTag('ID', del.deliveryTerms.id, 'DeliveryTerms', { schemeID: 'INCOTERMS' })}`,
+            `${i2}</cac:DeliveryTerms>`,
+          ].join('\n')
+        : '',
+    Shipment: () => (del.shipment ? serializeShipment(del.shipment, i2) : ''),
+  });
+  const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
+  return [`${indent}<cac:Delivery>`, body, `${indent}</cac:Delivery>`].join('\n');
 }
 
-/** LineDelivery → XML fragment (satır seviyesi IHRACAT) */
+/** LineDelivery → XML fragment (satır seviyesi IHRACAT). DELIVERY_SEQ. */
 export function serializeLineDelivery(del: LineDeliveryInput, indent: string = ''): string {
   const i2 = indent + '  ';
-  const lines: string[] = [];
 
-  lines.push(`${indent}<cac:Delivery>`);
-
-  if (del.deliveryAddress) {
-    lines.push(serializeAddress(del.deliveryAddress, 'DeliveryAddress', i2));
-  }
-
-  if (del.deliveryTerms) {
-    lines.push(`${i2}<cac:DeliveryTerms>`);
-    lines.push(`${i2}  ${cbcTag('ID', del.deliveryTerms.id, { schemeID: 'INCOTERMS' })}`);
-    lines.push(`${i2}</cac:DeliveryTerms>`);
-  }
-
-  if (del.shipment) {
-    lines.push(serializeShipment(del.shipment, i2));
-  }
-
-  lines.push(`${indent}</cac:Delivery>`);
-  return joinLines(lines);
+  const inner = emitInOrder(DELIVERY_SEQ, {
+    DeliveryAddress: () => (del.deliveryAddress ? serializeAddress(del.deliveryAddress, 'DeliveryAddress', i2) : ''),
+    DeliveryTerms: () =>
+      del.deliveryTerms
+        ? [
+            `${i2}<cac:DeliveryTerms>`,
+            `${i2}  ${cbcRequiredTag('ID', del.deliveryTerms.id, 'DeliveryTerms', { schemeID: 'INCOTERMS' })}`,
+            `${i2}</cac:DeliveryTerms>`,
+          ].join('\n')
+        : '',
+    Shipment: () => (del.shipment ? serializeShipment(del.shipment, i2) : ''),
+  });
+  const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
+  return [`${indent}<cac:Delivery>`, body, `${indent}</cac:Delivery>`].join('\n');
 }
 
-/** Address → XML fragment */
+/**
+ * Address → XML fragment. Sequence: ADDRESS_SEQ.
+ * B-35 fix: CityName + CitySubdivisionName required (AddressInput tipinde required).
+ */
 export function serializeAddress(addr: AddressInput, tagName: string, indent: string = ''): string {
-  const i2 = indent + '  ';
-  const i3 = indent + '    ';
-  const lines: string[] = [];
-
-  lines.push(`${indent}<cac:${tagName}>`);
-  if (isNonEmpty(addr.room)) lines.push(`${i2}${cbcTag('Room', addr.room)}`);
-  if (isNonEmpty(addr.streetName)) lines.push(`${i2}${cbcTag('StreetName', addr.streetName)}`);
-  if (isNonEmpty(addr.buildingName)) lines.push(`${i2}${cbcTag('BuildingName', addr.buildingName)}`);
-  if (isNonEmpty(addr.buildingNumber)) lines.push(`${i2}${cbcTag('BuildingNumber', addr.buildingNumber)}`);
-  if (isNonEmpty(addr.citySubdivisionName)) lines.push(`${i2}${cbcTag('CitySubdivisionName', addr.citySubdivisionName)}`);
-  if (isNonEmpty(addr.cityName)) lines.push(`${i2}${cbcTag('CityName', addr.cityName)}`);
-  if (isNonEmpty(addr.postalZone)) lines.push(`${i2}${cbcTag('PostalZone', addr.postalZone)}`);
-  if (isNonEmpty(addr.region)) lines.push(`${i2}${cbcTag('Region', addr.region)}`);
-  if (isNonEmpty(addr.country)) {
-    lines.push(`${i2}<cac:Country>`);
-    lines.push(`${i3}${cbcTag('Name', addr.country)}`);
-    lines.push(`${i2}</cac:Country>`);
-  }
-  lines.push(`${indent}</cac:${tagName}>`);
-
-  return joinLines(lines);
+  const inner = emitInOrder(ADDRESS_SEQ, {
+    Room: () => cbcOptionalTag('Room', addr.room),
+    StreetName: () => cbcOptionalTag('StreetName', addr.streetName),
+    BuildingName: () => cbcOptionalTag('BuildingName', addr.buildingName),
+    BuildingNumber: () => cbcOptionalTag('BuildingNumber', addr.buildingNumber),
+    CitySubdivisionName: () => cbcRequiredTag('CitySubdivisionName', addr.citySubdivisionName, tagName),
+    CityName: () => cbcRequiredTag('CityName', addr.cityName, tagName),
+    PostalZone: () => cbcOptionalTag('PostalZone', addr.postalZone),
+    Region: () => cbcOptionalTag('Region', addr.region),
+    Country: () =>
+      isNonEmpty(addr.country)
+        ? [
+            `${indent}  <cac:Country>`,
+            `${indent}    ${cbcOptionalTag('Name', addr.country)}`,
+            `${indent}  </cac:Country>`,
+          ].join('\n')
+        : '',
+  });
+  const body = joinLines(inner.map(s => (s.startsWith(indent + '  ') ? s : indent + '  ' + s)));
+  return [`${indent}<cac:${tagName}>`, body, `${indent}</cac:${tagName}>`].join('\n');
 }
 
-/** Shipment → XML fragment (IHRACAT sevkiyat) */
+/**
+ * Shipment → XML fragment (IHRACAT sevkiyat).
+ * Sequence: SHIPMENT_SEQ. B-99 fix: ShipmentStage tek yerden emit — shipmentStages verilmişse
+ * onlar kullanılır, yoksa shipment.transportModeCode fallback olarak tek ShipmentStage üretir.
+ */
 function serializeShipment(shipment: DeliveryInput['shipment'], indent: string): string {
   if (!shipment) return '';
   const i2 = indent + '  ';
   const i3 = indent + '    ';
-  const lines: string[] = [];
 
-  lines.push(`${indent}<cac:Shipment>`);
-  lines.push(`${i2}${cbcTag('ID', '1')}`);
+  // B-99: shipmentStages var ise onları kullan; yoksa transportModeCode fallback tek stage.
+  const stagesSource: Array<{ transportModeCode?: string }> =
+    shipment.shipmentStages && shipment.shipmentStages.length > 0
+      ? shipment.shipmentStages
+      : isNonEmpty(shipment.transportModeCode)
+        ? [{ transportModeCode: shipment.transportModeCode }]
+        : [];
 
-  if (shipment.goodsItems) {
-    for (const gi of shipment.goodsItems) {
-      lines.push(`${i2}<cac:GoodsItem>`);
-      if (isNonEmpty(gi.requiredCustomsId)) {
-        lines.push(`${i3}${cbcTag('RequiredCustomsID', gi.requiredCustomsId)}`);
-      }
-      lines.push(`${i2}</cac:GoodsItem>`);
-    }
-  }
-
-  if (shipment.shipmentStages) {
-    for (const stage of shipment.shipmentStages) {
-      lines.push(`${i2}<cac:ShipmentStage>`);
-      if (isNonEmpty(stage.transportModeCode)) {
-        lines.push(`${i3}${cbcTag('TransportModeCode', stage.transportModeCode)}`);
-      }
-      lines.push(`${i2}</cac:ShipmentStage>`);
-    }
-  }
-
-  if (isNonEmpty(shipment.transportModeCode)) {
-    lines.push(`${i2}<cac:ShipmentStage>`);
-    lines.push(`${i3}${cbcTag('TransportModeCode', shipment.transportModeCode)}`);
-    lines.push(`${i2}</cac:ShipmentStage>`);
-  }
-
-  if (shipment.transportHandlingUnits) {
-    for (const thu of shipment.transportHandlingUnits) {
-      lines.push(`${i2}<cac:TransportHandlingUnit>`);
-      if (thu.actualPackages) {
-        for (const pkg of thu.actualPackages) {
-          lines.push(`${i3}<cac:ActualPackage>`);
-          if (isNonEmpty(pkg.packagingTypeCode)) {
-            lines.push(`${i3}  ${cbcTag('PackagingTypeCode', pkg.packagingTypeCode)}`);
+  const goodsItemsXml = shipment.goodsItems
+    ? joinLines(
+        shipment.goodsItems.map(gi => {
+          const giLines: string[] = [`${i2}<cac:GoodsItem>`];
+          if (isNonEmpty(gi.requiredCustomsId)) {
+            giLines.push(`${i3}${cbcOptionalTag('RequiredCustomsID', gi.requiredCustomsId)}`);
           }
-          if (pkg.quantity !== undefined) {
-            lines.push(`${i3}  ${cbcTag('Quantity', String(pkg.quantity))}`);
-          }
-          lines.push(`${i3}</cac:ActualPackage>`);
-        }
-      }
-      lines.push(`${i2}</cac:TransportHandlingUnit>`);
-    }
-  }
+          giLines.push(`${i2}</cac:GoodsItem>`);
+          return giLines.join('\n');
+        }),
+      )
+    : '';
 
-  lines.push(`${indent}</cac:Shipment>`);
-  return joinLines(lines);
+  const stagesXml = stagesSource.length
+    ? joinLines(
+        stagesSource.map(st => {
+          const stLines: string[] = [`${i2}<cac:ShipmentStage>`];
+          if (isNonEmpty(st.transportModeCode)) {
+            stLines.push(`${i3}${cbcOptionalTag('TransportModeCode', st.transportModeCode)}`);
+          }
+          stLines.push(`${i2}</cac:ShipmentStage>`);
+          return stLines.join('\n');
+        }),
+      )
+    : '';
+
+  const thuXml = shipment.transportHandlingUnits
+    ? joinLines(
+        shipment.transportHandlingUnits.map(thu => {
+          const thuLines: string[] = [`${i2}<cac:TransportHandlingUnit>`];
+          if (thu.actualPackages) {
+            for (const pkg of thu.actualPackages) {
+              thuLines.push(`${i3}<cac:ActualPackage>`);
+              if (isNonEmpty(pkg.packagingTypeCode)) {
+                thuLines.push(`${i3}  ${cbcOptionalTag('PackagingTypeCode', pkg.packagingTypeCode)}`);
+              }
+              if (pkg.quantity !== undefined) {
+                thuLines.push(`${i3}  ${cbcOptionalTag('Quantity', String(pkg.quantity))}`);
+              }
+              thuLines.push(`${i3}</cac:ActualPackage>`);
+            }
+          }
+          thuLines.push(`${i2}</cac:TransportHandlingUnit>`);
+          return thuLines.join('\n');
+        }),
+      )
+    : '';
+
+  const inner = emitInOrder(SHIPMENT_SEQ, {
+    ID: () => cbcRequiredTag('ID', '1', 'Shipment'),
+    GoodsItem: () => goodsItemsXml,
+    ShipmentStage: () => stagesXml,
+    TransportHandlingUnit: () => thuXml,
+  });
+  const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
+  return [`${indent}<cac:Shipment>`, body, `${indent}</cac:Shipment>`].join('\n');
 }

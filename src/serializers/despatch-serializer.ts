@@ -1,11 +1,12 @@
 import type { DespatchInput } from '../types/despatch-input';
 import { DESPATCH_NAMESPACES, UBL_CONSTANTS } from '../config/namespaces';
-import { cbcTag, joinLines, xmlDeclaration, despatchOpenTag } from '../utils/xml-helpers';
+import { cbcOptionalTag, cbcRequiredTag, joinLines, xmlDeclaration, despatchOpenTag } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
 import { serializeParty } from './party-serializer';
 import { serializeAddress } from './delivery-serializer';
 import { serializeDespatchLine } from './line-serializer';
 import { serializeAdditionalDocument, serializeOrderReference } from './reference-serializer';
+import { PERSON_SEQ, emitInOrder } from './xsd-sequence';
 
 /**
  * DespatchAdvice JSON → tam UBL-TR XML string (§5.7 sırasında)
@@ -21,36 +22,34 @@ export function serializeDespatch(input: DespatchInput, prettyPrint: boolean = t
   // parts.push(indentBlock(ublExtensionsPlaceholder(), ind));
 
   // 2-3. UBLVersionID, CustomizationID
-  parts.push(`${ind}${cbcTag('UBLVersionID', UBL_CONSTANTS.ublVersionId)}`);
-  parts.push(`${ind}${cbcTag('CustomizationID', UBL_CONSTANTS.customizationId)}`);
+  parts.push(`${ind}${cbcOptionalTag('UBLVersionID', UBL_CONSTANTS.ublVersionId)}`);
+  parts.push(`${ind}${cbcOptionalTag('CustomizationID', UBL_CONSTANTS.customizationId)}`);
 
   // 4. ProfileID
-  parts.push(`${ind}${cbcTag('ProfileID', input.profileId)}`);
+  parts.push(`${ind}${cbcOptionalTag('ProfileID', input.profileId)}`);
 
   // 5. ID
-  parts.push(`${ind}${cbcTag('ID', input.id)}`);
+  parts.push(`${ind}${cbcOptionalTag('ID', input.id)}`);
 
   // 6. CopyIndicator
-  parts.push(`${ind}${cbcTag('CopyIndicator', UBL_CONSTANTS.copyIndicator)}`);
+  parts.push(`${ind}${cbcOptionalTag('CopyIndicator', UBL_CONSTANTS.copyIndicator)}`);
 
   // 7. UUID
-  parts.push(`${ind}${cbcTag('UUID', input.uuid)}`);
+  parts.push(`${ind}${cbcOptionalTag('UUID', input.uuid)}`);
 
   // 8. IssueDate
-  parts.push(`${ind}${cbcTag('IssueDate', input.issueDate)}`);
+  parts.push(`${ind}${cbcRequiredTag('IssueDate', input.issueDate, 'DespatchAdvice')}`);
 
-  // 9. IssueTime
-  if (input.issueTime) {
-    parts.push(`${ind}${cbcTag('IssueTime', input.issueTime)}`);
-  }
+  // 9. IssueTime — B-18: XSD zorunlu
+  parts.push(`${ind}${cbcRequiredTag('IssueTime', input.issueTime, 'DespatchAdvice')}`);
 
   // 10. DespatchAdviceTypeCode
-  parts.push(`${ind}${cbcTag('DespatchAdviceTypeCode', input.despatchTypeCode)}`);
+  parts.push(`${ind}${cbcOptionalTag('DespatchAdviceTypeCode', input.despatchTypeCode)}`);
 
   // 11. Note
   if (input.notes) {
     for (const note of input.notes) {
-      parts.push(`${ind}${cbcTag('Note', note)}`);
+      parts.push(`${ind}${cbcOptionalTag('Note', note)}`);
     }
   }
 
@@ -99,11 +98,11 @@ function serializeShipmentBlock(input: DespatchInput, indent: string): string {
   const lines: string[] = [];
 
   lines.push(`${indent}<cac:Shipment>`);
-  lines.push(`${i2}${cbcTag('ID', '1')}`);
+  lines.push(`${i2}${cbcOptionalTag('ID', '1')}`);
 
   // GoodsItem (placeholder)
   lines.push(`${i2}<cac:GoodsItem>`);
-  lines.push(`${i3}${cbcTag('RequiredCustomsID', '')}`);
+  lines.push(`${i3}${cbcOptionalTag('RequiredCustomsID', '')}`);
   lines.push(`${i2}</cac:GoodsItem>`);
 
   // ShipmentStage
@@ -114,53 +113,53 @@ function serializeShipmentBlock(input: DespatchInput, indent: string): string {
     lines.push(`${i3}<cac:TransportMeans>`);
     lines.push(`${i4}<cac:RoadTransport>`);
     for (const lp of s.licensePlates) {
-      lines.push(`${i4}  ${cbcTag('LicensePlateID', lp.plateNumber, { schemeID: lp.schemeId })}`);
+      lines.push(`${i4}  ${cbcOptionalTag('LicensePlateID', lp.plateNumber, { schemeID: lp.schemeId })}`);
     }
     lines.push(`${i4}</cac:RoadTransport>`);
     lines.push(`${i3}</cac:TransportMeans>`);
   }
 
-  // DriverPerson
+  // DriverPerson — B-20 fix: PERSON_SEQ (FirstName → FamilyName → Title → MiddleName → NationalityID)
   if (s.driverPerson) {
     const dp = s.driverPerson;
-    lines.push(`${i3}<cac:DriverPerson>`);
-    lines.push(`${i4}${cbcTag('FirstName', dp.firstName)}`);
-    lines.push(`${i4}${cbcTag('FamilyName', dp.familyName)}`);
-    lines.push(`${i4}${cbcTag('NationalityID', dp.nationalityId)}`);
-    if (isNonEmpty(dp.title)) {
-      lines.push(`${i4}${cbcTag('Title', dp.title)}`);
-    }
-    lines.push(`${i3}</cac:DriverPerson>`);
+    const personInner = emitInOrder(PERSON_SEQ, {
+      FirstName: () => cbcRequiredTag('FirstName', dp.firstName, 'DriverPerson'),
+      FamilyName: () => cbcRequiredTag('FamilyName', dp.familyName, 'DriverPerson'),
+      Title: () => cbcOptionalTag('Title', dp.title),
+      NationalityID: () => cbcRequiredTag('NationalityID', dp.nationalityId, 'DriverPerson'),
+    });
+    const personBody = joinLines(personInner.map(s2 => i4 + s2));
+    lines.push([`${i3}<cac:DriverPerson>`, personBody, `${i3}</cac:DriverPerson>`].join('\n'));
   }
 
   lines.push(`${i2}</cac:ShipmentStage>`);
 
-  // Delivery
+  // Delivery — B-14 fix: XSD sequence DeliveryAddress → CarrierParty → Despatch
   lines.push(`${i2}<cac:Delivery>`);
 
-  // Despatch (ActualDespatchDate/Time)
-  lines.push(`${i3}<cac:Despatch>`);
-  lines.push(`${i4}${cbcTag('ActualDespatchDate', s.actualDespatchDate)}`);
-  lines.push(`${i4}${cbcTag('ActualDespatchTime', s.actualDespatchTime)}`);
-  lines.push(`${i3}</cac:Despatch>`);
-
-  // DeliveryAddress
+  // DeliveryAddress (1)
   lines.push(serializeAddress(s.deliveryAddress, 'DeliveryAddress', i3));
 
-  // CarrierParty
+  // CarrierParty (2)
   if (s.carrierParty) {
     const cp = s.carrierParty;
     lines.push(`${i3}<cac:CarrierParty>`);
     lines.push(`${i4}<cac:PartyIdentification>`);
-    lines.push(`${i4}  ${cbcTag('ID', cp.vknTckn, { schemeID: cp.taxIdType })}`);
+    lines.push(`${i4}  ${cbcRequiredTag('ID', cp.vknTckn, 'CarrierParty.PartyIdentification', { schemeID: cp.taxIdType })}`);
     lines.push(`${i4}</cac:PartyIdentification>`);
     if (isNonEmpty(cp.name)) {
       lines.push(`${i4}<cac:PartyName>`);
-      lines.push(`${i4}  ${cbcTag('Name', cp.name)}`);
+      lines.push(`${i4}  ${cbcOptionalTag('Name', cp.name)}`);
       lines.push(`${i4}</cac:PartyName>`);
     }
     lines.push(`${i3}</cac:CarrierParty>`);
   }
+
+  // Despatch (3) — ActualDespatchDate/Time
+  lines.push(`${i3}<cac:Despatch>`);
+  lines.push(`${i4}${cbcRequiredTag('ActualDespatchDate', s.actualDespatchDate, 'Despatch')}`);
+  lines.push(`${i4}${cbcRequiredTag('ActualDespatchTime', s.actualDespatchTime, 'Despatch')}`);
+  lines.push(`${i3}</cac:Despatch>`);
 
   lines.push(`${i2}</cac:Delivery>`);
   lines.push(`${indent}</cac:Shipment>`);

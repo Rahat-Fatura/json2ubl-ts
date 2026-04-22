@@ -17,6 +17,7 @@ function createValidDespatchInput(): DespatchInput {
       taxIdType: 'VKN',
       name: 'Gönderici Firma A.Ş.',
       cityName: 'İstanbul',
+      citySubdivisionName: 'Kadıköy',
       country: 'Türkiye',
     },
     customer: {
@@ -24,6 +25,7 @@ function createValidDespatchInput(): DespatchInput {
       taxIdType: 'VKN',
       name: 'Alıcı Firma Ltd.',
       cityName: 'Ankara',
+      citySubdivisionName: 'Çankaya',
       country: 'Türkiye',
     },
     shipment: {

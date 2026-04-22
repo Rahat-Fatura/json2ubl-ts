@@ -58,6 +58,7 @@ function createValidVknParty(): PartyInput {
     taxIdType: 'VKN',
     name: 'Test Firma A.Ş.',
     cityName: 'İstanbul',
+    citySubdivisionName: 'Kadıköy',
     country: 'Türkiye',
   };
 }
@@ -69,6 +70,7 @@ function createValidTcknParty(): PartyInput {
     firstName: 'Ahmet',
     familyName: 'Yılmaz',
     cityName: 'Ankara',
+    citySubdivisionName: 'Çankaya',
     country: 'Türkiye',
   };
 }

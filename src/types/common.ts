@@ -180,10 +180,11 @@ export interface ItemInput {
   itemInstances?: ItemInstanceInput[];
 }
 
-/** Belge referansı (genel amaçlı) */
+/** Belge referansı (genel amaçlı) — M6: parent opsiyonel, verilirse issueDate zorunlu (B-32). */
 export interface DocumentReferenceInput {
   id: string;
-  issueDate?: string;
+  /** XSD zorunlu (B-32) */
+  issueDate: string;
   documentTypeCode?: string;
   documentType?: string;
   documentDescription?: string;
@@ -194,10 +195,11 @@ export interface BillingReferenceInput {
   invoiceDocumentReference: DocumentReferenceInput;
 }
 
-/** OrderReference */
+/** OrderReference — M6: parent opsiyonel, verilirse issueDate zorunlu (B-33). */
 export interface OrderReferenceInput {
   id: string;
-  issueDate?: string;
+  /** XSD zorunlu (B-33) */
+  issueDate: string;
 }
 
 /** ContractDocumentReference — §3.10 YATIRIMTESVIK */
@@ -244,14 +246,16 @@ export interface DeliveryInput {
   shipment?: ShipmentInput;
 }
 
-/** Adres bilgileri */
+/** Adres bilgileri — M6: parent opsiyonel, verilirse cityName+citySubdivisionName zorunlu (B-35). */
 export interface AddressInput {
   streetName?: string;
   buildingName?: string;
   buildingNumber?: string;
   room?: string;
-  citySubdivisionName?: string;
-  cityName?: string;
+  /** İlçe adı — XSD zorunlu (B-35) */
+  citySubdivisionName: string;
+  /** Şehir adı — XSD zorunlu (B-35) */
+  cityName: string;
   postalZone?: string;
   region?: string;
   country?: string;
@@ -288,9 +292,10 @@ export interface ActualPackageInput {
   quantity?: number;
 }
 
-/** Ödeme yöntemi — §3.6 KAMU */
+/** Ödeme yöntemi — §3.6 KAMU. M6: parent opsiyonel, verilirse paymentMeansCode zorunlu (B-70). */
 export interface PaymentMeansInput {
-  paymentMeansCode?: string;
+  /** XSD zorunlu (B-70) */
+  paymentMeansCode: string;
   paymentDueDate?: string;
   paymentChannelCode?: string;
   payeeFinancialAccount?: FinancialAccountInput;

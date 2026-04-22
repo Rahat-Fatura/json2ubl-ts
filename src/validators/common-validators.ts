@@ -1,6 +1,12 @@
 import type { ValidationError } from '../errors/ubl-build-error';
 import type { InvoiceInput } from '../types/invoice-input';
-import type { PartyInput } from '../types/common';
+import type {
+  PartyInput,
+  AddressInput,
+  PaymentMeansInput,
+  DocumentReferenceInput,
+  OrderReferenceInput,
+} from '../types/common';
 import {
   INVOICE_ID_REGEX, UUID_REGEX, DATE_REGEX, TIME_REGEX,
   CURRENCY_CODES, TAX_TYPE_CODES,
@@ -110,6 +116,31 @@ export function validateCommon(input: InvoiceInput): ValidationError[] {
     errors.push(missingField('legalMonetaryTotal', 'LegalMonetaryTotal zorunludur'));
   }
 
+  // §M6 Parent-Child Conditional (Sprint 3 — B-32/33/35/70)
+  if (input.orderReference) {
+    errors.push(...validateOrderReference(input.orderReference, 'orderReference'));
+  }
+  input.despatchReferences?.forEach((ref, i) => {
+    errors.push(...validateDocumentReference(ref, `despatchReferences[${i}]`));
+  });
+  input.receiptReferences?.forEach((ref, i) => {
+    errors.push(...validateDocumentReference(ref, `receiptReferences[${i}]`));
+  });
+  input.billingReferences?.forEach((br, i) => {
+    errors.push(...validateDocumentReference(br.invoiceDocumentReference, `billingReferences[${i}].invoiceDocumentReference`));
+  });
+  input.paymentMeans?.forEach((pm, i) => {
+    errors.push(...validatePaymentMeans(pm, `paymentMeans[${i}]`));
+  });
+  if (input.delivery?.deliveryAddress) {
+    errors.push(...validateAddress(input.delivery.deliveryAddress, 'delivery.deliveryAddress'));
+  }
+  input.lines?.forEach((line, i) => {
+    if (line.delivery?.deliveryAddress) {
+      errors.push(...validateAddress(line.delivery.deliveryAddress, `lines[${i}].delivery.deliveryAddress`));
+    }
+  });
+
   return errors;
 }
 
@@ -150,5 +181,86 @@ export function validateParty(party: PartyInput | undefined | null, path: string
     errors.push(invalidValue(`${path}.taxIdType`, 'VKN veya TCKN', party.taxIdType));
   }
 
+  // §M6 / B-34: Party verildiyse PostalAddress alanları zorunlu (cityName + citySubdivisionName)
+  errors.push(...validatePartyAddressFields(party, path));
+
+  return errors;
+}
+
+/**
+ * M6 / B-34 — Party verildiyse PostalAddress alanları (cityName, citySubdivisionName) zorunlu.
+ * PartyInput düz adres alanlarına sahip; XSD PostalAddress parent zorunlu olduğundan
+ * child alanları da runtime'da enforce edilir.
+ */
+export function validatePartyAddressFields(party: PartyInput, path: string): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!isNonEmpty(party.cityName)) {
+    errors.push(missingField(`${path}.cityName`, 'Party için PostalAddress/CityName zorunludur (B-34)'));
+  }
+  if (!isNonEmpty(party.citySubdivisionName)) {
+    errors.push(missingField(`${path}.citySubdivisionName`, 'Party için PostalAddress/CitySubdivisionName zorunludur (B-34)'));
+  }
+  return errors;
+}
+
+/**
+ * M6 / B-35 — Address verildiyse cityName + citySubdivisionName zorunlu.
+ * Parent opsiyonel; ancak verildiyse her iki şehir alanı dolu olmalı.
+ */
+export function validateAddress(addr: AddressInput | undefined | null, path: string): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!addr) return errors;
+  if (!isNonEmpty(addr.cityName)) {
+    errors.push(missingField(`${path}.cityName`, 'Adres için CityName zorunludur (B-35)'));
+  }
+  if (!isNonEmpty(addr.citySubdivisionName)) {
+    errors.push(missingField(`${path}.citySubdivisionName`, 'Adres için CitySubdivisionName zorunludur (B-35)'));
+  }
+  return errors;
+}
+
+/**
+ * M6 / B-70 — PaymentMeans verildiyse paymentMeansCode zorunlu.
+ */
+export function validatePaymentMeans(pm: PaymentMeansInput | undefined | null, path: string): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!pm) return errors;
+  if (!isNonEmpty(pm.paymentMeansCode)) {
+    errors.push(missingField(`${path}.paymentMeansCode`, 'PaymentMeans için PaymentMeansCode zorunludur (B-70)'));
+  }
+  return errors;
+}
+
+/**
+ * M6 / B-32 — DocumentReference verildiyse issueDate zorunlu.
+ */
+export function validateDocumentReference(ref: DocumentReferenceInput | undefined | null, path: string): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!ref) return errors;
+  if (!isNonEmpty(ref.id)) {
+    errors.push(missingField(`${path}.id`, 'DocumentReference için ID zorunludur'));
+  }
+  if (!isNonEmpty(ref.issueDate)) {
+    errors.push(missingField(`${path}.issueDate`, 'DocumentReference için IssueDate zorunludur (B-32)'));
+  } else if (!DATE_REGEX.test(ref.issueDate)) {
+    errors.push(invalidFormat(`${path}.issueDate`, 'YYYY-MM-DD', ref.issueDate));
+  }
+  return errors;
+}
+
+/**
+ * M6 / B-33 — OrderReference verildiyse issueDate zorunlu.
+ */
+export function validateOrderReference(ref: OrderReferenceInput | undefined | null, path: string): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!ref) return errors;
+  if (!isNonEmpty(ref.id)) {
+    errors.push(missingField(`${path}.id`, 'OrderReference için ID zorunludur'));
+  }
+  if (!isNonEmpty(ref.issueDate)) {
+    errors.push(missingField(`${path}.issueDate`, 'OrderReference için IssueDate zorunludur (B-33)'));
+  } else if (!DATE_REGEX.test(ref.issueDate)) {
+    errors.push(invalidFormat(`${path}.issueDate`, 'YYYY-MM-DD', ref.issueDate));
+  }
   return errors;
 }
