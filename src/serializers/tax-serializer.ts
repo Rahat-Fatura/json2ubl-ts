@@ -41,7 +41,7 @@ export function serializeTaxSubtotal(ts: TaxSubtotalInput, currencyCode: string,
         ? cbcOptionalTag('CalculationSequenceNumeric', String(ts.calculationSequenceNumeric))
         : '',
     Percent: () =>
-      ts.percent !== undefined ? cbcOptionalTag('Percent', formatDecimal(ts.percent, 0)) : '',
+      ts.percent !== undefined ? cbcOptionalTag('Percent', formatDecimal(ts.percent, 2)) : '',
     TaxCategory: () => serializeTaxCategory(ts, indent + '  '),
   });
 
@@ -92,7 +92,7 @@ function serializeWithholdingSubtotal(ts: WithholdingTaxSubtotalInput, currencyC
   const inner = emitInOrder(TAX_SUBTOTAL_SEQ, {
     TaxableAmount: () => cbcOptionalAmountTag('TaxableAmount', ts.taxableAmount, currencyCode),
     TaxAmount: () => cbcOptionalAmountTag('TaxAmount', ts.taxAmount, currencyCode),
-    Percent: () => cbcOptionalTag('Percent', formatDecimal(ts.percent, 0)),
+    Percent: () => cbcOptionalTag('Percent', formatDecimal(ts.percent, 2)),
     TaxCategory: () => {
       const cat = emitInOrder(TAX_CATEGORY_SEQ, {
         TaxScheme: () => serializeTaxScheme(ts.taxTypeCode, ts.taxTypeName, indent + '    '),
