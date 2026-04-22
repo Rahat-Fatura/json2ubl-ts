@@ -13,17 +13,21 @@
  *   - Allowed: SATIS, TEVKIFAT, KOMISYONCU, HKS*, KONAKLAMAVERGISI, TEKNOLOJIDESTEK,
  *     YTBSATIS, YTBTEVKIFAT, SGK
  *   - Forbidden: ISTISNA, IADE, YTBISTISNA, YTBIADE, TEVKIFATIADE, YTBTEVKIFATIADE, IHRACKAYITLI
+ * - **151** (OTV SATIS): SATIS grubu — `exemption-config` documentType semantiği korunur.
  * - **201-250, 301-350**: İstisna serisi — ISTISNA/IADE/IHRACKAYITLI/SGK/YTBISTISNA/YTBIADE
  * - **701-704**: İhraç kayıtlı — IHRACKAYITLI/IADE
  * - **801-812**: Özel matrah — OZELMATRAH/IADE/SGK
- * - **151**: OTV SATIS — SATIS grubu
- * - **555**: Demirbaş KDV — M4 flag ile bypass (matris referans)
- * - **501**: Schematron özel — genel kullanım
+ * - **SGK sembolik** (SAGLIK_*, ABONELIK, MAL_HIZMET, DIGER): SGK grubu
+ * - **555**: Demirbaş KDV — M4 flag bypass (matris'te YOK; validator M4 flag ile gate edilir)
+ * - **501**: Schematron özel — `exemption-config`'de tanımlı değil (validator UNKNOWN döner)
  *
- * Sprint 5.1: İskelet (tek smoke entry). Sprint 5.2'de full doldurulacak.
+ * ## Türetme (M7 pattern)
+ * `EXEMPTION_DEFINITIONS.documentType` → `allowedInvoiceTypes` mapping otomatik.
+ * 151 ve 351 özel kurallar `buildMatrix` içinde manuel override olarak eklenir.
  */
 
 import { InvoiceTypeCode } from '../types/enums';
+import { EXEMPTION_DEFINITIONS } from '../calculator/exemption-config';
 import type { ValidationError } from '../errors/ubl-build-error';
 
 /** Bir istisna kodunun fatura tipi kısıtları + ek koşullar */
@@ -45,40 +49,143 @@ export interface TaxExemptionRule {
   requiresZeroKdvLine?: boolean;
 }
 
+// ============================================================
+// DocumentType → allowedInvoiceTypes grupları
+// (Schematron satır 316 + §4.8 kod-listeleri dokumanı)
+// ============================================================
+
+/** 201-250, 301-350 istisna grubu — Schematron satır 316 */
+const ISTISNA_GROUP_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.ISTISNA, InvoiceTypeCode.IADE, InvoiceTypeCode.IHRACKAYITLI,
+  InvoiceTypeCode.SGK, InvoiceTypeCode.YTBISTISNA, InvoiceTypeCode.YTBIADE,
+]);
+
+/** 701-704 ihraç kayıtlı grubu — Schematron satır 322 + §4.8 */
+const IHRAC_GROUP_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.IHRACKAYITLI, InvoiceTypeCode.IADE,
+]);
+
+/** 801-812 özel matrah grubu — §4.8 */
+const OZELMATRAH_GROUP_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.OZELMATRAH, InvoiceTypeCode.IADE, InvoiceTypeCode.SGK,
+]);
+
+/** SGK sembolik kodları — §4.8 SGK */
+const SGK_GROUP_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.SGK,
+]);
+
+// ============================================================
+// 151 — OTV İstisna Olmayan (SATIS grubu)
+// ============================================================
+
+/** 151 OTV kodu — ÖTV matrah olabilecek tipler. SATIS + TEVKIFAT + KOMISYONCU. */
+const CODE_151_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.SATIS, InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.KOMISYONCU,
+]);
+
+// ============================================================
+// 351 — KDV İstisna Olmayan Diğer (M5 full cross-check)
+// ACIK-SORULAR.md #12 + Soru 2 cevabı
+// ============================================================
+
+/** 351 için izinli tipler — ISTISNA olmayan tüm ana tipler + SGK */
+const CODE_351_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.SATIS,
+  InvoiceTypeCode.TEVKIFAT,
+  InvoiceTypeCode.KOMISYONCU,
+  InvoiceTypeCode.HKSSATIS,
+  InvoiceTypeCode.HKSKOMISYONCU,
+  InvoiceTypeCode.KONAKLAMAVERGISI,
+  InvoiceTypeCode.TEKNOLOJIDESTEK,
+  InvoiceTypeCode.YTBSATIS,
+  InvoiceTypeCode.YTBTEVKIFAT,
+  InvoiceTypeCode.SGK,
+]);
+
+/**
+ * 351 için kesin yasak tipler.
+ * - ISTISNA, YTBISTISNA: istisna türevli tipler zaten kendi kodlarını taşır
+ * - IADE, YTBIADE, TEVKIFATIADE, YTBTEVKIFATIADE: iade türevleri (kendi kodları)
+ * - IHRACKAYITLI: 701-704 kullanmalı, 351 semantiğine ters
+ */
+const CODE_351_FORBIDDEN_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.ISTISNA,
+  InvoiceTypeCode.IADE,
+  InvoiceTypeCode.YTBISTISNA,
+  InvoiceTypeCode.YTBIADE,
+  InvoiceTypeCode.TEVKIFATIADE,
+  InvoiceTypeCode.YTBTEVKIFATIADE,
+  InvoiceTypeCode.IHRACKAYITLI,
+]);
+
+// ============================================================
+// Matris oluşturma (M7 türetme pattern)
+// ============================================================
+
+/**
+ * `EXEMPTION_DEFINITIONS.documentType` alanından matris'i türetir.
+ * 151 (OTV SATIS) ve 351 (M5 full) manuel override ile eklenir.
+ *
+ * `SATIS` documentType'ı olan config kodları (151, 351) bu fonksiyon içinde
+ * atlanır — özel kuralları aşağıda ayrıca uygulanır.
+ */
+function buildMatrix(): Map<string, TaxExemptionRule> {
+  const matrix = new Map<string, TaxExemptionRule>();
+
+  for (const def of EXEMPTION_DEFINITIONS) {
+    // SATIS özel durumlar (151, 351) aşağıda manuel override
+    if (def.documentType === 'SATIS') continue;
+
+    let allowed: ReadonlySet<InvoiceTypeCode>;
+    switch (def.documentType) {
+      case 'ISTISNA':
+        allowed = ISTISNA_GROUP_ALLOWED_TYPES;
+        break;
+      case 'IHRACKAYITLI':
+        allowed = IHRAC_GROUP_ALLOWED_TYPES;
+        break;
+      case 'OZELMATRAH':
+        allowed = OZELMATRAH_GROUP_ALLOWED_TYPES;
+        break;
+      case 'SGK':
+        allowed = SGK_GROUP_ALLOWED_TYPES;
+        break;
+      default:
+        // Beklenmeyen documentType — atla (exemption-config type guard zaten kısıtlar)
+        continue;
+    }
+    matrix.set(def.code, { code: def.code, allowedInvoiceTypes: allowed });
+  }
+
+  // 151 — OTV SATIS (manuel override)
+  matrix.set('151', {
+    code: '151',
+    allowedInvoiceTypes: CODE_151_ALLOWED_TYPES,
+  });
+
+  // 351 — KDV İstisna Olmayan Diğer (M5 full cross-check, manuel override)
+  matrix.set('351', {
+    code: '351',
+    allowedInvoiceTypes: CODE_351_ALLOWED_TYPES,
+    forbiddenInvoiceTypes: CODE_351_FORBIDDEN_TYPES,
+    requiresZeroKdvLine: true,
+  });
+
+  return matrix;
+}
+
 /**
  * İstisna kodu → kural Map'i (O(1) lookup).
  *
- * Sprint 5.1 (iskelet): Yalnızca 351 için smoke entry. Sprint 5.2'de full entry setleri
- * (201-250, 301-350, 701-704, 801-812, 151, 501, 555, SGK sembolik) eklenecek.
+ * `EXEMPTION_DEFINITIONS` değişirse matris otomatik senkron olur (M7 pattern).
+ * 151/351 özel kurallar `buildMatrix` içinde manuel eklenir.
+ *
+ * **Matris dışı kodlar (bilinçli):**
+ * - `555` (Demirbaş KDV) — M4 flag ile bypass; matris'te YOK ki validator UNKNOWN dönmesin diye ayrı gate
+ * - `501` — Schematron özel; `exemption-config` eksik (Sprint 6+ analizi gerekebilir)
  */
-export const TAX_EXEMPTION_MATRIX: ReadonlyMap<string, TaxExemptionRule> = new Map<string, TaxExemptionRule>([
-  // --- 351 — KDV İstisna Olmayan Diğer (M5 full cross-check) ---
-  ['351', {
-    code: '351',
-    allowedInvoiceTypes: new Set<InvoiceTypeCode>([
-      InvoiceTypeCode.SATIS,
-      InvoiceTypeCode.TEVKIFAT,
-      InvoiceTypeCode.KOMISYONCU,
-      InvoiceTypeCode.HKSSATIS,
-      InvoiceTypeCode.HKSKOMISYONCU,
-      InvoiceTypeCode.KONAKLAMAVERGISI,
-      InvoiceTypeCode.TEKNOLOJIDESTEK,
-      InvoiceTypeCode.YTBSATIS,
-      InvoiceTypeCode.YTBTEVKIFAT,
-      InvoiceTypeCode.SGK,
-    ]),
-    forbiddenInvoiceTypes: new Set<InvoiceTypeCode>([
-      InvoiceTypeCode.ISTISNA,
-      InvoiceTypeCode.IADE,
-      InvoiceTypeCode.YTBISTISNA,
-      InvoiceTypeCode.YTBIADE,
-      InvoiceTypeCode.TEVKIFATIADE,
-      InvoiceTypeCode.YTBTEVKIFATIADE,
-      InvoiceTypeCode.IHRACKAYITLI,
-    ]),
-    requiresZeroKdvLine: true,
-  }],
-]);
+export const TAX_EXEMPTION_MATRIX: ReadonlyMap<string, TaxExemptionRule> = buildMatrix();
 
 /**
  * İstisna kodu × fatura tipi × KDV satır durumu kontrolü.
