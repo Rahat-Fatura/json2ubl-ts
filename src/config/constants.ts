@@ -97,6 +97,24 @@ export const YTB_GROUP_TYPES = new Set<InvoiceTypeCode>([
   InvoiceTypeCode.YTBTEVKIFAT, InvoiceTypeCode.YTBTEVKIFATIADE,
 ]);
 
+/**
+ * Yatırım Teşvik validator — İADE tipleri (B-08).
+ * Schematron YatirimTesvikKDVCheck (satır 483-485) + YatirimTesvikLineKDVCheck (487-490):
+ * "IADE, TEVKIFATIADE, YTBIADE, YTBTEVKIFATIADE tipleri HARİÇ — diğer tiplerde KDV > 0 zorunlu"
+ */
+export const YATIRIM_TESVIK_IADE_TYPES = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.IADE, InvoiceTypeCode.TEVKIFATIADE,
+  InvoiceTypeCode.YTBIADE, InvoiceTypeCode.YTBTEVKIFATIADE,
+]);
+
+/**
+ * Yatırım Teşvik validator — EARSIVFATURA profilinde scope içine giren YTB tipleri (B-08).
+ * Schematron `$YatirimTesvikEArsivInvoiceTypeCodeList` değişkenine karşılık gelir.
+ */
+export const YATIRIM_TESVIK_EARSIV_TYPES = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.YTBSATIS, InvoiceTypeCode.YTBTEVKIFAT, InvoiceTypeCode.YTBISTISNA,
+]);
+
 // ============================================================
 // §6 KOD LİSTELERİ
 // ============================================================
