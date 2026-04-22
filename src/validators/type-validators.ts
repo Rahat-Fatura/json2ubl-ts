@@ -8,6 +8,7 @@ import {
   ISTISNA_TAX_EXEMPTION_REASON_CODES, OZEL_MATRAH_TAX_EXEMPTION_REASON_CODES,
   IHRAC_EXEMPTION_REASON_CODES, TAX_4171_ALLOWED_TYPES,
 } from '../config/constants';
+import { WITHHOLDING_TAX_MAP } from '../calculator/withholding-config';
 import { missingField, invalidValue, typeRequirement } from './validation-result';
 import { isNonEmpty } from '../utils/formatters';
 
@@ -116,11 +117,21 @@ function validateTevkifatGroup(input: InvoiceInput): ValidationError[] {
       }
 
       // Kod+yüzde kombinasyonu kontrolü
-      if (isNonEmpty(ts.taxTypeCode) && ts.percent !== undefined) {
-        const combo = `${ts.taxTypeCode}${ts.percent}`;
-        if (!WITHHOLDING_TAX_TYPE_WITH_PERCENT.has(combo)) {
-          errors.push(invalidValue(`${path}`,
-            'WithholdingTaxTypeWithPercent listesinden geçerli kombinasyon', combo));
+      if (isNonEmpty(ts.taxTypeCode) && ts.percent !== undefined && ts.percent !== null) {
+        const whDef = WITHHOLDING_TAX_MAP.get(ts.taxTypeCode);
+        if (whDef?.dynamicPercent) {
+          // M3 — 650 gibi dinamik oran: combo whitelist yerine aralık kontrolü
+          if (ts.percent < 0 || ts.percent > 100) {
+            errors.push(invalidValue(`${path}.percent`,
+              `${ts.taxTypeCode} kodu için 0-100 arası yüzde`, String(ts.percent)));
+          }
+        } else {
+          // Sabit oranlı tevkifat: WithholdingTaxTypeWithPercent Set'te aranır
+          const combo = `${ts.taxTypeCode}${String(ts.percent).padStart(2, '0')}`;
+          if (!WITHHOLDING_TAX_TYPE_WITH_PERCENT.has(combo)) {
+            errors.push(invalidValue(`${path}`,
+              'WithholdingTaxTypeWithPercent listesinden geçerli kombinasyon', combo));
+          }
         }
       }
     });

@@ -1,4 +1,9 @@
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
+import { TAX_DEFINITIONS, KDV_TAX_CODE } from '../calculator/tax-config';
+import { WITHHOLDING_TAX_DEFINITIONS, type WithholdingTaxDefinition } from '../calculator/withholding-config';
+import { EXEMPTION_DEFINITIONS } from '../calculator/exemption-config';
+import { UNIT_DEFINITIONS } from '../calculator/unit-config';
+import { PACKAGING_TYPE_CODE_DEFINITIONS } from '../calculator/package-type-code-config';
 
 // ============================================================
 // §4 PROFİL × TİP ÇAPRAZ MATRİSİ
@@ -96,108 +101,86 @@ export const YTB_GROUP_TYPES = new Set<InvoiceTypeCode>([
 // §6 KOD LİSTELERİ
 // ============================================================
 
-/** Vergi tipi kodları */
-export const TAX_TYPE_CODES = new Set([
-  '0003', '0015', '0061', '0071', '0073', '0074', '0075', '0076', '0077',
-  '1047', '1048', '4080', '4081', '9015', '9021', '9077',
-  '8001', '8002', '8004', '8005', '8006', '8007', '8008',
-  '9040', '0011', '4071', '4171', '0021', '0022', '9944', '0059',
+/**
+ * Tevkifat kodu+yüzde kombinasyonları — WithholdingTaxTypeWithPercent (UBL-TR Codelist v1.42 §4.9).
+ * Format: `${code}${percent padded to 2 digits}` (8xx tam tevkifat → `${code}100`).
+ * 650 dinamik kodu için 65000-65099 tüm aralık üretilir (kullanıcı 0-99 arası percent seçebilir).
+ */
+function deriveWithholdingCombos(defs: ReadonlyArray<WithholdingTaxDefinition>): Set<string> {
+  const combos = new Set<string>();
+  for (const def of defs) {
+    if (def.dynamicPercent) {
+      for (let p = 0; p < 100; p++) {
+        combos.add(`${def.code}${String(p).padStart(2, '0')}`);
+      }
+    } else if (def.percent === 100) {
+      combos.add(`${def.code}100`);
+    } else {
+      combos.add(`${def.code}${String(def.percent).padStart(2, '0')}`);
+    }
+  }
+  return combos;
+}
+
+/** Vergi tipi kodları — tax-config türev (M7). KDV ayrı literal. */
+export const TAX_TYPE_CODES = new Set<string>([
+  KDV_TAX_CODE,
+  ...TAX_DEFINITIONS.map(t => t.code),
 ]);
 
-/** Tevkifat vergi tipi kodları */
-export const WITHHOLDING_TAX_TYPE_CODES = new Set([
-  '601', '602', '603', '604', '605', '606', '607', '608', '609',
-  '610', '611', '612', '613', '614', '615', '616', '617', '618',
-  '619', '620', '621', '622', '623', '624', '625', '626', '627',
-  '801', '802', '803', '804', '805', '806', '807', '808', '809',
-  '810', '811', '812', '813', '814', '815', '816', '817', '818',
-  '819', '820', '821', '822', '823', '824', '825',
-]);
+/** Tevkifat vergi tipi kodları — withholding-config türev (M7). 650 dahil. */
+export const WITHHOLDING_TAX_TYPE_CODES = new Set<string>(
+  WITHHOLDING_TAX_DEFINITIONS.map(w => w.code),
+);
 
-/** Tevkifat vergi kodu+yüzde kombinasyonları (ör: 60130 = TaxTypeCode 601, Percent 30) */
-export const WITHHOLDING_TAX_TYPE_WITH_PERCENT = new Set([
-  '60120', '60130', '60140', '60150', '60160', '60170', '60190',
-  '60230', '60250', '60290',
-  '60350', '60370', '60390',
-  '60450', '60470', '60490',
-  '60550', '60570', '60590',
-  '60650', '60690',
-  '60730', '60750', '60790',
-  '60850', '60870', '60890',
-  '60950', '60970', '60990',
-  '61050', '61070', '61090',
-  '61150', '61170', '61190',
-  '61250', '61270', '61290',
-  '61350', '61370', '61390',
-  '61450', '61470', '61490',
-  '61550', '61570', '61590',
-  '61650', '61670', '61690',
-  '61750', '61770', '61790',
-  '61850', '61870', '61890',
-  '61950', '61970', '61990',
-  '62050', '62070', '62090',
-  '62150', '62170', '62190',
-  '62250', '62270', '62290',
-  '62350', '62370', '62390',
-  '62450', '62470', '62490',
-  '62550', '62570', '62590',
-  '62650', '62670', '62690',
-  '62750', '62770', '62790',
-  '801100',
-  '802100',
-  '803100',
-  '804100',
-  '805100',
-  '806100',
-  '807100',
-  '808100',
-  '809100',
-  '810100',
-  '811100',
-  '812100',
-  '813100',
-  '814100',
-  '815100',
-  '816100',
-  '817100',
-  '818100',
-  '819100',
-  '820100',
-  '821100',
-  '822100',
-  '823100',
-  '824100',
-  '825100',
-]);
+/** Tevkifat vergi kodu+yüzde kombinasyonları — config türev (M7 helper). B-04 regenerate. */
+export const WITHHOLDING_TAX_TYPE_WITH_PERCENT = deriveWithholdingCombos(WITHHOLDING_TAX_DEFINITIONS);
 
-/** İstisna vergi muafiyet sebebi kodları */
-export const ISTISNA_TAX_EXEMPTION_REASON_CODES = new Set([
-  '001',
-  '101', '102', '103', '104', '105', '106', '107', '108',
-  '201', '202', '203', '204', '205', '206', '207', '208', '209',
-  '210', '211', '212', '213', '214', '215', '216', '217', '218', '219',
-  '220', '221', '222', '223', '224', '225', '226', '227', '228', '229',
-  '230', '231', '232', '233', '234', '235', '236', '237', '238', '239',
-  '240', '241', '242', '243', '244', '245', '246', '247', '248', '249', '250',
-  '301', '302', '303', '304', '305', '306', '307', '308', '309',
-  '310', '311', '312', '313', '314', '315', '316', '317', '318', '319',
-  '320', '321', '322', '323', '324', '325', '326', '327', '328', '329',
-  '330', '331', '332', '333', '334', '335', '336', '337', '338', '339',
-  '340', '341', '342', '343', '344', '350',
-  '501',
-]);
+/** İstisna vergi muafiyet sebebi kodları — exemption-config türev (M7). */
+export const ISTISNA_TAX_EXEMPTION_REASON_CODES = new Set<string>(
+  EXEMPTION_DEFINITIONS.filter(e => e.documentType === 'ISTISNA').map(e => e.code),
+);
 
-/** Özel matrah vergi muafiyet sebebi kodları */
-export const OZEL_MATRAH_TAX_EXEMPTION_REASON_CODES = new Set([
-  '801', '802', '803', '804', '805', '806', '807', '808', '809', '810', '811', '812',
-]);
+/** Özel matrah vergi muafiyet sebebi kodları — exemption-config türev (M7). */
+export const OZEL_MATRAH_TAX_EXEMPTION_REASON_CODES = new Set<string>(
+  EXEMPTION_DEFINITIONS.filter(e => e.documentType === 'OZELMATRAH').map(e => e.code),
+);
 
-/** İhraç kayıtlı vergi muafiyet sebebi kodları */
-export const IHRAC_EXEMPTION_REASON_CODES = new Set([
-  '701', '702', '703', '704',
-]);
+/** İhraç kayıtlı vergi muafiyet sebebi kodları — exemption-config türev (M7). */
+export const IHRAC_EXEMPTION_REASON_CODES = new Set<string>(
+  EXEMPTION_DEFINITIONS.filter(e => e.documentType === 'IHRACKAYITLI').map(e => e.code),
+);
 
-/** Para birimi kodları (ISO 4217) — en sık kullanılanlar */
+/**
+ * 555 (Demirbaş KDV / Bedelsiz Demirbaş İstisnası) — ayrı set.
+ * `BuilderOptions.allowReducedKdvRate` flag ile gate edilir (M4).
+ * ISTISNA whitelist'ine dahil değil.
+ */
+export const DEMIRBAS_KDV_EXEMPTION_CODES = new Set<string>(['555']);
+
+/**
+ * 351 (KDV İstisna Olmayan Diğer) non-ISTISNA kodu — ayrı set.
+ * Cross-check matrisi M5 (Sprint 5) ile netleşecek.
+ */
+export const NON_ISTISNA_REASON_CODES = new Set<string>(['351']);
+
+/** Birim kodları — unit-config türev (M7, yeni). */
+export const UNIT_CODES = new Set<string>(UNIT_DEFINITIONS.map(u => u.code));
+
+/** Paket/Kap cins kodları — package-type-code-config türev (M7, yeni). */
+export const PACKAGING_TYPE_CODES = new Set<string>(
+  PACKAGING_TYPE_CODE_DEFINITIONS.map(p => p.code),
+);
+
+/**
+ * Para birimi kodları (ISO 4217).
+ *
+ * **M7 NOT:** Currency için M7 türetme uygulanmadı; `currency-config.ts` 30 tanım içerir ama
+ * validator whitelist bu setteki geniş listeyi kabul eder. Tam M7 için ya config 69 koda
+ * genişletilmeli ya constants 30'a küçültülmeli (breaking). Sprint 8 aday.
+ *
+ * B-28 uygulandı: TRL (eski Türk Lirası) çıkarıldı.
+ */
 export const CURRENCY_CODES = new Set([
   'TRY', 'USD', 'EUR', 'GBP', 'JPY', 'CHF', 'AUD', 'CAD', 'SEK', 'NOK',
   'DKK', 'PLN', 'CZK', 'HUF', 'RON', 'BGN', 'HRK', 'RUB', 'CNY', 'INR',
@@ -206,7 +189,6 @@ export const CURRENCY_CODES = new Set([
   'JOD', 'LBP', 'TND', 'MAD', 'DZD', 'LYD', 'SDG', 'IRR', 'IQD', 'SYP',
   'PKR', 'AFN', 'AZN', 'GEL', 'KZT', 'UZS', 'TMT', 'KGS', 'TJS', 'AMD',
   'BAM', 'MKD', 'RSD', 'ALL', 'MDL', 'UAH', 'BYN', 'ISK',
-  'TRL',
 ]);
 
 /** INCOTERMS teslimat koşulları kodları */
@@ -235,15 +217,21 @@ export const PARTY_IDENTIFICATION_SCHEME_IDS = new Set([
   'GTB_FIILI_IHRACAT_TARIHI', 'ARACKIMLIKNO', 'PLAKA', 'SEVKIYATNO',
 ]);
 
-/** Ek ürün kimlik schemeID değerleri */
+/** Ek ürün kimlik schemeID değerleri. B-88 uygulandı: BILGISAYAR çıkarıldı. */
 export const ADDITIONAL_ITEM_ID_SCHEME_IDS = new Set([
-  'TELEFON', 'TABLET_PC', 'BILGISAYAR', 'KUNYENO',
+  'TELEFON', 'TABLET_PC', 'KUNYENO',
   'ILAC', 'TIBBICIHAZ', 'DIGER', 'ETIKETNO',
 ]);
 
-/** Ödeme yöntemi kodları */
+/**
+ * Ödeme yöntemi kodları — UN/EDIFACT 4461 (geniş whitelist).
+ *
+ * **M7 NOT:** Payment Means için M7 türetme uygulanmadı; `payment-means-config.ts` sadece
+ * sık kullanılan 7 kodu Türkçe isimle içerir (UI dropdown). Validator whitelist bu geniş
+ * setin tamamını kabul eder (kullanıcı talep halinde tüm UN/EDIFACT desteği — açık soru #9 cevabı).
+ */
 export const PAYMENT_MEANS_CODES = new Set([
-  '1', '2', '3', '4', '5', '10', '20', '30', '31', '42', '48', '49', '50', '51', '60', '61', '62', '97', 'ZZZ',
+  '1', '2', '3', '4', '5', '10', '20', '23', '30', '31', '42', '48', '49', '50', '51', '60', '61', '62', '97', 'ZZZ',
 ]);
 
 /** Plaka schemeID değerleri */

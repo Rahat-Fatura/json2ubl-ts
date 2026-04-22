@@ -8,6 +8,12 @@ export interface BuilderOptions {
   validationLevel?: ValidationLevel;
   /** XML declaration eklensin mi — varsayılan: true */
   xmlDeclaration?: boolean;
+  /**
+   * 555 (Demirbaş KDV / Bedelsiz Demirbaş İstisnası) kodunu kabul eder.
+   * Kütüphane 555 için iş mantığı uygulamaz; tüketici farklı KDV oranından
+   * kesme hesabından sorumludur. Default: false.
+   */
+  allowReducedKdvRate?: boolean;
 }
 
 /** Validasyon seviyeleri */

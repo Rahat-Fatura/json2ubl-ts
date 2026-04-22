@@ -166,12 +166,29 @@ export function calculateLine(
       throw new Error(`Geçersiz tevkifat kodu: ${line.withholdingTaxCode}. Tanımlı tevkifat kodları için withholding-config.ts dosyasına bakınız.`);
     }
 
-    const whAmount = kdvSubtotal.amount * (whDef.percent / 100);
+    // M3 — 650 dinamik percent: kullanıcı line.withholdingTaxPercent ile 0-100 verir
+    let effectivePercent: number;
+    if (whDef.dynamicPercent) {
+      if (line.withholdingTaxPercent == null) {
+        throw new Error(`Tevkifat kodu ${whDef.code} için 'withholdingTaxPercent' zorunlu (0-100).`);
+      }
+      if (line.withholdingTaxPercent < 0 || line.withholdingTaxPercent > 100) {
+        throw new Error(`Tevkifat kodu ${whDef.code} için 'withholdingTaxPercent' 0-100 aralığında olmalı (gelen: ${line.withholdingTaxPercent}).`);
+      }
+      effectivePercent = line.withholdingTaxPercent;
+    } else {
+      if (line.withholdingTaxPercent != null) {
+        throw new Error(`Tevkifat kodu ${whDef.code} sabit oranlıdır; 'withholdingTaxPercent' sadece 650 kodu için kullanılır.`);
+      }
+      effectivePercent = whDef.percent;
+    }
+
+    const whAmount = kdvSubtotal.amount * (effectivePercent / 100);
     withholdingObject.taxTotal = whAmount;
     withholdingObject.taxSubtotals = [{
       taxable: kdvSubtotal.amount,
       amount: whAmount,
-      percent: whDef.percent,
+      percent: effectivePercent,
       code: whDef.code,
       name: whDef.name,
     }];

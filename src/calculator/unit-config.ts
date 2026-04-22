@@ -45,7 +45,7 @@ export const UNIT_DEFINITIONS: ReadonlyArray<UnitDefinition> = [
   { code: 'AKQ', name: 'Atv Birim Fiyatı' },
   { code: 'KNI', name: 'Azotun Kilogram' },
   { code: 'BAS', name: 'Baş' },
-  { code: 'TWH', name: 'Bin Kilowatt Saat' },
+  { code: 'TWH', name: 'Terawatt Saat' },
   { code: 'KFO', name: 'Difosfor Pentaoksit Kilogramı' },
   { code: 'GFI', name: 'Fıssıle İzotop Gramı' },
   { code: 'GMS', name: 'Gümüş' },
@@ -86,6 +86,10 @@ export const UNIT_DEFINITIONS: ReadonlyArray<UnitDefinition> = [
   { code: 'GRO', name: 'Groza' },
   { code: 'EV', name: 'Zarf' },
   { code: 'DMK', name: 'Desimetre Kare' },
+  { code: 'GWH', name: 'Gigawatt Saat' },
+  { code: 'MWH', name: 'Megawatt Saat' },
+  { code: 'SM3', name: 'Standart Metre Küp' },
+  { code: 'D32', name: 'Terawatt Saat' },
 ] as const;
 
 /** Birim kodu → UnitDefinition lookup map */

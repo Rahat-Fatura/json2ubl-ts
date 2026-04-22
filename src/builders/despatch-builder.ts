@@ -11,6 +11,8 @@ const DEFAULT_OPTIONS: Required<BuilderOptions> = {
   indentSize: 2,
   validationLevel: 'basic',
   xmlDeclaration: true,
+  /** Despatch'te TaxExemptionReasonCode alanı yok — 555 gate'i InvoiceBuilder'a özgü. */
+  allowReducedKdvRate: false,
 };
 
 /**

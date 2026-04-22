@@ -10,6 +10,11 @@ export interface WithholdingTaxDefinition {
   code: string;
   name: string;
   percent: number;
+  /**
+   * true ise percent kullanıcıdan gelir (InvoiceLineInput.withholdingTaxPercent
+   * veya WithholdingTaxSubtotalInput.percent). Sadece 650 için.
+   */
+  dynamicPercent?: boolean;
 }
 
 export const WITHHOLDING_TAX_DEFINITIONS: ReadonlyArray<WithholdingTaxDefinition> = [
@@ -28,7 +33,7 @@ export const WITHHOLDING_TAX_DEFINITIONS: ReadonlyArray<WithholdingTaxDefinition
   { code: '613', name: 'Çevre ve Bahçe Bakım Hizmetleri', percent: 90 },
   { code: '614', name: 'Servis Taşımacılığı Hizmeti', percent: 50 },
   { code: '615', name: 'Her Türlü Baskı ve Basım Hizmetleri', percent: 70 },
-  { code: '616', name: '5018 Sayılı Kanuna Ekli Cetvellerdeki İdare, Kurum ve Kuruluşlara Yapılan Diğer Hizmetler', percent: 50 },
+  { code: '616', name: 'Diğer Hizmetler [KDVGUT-(I/C-2.1.3.2.13)]', percent: 50 },
   { code: '617', name: 'Hurda Metalden Elde Edilen Külçe Teslimleri', percent: 70 },
   { code: '618', name: 'Hurda Metalden Elde Edilenler Dışındaki Bakır, Çinko, Demir-Çelik, Alüminyum ve Kurşun Külçe Teslimleri', percent: 70 },
   { code: '619', name: 'Bakır, Çinko ve Alüminyum Ürünlerinin Teslimi', percent: 70 },
@@ -40,6 +45,7 @@ export const WITHHOLDING_TAX_DEFINITIONS: ReadonlyArray<WithholdingTaxDefinition
   { code: '625', name: 'Ticari Reklam Hizmetleri', percent: 30 },
   { code: '626', name: 'Diğer Teslimler', percent: 20 },
   { code: '627', name: 'Demir-Çelik Ürünlerinin Teslimi', percent: 50 },
+  { code: '650', name: 'Diğer', percent: 0, dynamicPercent: true },
   { code: '801', name: 'Yapım İşleri ile Mühendislik-Mimarlık ve Etüt-Proje Hizmetleri (Tam)', percent: 100 },
   { code: '802', name: 'Etüt, Plan-Proje, Danışmanlık, Denetim ve Benzeri Hizmetler (Tam)', percent: 100 },
   { code: '803', name: 'Makine, Teçhizat, Demirbaş ve Taşıtlara Ait Tadil, Bakım ve Onarım Hizmetleri (Tam)', percent: 100 },

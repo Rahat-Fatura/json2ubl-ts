@@ -18,6 +18,8 @@ export interface TaxDefinition {
 export const TAX_DEFINITIONS: ReadonlyArray<TaxDefinition> = [
   { code: '0003', name: 'Gelir Vergisi Stopajı', shortName: 'Gelir Vergisi Stopajı', baseStat: false, baseCalculate: false },
   { code: '0011', name: 'Kurumlar Vergisi Stopajı', shortName: 'Kurumlar Vergisi Stopajı', baseStat: false, baseCalculate: false },
+  { code: '0021', name: 'Banka Muameleleri Vergisi', shortName: 'BMV', baseStat: true, baseCalculate: false },
+  { code: '0022', name: 'Sigorta Muameleleri Vergisi', shortName: 'SMV', baseStat: true, baseCalculate: false },
   { code: '0059', name: 'Konaklama Vergisi', shortName: 'Konaklama Vergisi', baseStat: true, baseCalculate: false },
   { code: '0061', name: 'Kaynak Kullanımı Destekleme Fonu Kesintisi', shortName: 'KKDF', baseStat: true, baseCalculate: true },
   { code: '0071', name: 'Petrol ve Doğalgaz ÖTV [1. Liste]', shortName: 'ÖTV 1. Liste', baseStat: true, baseCalculate: true },
@@ -29,6 +31,7 @@ export const TAX_DEFINITIONS: ReadonlyArray<TaxDefinition> = [
   { code: '1047', name: 'Damga Vergisi', shortName: 'Damga Vergisi', baseStat: true, baseCalculate: false },
   { code: '1048', name: '5035 Sayılı Kanuna Göre Damga Vergisi', shortName: 'Damga Vergisi 5035', baseStat: true, baseCalculate: false },
   { code: '4071', name: 'Elektrik ve Havagazı Tüketim Vergisi', shortName: 'Elektrik Tüketim V.', baseStat: true, baseCalculate: true },
+  { code: '4171', name: 'Petrol ve Doğalgaz Ürünlerine İlişkin ÖTV Tevkifatı', shortName: 'PTR-DGZ ÖTV TEVKİFAT', baseStat: true, baseCalculate: true },
   { code: '4080', name: 'Özel İletişim Vergisi', shortName: 'ÖİV', baseStat: true, baseCalculate: false },
   { code: '4081', name: '5035 Sayılı Kanuna Göre Özel İletişim Vergisi', shortName: 'ÖİV 5035', baseStat: true, baseCalculate: false },
   { code: '8001', name: 'Borsa Tescil Ücreti', shortName: 'Borsa Tescil', baseStat: true, baseCalculate: false },
@@ -41,6 +44,7 @@ export const TAX_DEFINITIONS: ReadonlyArray<TaxDefinition> = [
   { code: '9021', name: '4961 Banka Sigorta Muameleleri Vergisi', shortName: 'BSMV', baseStat: true, baseCalculate: false },
   { code: '9040', name: 'Mera Fonu', shortName: 'Mera Fonu', baseStat: false, baseCalculate: false },
   { code: '9077', name: 'Motorlu Taşıt ÖTV [2. Liste]', shortName: 'ÖTV 2. Liste', baseStat: true, baseCalculate: true },
+  { code: '9944', name: 'Belediyelere Ödenen Hal Rüsumu', shortName: 'BEL.ÖD.HAL RÜSUM', baseStat: true, baseCalculate: false },
 ] as const;
 
 /** KDV vergi kodu sabiti */

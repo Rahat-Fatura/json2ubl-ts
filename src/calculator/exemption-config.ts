@@ -8,7 +8,7 @@
 export interface ExemptionDefinition {
   code: string;
   name: string;
-  type: 'KDV' | 'SGK';
+  type: 'KDV' | 'SGK' | 'OTV';
   documentType: 'ISTISNA' | 'SATIS' | 'IHRACKAYITLI' | 'OZELMATRAH' | 'SGK';
 }
 
@@ -29,6 +29,7 @@ export const EXEMPTION_DEFINITIONS: ReadonlyArray<ExemptionDefinition> = [
   { code: '215', name: '17/4-l Varlık Yönetim Şirketlerinin İşlemleri', type: 'KDV', documentType: 'ISTISNA' },
   { code: '216', name: '17/4-m Tasarruf Mevduatı Sigorta Fonunun İşlemleri', type: 'KDV', documentType: 'ISTISNA' },
   { code: '217', name: '17/4-n Basın-Yayın ve Enformasyon Genel Müdürlüğüne Verilen Haber Hizmetleri', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '218', name: 'KDV 17/4-o — Gümrük Antrepoları, Geçici Depolama Yerleri ile Gümrüklü Sahalarda Vergisiz Satış Yapılan İşyeri/Depo/Ardiye Kiralanması', type: 'KDV', documentType: 'ISTISNA' },
   { code: '219', name: '17/4-p Hazine ve Arsa Ofisi Genel Müdürlüğünün İşlemleri', type: 'KDV', documentType: 'ISTISNA' },
   { code: '220', name: '17/4-r İki Tam Yıl Süreyle Sahip Olunan Taşınmaz ve İştirak Hisseleri Satışları', type: 'KDV', documentType: 'ISTISNA' },
   { code: '221', name: 'Geçici 15 Konut Yapı Kooperatifleri, Belediyeler ve Sosyal Güvenlik Kuruluşlarına Verilen İnşaat Taahhüt Hizmeti', type: 'KDV', documentType: 'ISTISNA' },
@@ -48,6 +49,9 @@ export const EXEMPTION_DEFINITIONS: ReadonlyArray<ExemptionDefinition> = [
   { code: '238', name: '17/4-u Varlık ve Hakların TMSF ye Teslimi ile Bunların TMSF Tarafından Teslimi, Müzayede Suretiyle Satışı', type: 'KDV', documentType: 'ISTISNA' },
   { code: '239', name: '17/4-y Taşınmazların Sosyal Güvenlik Kurumuna Devir ve Teslimleri', type: 'KDV', documentType: 'ISTISNA' },
   { code: '240', name: '17/4-z Gıda, Tarım ve Hayvancılık Bakanlığı Tarafından Tescil Edilen Gübreler ve Gübre Üreticilerine Aktarılan Ham Madde Teslimleri', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '241', name: 'TürkAkım Gaz Boru Hattı Projesine İlişkin Anlaşmanın 9/b Maddesinde Yer Alan Hizmetler', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '242', name: 'KDV 17/4-ö — Gümrük Antrepoları, Geçici Depolama Yerleri, Gümrüklü Sahalarda verilen ardiye, depolama ve terminal hizmetleri', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '250', name: 'Diğerleri', type: 'KDV', documentType: 'ISTISNA' },
   { code: '301', name: '11/1-a Mal İhracatı', type: 'KDV', documentType: 'ISTISNA' },
   { code: '302', name: '11/1-a Hizmet İhracatı', type: 'KDV', documentType: 'ISTISNA' },
   { code: '303', name: '11/1-a Roaming Hizmetleri', type: 'KDV', documentType: 'ISTISNA' },
@@ -73,18 +77,38 @@ export const EXEMPTION_DEFINITIONS: ReadonlyArray<ExemptionDefinition> = [
   { code: '323', name: '13/ğ 5300 Sayılı Kanuna Göre Düzenlenen Ürün Senetlerinin İhtisas/Ticaret Borsaları Aracılığıyla İlk Teslimi', type: 'KDV', documentType: 'ISTISNA' },
   { code: '324', name: '13/h Türkiye Kızılay Derneğine Yapılan Teslim ve Hizmetler', type: 'KDV', documentType: 'ISTISNA' },
   { code: '325', name: '13/ı Yem Teslimleri', type: 'KDV', documentType: 'ISTISNA' },
-  { code: '332', name: 'KDV Geçici 39. Md. İmalat Sanayiinde Kullanılmak Üzere Yapılan Yeni Makina ve Teçhizat Teslimleri', type: 'KDV', documentType: 'ISTISNA' },
-  { code: '335', name: 'Basılı Kitap ve Süreli Yayınların Teslimleri', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '326', name: '13/ı Gıda, Tarım ve Hayvancılık Bakanlığı Tarafından Tescil Edilmiş Gübrelerin Teslimi', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '327', name: '13/ı Gıda, Tarım ve Hayvancılık Bakanlığı Tarafından Tescil Edilmiş Gübrelerin İçeriğinde Bulunan Hammaddelerin Gübre Üreticilerine Teslimi', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '328', name: '13/i Konut veya İşyeri Teslimleri', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '329', name: 'FATİH Projesi Kapsamında MEB\'e Yapılacak Mal Teslimi ve Hizmet İfası', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '330', name: 'KDV 13/j — Organize Sanayi Bölgeleri ile Küçük Sanayi Sitelerinin İnşasına İlişkin Teslim ve Hizmetler', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '331', name: 'KDV 13/m — Ar-Ge, Yenilik ve Tasarım Faaliyetlerinde Kullanılmak Üzere Yapılan Yeni Makina ve Teçhizat Teslimlerinde İstisna', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '332', name: 'KDV Geçici 39 — İmalat Sanayiinde Kullanılmak Üzere Yapılan Yeni Makina ve Teçhizat Teslimlerinde İstisna', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '333', name: 'KDV 13/k — Genel ve Özel Bütçeli Kamu İdareleri, İl Özel İdareleri, Belediyeler ve Köylere Bağışlanan Tesislerin İnşasına İlişkin İstisna', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '334', name: 'KDV 13/l — Yabancılara Verilen Sağlık Hizmetlerinde İstisna', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '335', name: 'KDV 13/n — Basılı Kitap ve Süreli Yayınların Teslimleri', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '336', name: 'Geçici 46 — UEFA Müsabakaları Kapsamında Yapılacak Teslim ve Hizmetler', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '337', name: 'Türk Akım Gaz Boru Hattı Projesine İlişkin Anlaşmanın 9/h Maddesi Kapsamındaki Gaz Taşıma Hizmetleri', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '338', name: 'İmalatçıların Mal İhracatları', type: 'KDV', documentType: 'ISTISNA' },
   { code: '339', name: 'İmalat Sanayii ile Turizme Yönelik Yatırım Teşvik Belgesi Kapsamındaki İnşaat İşlerine İlişkin Teslim ve Hizmetler', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '340', name: 'Elektrik Motorlu Taşıt Araçlarının Geliştirilmesine Yönelik Mühendislik Hizmetleri', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '341', name: 'Afetzedelere Bağışlanacak Konutların İnşasına İlişkin İstisna', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '342', name: 'Genel Bütçeli Kamu İdarelerine Bağışlanacak Taşınmazların İnşasına İlişkin İstisna', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '343', name: 'Genel Bütçeli Kamu İdarelerine Bağışlanacak Konutların Yabancı Devlet Kurum ve Kuruluşlarına Teslimine İlişkin İstisna', type: 'KDV', documentType: 'ISTISNA' },
+  { code: '344', name: '13/o Milli Savunma ve İç Güvenlik İhtiyaçlarında Kullanılmak Üzere Taşıt Teslimi', type: 'KDV', documentType: 'ISTISNA' },
   { code: '350', name: 'KDV İstisna Diğer', type: 'KDV', documentType: 'ISTISNA' },
 
   // KDV Satış — istisna olmayan diğer
   { code: '351', name: 'KDV İstisna Olmayan Diğer', type: 'KDV', documentType: 'SATIS' },
 
+  // ÖTV Satış — istisna olmayan diğer (§4.8.4)
+  { code: '151', name: 'ÖTV — İstisna Olmayan Diğer', type: 'OTV', documentType: 'SATIS' },
+
   // İhraç kayıtlı kodlar
   { code: '701', name: '3065 s. KDV Kanununun 11/1-c md. Kapsamındaki İhraç Kayıtlı Satış', type: 'KDV', documentType: 'IHRACKAYITLI' },
   { code: '702', name: 'DİİB ve Geçici Kabul Rejimi Kapsamındaki Satışlar', type: 'KDV', documentType: 'IHRACKAYITLI' },
   { code: '703', name: '4760 s. ÖTV Kanununun 8/2 Md. Kapsamındaki İhraç Kayıtlı Satış', type: 'KDV', documentType: 'IHRACKAYITLI' },
+  { code: '704', name: '3065 sayılı KDV Kanununun 11/1-c maddesi ve 4760 sayılı ÖTV Kanununun 8/2 md. Kapsamındaki İhraç Kayıtlı Satış', type: 'KDV', documentType: 'IHRACKAYITLI' },
 
   // Özel matrah kodları
   { code: '801', name: 'Milli Piyango, Spor Toto vb. Devletçe Organize Edilen Organizasyonlar', type: 'KDV', documentType: 'OZELMATRAH' },

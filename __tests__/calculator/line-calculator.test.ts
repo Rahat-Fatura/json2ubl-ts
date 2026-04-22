@@ -201,6 +201,56 @@ describe('line-calculator', () => {
     });
   });
 
+  describe('calculateLine — M3 650 dinamik tevkifat', () => {
+    it('650 + percent=25 → tutar kdv × 0.25', () => {
+      const line: SimpleLineInput = {
+        ...baseLine,
+        withholdingTaxCode: '650',
+        withholdingTaxPercent: 25,
+      };
+      const result = calculateLine(line, 0, 'TRY');
+      // KDV = 1000 * 20% = 200 → tevkifat = 200 * 25% = 50
+      expect(result.withholdingObject.taxTotal).toBe(50);
+      expect(result.withholdingObject.taxSubtotals[0].percent).toBe(25);
+    });
+
+    it('650 + percent=0 geçerli sınır (taxAmount=0)', () => {
+      const line: SimpleLineInput = {
+        ...baseLine,
+        withholdingTaxCode: '650',
+        withholdingTaxPercent: 0,
+      };
+      const result = calculateLine(line, 0, 'TRY');
+      expect(result.withholdingObject.taxTotal).toBe(0);
+    });
+
+    it('650 + percent yoksa throw', () => {
+      const line: SimpleLineInput = {
+        ...baseLine,
+        withholdingTaxCode: '650',
+      };
+      expect(() => calculateLine(line, 0, 'TRY')).toThrow(/withholdingTaxPercent.*zorunlu/);
+    });
+
+    it('650 + percent=150 aralık dışı throw', () => {
+      const line: SimpleLineInput = {
+        ...baseLine,
+        withholdingTaxCode: '650',
+        withholdingTaxPercent: 150,
+      };
+      expect(() => calculateLine(line, 0, 'TRY')).toThrow(/0-100 aralığında/);
+    });
+
+    it('sabit kod 601 + withholdingTaxPercent verilirse throw (karışıklık)', () => {
+      const line: SimpleLineInput = {
+        ...baseLine,
+        withholdingTaxCode: '601',
+        withholdingTaxPercent: 50,
+      };
+      expect(() => calculateLine(line, 0, 'TRY')).toThrow(/sadece 650 kodu için/);
+    });
+  });
+
   describe('calculateLine — ÖTV + iskonto + tevkifat kombine', () => {
     it('tüm hesaplamalar birlikte doğru çalışmalı', () => {
       const line: SimpleLineInput = {

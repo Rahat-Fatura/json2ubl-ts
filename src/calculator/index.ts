@@ -131,3 +131,17 @@ export {
     getCurrencyDefinition,
 } from "./currency-config";
 export type { CurrencyDefinition } from "./currency-config";
+export {
+    PACKAGING_TYPE_CODE_DEFINITIONS,
+    PACKAGING_TYPE_CODE_MAP,
+    isValidPackagingTypeCode,
+    getPackagingTypeCodeDefinition,
+} from "./package-type-code-config";
+export type { PackagingTypeCodeDefinition } from "./package-type-code-config";
+export {
+    PAYMENT_MEANS_DEFINITIONS,
+    PAYMENT_MEANS_MAP,
+    isValidPaymentMeansCode,
+    getPaymentMeansDefinition,
+} from "./payment-means-config";
+export type { PaymentMeansDefinition } from "./payment-means-config";

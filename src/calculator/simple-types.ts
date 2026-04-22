@@ -75,6 +75,11 @@ export interface SimpleLineInput {
     taxes?: SimpleLineTaxInput[];
     /** KDV tevkifat kodu (ör: "602") — opsiyonel, verilirse fatura tipi TEVKIFAT olur */
     withholdingTaxCode?: string;
+    /**
+     * Tevkifat 650 (Diğer) kodu için dinamik yüzde (0-100).
+     * Sadece 650 kodu ile kullanılır; diğer tevkifat kodlarında oran config'den gelir.
+     */
+    withholdingTaxPercent?: number;
 
     // ─── Ürün ek bilgileri ─────────────────────────────────────────────────────
     /** Ürün açıklaması */

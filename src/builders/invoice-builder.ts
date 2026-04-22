@@ -6,6 +6,7 @@ import { validateCommon } from '../validators/common-validators';
 import { validateByType } from '../validators/type-validators';
 import { validateByProfile } from '../validators/profile-validators';
 import { validateCrossMatrix } from '../validators/cross-validators';
+import { detectReducedKdvRate } from '../validators/reduced-kdv-detector';
 import { serializeInvoice } from '../serializers/invoice-serializer';
 
 /** Varsayılan builder seçenekleri */
@@ -14,6 +15,7 @@ const DEFAULT_OPTIONS: Required<BuilderOptions> = {
   indentSize: 2,
   validationLevel: 'basic',
   xmlDeclaration: true,
+  allowReducedKdvRate: false,
 };
 
 /**
@@ -37,6 +39,14 @@ export class InvoiceBuilder {
    * @throws {UblBuildError} Validasyon hataları varsa
    */
   build(input: InvoiceInput): string {
+    // M4 — 555 (Demirbaş KDV) gate, validationLevel'dan bağımsız
+    if (!this.options.allowReducedKdvRate) {
+      const err = detectReducedKdvRate(input);
+      if (err) {
+        throw new UblBuildError([err]);
+      }
+    }
+
     // Validasyon
     const errors = this.validate(input);
     if (errors.length > 0) {
