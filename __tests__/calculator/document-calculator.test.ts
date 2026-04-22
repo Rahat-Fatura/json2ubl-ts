@@ -215,9 +215,12 @@ describe('document-calculator', () => {
       expect(result.profile).toBe('EARSIVFATURA');
     });
 
-    it('buyerCustomer varsa profil IHRACAT olmalı', () => {
+    it('B-76: buyerCustomer + ISTISNA satır → profil IHRACAT (M2 identity)', () => {
       const result = calculateDocument(makeInput({
-        type: 'ISTISNA',
+        // Sprint 4'te Sprint 1 defensive `type: 'ISTISNA'` kaldırıldı.
+        // B-76 sonrası IHRACAT yalnız ISTISNA context'inde türetilir;
+        // ISTISNA satır (kdvPercent=0) otomatik 'ISTISNA' tipi doğurur.
+        lines: [{ name: 'İhraç Ürün', quantity: 1, price: 1000, kdvPercent: 0 }],
         buyerCustomer: {
           name: 'Foreign Co',
           taxNumber: '1234567890',
@@ -228,6 +231,23 @@ describe('document-calculator', () => {
         },
       }));
       expect(result.profile).toBe('IHRACAT');
+      expect(result.type).toBe('ISTISNA');
+    });
+
+    it('B-76: buyerCustomer + SATIS satır → profil IHRACAT DEĞİL (tek başına zorlama yok)', () => {
+      const result = calculateDocument(makeInput({
+        lines: [{ name: 'Normal Ürün', quantity: 1, price: 1000, kdvPercent: 20 }],
+        buyerCustomer: {
+          name: 'Foreign Co',
+          taxNumber: '1234567890',
+          address: 'Street',
+          city: 'London',
+          district: 'Westminster',
+          country: 'United Kingdom',
+        },
+      }));
+      // SATIS context'te buyerCustomer tek başına IHRACAT zorlamaz; default profil geçerli
+      expect(result.profile).not.toBe('IHRACAT');
     });
 
     it('IADE tipi için profil TEMELFATURA olmalı', () => {

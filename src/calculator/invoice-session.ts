@@ -104,13 +104,13 @@ export class InvoiceSession extends EventEmitter {
     this._liability = options?.liability;
     this._isExport = options?.isExport ?? false;
 
-    // İhracat session'ı ise profil IHRACAT olarak zorla
+    // M10: İhracat session'ı ise profil IHRACAT + tip ISTISNA zorlanır (M2 identity)
     const initialProfile = this._isExport
       ? 'IHRACAT'
       : options?.initialInput?.profile;
 
     const initialType = this._isExport
-      ? (options?.initialInput?.type ?? 'SATIS')
+      ? 'ISTISNA'
       : options?.initialInput?.type;
 
     // Boş başlangıç input'u
@@ -184,6 +184,9 @@ export class InvoiceSession extends EventEmitter {
    * → profil otomatik EARSIVFATURA olur.
    */
   setLiability(liability: CustomerLiability | undefined): void {
+    // M10: isExport=true session'larında liability değişmez, profil IHRACAT kalır.
+    if (this._isExport) return;
+
     const previousLiability = this._liability;
     this._liability = liability;
 

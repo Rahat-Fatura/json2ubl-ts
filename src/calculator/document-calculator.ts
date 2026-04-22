@@ -302,8 +302,10 @@ function resolveProfile(input: SimpleInvoiceInput, calculatedType: string): stri
   // e-Arşiv
   if (input.eArchiveInfo || input.onlineSale) return 'EARSIVFATURA';
 
-  // İhracat
-  if (input.buyerCustomer) return 'IHRACAT';
+  // B-76: buyerCustomer tek başına IHRACAT'a zorlamasın.
+  // IHRACAT yalnız ISTISNA tipi ile uyumlu (M2 identity). YOLCU/KAMU senaryoları
+  // için ayrı ipucu gerekir (bkz. gelecek sprint).
+  if (input.buyerCustomer && calculatedType === 'ISTISNA') return 'IHRACAT';
 
   // IADE → TEMELFATURA
   if (calculatedType === 'IADE') return 'TEMELFATURA';
