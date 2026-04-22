@@ -41,8 +41,12 @@ import type {
  * 1. Hesaplama motoru çalıştırılır
  * 2. Sonuçlar InvoiceInput formatına map'lenir
  */
-export function mapSimpleToInvoiceInput(simple: SimpleInvoiceInput): InvoiceInput {
-  const calculated = calculateDocument(simple);
+export function mapSimpleToInvoiceInput(
+  simple: SimpleInvoiceInput,
+  precomputed?: CalculatedDocument,
+): InvoiceInput {
+  // B-80: precomputed verilirse yeniden calculateDocument çağırma (UUID determinizmi + performans)
+  const calculated = precomputed ?? calculateDocument(simple);
   return buildInvoiceInput(simple, calculated);
 }
 
@@ -242,6 +246,9 @@ function shouldAddExemption(
   if (ts.code === '0015' && ts.amount === 0 && !exemptTypes.includes(type)) return true;
   if (type === 'IHRACKAYITLI') return true;
   if (type === 'OZELMATRAH' && simple.ozelMatrah) return true;
+  // B-81 minimal fix: TEVKIFAT tipinde calculator 351 üretir, mapper atlamamalı
+  // (M5 full cross-check matrisi Sprint 5'te — bu sadece ön-iş)
+  if (type === 'TEVKIFAT' && ts.code === '0015' && calc.taxExemptionReason.kdv === '351') return true;
   return false;
 }
 

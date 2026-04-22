@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   getAllowedTypesForProfile,
   getAllowedProfilesForType,
+  getAvailableExemptions,
+  resolveProfileForType,
+  deriveFieldVisibility,
 } from '../../src/calculator/invoice-rules';
 import { PROFILE_TYPE_MATRIX } from '../../src/config/constants';
 import { UBL_CONSTANTS } from '../../src/config/namespaces';
@@ -68,6 +71,54 @@ describe('invoice-rules — matris tekleştirme (Sprint 1, M1/M2/M8)', () => {
   describe('M8 — CustomizationID TR1.2', () => {
     it('UBL_CONSTANTS.customizationId TR1.2 olmalı', () => {
       expect(UBL_CONSTANTS.customizationId).toBe('TR1.2');
+    });
+  });
+
+  describe('B-45 — getAvailableExemptions SGK/IADE ISTISNA kodlarını içerir', () => {
+    it('IADE tipinde ISTISNA kodları erişilebilir (Schematron 316/318/320)', () => {
+      const result = getAvailableExemptions('IADE');
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('TEVKIFATIADE tipinde de ISTISNA kodları erişilebilir', () => {
+      const result = getAvailableExemptions('TEVKIFATIADE');
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('SGK tipinde hem SGK hem ISTISNA kodları birleşik döndürülür', () => {
+      const sgkOnly = getAvailableExemptions('SGK');
+      // ISTISNA kodları eklendi → toplam > sadece SGK
+      const istisnaOnly = getAvailableExemptions('ISTISNA');
+      expect(sgkOnly.length).toBeGreaterThanOrEqual(istisnaOnly.length);
+    });
+  });
+
+  describe('B-47 — resolveProfileForType earchive+SGK fallback', () => {
+    it('earchive + SGK → EARSIVFATURA (TICARIFATURA yanlış fallback önlendi)', () => {
+      const result = resolveProfileForType(undefined, 'SGK', 'earchive', false);
+      expect(result).toBe('EARSIVFATURA');
+    });
+
+    it('liability yoksa SGK → TEMELFATURA (mevcut davranış korunur)', () => {
+      const result = resolveProfileForType(undefined, 'SGK', undefined, false);
+      expect(result).toBe('TEMELFATURA');
+    });
+  });
+
+  describe('B-79 — showWithholdingTaxSelector TEVKIFATIADE\'ye daraldı', () => {
+    it('sade IADE tipinde selector görünmez', () => {
+      const fv = deriveFieldVisibility('IADE', 'TEMELFATURA');
+      expect(fv.showWithholdingTaxSelector).toBe(false);
+    });
+
+    it('TEVKIFAT tipinde selector görünür', () => {
+      const fv = deriveFieldVisibility('TEVKIFAT', 'TICARIFATURA');
+      expect(fv.showWithholdingTaxSelector).toBe(true);
+    });
+
+    it('TEVKIFATIADE tipinde selector görünür', () => {
+      const fv = deriveFieldVisibility('TEVKIFATIADE', 'TEMELFATURA');
+      expect(fv.showWithholdingTaxSelector).toBe(true);
     });
   });
 });

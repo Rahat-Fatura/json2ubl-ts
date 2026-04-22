@@ -4,6 +4,7 @@ import {
   resolveUnitCode,
   isValidUnitCode,
 } from '../../src/calculator/unit-config';
+import { configManager } from '../../src/calculator/config-manager';
 import { UNIT_CODES } from '../../src/config/constants';
 
 describe('unit-config', () => {
@@ -67,6 +68,24 @@ describe('unit-config', () => {
 
     it('UNIT_CODES boyutu = UNIT_DEFINITIONS boyutu', () => {
       expect(UNIT_CODES.size).toBe(UNIT_DEFINITIONS.length);
+    });
+  });
+
+  describe('B-43 — configManager.resolveUnitCode case-insensitive', () => {
+    it('configManager ve unit-config aynı case-insensitive davranışa sahip', () => {
+      // unit-config zaten lowercase; configManager da lowercase (B-43 fix)
+      expect(configManager.resolveUnitCode('Kilogram')).toBe('KGM');
+      expect(configManager.resolveUnitCode('kilogram')).toBe('KGM');
+      expect(configManager.resolveUnitCode('KILOGRAM')).toBe('KGM');
+    });
+
+    it('UBL kodu direkt geçer (case-sensitive istisna: kod her zaman büyük harf)', () => {
+      expect(configManager.resolveUnitCode('KGM')).toBe('KGM');
+      expect(configManager.resolveUnitCode('C62')).toBe('C62');
+    });
+
+    it('tanımsız girdi aynen geri döner', () => {
+      expect(configManager.resolveUnitCode('UnknownUnit')).toBe('UnknownUnit');
     });
   });
 });

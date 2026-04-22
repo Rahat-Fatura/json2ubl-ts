@@ -60,9 +60,9 @@ export class SimpleInvoiceBuilder {
    * @throws UblBuildError validasyon hatalarında
    */
   build(input: SimpleInvoiceInput): SimpleBuildResult {
-    // 1. Hesapla + map
+    // 1. Hesapla + map (B-80: tek calculateDocument çağrısı, sonucu mapper'a cache ederek ilet)
     const calculation = calculateDocument(input);
-    const invoiceInput = mapSimpleToInvoiceInput(input);
+    const invoiceInput = mapSimpleToInvoiceInput(input, calculation);
 
     // 2. XML üret (mevcut builder validasyon + serialization yapar)
     const xml = this.invoiceBuilder.build(invoiceInput);
@@ -82,7 +82,7 @@ export class SimpleInvoiceBuilder {
    */
   buildUnsafe(input: SimpleInvoiceInput): SimpleBuildResult {
     const calculation = calculateDocument(input);
-    const invoiceInput = mapSimpleToInvoiceInput(input);
+    const invoiceInput = mapSimpleToInvoiceInput(input, calculation);
 
     const unsafeBuilder = new InvoiceBuilder({
       ...this.options,

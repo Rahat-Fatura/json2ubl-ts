@@ -212,24 +212,14 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
  * Öncelik: kullanıcı override > tevkifat varlığı > istisna kodu > satır tipleri
  */
 function resolveInvoiceType(input: SimpleInvoiceInput, typesArray: string[]): string {
-  // Kullanıcı tevkifat satırı verdiyse
-  if (typesArray.includes('TEVKIFAT')) return 'TEVKIFAT';
-
-  // Kullanıcı manuel tip belirlediyse
+  // B-41: Kullanıcı manuel tip belirlediyse ÖNCELİKLE onu döndür
+  // (TEVKIFATIADE gibi override'lara izin ver; önceki sürümde typesArray.TEVKIFAT mutlak öncelikti)
   if (input.type) {
-    switch (input.type) {
-      case 'IADE':
-      case 'SATIS':
-      case 'TEVKIFAT':
-      case 'ISTISNA':
-      case 'IHRACKAYITLI':
-      case 'OZELMATRAH':
-      case 'SGK':
-        return input.type;
-      default:
-        return input.type;
-    }
+    return input.type;
   }
+
+  // Kullanıcı override vermediyse: tevkifat satırı varsa TEVKIFAT
+  if (typesArray.includes('TEVKIFAT')) return 'TEVKIFAT';
 
   // İstisna kodu verilmişse → documentType'a göre tip tespit
   if (input.kdvExemptionCode) {

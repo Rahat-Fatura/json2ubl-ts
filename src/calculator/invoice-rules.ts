@@ -218,7 +218,12 @@ export function resolveProfileForType(
 
   // IADE → otomatik TEMELFATURA (Schematron kuralı)
   if (newType === 'IADE') return allowed.includes('TEMELFATURA') ? 'TEMELFATURA' : allowed[0] ?? 'TICARIFATURA';
-  if (newType === 'SGK') return allowed.includes('TEMELFATURA') ? 'TEMELFATURA' : allowed[0] ?? 'TICARIFATURA';
+  // B-47: earchive liability + SGK uyumsuz kombinasyon — geçersiz TICARIFATURA fallback yerine
+  // earchive ile tek meşru profil EARSIVFATURA (SGK yine desteksiz, kullanıcı input düzeltmeli)
+  if (newType === 'SGK') {
+    if (liability === 'earchive') return 'EARSIVFATURA';
+    return allowed.includes('TEMELFATURA') ? 'TEMELFATURA' : allowed[0] ?? 'TICARIFATURA';
+  }
   if (newType === 'TEKNOLOJIDESTEK') return allowed.includes('EARSIVFATURA') ? 'EARSIVFATURA' : allowed[0] ?? 'TICARIFATURA';
   if (newType === 'SARJ' || newType === 'SARJANLIK') return 'ENERJI';
 
@@ -244,6 +249,8 @@ export function resolveTypeForProfile(
  */
 export function deriveFieldVisibility(type: string, profile: string, currencyCode?: string): FieldVisibility {
   const isIade = type === 'IADE' || type === 'YTBIADE' || type === 'TEVKIFATIADE' || type === 'YTBTEVKIFATIADE';
+  // B-79: sade IADE'de withholding selector gereksiz; yalnız TEVKIFATIADE/YTBTEVKIFATIADE'de göster
+  const isTevkifatIade = type === 'TEVKIFATIADE' || type === 'YTBTEVKIFATIADE';
   const isTevkifat = type === 'TEVKIFAT' || type === 'YTBTEVKIFAT';
   const isIstisna = type === 'ISTISNA' || type === 'YTBISTISNA';
   const isIhracKayitli = type === 'IHRACKAYITLI';
@@ -261,7 +268,7 @@ export function deriveFieldVisibility(type: string, profile: string, currencyCod
 
   return {
     showBillingReference: isIade,
-    showWithholdingTaxSelector: isTevkifat || isIade,
+    showWithholdingTaxSelector: isTevkifat || isTevkifatIade,
     showExemptionCodeSelector: isIstisna || isIhracKayitli || isOzelMatrah,
     showOzelMatrah: isOzelMatrah,
     showSgkInfo: isSgk,
@@ -293,8 +300,18 @@ export function getAvailableExemptions(type: string): ExemptionDefinition[] {
       return configManager.getExemptionsByDocumentType('IHRACKAYITLI');
     case 'OZELMATRAH':
       return configManager.getExemptionsByDocumentType('OZELMATRAH');
+    // B-45: Schematron 316/318/320 — IADE/YTBIADE/TEVKIFATIADE tiplerinde
+    // ISTISNA kodları da kullanılabilir (karma senaryolar)
+    case 'IADE':
+    case 'YTBIADE':
+    case 'TEVKIFATIADE':
+    case 'YTBTEVKIFATIADE':
+      return configManager.getExemptionsByDocumentType('ISTISNA');
     case 'SGK':
-      return configManager.getExemptionsByDocumentType('SGK');
+      return [
+        ...configManager.getExemptionsByDocumentType('SGK'),
+        ...configManager.getExemptionsByDocumentType('ISTISNA'),
+      ];
     default:
       return [];
   }

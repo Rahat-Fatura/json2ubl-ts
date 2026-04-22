@@ -282,7 +282,8 @@ export class ConfigManager extends EventEmitter {
    */
   resolveUnitCode(input: string): string {
     if (this._unitCodeMap.has(input)) return input;
-    const byName = this._unitNameMap.get(input);
+    // B-43: unit-config.ts ile tutarlı — name lookup lowercase normalize
+    const byName = this._unitNameMap.get(input.toLowerCase());
     if (byName) return byName.code;
     return input;
   }
@@ -369,7 +370,8 @@ export class ConfigManager extends EventEmitter {
 
   private buildUnitMaps(units: UnitDefinition[]): { codeMap: Map<string, UnitDefinition>; nameMap: Map<string, UnitDefinition> } {
     const codeMap = new Map(units.map(u => [u.code, u]));
-    const nameMap = new Map(units.map(u => [u.name, u]));
+    // B-43: unit-config.ts ile tutarlı — name key lowercase
+    const nameMap = new Map(units.map(u => [u.name.toLowerCase(), u]));
     return { codeMap, nameMap };
   }
 

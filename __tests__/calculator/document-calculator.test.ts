@@ -178,6 +178,19 @@ describe('document-calculator', () => {
       expect(result.type).toBe('IHRACKAYITLI');
     });
 
+    it('B-41: kullanıcı type="TEVKIFATIADE" verirse tevkifat satırı TEVKIFATIADE override edebilmeli', () => {
+      const result = calculateDocument(makeInput({
+        type: 'TEVKIFATIADE',
+        billingReference: { id: 'ABC2025000000001', issueDate: '2025-01-01' },
+        lines: [
+          { name: 'Hizmet', quantity: 1, price: 1000, kdvPercent: 20, withholdingTaxCode: '602' },
+        ],
+      }));
+      // Önceki davranış: typesArray.TEVKIFAT mutlak öncelikli → 'TEVKIFAT'
+      // B-41 sonrası: input.type override önceliklidir → 'TEVKIFATIADE'
+      expect(result.type).toBe('TEVKIFATIADE');
+    });
+
     it('SATIS + ISTISNA karışık satırlarda tip SATIS olmalı', () => {
       const result = calculateDocument(makeInput({
         lines: [
