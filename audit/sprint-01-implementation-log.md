@@ -83,7 +83,10 @@ Açık Soru #3 cevabı gereği (Signature/UBLExtensions kütüphane üretmez; te
 
 ## Commit
 
-(Commit hash commit sonrası eklenir.)
+- **Hash:** `bd9cb74`
+- **Mesaj:** `Sprint 1: matris tekleştirme (M1/M2/M8) + AR-4 matrix private`
+- **Push:** `origin/main` (remote: github.com/Rahat-Fatura/json2ubl-ts)
+- **Kapsam dışı tutulan modified dosyalar:** `package.json`, `src/serializers/invoice-serializer.ts`, `src/serializers/despatch-serializer.ts` — Sprint 1 öncesi kullanıcı değişiklikleri; ayrı commit'te ele alınır.
 
 ## Sonraki Sprint
 
