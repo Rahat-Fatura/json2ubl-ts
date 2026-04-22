@@ -484,7 +484,6 @@ export const LEGAL_MONETARY_TOTAL_SEQ = [
   'AllowanceTotalAmount',
   'ChargeTotalAmount',
   'PrepaidAmount',
-  'PayableRoundingAmount',
   'PayableAmount',
   'PayableAlternativeAmount',
 ] as const;

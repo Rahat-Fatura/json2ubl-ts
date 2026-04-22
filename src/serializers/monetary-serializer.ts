@@ -20,10 +20,6 @@ export function serializeLegalMonetaryTotal(mt: MonetaryTotalInput, currencyCode
         : '',
     ChargeTotalAmount: () =>
       mt.chargeTotalAmount !== undefined ? cbcOptionalAmountTag('ChargeTotalAmount', mt.chargeTotalAmount, currencyCode) : '',
-    PayableRoundingAmount: () =>
-      mt.payableRoundingAmount !== undefined
-        ? cbcOptionalAmountTag('PayableRoundingAmount', mt.payableRoundingAmount, currencyCode)
-        : '',
     PayableAmount: () => cbcOptionalAmountTag('PayableAmount', mt.payableAmount, currencyCode),
   });
   const body = joinLines(inner.map(s => indent + '  ' + s));

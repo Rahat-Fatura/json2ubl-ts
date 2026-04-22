@@ -123,8 +123,6 @@ export interface MonetaryTotalInput {
   chargeTotalAmount?: number;
   /** Ödenecek tutar */
   payableAmount: number;
-  /** Ödenmiş yuvarlama tutarı */
-  payableRoundingAmount?: number;
 }
 
 /** İndirim/Ek yük */
