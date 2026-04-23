@@ -414,3 +414,54 @@ Plan'daki cross-cutting integration test: `calculateDocument() → mapSimpleToIn
 - **Regex-tabanlı XML extract:** Harici parser (fast-xml-parser vb.) dep eklenmedi; regex'le monetary extract yeterli. Sprint 7 B-T07 `toBeCloseTo(val, 2)` patterni korundu.
 - **Mimsoft fixture kullanımı:** Senaryo 2/3 f10/f13 sayısal pattern'lerini kullanır; gerçek XML fixture'larıyla tam round-trip Paket G'de (Sprint 8a.8) yapılacak.
 - **returnCalculation flag'i:** `SimpleInvoiceBuilder` default `false`; test'lerde `true` geçildi. Production kullanımı bu flag'i opsiyonel bırakır (minimal XML-only output).
+
+---
+
+## Sprint 8a.8 — Paket G: Mimsoft fixture regresyon suite
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8a.8: Paket G Mimsoft f12-f17 structural+monetary regresyon`
+
+### Kapsam
+
+6 yeni Mimsoft üretim fixture'ı (f12-f17) için yapısal + monetary invariant testleri. Fixture'lar üretim snapshot'ı olarak korunur; testler bu snapshot'ların beklenen alanlarını içerdiğini doğrular (ileride fixture güncellemesi bu assertion'ların aktif failure vermesini sağlar).
+
+### Fixture Kullanım Özeti
+
+| Fixture | Profil | Tip | Ana invariant |
+|---------|--------|-----|---------------|
+| **f12** | TEMELFATURA | IHRACKAYITLI | 702 + GTİP 12-hane + ALICIDIBSATIRKOD 11-hane + PayableAmount=100 |
+| **f13** | YATIRIMTESVIK | SATIS | ItemClass=01, YTBNO=123123, PayableAmount=560 |
+| **f14** | YATIRIMTESVIK | SATIS | ItemClass=02, PayableAmount=560 |
+| **f15** | TEMELFATURA | SATIS | ReasonCode=351, PayableAmount=100 (KDV=0) |
+| **f16** | TEMELFATURA | SGK | AccountingCost=SAGLIK_ECZ, 3 AddDocRef (MUKELLEF_*), PayableAmount=120 |
+| **f17** | KAMU | SATIS | TR IBAN, VKN=5230531548, PayableAmount=17220.00 |
+
+### Test Değişiklikleri
+
+**`__tests__/calculator/mimsoft-f12-f17.test.ts`** — yeni dosya (+16 test):
+- Her fixture için 2-3 describe blok içinde: ProfileID/TypeCode/kritik alan + monetary + senaryo-spesifik detay
+
+**Helper:**
+- `loadFixture(name)`: `__tests__/fixtures/mimsoft-real-invoices/`'ten okuma
+- `extract(xml, tag)`: tek regex match
+- `extractAll(xml, tag)`: tüm match'ler
+
+**F10/F11 regresyon:** Mevcut `mimsoft-stopaj.test.ts` korunur (f10/f11 calculator-level).
+
+### Test Durumu
+
+- Başlangıç (8a.7 sonu): 623 / 623 yeşil (39 dosya)
+- Son (8a.8 kapanışı): **639 / 639 yeşil** (40 dosya, +16)
+- TypeScript strict: temiz
+
+### Değişiklik İstatistikleri
+
+- `__tests__/calculator/mimsoft-f12-f17.test.ts` — yeni dosya (145 satır, 16 test)
+
+### Disiplin Notları
+
+- **Snapshot yaklaşımı:** Fixture'lar bizim builder'ın ürettiği değil, Mimsoft üretim çıktısı. Test'ler fixture'da beklenen değerleri kontrol eder — eğer fixture gelecekte değişirse bu test'ler uyarır.
+- **Builder round-trip kapsam dışı:** Fixture'ların birebir builder karşılığını oluşturmak Sprint 8a kapsamını aşar; Paket F (calc↔serialize round-trip) sayısal patterni kullandı. Tam builder → XML karşılaştırması post-v2.0.0'a ertelendi.
+- **F12 rename eşleşmesi:** Sprint 8a.1'de `f12_ihrachkayitli-702.xml.xml` → `f12-ihrackayitli-702.xml` rename'i bu test'lerde doğru ismin kullanılmasını sağladı.
+- **F10/F11 duplikasyon yok:** Mevcut `mimsoft-stopaj.test.ts` calculator-level, `f12-f17.test.ts` structural — farklı katmanlar.
