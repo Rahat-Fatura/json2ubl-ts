@@ -522,16 +522,53 @@ SDK aşağıdaki verileri statik olarak embed eder. ConfigManager ile runtime'da
 
 ---
 
+## 8. Sorumluluk Matrisi
+
+Kütüphane hangi karardan sorumlu, hangisinden değil. Tüketici kodunun bilmesi gereken non-obvious davranışlar.
+
+| Karar | Kapsam | Dosya / Kaynak |
+|-------|--------|-----------------|
+| **M1** | `PROFILE_TYPE_MATRIX` tek truth source; profil+tip kombinasyonları whitelist | `src/calculator/invoice-rules.ts` |
+| **M2** | IHRACAT/YOLCU/OZELFATURA yalnızca ISTISNA tipi kabul eder | `src/calculator/invoice-rules.ts` |
+| **M3** (B-95) | **650 dinamik stopaj** — kullanıcı `withholdingTaxPercent: 0-100` girer; UR-2 `65000+percent` combo XML'de | `src/calculator/withholding-config.ts` · [examples/10](./examples/10-ticarifatura-tevkifat-650-dinamik/) |
+| **M4** (B-96) | **555 Demirbaş KDV** — `BuilderOptions.allowReducedKdvRate: true` opt-in flag zorunlu; default false reject eder | `src/types/builder-options.ts` · [examples/30](./examples/30-feature-555-demirbas-kdv/) |
+| **M5** | **TAX_EXEMPTION_MATRIX** — istisna kodu × fatura tipi whitelist/forbidden + `requiresZeroKdvLine` | `src/validators/cross-check-matrix.ts` |
+| **M6** | Parent-child conditional required — parent opsiyonel, parent varsa child zorunlu | `src/validators/*-validators.ts` |
+| **M7** | Exemption-config → cross-check matrisi otomatik türetilir | `src/calculator/exemption-config.ts` |
+| **M8** | **CustomizationID:** Fatura `TR1.2`, e-İrsaliye `TR1.2.1` — kütüphane builder'da sabitler | `src/config/namespaces.ts` |
+| **M9** (B-102) | **Calculator tam float**, yuvarlama yalnızca XML yazım anında `toFixed(2)` XSD-yuvarlamalı alanlarda | `src/calculator/*.ts` · `src/serializers/*.ts` |
+| **M10** (B-102) | **`setLiability()` `isExport=true` iken no-op** (error yerine) | `src/calculator/invoice-rules.ts` |
+| **AR-1** | `cbcTag` → `cbcRequiredTag` + `cbcOptionalTag` split | `src/utils/xml-helpers.ts` |
+| **AR-2** | `driverPerson` → `driverPersons[]` array (çoklu sürücü desteği) | `src/types/despatch-input.ts` · [examples/34](./examples/34-irsaliye-temel-sevk-coklu-sofor/) |
+| **AR-3..5** | PROFILE_TYPE_MATRIX helper API; map/matrix export edilmez | `src/calculator/invoice-rules.ts` |
+| **AR-6** | Eski dead PaymentMeansCode set kaldırıldı | `src/calculator/payment-means-config.ts` |
+| **AR-7** | Satır-seviyesi `kdvExemptionCode` alanı kaldırıldı (belge seviyesi tek kaynak) | `src/types/invoice-input.ts` |
+| **AR-8** | Outstanding/Oversupply input alanları kaldırıldı | `src/types/*.ts` |
+| **B-07** | IHRACKAYITLI + 702 için **GTİP (12 hane) + AlıcıDİBKod** zorunlu | `src/validators/profile-validators.ts` · [examples/07](./examples/07-temelfatura-ihrackayitli-702/) |
+| **B-08** | YATIRIMTESVIK: `ytbNo` (6 hane) + Kod 01 Makine için `productTraceId+serialId+brand+model`; IADE grubunda muaf | `src/validators/profile-validators.ts` · [examples/12](./examples/12-yatirimtesvik-satis-makina/) |
+| **B-83** | KAMU: `buyerCustomer` + `paymentMeans` + TR IBAN zorunlu; additionalIdentifiers (MUSTERINO) | [examples/15](./examples/15-kamu-satis/) |
+| **B-104** | Despatch `DriverPerson.nationalityId` 11-hane TCKN zorunlu (ISO kodu reddedilir) | `src/validators/despatch-validators.ts` |
+
+### Kütüphane SORUMLULUĞUNDA OLMAYAN
+
+- **Dijital imza** — `ext:UBLExtensions` yapısı kütüphane tarafından üretilmez. Bu imzalayıcı servisin (GİB veya özel entegrasyon) sorumluluğudur (ACIK-SORULAR §3).
+- **Stopaj modeli XML pattern seçimi** — negatif `TaxAmount` mı yoksa ayrı `AllowanceCharge` mı: kütüphane XSD uyumlu pozitif stopaj subtotal üretir; GİB reddederse tüketici sorumluluğu.
+- **Prod schematron simülasyonu** — `validationLevel: 'strict'` statik kurallar. GİB schematron + production quirks ayrı.
+
+Ayrıntı: [audit/FIX-PLANI-v3.md](./audit/FIX-PLANI-v3.md).
+
+---
+
 ## Geliştirme
 
 ```bash
 yarn install                          # Bağımlılıkları kur
 yarn typecheck                        # TypeScript kontrol
-yarn test                             # Testleri çalıştır (112 test)
+yarn test                             # Testleri çalıştır
 yarn build                            # Derleme (CJS + ESM + DTS)
-yarn examples                         # 30 örnek senaryoyu çalıştır
-yarn examples:filter -- 08 12 22      # Belirli senaryoları çalıştır
-npx tsx examples/session-demo.ts      # InvoiceSession interaktif demo
+yarn examples                         # 38 örnek senaryoyu çalıştır (Sprint 8b)
+npx tsx examples/run-all.ts yatirimtesvik  # Slug filtreli
+npx tsx examples/NN-slug/run.ts       # Tek senaryo
 ```
 
 ## Lisans
