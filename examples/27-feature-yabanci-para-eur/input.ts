@@ -1,0 +1,27 @@
+import type { SimpleInvoiceInput } from '../../src';
+
+/** Yabancı para (EUR) + exchange rate. Basit satış fatura, EUR cinsinden. */
+export const input: SimpleInvoiceInput = {
+  id: 'EXA2026000000027',
+  uuid: 'e1a2b3c4-0027-4000-8027-000000000027',
+  datetime: '2026-04-23T10:00:00',
+  profile: 'TEMELFATURA',
+  type: 'SATIS',
+  currencyCode: 'EUR',
+  exchangeRate: 36.75,
+
+  sender: {
+    taxNumber: '1234567890', name: 'Sınır Tanımaz A.Ş.', taxOffice: 'Üsküdar',
+    address: 'Barbaros No:1', district: 'Üsküdar', city: 'İstanbul', zipCode: '34664',
+  },
+  customer: {
+    taxNumber: '9876543210', name: 'Yeşil Alıcı Ltd.', taxOffice: 'Kadıköy',
+    address: 'Bağdat No:2', district: 'Kadıköy', city: 'İstanbul', zipCode: '34710',
+  },
+
+  lines: [
+    { name: 'İthal Ürün', quantity: 5, price: 100, unitCode: 'Adet', kdvPercent: 20 },
+  ],
+};
+
+export default input;

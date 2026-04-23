@@ -1,0 +1,32 @@
+import type { SimpleInvoiceInput } from '../../src';
+
+/**
+ * 555 — Demirbaş KDV İstisnası (M4, B-96). `allowReducedKdvRate: true` flag
+ * zorunlu, yoksa kütüphane `BuilderOptions.allowReducedKdvRate` false default
+ * ile 555 kodunu reject eder.
+ */
+export const input: SimpleInvoiceInput = {
+  id: 'EXA2026000000030',
+  uuid: 'e1a2b3c4-0030-4000-8030-000000000030',
+  datetime: '2026-04-23T10:00:00',
+  profile: 'TEMELFATURA',
+  type: 'SATIS',
+  currencyCode: 'TRY',
+
+  kdvExemptionCode: '555', // Demirbaş KDV İstisnası
+
+  sender: {
+    taxNumber: '1234567890', name: 'Sınır Tanımaz A.Ş.', taxOffice: 'Üsküdar',
+    address: 'Barbaros No:1', district: 'Üsküdar', city: 'İstanbul', zipCode: '34664',
+  },
+  customer: {
+    taxNumber: '9876543210', name: 'Yeşil Alıcı Ltd.', taxOffice: 'Kadıköy',
+    address: 'Bağdat No:2', district: 'Kadıköy', city: 'İstanbul', zipCode: '34710',
+  },
+
+  lines: [
+    { name: 'Demirbaş Ofis Mobilyası', quantity: 1, price: 5000, unitCode: 'Adet', kdvPercent: 0 },
+  ],
+};
+
+export default input;
