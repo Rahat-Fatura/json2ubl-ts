@@ -161,6 +161,7 @@ describe('line-calculator', () => {
       const kdvSubtotal = result.taxes.taxSubtotals.find(t => t.code === '0015');
       expect(kdvSubtotal!.taxable).toBe(1000);
 
+      // B-17 + B-T04 iptal (2026-04-23, Sprint 7.1): Mimsoft teyidi — 1100 davranışı doğru.
       // taxInclusiveForMonetary = 1000 + (-100) + 200 = 1100
       expect(result.taxInclusiveForMonetary).toBe(1100);
     });
