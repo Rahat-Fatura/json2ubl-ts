@@ -367,3 +367,50 @@ Bulgu Sprint 5'te "serializer tema uyumsuz" gerekçesiyle ertelenmişti. AR-1 (`
 - **Serializer pattern tutarlılığı:** `serializePartyBlock` (normal party) zaten Sprint 2'den beri `additionalIdentifiers` emit ediyordu (line 26-32); `serializeBuyerCustomerParty` bu kod patterni ile birebir aynı yapıldı. İki yol artık `additionalIdentifiers` emit konusunda senkronize.
 - **Sprint 5 ertelenme gerekçesi ("serializer tema uyumsuz") çözüldü:** AR-1 sonrası `cbcOptionalTag({ schemeID })` çağrısı mevcut pattern'e oturdu; yeni tema açılmadı.
 - **Ad karşılığı (`identifications` vs `additionalIdentifiers`):** SimpleInvoiceInput DTO tarafında kullanıcı dostu "identifications" ismi; InvoiceInput core tipinde UBL-TR resmi ismi "additionalIdentifiers" korundu. Mapper isim çevirisi yapar.
+
+---
+
+## Sprint 8a.7 — Paket F: calc↔serialize round-trip integration
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8a.7: Paket F calc↔serialize round-trip integration`
+
+### Kapsam
+
+Plan'daki cross-cutting integration test: `calculateDocument() → mapSimpleToInvoiceInput() → serialize()` zincirinde monetary tutarların XML çıktısıyla eşitliğini doğrular (M9 yuvarlama disiplini).
+
+### Kod Değişiklikleri
+
+**Hiç.** Yalnızca yeni test dosyası.
+
+### Test Değişiklikleri
+
+**`__tests__/integration/calc-serialize-roundtrip.test.ts`** — yeni dosya (+3 test, yeni klasör):
+- **Senaryo 1:** SATIS + KDV (2 satır, %20 + %10) — `LineExtensionAmount/TaxInclusive/Payable` XML ↔ calc eşitlik.
+- **Senaryo 2:** SATIS + stopaj %23 (f10 pattern) — `PayableAmount=14550` (15000+3000-3450).
+- **Senaryo 3:** Çoklu KDV oranı (f13 YTB pattern) — `TaxInclusive=560` (500+20+40).
+
+**Extract helper'ları:**
+- `extractAmount(xml, tag)`: regex `<cbc:${tag}[^>]*>([-\d.]+)</cbc:${tag}>` ile ilk match
+- `extractAllAmounts(xml, tag)`: tüm match'ler array
+
+**Assertion patterni:** `toBeCloseTo(calc.monetary.X, 2)` — float disiplini (Sprint 7.3 B-T07 patterni).
+
+**Not:** SimpleInvoiceBuilder `returnCalculation: true` opsiyonuyla çağrıldı — `result.calculation.monetary` erişimi bu flag olmadan undefined.
+
+### Test Durumu
+
+- Başlangıç (8a.6 sonu): 620 / 620 yeşil (38 dosya)
+- Son (8a.7 kapanışı): **623 / 623 yeşil** (39 dosya, +3)
+- TypeScript strict: temiz
+
+### Değişiklik İstatistikleri
+
+- `__tests__/integration/calc-serialize-roundtrip.test.ts` — yeni dosya (108 satır)
+- Yeni klasör: `__tests__/integration/`
+
+### Disiplin Notları
+
+- **Regex-tabanlı XML extract:** Harici parser (fast-xml-parser vb.) dep eklenmedi; regex'le monetary extract yeterli. Sprint 7 B-T07 `toBeCloseTo(val, 2)` patterni korundu.
+- **Mimsoft fixture kullanımı:** Senaryo 2/3 f10/f13 sayısal pattern'lerini kullanır; gerçek XML fixture'larıyla tam round-trip Paket G'de (Sprint 8a.8) yapılacak.
+- **returnCalculation flag'i:** `SimpleInvoiceBuilder` default `false`; test'lerde `true` geçildi. Production kullanımı bu flag'i opsiyonel bırakır (minimal XML-only output).
