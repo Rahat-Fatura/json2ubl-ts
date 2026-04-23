@@ -70,8 +70,19 @@ function validateIhracat(input: InvoiceInput): ValidationError[] {
       'IHRACAT profilinde satıcı vergi dairesi adı zorunludur'));
   }
 
-  // Her satırda: DeliveryTerms, DeliveryAddress, TransportModeCode, RequiredCustomsID
+  // Her satırda: PriceAmount+LineExtensionAmount (B-29) ve DeliveryTerms/DeliveryAddress/TransportModeCode/RequiredCustomsID
   input.lines?.forEach((line, i) => {
+    // B-29: IHRACAT satır PriceAmount + LineExtensionAmount > 0 (CommonSchematron:404-406)
+    const priceAmount = line.price?.priceAmount;
+    if (typeof priceAmount !== 'number' || priceAmount <= 0) {
+      errors.push(profileRequirement(p, `lines[${i}].price.priceAmount`,
+        'IHRACAT satırında PriceAmount zorunlu ve pozitif olmalıdır (B-29)'));
+    }
+    if (typeof line.lineExtensionAmount !== 'number' || line.lineExtensionAmount <= 0) {
+      errors.push(profileRequirement(p, `lines[${i}].lineExtensionAmount`,
+        'IHRACAT satırında LineExtensionAmount zorunlu ve pozitif olmalıdır (B-29)'));
+    }
+
     const del = line.delivery;
     if (!del) {
       errors.push(profileRequirement(p, `lines[${i}].delivery`,

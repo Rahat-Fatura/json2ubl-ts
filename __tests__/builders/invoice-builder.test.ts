@@ -218,6 +218,7 @@ describe('InvoiceBuilder', () => {
         invoiceDocumentReference: {
           id: 'ABC2024000000002',
           issueDate: '2024-01-10',
+          documentTypeCode: 'IADE',
         },
       }];
       const xml = builder.build(input);

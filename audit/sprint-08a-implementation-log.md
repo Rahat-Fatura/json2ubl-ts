@@ -148,3 +148,58 @@ Sprint 5'te kullanıcı prompt'uyla dar tutulmuş **B-29..B-31, B-62..B-69, B-78
 - **B-65 tarih karşılaştırması:** ISO format string karşılaştırması yeterli (`'2005-01-01' <= input.issueDate <= today`); `new Date()` parse → timezone riski yerine string compare tercih edildi.
 - **B-64 Exchange rate:** Sayı türünde geldiği için `String(rate)` ile regex. 7+ ondalık IEEE754 float'ta kaybolabilir; regex temel koruma.
 - **Validator çağrı sırası:** `validateSpecialVKN` party validasyonlarından SONRA çağrıldı — VKN format geçersizse önce B-62/B-63 yerine `validateParty` hatasını al.
+
+**Not (plan sapması):** `git add __tests__/` kullanımı nedeniyle f13-f17 Mimsoft fixture'ları da bu commit'te git'e eklendi (plan'da Paket G — Sprint 8a.8 içindi). İçerik değişmedi, sadece tracking zamanı kaydı; Paket G yalnızca regresyon testleri yazacak, fixture rename/ekleme adımı artık gereksiz.
+
+---
+
+## Sprint 8a.3 — Paket B.1: Type + Profile validators (B-29/30/31)
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8a.3: Paket B.1 type/profile validators (B-29/30/31)`
+
+### Kapsam
+
+| Bulgu | Kapsamı | Schematron ref |
+|-------|---------|----------------|
+| **B-29** | IHRACAT satır PriceAmount + LineExtensionAmount > 0 zorunlu | CommonSchematron:404-406 |
+| **B-30** | WithholdingTaxTotal ters yön — izinli tipler dışında yasak | CommonSchematron:289 |
+| **B-31** | IADE grubu InvoiceDocumentReference.documentTypeCode='IADE' zorunlu | CommonSchematron:358 |
+
+### Kod Değişiklikleri
+
+1. **`src/validators/type-validators.ts`**:
+   - Import: `WITHHOLDING_ALLOWED_TYPES` eklendi
+   - **B-30:** `validateByType` içinde `withholdingTaxTotals` varsa `WITHHOLDING_ALLOWED_TYPES.has(typeCode)` kontrolü
+   - **B-31:** `validateIadeGroup` içinde `ref.documentTypeCode` zorunlu + değer `'IADE'` kontrolü
+
+2. **`src/validators/profile-validators.ts`**:
+   - **B-29:** `validateIhracat` satır loop'una `priceAmount > 0` ve `lineExtensionAmount > 0` kontrolü
+
+### Test Değişiklikleri
+
+1. **`__tests__/builders/invoice-builder.test.ts:217`** — IADE test fixture'ına `documentTypeCode: 'IADE'` eklendi (B-31 regresyon uyumu).
+
+2. **`__tests__/validators/type-profile-b29-b30-b31.test.ts`** — yeni dosya (+7 test):
+   - B-30 (2): SATIS+withholding reddet, SGK+withholding kabul
+   - B-31 (3): documentTypeCode yok reddet, 'DIGER' reddet, 'IADE' kabul
+   - B-29 (2): priceAmount=0 reddet, lineExtensionAmount=0 reddet
+
+### Test Durumu
+
+- Başlangıç (8a.2 sonu): 589 / 589 yeşil (35 dosya)
+- Son (8a.3 kapanışı): **596 / 596 yeşil** (36 dosya, +7)
+- TypeScript strict: temiz
+
+### Değişiklik İstatistikleri
+
+- `src/validators/type-validators.ts` — +15 satır (B-30 ters yön, B-31 documentTypeCode)
+- `src/validators/profile-validators.ts` — +12 satır (B-29 amount kontrolü)
+- `__tests__/builders/invoice-builder.test.ts` — 1 satır (documentTypeCode fixture güncelleme)
+- `__tests__/validators/type-profile-b29-b30-b31.test.ts` — yeni dosya (140 satır)
+
+### Disiplin Notları
+
+- **`WITHHOLDING_ALLOWED_TYPES` yeniden kullanım:** Bu sabit constants.ts'de zaten vardı (77-81); B-30 yeni bir set oluşturmadı, mevcut M7 config'i kullandı.
+- **B-31 mevcut kod regresyonu:** `simple-invoice-mapper.ts:442-455` `buildBillingReference` zaten `documentTypeCode` üretir (isIadeGroup bazlı otomatik); manuel builder path'inde test fixture güncelleme gerekti.
+- **B-29 kapsam sınırı:** Sadece IHRACAT profili için uygulandı. YOLCUBERABERFATURA/OZELFATURA için Schematron ayrı kural önermedi; B-T78'de genel satır amount kontrolü Paket B.2'de ele alınacak.

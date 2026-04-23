@@ -4,7 +4,7 @@ import { InvoiceTypeCode } from '../types/enums';
 import {
   IADE_GROUP_TYPES, TEVKIFAT_GROUP_TYPES, ISTISNA_GROUP_TYPES,
   KDV_ZERO_EXEMPTION_EXCLUDED_TYPES, WITHHOLDING_TAX_TYPE_CODES,
-  WITHHOLDING_TAX_TYPE_WITH_PERCENT,
+  WITHHOLDING_TAX_TYPE_WITH_PERCENT, WITHHOLDING_ALLOWED_TYPES,
   ISTISNA_TAX_EXEMPTION_REASON_CODES, OZEL_MATRAH_TAX_EXEMPTION_REASON_CODES,
   IHRAC_EXEMPTION_REASON_CODES, TAX_4171_ALLOWED_TYPES,
 } from '../config/constants';
@@ -27,6 +27,15 @@ export function validateByType(input: InvoiceInput): ValidationError[] {
   // §2.2 Tevkifat grubu: WithholdingTaxTotal
   if (TEVKIFAT_GROUP_TYPES.has(typeCode)) {
     errors.push(...validateTevkifatGroup(input));
+  }
+
+  // B-30: WithholdingTaxTotal ters yön — izinli tipler dışında kullanılamaz (CommonSchematron:289)
+  if (input.withholdingTaxTotals && input.withholdingTaxTotals.length > 0) {
+    if (!WITHHOLDING_ALLOWED_TYPES.has(typeCode)) {
+      errors.push(invalidValue('withholdingTaxTotals',
+        'WithholdingTaxTotal sadece TEVKIFAT/YTBTEVKIFAT/IADE/YTBIADE/SGK/SARJ/SARJANLIK tiplerinde kullanılabilir',
+        typeCode));
+    }
   }
 
   // §2.3 İstisna grubu
@@ -84,6 +93,15 @@ function validateIadeGroup(input: InvoiceInput): ValidationError[] {
     } else if (ref.id.length !== 16) {
       errors.push(typeRequirement(tc, `billingReferences[${i}].invoiceDocumentReference.id`,
         `Referans fatura ID 16 karakter olmalıdır (gelen: ${ref.id.length})`));
+    }
+
+    // B-31: IADE grubunda InvoiceDocumentReference.documentTypeCode='IADE' zorunlu (CommonSchematron:358)
+    if (!isNonEmpty(ref.documentTypeCode)) {
+      errors.push(typeRequirement(tc, `billingReferences[${i}].invoiceDocumentReference.documentTypeCode`,
+        "IADE grubunda DocumentTypeCode zorunludur (değer: 'IADE')"));
+    } else if (ref.documentTypeCode !== 'IADE') {
+      errors.push(typeRequirement(tc, `billingReferences[${i}].invoiceDocumentReference.documentTypeCode`,
+        `IADE grubunda DocumentTypeCode 'IADE' olmalıdır (gelen: ${ref.documentTypeCode})`));
     }
   });
 
