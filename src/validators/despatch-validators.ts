@@ -29,12 +29,20 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
     errors.push(invalidFormat('uuid', 'UUID formatı', input.uuid));
   }
 
+  // O3 — ProfileID whitelist (Schematron ProfileIDTypeDespatchAdvice)
   if (!isNonEmpty(input.profileId)) {
     errors.push(missingField('profileId', 'ProfileID zorunludur'));
+  } else if (!Object.values(DespatchProfileId).includes(input.profileId as DespatchProfileId)) {
+    errors.push(invalidFormat('profileId',
+      Object.values(DespatchProfileId).join('|'), input.profileId));
   }
 
+  // O3 — DespatchAdviceTypeCode whitelist (Schematron DespatchAdviceTypeCodeCheck)
   if (!isNonEmpty(input.despatchTypeCode)) {
     errors.push(missingField('despatchTypeCode', 'DespatchAdviceTypeCode zorunludur'));
+  } else if (!Object.values(DespatchTypeCode).includes(input.despatchTypeCode as DespatchTypeCode)) {
+    errors.push(invalidFormat('despatchTypeCode',
+      Object.values(DespatchTypeCode).join('|'), input.despatchTypeCode));
   }
 
   if (!isNonEmpty(input.issueDate)) {
@@ -126,8 +134,11 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
     errors.push(missingField('lines', 'En az bir DespatchLine zorunludur'));
   } else {
     input.lines.forEach((line, i) => {
+      // O4 — DespatchLineId numeric (Schematron DespatchLineIdCheck: string(number()) != 'NaN')
       if (!isNonEmpty(line.id)) {
         errors.push(missingField(`lines[${i}].id`, 'Satır ID zorunludur'));
+      } else if (!/^\d+$/.test(line.id)) {
+        errors.push(invalidFormat(`lines[${i}].id`, 'Numerik (örn: 1, 2, 3)', line.id));
       }
       if (!isNonEmpty(line.unitCode)) {
         errors.push(missingField(`lines[${i}].unitCode`, 'Birim kodu zorunludur'));
@@ -143,6 +154,14 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
     if (!input.additionalDocuments || input.additionalDocuments.length === 0) {
       errors.push(missingField('additionalDocuments',
         'MATBUDAN tipinde AdditionalDocumentReference zorunludur'));
+    } else {
+      // O7 — MATBUDAN cross-check (Schematron DespatchAdviceTypeCodeCheck):
+      // En az bir AdditionalDocumentReference.documentType='MATBU' olmalı
+      const hasMatbu = input.additionalDocuments.some(d => d.documentType === 'MATBU');
+      if (!hasMatbu) {
+        errors.push(profileRequirement('MATBUDAN', 'additionalDocuments.documentType',
+          "MATBUDAN tipinde en az bir AdditionalDocumentReference DocumentType='MATBU' olmalıdır"));
+      }
     }
   }
 
