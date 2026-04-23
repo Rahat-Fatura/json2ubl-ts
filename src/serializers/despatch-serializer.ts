@@ -18,10 +18,7 @@ export function serializeDespatch(input: DespatchInput, prettyPrint: boolean = t
   parts.push(xmlDeclaration());
   parts.push(despatchOpenTag(DESPATCH_NAMESPACES));
 
-  // 1. UBLExtensions
-  // parts.push(indentBlock(ublExtensionsPlaceholder(), ind));
-
-  // 2-3. UBLVersionID, CustomizationID
+  // UBLVersionID, CustomizationID
   parts.push(`${ind}${cbcOptionalTag('UBLVersionID', UBL_CONSTANTS.ublVersionId)}`);
   parts.push(`${ind}${cbcOptionalTag('CustomizationID', UBL_CONSTANTS.customizationId)}`);
 

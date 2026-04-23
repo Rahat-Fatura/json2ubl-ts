@@ -49,10 +49,7 @@ export function serializeInvoice(
     // Invoice açılış tag'i
     parts.push(invoiceOpenTag(INVOICE_NAMESPACES));
 
-    // 1. UBLExtensions (boş placeholder)
-    // parts.push(indent(ublExtensionsPlaceholder(), ind));
-
-    // 2-3. UBLVersionID, CustomizationID
+    // UBLVersionID, CustomizationID
     parts.push(`${ind}${cbcOptionalTag("UBLVersionID", UBL_CONSTANTS.ublVersionId)}`);
     parts.push(
         `${ind}${cbcOptionalTag("CustomizationID", UBL_CONSTANTS.customizationId)}`,

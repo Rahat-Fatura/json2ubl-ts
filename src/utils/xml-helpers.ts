@@ -196,16 +196,3 @@ export function despatchOpenTag(namespaces: Record<string, string>): string {
   return `<DespatchAdvice ${attrs.join('\n  ')}>`;
 }
 
-// ─── dead code (Sprint 8'de silinecek — B-95) ──────────────────────────────
-
-/** @deprecated Sprint 8'de silinecek (B-95). ublExtensionsPlaceholder artık kullanılmıyor. */
-export function ublExtensionsPlaceholder(): string {
-  return [
-    '<ext:UBLExtensions>',
-    '  <ext:UBLExtension>',
-    '    <ext:ExtensionContent>',
-    '    </ext:ExtensionContent>',
-    '  </ext:UBLExtension>',
-    '</ext:UBLExtensions>',
-  ].join('\n');
-}
