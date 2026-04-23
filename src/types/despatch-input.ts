@@ -36,8 +36,8 @@ export interface DespatchInput {
   // === OPSİYONEL ===
   /** Notlar */
   notes?: string[];
-  /** Sipariş referansı */
-  orderReference?: OrderReferenceInput;
+  /** Sipariş referansları — B-53: XSD maxOccurs="unbounded" (0..n) */
+  orderReferences?: OrderReferenceInput[];
   /** Ek belgeler — §5.3 MATBUDAN için zorunlu */
   additionalDocuments?: AdditionalDocumentInput[];
   /** Signature bilgisi */

@@ -46,16 +46,19 @@ export function serializeDespatch(input: DespatchInput, prettyPrint: boolean = t
   // 10. DespatchAdviceTypeCode
   parts.push(`${ind}${cbcOptionalTag('DespatchAdviceTypeCode', input.despatchTypeCode)}`);
 
-  // 11. Note
+  // 11. Note (XSD:19)
   if (input.notes) {
     for (const note of input.notes) {
       parts.push(`${ind}${cbcOptionalTag('Note', note)}`);
     }
   }
 
-  // 12. OrderReference
-  if (input.orderReference) {
-    parts.push(serializeOrderReference(input.orderReference, ind));
+  // 12. LineCountNumeric — B-52 (XSD:20, otomatik input.lines.length)
+  parts.push(`${ind}${cbcOptionalTag('LineCountNumeric', input.lines.length)}`);
+
+  // 13. OrderReference — B-53 (XSD:21, 0..n)
+  for (const ref of input.orderReferences ?? []) {
+    parts.push(serializeOrderReference(ref, ind));
   }
 
   // 13. AdditionalDocumentReference (MATBUDAN için zorunlu)

@@ -75,6 +75,54 @@ describe('DespatchBuilder — B-19 DespatchContact/Name', () => {
   });
 });
 
+describe('DespatchBuilder — B-52 LineCountNumeric + B-53 OrderReference array', () => {
+  it('B-52 LineCountNumeric otomatik emit (input.lines.length)', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    input.lines = [
+      { id: '1', deliveredQuantity: 5, unitCode: 'C62', item: { name: 'A' } },
+      { id: '2', deliveredQuantity: 3, unitCode: 'C62', item: { name: 'B' } },
+      { id: '3', deliveredQuantity: 1, unitCode: 'C62', item: { name: 'C' } },
+    ];
+    const xml = builder.build(input);
+    expect(xml).toContain('<cbc:LineCountNumeric>3</cbc:LineCountNumeric>');
+  });
+
+  it('B-52 LineCountNumeric XSD sırası (Note < LineCountNumeric < OrderReference)', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    input.notes = ['Test notu'];
+    input.orderReferences = [{ id: 'ORD-001', issueDate: '2024-01-10' }];
+    const xml = builder.build(input);
+    const noteIdx = xml.indexOf('<cbc:Note>Test notu</cbc:Note>');
+    const lineCountIdx = xml.indexOf('<cbc:LineCountNumeric>');
+    const orderIdx = xml.indexOf('<cac:OrderReference>');
+    expect(noteIdx).toBeLessThan(lineCountIdx);
+    expect(lineCountIdx).toBeLessThan(orderIdx);
+  });
+
+  it('B-53 çoklu OrderReference emit edilir', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    input.orderReferences = [
+      { id: 'ORD-001', issueDate: '2024-01-10' },
+      { id: 'ORD-002', issueDate: '2024-01-11' },
+    ];
+    const xml = builder.build(input);
+    const orderCount = (xml.match(/<cac:OrderReference>/g) ?? []).length;
+    expect(orderCount).toBe(2);
+    expect(xml).toContain('ORD-001');
+    expect(xml).toContain('ORD-002');
+  });
+
+  it('B-53 orderReferences undefined ise hiç OrderReference emit edilmez', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    const xml = builder.build(input);
+    expect(xml).not.toContain('<cac:OrderReference>');
+  });
+});
+
 describe('DespatchBuilder — B-72 Shipment ID override + B-73 GoodsItem.ValueAmount', () => {
   it('shipmentId default "1" emit edilir', () => {
     const builder = new DespatchBuilder();
