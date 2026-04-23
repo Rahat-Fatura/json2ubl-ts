@@ -218,3 +218,127 @@ describe('§1.5 Party Validasyonu (validateParty)', () => {
     expect(errors.some(e => e.path?.includes('familyName'))).toBe(true);
   });
 });
+
+describe('§1 B-65 IssueDate aralık kontrolü', () => {
+  it('B-65: 2005 öncesi tarih reddedilir', () => {
+    const errors = validateCommon(createValidInput({ issueDate: '2004-12-31' }));
+    expect(errors.some(e => e.code === 'INVALID_VALUE' && e.path === 'issueDate')).toBe(true);
+  });
+
+  it('B-65: gelecek tarih reddedilir', () => {
+    const errors = validateCommon(createValidInput({ issueDate: '2099-01-01' }));
+    expect(errors.some(e => e.code === 'INVALID_VALUE' && e.path === 'issueDate')).toBe(true);
+  });
+
+  it('B-65: 2005-01-01 sınırı kabul edilir', () => {
+    const errors = validateCommon(createValidInput({ issueDate: '2005-01-01' }));
+    expect(errors.filter(e => e.path === 'issueDate')).toHaveLength(0);
+  });
+});
+
+describe('§1 B-68 ProfileID whitelist runtime', () => {
+  it('B-68: geçersiz ProfileID string reddedilir', () => {
+    const errors = validateCommon(createValidInput({
+      // @ts-expect-error test: invalid enum value (runtime JSON input)
+      profileId: 'INVALIDPROFILE',
+    }));
+    expect(errors.some(e => e.code === 'INVALID_FORMAT' && e.path === 'profileId')).toBe(true);
+  });
+
+  it('B-68: geçerli enum değeri kabul edilir', () => {
+    const errors = validateCommon(createValidInput({
+      profileId: InvoiceProfileId.TICARIFATURA,
+    }));
+    expect(errors.filter(e => e.path === 'profileId')).toHaveLength(0);
+  });
+});
+
+describe('§1 B-64 ExchangeRate format', () => {
+  it('B-64: 7 ondalık basamak reddedilir', () => {
+    const errors = validateCommon(createValidInput({
+      currencyCode: 'USD',
+      exchangeRate: {
+        sourceCurrencyCode: 'USD', targetCurrencyCode: 'TRY',
+        calculationRate: 1.2345678,
+      },
+    }));
+    expect(errors.some(e => e.code === 'INVALID_FORMAT' && e.path === 'exchangeRate.calculationRate')).toBe(true);
+  });
+
+  it('B-64: negatif kur reddedilir', () => {
+    const errors = validateCommon(createValidInput({
+      currencyCode: 'USD',
+      exchangeRate: {
+        sourceCurrencyCode: 'USD', targetCurrencyCode: 'TRY',
+        calculationRate: -1.5,
+      },
+    }));
+    expect(errors.some(e => e.code === 'INVALID_FORMAT' && e.path === 'exchangeRate.calculationRate')).toBe(true);
+  });
+
+  it('B-64: geçerli 6 ondalık kabul edilir', () => {
+    const errors = validateCommon(createValidInput({
+      currencyCode: 'USD',
+      exchangeRate: {
+        sourceCurrencyCode: 'USD', targetCurrencyCode: 'TRY',
+        calculationRate: 32.123456,
+      },
+    }));
+    expect(errors.filter(e => e.path === 'exchangeRate.calculationRate')).toHaveLength(0);
+  });
+});
+
+describe('§1 B-62 TaxFreeInvoice VKN cross-check', () => {
+  it('B-62: 1460415308 VKN + TEMELFATURA profili reddedilir', () => {
+    const supplier = createValidVknParty();
+    supplier.vknTckn = '1460415308';
+    const errors = validateCommon(createValidInput({ supplier }));
+    expect(errors.some(e => e.code === 'INVALID_VALUE' && e.path === 'profileId')).toBe(true);
+  });
+
+  it('B-62: 1460415308 VKN + YOLCUBERABERFATURA profili kabul edilir', () => {
+    const supplier = createValidVknParty();
+    supplier.vknTckn = '1460415308';
+    const errors = validateCommon(createValidInput({
+      supplier,
+      profileId: InvoiceProfileId.YOLCUBERABERFATURA,
+    }));
+    expect(errors.filter(e => e.code === 'INVALID_VALUE' && e.path === 'profileId')).toHaveLength(0);
+  });
+});
+
+describe('§1 B-63 SGK VKN cross-check', () => {
+  it('B-63: 7750409379 VKN + SATIS tipi reddedilir', () => {
+    const supplier = createValidVknParty();
+    supplier.vknTckn = '7750409379';
+    const errors = validateCommon(createValidInput({ supplier }));
+    expect(errors.some(e => e.code === 'INVALID_VALUE' && e.path === 'invoiceTypeCode')).toBe(true);
+  });
+
+  it('B-63: 7750409379 VKN + SGK tipi kabul edilir', () => {
+    const supplier = createValidVknParty();
+    supplier.vknTckn = '7750409379';
+    const errors = validateCommon(createValidInput({
+      supplier,
+      invoiceTypeCode: InvoiceTypeCode.SGK,
+    }));
+    expect(errors.filter(e => e.code === 'INVALID_VALUE' && e.path === 'invoiceTypeCode')).toHaveLength(0);
+  });
+});
+
+describe('§1 B-69 additionalIdentifiers schemeID whitelist', () => {
+  it('B-69: geçersiz schemeID reddedilir', () => {
+    const party = createValidVknParty();
+    party.additionalIdentifiers = [{ schemeId: 'INVALIDSCHEME', value: '123' }];
+    const errors = validateParty(party, 'supplier');
+    expect(errors.some(e => e.code === 'INVALID_VALUE'
+      && e.path === 'supplier.additionalIdentifiers[0].schemeId')).toBe(true);
+  });
+
+  it('B-69: geçerli schemeID kabul edilir', () => {
+    const party = createValidVknParty();
+    party.additionalIdentifiers = [{ schemeId: 'MUSTERINO', value: '123' }];
+    const errors = validateParty(party, 'supplier');
+    expect(errors.filter(e => e.path?.includes('additionalIdentifiers'))).toHaveLength(0);
+  });
+});

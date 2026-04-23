@@ -86,3 +86,65 @@ Sprint 5'te kullanıcı prompt'uyla dar tutulmuş **B-29..B-31, B-62..B-69, B-78
 - **Atomik güncelleme:** validator + 8 test lokasyonu + 2 yeni test tek commit'te.
 - **F12 rename:** Dosya henüz git'te tracked değildi, `mv` ile temiz ada taşındı (git mv değil). İlk commit bu sprintte.
 - **f13-f17 untracked:** Bu commit'te eklenmiyor — Paket G (Sprint 8a.8) Mimsoft fixture regresyon suite'inde eklenecekler.
+
+---
+
+## Sprint 8a.2 — Paket A: Common Validators (B-62/63/64/65/68/69)
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8a.2: Paket A common validators (B-62/63/64/65/68/69)`
+
+### Kapsam
+
+| Bulgu | Kapsamı | Schematron ref |
+|-------|---------|----------------|
+| **B-62** | 1460415308 VKN (TaxFreeInvoice) profil cross-check | CommonSchematron:275-277 |
+| **B-63** | 7750409379 VKN (SGK) tip cross-check | CommonSchematron:508-510 |
+| **B-64** | ExchangeRate.calculationRate format aktif | CommonSchematron:190 |
+| **B-65** | IssueDate aralık (2005 ↔ bugün) | CommonSchematron:169-170 |
+| **B-68** | ProfileID runtime whitelist (InvoiceProfileId enum) | CommonSchematron:147 |
+| **B-69** | additionalIdentifiers schemeID whitelist (`validateParty` içinde) | CommonSchematron:250-251 |
+
+### Kod Değişiklikleri
+
+1. **`src/config/special-vkn-config.ts`** — yeni dosya (M7 config-derived pattern):
+   - `TAXFREE_SPECIAL_VKN = '1460415308'` + `TAXFREE_ALLOWED_PROFILES` (YOLCU/IHRACAT/OZELFATURA/KAMU)
+   - `SGK_SPECIAL_VKN = '7750409379'` + `SGK_ALLOWED_TYPES` (SGK/TEVKIFAT)
+
+2. **`src/validators/common-validators.ts`** değişiklikleri:
+   - Import genişletmesi: `EXCHANGE_RATE_REGEX`, `PARTY_IDENTIFICATION_SCHEME_IDS`, `special-vkn-config.ts`, `InvoiceProfileId`, `InvoiceTypeCode`
+   - Modül sabiti: `ISSUE_DATE_MIN = '2005-01-01'`
+   - **B-68:** ProfileID whitelist — `Object.values(InvoiceProfileId).includes(...)` runtime check
+   - **B-65:** DATE_REGEX sonrası ISO string range kontrolü (bugün `new Date().toISOString().slice(0,10)`)
+   - **B-64:** ExchangeRate varsa `calculationRate` sayı + pozitif + finite + `EXCHANGE_RATE_REGEX.test(String(rate))`
+   - **B-62+B-63:** `validateSpecialVKN(input)` helper `validateParty` çağrılarından sonra
+   - **B-69:** `validateParty` içinde `additionalIdentifiers?.forEach` → schemeID whitelist
+
+### Test Değişiklikleri
+
+`__tests__/validators/common-validators.test.ts` sonuna 6 yeni describe bloğu (+14 test):
+- **B-65 IssueDate aralık** — 2004-12-31 reddet, 2099-01-01 reddet, 2005-01-01 kabul (3)
+- **B-68 ProfileID whitelist** — INVALIDPROFILE reddet, TICARIFATURA kabul (2)
+- **B-64 ExchangeRate format** — 7 ondalık reddet, negatif reddet, 6 ondalık kabul (3)
+- **B-62 TaxFreeInvoice VKN** — 1460415308+TEMELFATURA reddet, 1460415308+YOLCU kabul (2)
+- **B-63 SGK VKN** — 7750409379+SATIS reddet, 7750409379+SGK kabul (2)
+- **B-69 schemeID whitelist** — INVALIDSCHEME reddet, MUSTERINO kabul (2)
+
+### Test Durumu
+
+- Başlangıç (8a.1 sonu): 575 / 575 yeşil (35 dosya)
+- Son (8a.2 kapanışı): **589 / 589 yeşil** (35 dosya, +14)
+- TypeScript strict: temiz
+
+### Değişiklik İstatistikleri
+
+- `src/config/special-vkn-config.ts` — yeni dosya (26 satır)
+- `src/validators/common-validators.ts` — +45 satır (B-68 whitelist, B-65 aralık, B-64 format, B-62/63 helper, B-69 schemeID)
+- `__tests__/validators/common-validators.test.ts` — +127 satır (6 describe, 14 test)
+
+### Disiplin Notları
+
+- **M7 config-derived:** Özel VKN'ler magic number değil; `special-vkn-config.ts` sabitleri.
+- **B-65 tarih karşılaştırması:** ISO format string karşılaştırması yeterli (`'2005-01-01' <= input.issueDate <= today`); `new Date()` parse → timezone riski yerine string compare tercih edildi.
+- **B-64 Exchange rate:** Sayı türünde geldiği için `String(rate)` ile regex. 7+ ondalık IEEE754 float'ta kaybolabilir; regex temel koruma.
+- **Validator çağrı sırası:** `validateSpecialVKN` party validasyonlarından SONRA çağrıldı — VKN format geçersizse önce B-62/B-63 yerine `validateParty` hatasını al.

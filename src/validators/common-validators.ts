@@ -10,9 +10,18 @@ import type {
 import {
   INVOICE_ID_REGEX, UUID_REGEX, DATE_REGEX, TIME_REGEX,
   CURRENCY_CODES, TAX_TYPE_CODES,
+  EXCHANGE_RATE_REGEX, PARTY_IDENTIFICATION_SCHEME_IDS,
 } from '../config/constants';
+import {
+  TAXFREE_SPECIAL_VKN, TAXFREE_ALLOWED_PROFILES,
+  SGK_SPECIAL_VKN, SGK_ALLOWED_TYPES,
+} from '../config/special-vkn-config';
+import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 import { missingField, invalidFormat, invalidValue } from './validation-result';
 import { isNonEmpty } from '../utils/formatters';
+
+/** B-65: IssueDate aralık alt sınırı (Schematron e-Fatura başlangıcı) */
+const ISSUE_DATE_MIN = '2005-01-01';
 
 /**
  * §1 Ortak zorunluluk validasyonu — tüm faturalar için geçerli kurallar
@@ -35,6 +44,10 @@ export function validateCommon(input: InvoiceInput): ValidationError[] {
 
   if (!isNonEmpty(input.profileId)) {
     errors.push(missingField('profileId', 'ProfileID (cbc:ProfileID) zorunludur'));
+  } else if (!Object.values(InvoiceProfileId).includes(input.profileId as InvoiceProfileId)) {
+    // B-68: ProfileID whitelist runtime (CommonSchematron:147)
+    errors.push(invalidFormat('profileId',
+      Object.values(InvoiceProfileId).join('|'), input.profileId));
   }
 
   if (!isNonEmpty(input.invoiceTypeCode)) {
@@ -45,6 +58,13 @@ export function validateCommon(input: InvoiceInput): ValidationError[] {
     errors.push(missingField('issueDate', 'Düzenleme tarihi (cbc:IssueDate) zorunludur'));
   } else if (!DATE_REGEX.test(input.issueDate)) {
     errors.push(invalidFormat('issueDate', 'YYYY-MM-DD', input.issueDate));
+  } else {
+    // B-65: IssueDate aralık kontrolü (CommonSchematron:169-170)
+    const today = new Date().toISOString().slice(0, 10);
+    if (input.issueDate < ISSUE_DATE_MIN || input.issueDate > today) {
+      errors.push(invalidValue('issueDate',
+        `${ISSUE_DATE_MIN} ≤ tarih ≤ ${today}`, input.issueDate));
+    }
   }
 
   if (input.issueTime && !TIME_REGEX.test(input.issueTime)) {
@@ -62,9 +82,24 @@ export function validateCommon(input: InvoiceInput): ValidationError[] {
     errors.push(missingField('exchangeRate', 'Dövizli faturalarda PricingExchangeRate zorunludur'));
   }
 
+  // B-64: ExchangeRate.calculationRate format kontrolü (CommonSchematron:190)
+  if (input.exchangeRate) {
+    const rate = input.exchangeRate.calculationRate;
+    if (typeof rate !== 'number' || !Number.isFinite(rate) || rate <= 0) {
+      errors.push(invalidFormat('exchangeRate.calculationRate',
+        'pozitif ondalık sayı', String(rate)));
+    } else if (!EXCHANGE_RATE_REGEX.test(String(rate))) {
+      errors.push(invalidFormat('exchangeRate.calculationRate',
+        '15 tam basamak + max 6 ondalık', String(rate)));
+    }
+  }
+
   // §1.5 Party validasyonu
   errors.push(...validateParty(input.supplier, 'supplier'));
   errors.push(...validateParty(input.customer, 'customer'));
+
+  // B-62/B-63: Özel VKN cross-check (TaxFreeInvoice + SGK)
+  errors.push(...validateSpecialVKN(input));
 
   // §1.6 Signature
   if (input.signatureInfo) {
@@ -183,6 +218,43 @@ export function validateParty(party: PartyInput | undefined | null, path: string
 
   // §M6 / B-34: Party verildiyse PostalAddress alanları zorunlu (cityName + citySubdivisionName)
   errors.push(...validatePartyAddressFields(party, path));
+
+  // B-69: additionalIdentifiers schemeID whitelist (CommonSchematron:250-251)
+  party.additionalIdentifiers?.forEach((id, i) => {
+    if (!PARTY_IDENTIFICATION_SCHEME_IDS.has(id.schemeId)) {
+      errors.push(invalidValue(`${path}.additionalIdentifiers[${i}].schemeId`,
+        'PARTY_IDENTIFICATION_SCHEME_IDS listesinden', id.schemeId));
+    }
+  });
+
+  return errors;
+}
+
+/**
+ * B-62 + B-63 — Schematron özel VKN cross-check.
+ * 1460415308 (TaxFreeInvoice) varsa profil YOLCU/IHRACAT/OZELFATURA/KAMU.
+ * 7750409379 (SGK) varsa tip SGK veya TEVKIFAT.
+ */
+export function validateSpecialVKN(input: InvoiceInput): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const partyVkns = [input.supplier?.vknTckn, input.customer?.vknTckn]
+    .filter((v): v is string => isNonEmpty(v));
+
+  if (partyVkns.includes(TAXFREE_SPECIAL_VKN)) {
+    if (!TAXFREE_ALLOWED_PROFILES.has(input.profileId as InvoiceProfileId)) {
+      errors.push(invalidValue('profileId',
+        `${TAXFREE_SPECIAL_VKN} VKN için YOLCUBERABERFATURA/IHRACAT/OZELFATURA/KAMU profili zorunludur (B-62)`,
+        input.profileId));
+    }
+  }
+
+  if (partyVkns.includes(SGK_SPECIAL_VKN)) {
+    if (!SGK_ALLOWED_TYPES.has(input.invoiceTypeCode as InvoiceTypeCode)) {
+      errors.push(invalidValue('invoiceTypeCode',
+        `${SGK_SPECIAL_VKN} VKN için SGK veya TEVKIFAT tipi zorunludur (B-63)`,
+        input.invoiceTypeCode));
+    }
+  }
 
   return errors;
 }
