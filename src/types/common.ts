@@ -27,11 +27,20 @@ export interface PartyInput {
   buildingName?: string;
   buildingNumber?: string;
   room?: string;
+  /** Apartman / blok adı — B-98 */
+  blockName?: string;
+  /** Mahalle / district — B-98 */
+  district?: string;
+  /** Posta kutusu — B-98 */
+  postbox?: string;
   citySubdivisionName?: string;
   cityName?: string;
   postalZone?: string;
   region?: string;
+  /** Ülke adı — cac:Country/cbc:Name */
   country?: string;
+  /** Ülke kodu ISO 3166-1 alpha-2 — cac:Country/cbc:IdentificationCode (B-100) */
+  countryCode?: string;
 
   /** Vergi dairesi adı */
   taxOffice?: string;
@@ -66,6 +75,10 @@ export interface TaxRepresentativeInput {
   intermediaryLabel: string;
   /** Ek tanımlayıcılar */
   additionalIdentifiers?: PartyIdentifierInput[];
+  /** Aracı kurum tüzel adı — B-37 cac:PartyName/cbc:Name */
+  name?: string;
+  /** Aracı kurum posta adresi — B-37 cac:PostalAddress */
+  postalAddress?: AddressInput;
 }
 
 /** Vergi alt toplam */
@@ -250,13 +263,22 @@ export interface AddressInput {
   buildingName?: string;
   buildingNumber?: string;
   room?: string;
+  /** Apartman / blok adı — B-98 */
+  blockName?: string;
+  /** Mahalle / district — B-98 */
+  district?: string;
+  /** Posta kutusu — B-98 */
+  postbox?: string;
   /** İlçe adı — XSD zorunlu (B-35) */
   citySubdivisionName: string;
   /** Şehir adı — XSD zorunlu (B-35) */
   cityName: string;
   postalZone?: string;
   region?: string;
+  /** Ülke adı — cac:Country/cbc:Name */
   country?: string;
+  /** Ülke kodu ISO 3166-1 alpha-2 — cac:Country/cbc:IdentificationCode (B-100) */
+  countryCode?: string;
 }
 
 /** Teslimat koşulları — §3.3 IHRACAT */

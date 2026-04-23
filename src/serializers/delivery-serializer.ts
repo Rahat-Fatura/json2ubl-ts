@@ -52,25 +52,38 @@ export function serializeLineDelivery(del: LineDeliveryInput, indent: string = '
  */
 export function serializeAddress(addr: AddressInput, tagName: string, indent: string = ''): string {
   const inner = emitInOrder(ADDRESS_SEQ, {
+    Postbox: () => cbcOptionalTag('Postbox', addr.postbox),
     Room: () => cbcOptionalTag('Room', addr.room),
     StreetName: () => cbcOptionalTag('StreetName', addr.streetName),
+    BlockName: () => cbcOptionalTag('BlockName', addr.blockName),
     BuildingName: () => cbcOptionalTag('BuildingName', addr.buildingName),
     BuildingNumber: () => cbcOptionalTag('BuildingNumber', addr.buildingNumber),
     CitySubdivisionName: () => cbcRequiredTag('CitySubdivisionName', addr.citySubdivisionName, tagName),
     CityName: () => cbcRequiredTag('CityName', addr.cityName, tagName),
     PostalZone: () => cbcOptionalTag('PostalZone', addr.postalZone),
     Region: () => cbcOptionalTag('Region', addr.region),
-    Country: () =>
-      isNonEmpty(addr.country)
-        ? [
-            `${indent}  <cac:Country>`,
-            `${indent}    ${cbcOptionalTag('Name', addr.country)}`,
-            `${indent}  </cac:Country>`,
-          ].join('\n')
-        : '',
+    District: () => cbcOptionalTag('District', addr.district),
+    Country: () => serializeCountry(addr.countryCode, addr.country, indent + '  '),
   });
   const body = joinLines(inner.map(s => (s.startsWith(indent + '  ') ? s : indent + '  ' + s)));
   return [`${indent}<cac:${tagName}>`, body, `${indent}</cac:${tagName}>`].join('\n');
+}
+
+/** cac:Country bloğu — B-100 IdentificationCode + Name (XSD sırası) */
+function serializeCountry(
+  countryCode: string | undefined,
+  countryName: string | undefined,
+  indent: string,
+): string {
+  if (!isNonEmpty(countryCode) && !isNonEmpty(countryName)) return '';
+  const inner: string[] = [];
+  if (isNonEmpty(countryCode)) {
+    inner.push(`${indent}  ${cbcOptionalTag('IdentificationCode', countryCode)}`);
+  }
+  if (isNonEmpty(countryName)) {
+    inner.push(`${indent}  ${cbcOptionalTag('Name', countryName)}`);
+  }
+  return [`${indent}<cac:Country>`, ...inner, `${indent}</cac:Country>`].join('\n');
 }
 
 /**

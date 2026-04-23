@@ -91,22 +91,18 @@ export function serializeParty(party: PartyInput, indent: string = ''): string {
  */
 function serializePostalAddress(party: PartyInput, indent: string): string[] {
   const inner = emitInOrder(ADDRESS_SEQ, {
+    Postbox: () => cbcOptionalTag('Postbox', party.postbox),
     Room: () => cbcOptionalTag('Room', party.room),
     StreetName: () => cbcOptionalTag('StreetName', party.streetName),
+    BlockName: () => cbcOptionalTag('BlockName', party.blockName),
     BuildingName: () => cbcOptionalTag('BuildingName', party.buildingName),
     BuildingNumber: () => cbcOptionalTag('BuildingNumber', party.buildingNumber),
     CitySubdivisionName: () => cbcRequiredTag('CitySubdivisionName', party.citySubdivisionName, 'PostalAddress'),
     CityName: () => cbcRequiredTag('CityName', party.cityName, 'PostalAddress'),
     PostalZone: () => cbcOptionalTag('PostalZone', party.postalZone),
     Region: () => cbcOptionalTag('Region', party.region),
-    Country: () =>
-      isNonEmpty(party.country)
-        ? [
-            `${indent}  <cac:Country>`,
-            `${indent}    ${cbcOptionalTag('Name', party.country)}`,
-            `${indent}  </cac:Country>`,
-          ].join('\n')
-        : '',
+    District: () => cbcOptionalTag('District', party.district),
+    Country: () => serializeCountry(party.countryCode, party.country, indent + '  '),
   });
   const body = joinLines(inner.map(s => (s.startsWith(indent + '  ') ? s : indent + '  ' + s)));
   return [
@@ -114,6 +110,23 @@ function serializePostalAddress(party: PartyInput, indent: string): string[] {
     body,
     `${indent}</cac:PostalAddress>`,
   ];
+}
+
+/** cac:Country bloğu — B-100 IdentificationCode + Name (XSD sırası) */
+function serializeCountry(
+  countryCode: string | undefined,
+  countryName: string | undefined,
+  indent: string,
+): string {
+  if (!isNonEmpty(countryCode) && !isNonEmpty(countryName)) return '';
+  const inner: string[] = [];
+  if (isNonEmpty(countryCode)) {
+    inner.push(`${indent}  ${cbcOptionalTag('IdentificationCode', countryCode)}`);
+  }
+  if (isNonEmpty(countryName)) {
+    inner.push(`${indent}  ${cbcOptionalTag('Name', countryName)}`);
+  }
+  return [`${indent}<cac:Country>`, ...inner, `${indent}</cac:Country>`].join('\n');
 }
 
 /**
@@ -193,11 +206,34 @@ export function serializeBuyerCustomerParty(buyer: BuyerCustomerInput, indent: s
     lines.push(`${i2}  </cac:PartyName>`);
   }
 
+  // B-36: PostalAddress — citySubdivisionName+cityName varsa emit
+  if (isNonEmpty(party.citySubdivisionName) && isNonEmpty(party.cityName)) {
+    lines.push(...serializePostalAddress(party, i2 + '  '));
+  }
+
+  // B-36: PartyTaxScheme (VKN için)
+  if (isNonEmpty(party.taxOffice)) {
+    lines.push(`${i2}  <cac:PartyTaxScheme>`);
+    lines.push(`${i2}    <cac:TaxScheme>`);
+    lines.push(`${i2}      ${cbcOptionalTag('Name', party.taxOffice)}`);
+    lines.push(`${i2}    </cac:TaxScheme>`);
+    lines.push(`${i2}  </cac:PartyTaxScheme>`);
+  }
+
   // PartyLegalEntity
   if (isNonEmpty(party.registrationName)) {
     lines.push(`${i2}  <cac:PartyLegalEntity>`);
     lines.push(`${i2}    ${cbcOptionalTag('RegistrationName', party.registrationName)}`);
     lines.push(`${i2}  </cac:PartyLegalEntity>`);
+  }
+
+  // B-36: Contact
+  if (isNonEmpty(party.telephone) || isNonEmpty(party.telefax) || isNonEmpty(party.email)) {
+    lines.push(`${i2}  <cac:Contact>`);
+    if (isNonEmpty(party.telephone)) lines.push(`${i2}    ${cbcOptionalTag('Telephone', party.telephone)}`);
+    if (isNonEmpty(party.telefax)) lines.push(`${i2}    ${cbcOptionalTag('Telefax', party.telefax)}`);
+    if (isNonEmpty(party.email)) lines.push(`${i2}    ${cbcOptionalTag('ElectronicMail', party.email)}`);
+    lines.push(`${i2}  </cac:Contact>`);
   }
 
   // Person (TAXFREE için) — B-20 fix: PERSON_SEQ
@@ -222,6 +258,7 @@ export function serializeBuyerCustomerParty(buyer: BuyerCustomerInput, indent: s
 /** TaxRepresentativeParty → XML (§3.4 YOLCU) */
 export function serializeTaxRepresentativeParty(trp: TaxRepresentativeInput, indent: string = ''): string {
   const i2 = indent + '  ';
+  const i3 = indent + '    ';
   const lines: string[] = [];
 
   lines.push(`${indent}<cac:TaxRepresentativeParty>`);
@@ -238,6 +275,20 @@ export function serializeTaxRepresentativeParty(trp: TaxRepresentativeInput, ind
       lines.push(`${i2}  ${cbcOptionalTag('ID', aid.value, { schemeID: aid.schemeId })}`);
       lines.push(`${i2}</cac:PartyIdentification>`);
     }
+  }
+
+  // B-37: PartyName
+  if (isNonEmpty(trp.name)) {
+    lines.push(`${i2}<cac:PartyName>`);
+    lines.push(`${i3}${cbcOptionalTag('Name', trp.name)}`);
+    lines.push(`${i2}</cac:PartyName>`);
+  }
+
+  // B-37: PostalAddress
+  if (trp.postalAddress) {
+    // AddressInput → PartyInput compat (vknTckn/taxIdType dummy, sadece adres alanları okunur)
+    const addrAsParty = { ...trp.postalAddress, vknTckn: '', taxIdType: 'VKN' } as PartyInput;
+    lines.push(...serializePostalAddress(addrAsParty, i2));
   }
 
   lines.push(`${indent}</cac:TaxRepresentativeParty>`);

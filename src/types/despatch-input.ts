@@ -77,11 +77,11 @@ export interface DespatchShipmentInput {
     valueAmount?: { value: number; currencyId?: string };
   };
   /** B-49: Canonical DORSEPLAKA path — Shipment/TransportHandlingUnit/TransportEquipment/ID */
-  transportHandlingUnits?: TransportHandlingUnitInput[];
+  transportHandlingUnits?: DespatchTransportHandlingUnitInput[];
 }
 
-/** Canonical TransportHandlingUnit/TransportEquipment/ID — B-49 */
-export interface TransportHandlingUnitInput {
+/** Despatch canonical TransportHandlingUnit/TransportEquipment/ID — B-49 */
+export interface DespatchTransportHandlingUnitInput {
   /** TransportEquipment cbc:ID (örn. plaka numarası) */
   transportEquipmentId: string;
   /** schemeID (default: 'DORSEPLAKA') */
