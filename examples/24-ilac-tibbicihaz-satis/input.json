@@ -1,0 +1,41 @@
+{
+  "id": "EXA2026000000024",
+  "uuid": "e1a2b3c4-0024-4000-8024-000000000024",
+  "datetime": "2026-04-23T14:00:00",
+  "profile": "ILAC_TIBBICIHAZ",
+  "type": "SATIS",
+  "currencyCode": "TRY",
+  "sender": {
+    "taxNumber": "1234567890",
+    "name": "Sınır Tanımaz İlaç Dağıtım A.Ş.",
+    "taxOffice": "Üsküdar",
+    "address": "Barbaros Bulvarı No:123 Kat:5",
+    "district": "Üsküdar",
+    "city": "İstanbul",
+    "zipCode": "34664"
+  },
+  "customer": {
+    "taxNumber": "9876543210",
+    "name": "Özel Hastane Grubu A.Ş.",
+    "taxOffice": "Kadıköy",
+    "address": "Bağdat Caddesi No:456",
+    "district": "Kadıköy",
+    "city": "İstanbul",
+    "zipCode": "34710"
+  },
+  "lines": [
+    {
+      "name": "Parasetamol 500mg Tablet (100 Adet)",
+      "quantity": 20,
+      "price": 45,
+      "unitCode": "Adet",
+      "kdvPercent": 8,
+      "additionalItemIdentifications": [
+        {
+          "schemeId": "ILAC",
+          "value": "8699999999999"
+        }
+      ]
+    }
+  ]
+}

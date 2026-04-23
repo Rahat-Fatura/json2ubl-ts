@@ -1,0 +1,53 @@
+import type { SimpleInvoiceInput } from '../../src';
+
+/**
+ * EARSIVFATURA + TEKNOLOJIDESTEK — teknoloji desteği teşviki kapsamında
+ * yapılan satış. Her cihazın IMEI/SERIMNO ek tanımlayıcısı zorunlu.
+ */
+export const input: SimpleInvoiceInput = {
+  id: 'EXA2026000000022',
+  uuid: 'e1a2b3c4-0022-4000-8022-000000000022',
+  datetime: '2026-04-23T12:00:00',
+  profile: 'EARSIVFATURA',
+  type: 'TEKNOLOJIDESTEK',
+  currencyCode: 'TRY',
+
+  eArchiveInfo: {
+    sendType: 'ELEKTRONIK',
+  },
+
+  sender: {
+    taxNumber: '1234567890',
+    name: 'Sınır Tanımaz Teknoloji A.Ş.',
+    taxOffice: 'Üsküdar',
+    address: 'Barbaros Bulvarı No:123 Kat:5',
+    district: 'Üsküdar',
+    city: 'İstanbul',
+    zipCode: '34664',
+  },
+
+  customer: {
+    taxNumber: '12345678901', // TCKN — TEKNOLOJIDESTEK için zorunlu (gerçek kişi)
+    name: 'Ahmet Öğrenci Kaya',
+    address: 'Üniversite Kampüsü Kız Yurdu No:12',
+    district: 'Beşiktaş',
+    city: 'İstanbul',
+    zipCode: '34353',
+  },
+
+  lines: [
+    {
+      name: 'Akıllı Telefon — 128GB',
+      quantity: 1,
+      price: 15000,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+      additionalItemIdentifications: [
+        { schemeId: 'TELEFON', value: '352099001761481' }, // IMEI
+        { schemeId: 'SERIMNO', value: 'SN-PHONE-2026-0001' },
+      ],
+    },
+  ],
+};
+
+export default input;

@@ -1,0 +1,45 @@
+{
+  "id": "EXA2026000000021",
+  "uuid": "e1a2b3c4-0021-4000-8021-000000000021",
+  "datetime": "2026-04-23T11:00:00",
+  "profile": "EARSIVFATURA",
+  "type": "SATIS",
+  "currencyCode": "TRY",
+  "eArchiveInfo": {
+    "sendType": "ELEKTRONIK"
+  },
+  "onlineSale": {
+    "isOnlineSale": true,
+    "storeUrl": "https://demo.sinir-tanimaz.example.tr",
+    "paymentMethod": "KREDIKARTI",
+    "paymentDate": "2026-04-23",
+    "carrierName": "Hızlı Kargo A.Ş.",
+    "carrierTaxNumber": "5555555555"
+  },
+  "sender": {
+    "taxNumber": "1234567890",
+    "name": "Sınır Tanımaz E-Ticaret A.Ş.",
+    "taxOffice": "Üsküdar",
+    "address": "Barbaros Bulvarı No:123 Kat:5",
+    "district": "Üsküdar",
+    "city": "İstanbul",
+    "zipCode": "34664"
+  },
+  "customer": {
+    "taxNumber": "12345678901",
+    "name": "Ayşe Yılmaz",
+    "address": "Şakir Kesebir Caddesi No:77",
+    "district": "Beşiktaş",
+    "city": "İstanbul",
+    "zipCode": "34353"
+  },
+  "lines": [
+    {
+      "name": "Kablosuz Bluetooth Kulaklık",
+      "quantity": 1,
+      "price": 250,
+      "unitCode": "Adet",
+      "kdvPercent": 20
+    }
+  ]
+}

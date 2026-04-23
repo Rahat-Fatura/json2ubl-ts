@@ -1,0 +1,47 @@
+{
+  "id": "EXA2026000000026",
+  "uuid": "e1a2b3c4-0026-4000-8026-000000000026",
+  "datetime": "2026-04-23T16:00:00",
+  "profile": "IDIS",
+  "type": "SATIS",
+  "currencyCode": "TRY",
+  "sender": {
+    "taxNumber": "1234567890",
+    "name": "Sınır Tanımaz Distribütör A.Ş.",
+    "taxOffice": "Üsküdar",
+    "address": "Barbaros Bulvarı No:123 Kat:5",
+    "district": "Üsküdar",
+    "city": "İstanbul",
+    "zipCode": "34664",
+    "identifications": [
+      {
+        "schemeId": "SEVKIYATNO",
+        "value": "SE-2026042"
+      }
+    ]
+  },
+  "customer": {
+    "taxNumber": "9876543210",
+    "name": "Yerel Bayi Ltd. Şti.",
+    "taxOffice": "Kadıköy",
+    "address": "Bağdat Caddesi No:456",
+    "district": "Kadıköy",
+    "city": "İstanbul",
+    "zipCode": "34710"
+  },
+  "lines": [
+    {
+      "name": "Ambalajlı Ürün — IDIS İzlenebilirlik",
+      "quantity": 100,
+      "price": 25,
+      "unitCode": "Adet",
+      "kdvPercent": 20,
+      "additionalItemIdentifications": [
+        {
+          "schemeId": "ETIKETNO",
+          "value": "ETK-2026-00042-001"
+        }
+      ]
+    }
+  ]
+}
