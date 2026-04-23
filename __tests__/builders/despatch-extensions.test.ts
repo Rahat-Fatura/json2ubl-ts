@@ -252,3 +252,76 @@ describe('DespatchBuilder — B-48 3 opsiyonel party tipi', () => {
     expect(xml).not.toContain('<cac:OriginatorCustomerParty>');
   });
 });
+
+// Sprint 7.3 — K1/K3/K4 regression guard (Sprint 6 devri, denetim 06 no-op teyit)
+// + B-T09 XSD sequence coverage (FIX-PLANI-v3 §296-315).
+// XSD_ELEMENTS truth source: src/serializers/xsd-sequence.ts (DESPATCH_SEQ, PERSON_SEQ, DELIVERY_SEQ, SHIPMENT_SEQ).
+
+describe('Sprint 7.3 — K1/K3/K4 regression guard', () => {
+  it('K1 (B-18): IssueTime cbcRequiredTag ile emit edilir', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    const xml = builder.build(input);
+    expect(xml).toContain('<cbc:IssueTime>10:30:00');
+    // DESPATCH_SEQ: IssueDate < IssueTime
+    const issueDateIdx = xml.indexOf('<cbc:IssueDate>');
+    const issueTimeIdx = xml.indexOf('<cbc:IssueTime>');
+    expect(issueDateIdx).toBeLessThan(issueTimeIdx);
+  });
+
+  it('K3 (B-14): DELIVERY_SEQ — DeliveryAddress Delivery bloğu içinde doğru konumda', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    const xml = builder.build(input);
+    // Delivery bloğu mevcut + DeliveryAddress içinde (DELIVERY_SEQ pattern)
+    const deliveryStart = xml.indexOf('<cac:Delivery>');
+    const deliveryEnd = xml.indexOf('</cac:Delivery>');
+    const addrIdx = xml.indexOf('<cac:DeliveryAddress>');
+    expect(deliveryStart).toBeGreaterThan(-1);
+    expect(addrIdx).toBeGreaterThan(deliveryStart);
+    expect(addrIdx).toBeLessThan(deliveryEnd);
+  });
+
+  it('K4 (B-20): PERSON_SEQ — FirstName < FamilyName < NationalityID', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    const xml = builder.build(input);
+    const firstIdx = xml.indexOf('<cbc:FirstName>Mehmet</cbc:FirstName>');
+    const familyIdx = xml.indexOf('<cbc:FamilyName>Kara</cbc:FamilyName>');
+    const natIdx = xml.indexOf('<cbc:NationalityID>');
+    expect(firstIdx).toBeGreaterThan(-1);
+    expect(familyIdx).toBeGreaterThan(firstIdx);
+    expect(natIdx).toBeGreaterThan(familyIdx);
+  });
+});
+
+describe('B-T09 — XSD sequence named regression (Sprint 7.3)', () => {
+  it('B-T09: DESPATCH_SEQ — CustomizationID < ProfileID < ID < IssueDate', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    const xml = builder.build(input);
+    const customIdx = xml.indexOf('<cbc:CustomizationID>');
+    const profileIdx = xml.indexOf('<cbc:ProfileID>');
+    // root ID spesifik: <cbc:ID>ABC2024000000001</cbc:ID>
+    const rootIdIdx = xml.indexOf('<cbc:ID>ABC2024000000001</cbc:ID>');
+    const issueDateIdx = xml.indexOf('<cbc:IssueDate>');
+    expect(customIdx).toBeGreaterThan(-1);
+    expect(profileIdx).toBeGreaterThan(customIdx);
+    expect(rootIdIdx).toBeGreaterThan(profileIdx);
+    expect(issueDateIdx).toBeGreaterThan(rootIdIdx);
+  });
+
+  it('B-T09: SHIPMENT_SEQ — GoodsItem < Delivery < TransportHandlingUnit', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    input.shipment.goodsItem = { valueAmount: { value: 100 } };
+    input.shipment.transportHandlingUnits = [{ transportEquipmentId: '34DRS001' }];
+    const xml = builder.build(input);
+    const goodsIdx = xml.indexOf('<cac:GoodsItem>');
+    const deliveryIdx = xml.indexOf('<cac:Delivery>');
+    const thuIdx = xml.indexOf('<cac:TransportHandlingUnit>');
+    expect(goodsIdx).toBeGreaterThan(-1);
+    expect(deliveryIdx).toBeGreaterThan(goodsIdx);
+    expect(thuIdx).toBeGreaterThan(deliveryIdx);
+  });
+});

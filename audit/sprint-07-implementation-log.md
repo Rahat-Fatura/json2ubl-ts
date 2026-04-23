@@ -157,7 +157,55 @@ it('B-T06: OZELFATURA profili ISTISNA zorunlu (M2)', ...);
 
 ## Sprint 7.3 — Float Edge Case + K1/K3/K4 + B-T09 XSD Sequence
 
-_TBD — 7.3 commit sonrası doldurulacak._
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 7.3: B-T07+B-87 float edge case + K1/K3/K4 regression + B-T09 XSD sequence`
+
+### Kapsam A — Float Edge Case (B-T07 + B-87)
+
+**Yeni dosya:** `__tests__/calculator/float-edge-case.test.ts` (6 test)
+
+- `0.1 + 0.2 toplamı toBeCloseTo(0.3, 2) ile doğru (IEEE754)` — M9 pattern
+- `33.33 × 0.2 KDV floating precision — toBeCloseTo`
+- `10 × 0.1 quantity×price = 1.0 (multiple float addition)`
+- `1/3 × 3 birim fiyatı XML 2-basamak yuvarlanır (M9)`
+- `Σ satır KDV = monetary.taxInclusive − taxExclusive (floating tutarlılık)` — multi-rate (20%, 10%, 1%) edge
+- `0.0 toleransı toBeCloseTo(0, 2) kabul — sıfır KDV satırı`
+
+**Pattern:** Tüm float assertion `toBeCloseTo(val, 2)`. `toBe` yalnız integer için (plan disiplini).
+
+**Nüans:** `taxSubtotals` farklı KDV oranları için ayrı subtotal (kod 0015 ama %20, %10, %1). Toplam KDV = Σ filter(code=0015).reduce. İlk çalıştırmada `.find()` kullanıldı, sadece ilk oran döndü (6.30 değil 7.168 bekleniyordu); `.filter().reduce()` ile düzeltildi.
+
+### Kapsam B — K1/K3/K4 Regression Guard (Sprint 6 devri)
+
+**Dosya:** `__tests__/builders/despatch-extensions.test.ts` (+3 test, satır 255+)
+
+- `K1 (B-18): IssueTime cbcRequiredTag ile emit edilir` — DESPATCH_SEQ: IssueDate < IssueTime indexOf
+- `K3 (B-14): DELIVERY_SEQ — DeliveryAddress Delivery bloğu içinde doğru konumda` — Delivery start/end indexOf
+- `K4 (B-20): PERSON_SEQ — FirstName < FamilyName < NationalityID` — driverPerson emit sırası
+
+**Plan düzeltmesi:** Plan §5.3 K3 "DespatchAddress" yazmış; kullanıcı düzeltmesine göre element adı `<cac:Despatch>`. Gerçek DELIVERY_SEQ kontrolü için `DeliveryAddress`'in Delivery bloğu içinde konumlanması yeterli regression guard — `<cac:Despatch>` alt-elementi input.shipment.delivery desteklemiyor, ayrıca Despatch test kapsamı daralmış oldu (minimal). CarrierParty Delivery SEQ'inde yok — Shipment hiyerarşisinde.
+
+### Kapsam C — B-T09 XSD Sequence Named Regression
+
+**Dosya:** `__tests__/builders/despatch-extensions.test.ts` (+2 test, K1/K3/K4 sonrası)
+
+- `B-T09: DESPATCH_SEQ — CustomizationID < ProfileID < ID < IssueDate`
+- `B-T09: SHIPMENT_SEQ — GoodsItem < Delivery < TransportHandlingUnit`
+
+**Truth source:** `src/serializers/xsd-sequence.ts` DESPATCH_SEQ (82-106), SHIPMENT_SEQ (377-410).
+
+### Test Durumu
+
+- Başlangıç (7.2 sonu): 560/560 yeşil (34 dosya)
+- Son (7.3 kapanışı): **571/571 yeşil** (35 dosya, +6 float, +5 despatch; toplam +11)
+- TypeScript strict: temiz
+
+Plan tahmini 575 (+14). Gerçek 571 (+11). 3 test farkı (plan B-T09 Shipment sequence'ta "Consignment < GoodsItem < ShipmentStage < Delivery < TransportHandlingUnit" demişti; fixture'da Consignment/ShipmentStage yok, minimal GoodsItem + Delivery + THU test'i yeterli).
+
+### Değişiklik İstatistikleri
+
+- `__tests__/calculator/float-edge-case.test.ts` — yeni dosya (85 satır, 6 test)
+- `__tests__/builders/despatch-extensions.test.ts` — +68 satır (5 yeni test, 2 describe)
 
 ---
 
