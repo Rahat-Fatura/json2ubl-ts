@@ -170,6 +170,35 @@ describe('DespatchBuilder', () => {
     });
   });
 
+  describe('B-T10 IDISIRSALIYE profili (Sprint 7.4)', () => {
+    it('SEVKIYATNO + ETIKETNO olmadan hata verir', () => {
+      const builder = new DespatchBuilder();
+      const input = createValidDespatchInput();
+      input.profileId = DespatchProfileId.IDISIRSALIYE;
+      expect(() => builder.build(input)).toThrow(UblBuildError);
+    });
+
+    it('SEVKIYATNO + ETIKETNO ile başarılı emit', () => {
+      const builder = new DespatchBuilder();
+      const input = createValidDespatchInput();
+      input.profileId = DespatchProfileId.IDISIRSALIYE;
+      // SEVKIYATNO formatı: SE-0000000 (src/config/constants.ts §289)
+      input.supplier.additionalIdentifiers = [
+        { schemeId: 'SEVKIYATNO', value: 'SE-0000123' },
+      ];
+      // ETIKETNO formatı: 2 harf + 7 rakam (§292)
+      input.lines[0].item.additionalItemIdentifications = [
+        { schemeId: 'ETIKETNO', value: 'AB1234567' },
+      ];
+      const xml = builder.build(input);
+      expect(xml).toContain('<cbc:ProfileID>IDISIRSALIYE</cbc:ProfileID>');
+      expect(xml).toContain('schemeID="SEVKIYATNO"');
+      expect(xml).toContain('SE-0000123');
+      expect(xml).toContain('schemeID="ETIKETNO"');
+      expect(xml).toContain('AB1234567');
+    });
+  });
+
   describe('buildUnsafe()', () => {
     it('validasyon yapmadan XML oluşturur', () => {
       const builder = new DespatchBuilder();

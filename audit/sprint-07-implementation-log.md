@@ -8,7 +8,7 @@ onceki_sprint: audit/sprint-06-implementation-log.md (commit 3fde82a)
 sonraki_sprint: Sprint 8a (Devir bulgu temizliği + Mimari kalan)
 toplam_commit: 4
 test_durumu_basi: 554 / 554 yeşil (34 dosya)
-test_durumu_sonu: TBD / 577 hedef (35 dosya hedef)
+test_durumu_sonu: 573 / 573 yeşil (35 dosya) — plan hedef 577, gerçek +19
 ---
 
 ## Kapsanan Bulgular
@@ -211,13 +211,128 @@ Plan tahmini 575 (+14). Gerçek 571 (+11). 3 test farkı (plan B-T09 Shipment se
 
 ## Sprint 7.4 — B-T10 IDISIRSALIYE + Log Finalize + Sprint 8a Devir
 
-_TBD — 7.4 commit sonrası doldurulacak._
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 7.4: B-T10 IDISIRSALIYE test + implementation-log finalize + Sprint 8a devir`
+
+### Ön-Kontrol: IDISIRSALIYE Enum Teyidi
+
+`src/types/enums.ts:45` → `IDISIRSALIYE = 'IDISIRSALIYE'` ✅
+`src/validators/despatch-validators.ts:182-203` → IDIS profil validator mevcut (§5.6):
+- `supplier.additionalIdentifiers.SEVKIYATNO` zorunlu, regex `SE-0000000`
+- Her satır `item.additionalItemIdentifications.ETIKETNO` zorunlu, regex `2 harf + 7 rakam`
+
+Sprint 8a'ya ertelet kararı gerekmedi.
+
+### Kapsam A — IDISIRSALIYE Test
+
+**Dosya:** `__tests__/builders/despatch-builder.test.ts` (+2 test, HKSIRSALIYE describe sonrası)
+
+- `'SEVKIYATNO + ETIKETNO olmadan hata verir'` — validator reject (UblBuildError)
+- `'SEVKIYATNO + ETIKETNO ile başarılı emit'` — happy path:
+  - `SEVKIYATNO = SE-0000123` (format §289)
+  - `ETIKETNO = AB1234567` (format §292, 2 harf + 7 rakam)
+  - XML: `<cbc:ProfileID>IDISIRSALIYE</cbc:ProfileID>` + `schemeID="SEVKIYATNO"` + `schemeID="ETIKETNO"`
+
+### Kapsam B — Log Finalize (bu dosya)
+
+Sprint 7.1-7.4 bölümleri doldu, `test_durumu_sonu: 573 / 35 dosya` güncellendi.
+
+### Kapsam C — Sprint 8a Devir Listesi (aşağıda)
+
+### Test Durumu
+
+- Başlangıç (7.3 sonu): 571/571 yeşil (35 dosya)
+- Son (7.4 kapanışı): **573/573 yeşil** (35 dosya, +2 test)
+- TypeScript strict: temiz
+
+### Değişiklik İstatistikleri
+
+- `__tests__/builders/despatch-builder.test.ts` — +30 satır (2 yeni test)
+- `audit/sprint-07-implementation-log.md` — finalize
 
 ---
 
-## Sprint 8a Devir Listesi (7.4 sonunda güncellenecek)
+## Sprint 7 Kapanış Özeti
 
-_TBD — Sprint 7 kapanışında tüm devir listesi konsolide edilecek._
+| Metrik | Başlangıç | Bitiş | Δ |
+|--------|-----------|-------|---|
+| Test sayısı | 554 | **573** | **+19** |
+| Test dosyası | 34 | 35 | +1 (float-edge-case.test.ts) |
+| Commit | Sprint 6.8 (3fde82a) | Sprint 7.4 | 4 atomik commit |
+| `src/` değişikliği | — | **0** | yalnız 1 yorum `__tests__/calculator/line-calculator.test.ts` (B-T04) |
+| TypeScript strict | temiz | temiz | 0 regresyon |
+
+Plan hedefi +23 test idi (577). Gerçek +19 (573).
+Fark gerekçeleri:
+- B-T06: 7 yerine 6 test (SGK `InvoiceTypeCode`, profil değil — plan düzeltmesi)
+- B-T09 Shipment sequence: plan 5 öğeli zincir (Consignment < GoodsItem < ShipmentStage < Delivery < THU) önerirken fixture'da Consignment/ShipmentStage yok; minimal 3 öğeli (GoodsItem < Delivery < THU) yeterli regression guard oldu
+
+### B-T Bulgu Durum Konsolidasyonu
+
+| ID | Durum | Çözüm |
+|----|-------|-------|
+| B-T01 | ✅ Kapalı | Sprint 1'de test silinmiş |
+| B-T02 | ✅ Kapalı | Sprint 1'de test silinmiş |
+| B-T03 | ✅ Kapalı | Sprint 4 B-15 ile 1000→850 güncellendi |
+| B-T04 | ✅ Kapalı | Sprint 7.1 — B-17 iptal, yorum eklendi (Mimsoft teyidi) |
+| B-T05 | ✅ Kapalı | Sprint 5 B-81 ile ReasonCode test eklendi |
+| B-T06 | ✅ Kapalı | Sprint 7.2 — 6 profil test (SGK profil değil) |
+| B-T07 | ✅ Kapalı | Sprint 7.3 — float-edge-case.test.ts (6 test) |
+| B-T08 | ↪ Sprint 8a devir | B-104 TCKN ile atomik (runtime etkisi yok) |
+| B-T09 | ✅ Kapalı | Sprint 7.3 — DESPATCH_SEQ + SHIPMENT_SEQ named regression |
+| B-T10 | ✅ Kapalı | Sprint 7.4 — IDISIRSALIYE SEVKIYATNO+ETIKETNO (2 test) |
+| B-87 | ✅ Kapalı | Sprint 7.3 — B-T07 ile birleşti |
+| K1/K3/K4 regression | ✅ Kapalı | Sprint 7.3 — 3 indexOf pattern guard |
+
+**9 B-T bulgusu kapalı + B-87 + K1/K3/K4**; yalnız **B-T08** Sprint 8a'ya devredildi.
+
+---
+
+## Sprint 8a Devir Listesi (Güncel — 2026-04-23)
+
+Sprint 6 log `§223` orijinal Sprint 8 devir listesi + Sprint 7'den eklenenler:
+
+### Kod + Mimari (Sprint 8a kapsamı)
+
+| Bulgu | Kaynak Sprint | Açıklama |
+|-------|---------------|----------|
+| **B-T08 + B-104** | Sprint 7 devir | TCKN 11-hane validator + 8 test lokasyonda `nationalityId: 'TR'` → geçerli TCKN atomik güncelleme |
+| **Cross-cutting calc-serialize consistency test** | Sprint 3 + 7 devir (S5) | Integration test: calculator monetary → XML serialization → round-trip assert |
+| **Mimsoft fixture genişletme** | Sprint 7 devir (S6) | Kullanıcı IHRACKAYITLI+702, YATIRIMTESVIK, 351 için yeni XML ekleyecek; regression test yazılacak |
+| **O5** | Sprint 6 devir | CarrierParty VKN/TCKN validateParty helper refactor |
+| **O6** | Sprint 6 devir | PartyIdentification schemeID whitelist runtime (`validateParty` additionalIdentifiers) |
+| **B-29, B-30, B-31** | Sprint 5 devir | Invoice satır validator genişlemesi |
+| **B-62..B-69** | Sprint 5 devir | Kontrol yapısı + error mapping refactor |
+| **B-78** | Sprint 4 devir | TEVKIFATIADE custom tip |
+| **B-83** | Sprint 3 devir | KAMU partyType mapping |
+| **B-84, B-85, B-86** | Sprint 3 devir | Tax schema + açık kodlar |
+| **B-91** | Sprint 5 devir | Satır KDV matematik doğrulama |
+
+### Sprint 7'de Edge Case Olarak Keşfedilen (Sprint 8a notu)
+
+- **YOLCUBERABERFATURA profili** coverage testi (Sprint 7.2'de kapsamda yoktu — IHRACAT M2 testi pattern'i zaten kapsıyor, opsiyonel 8a)
+- **SGK InvoiceTypeCode testi** (`type: 'SGK'` + default TICARIFATURA profili) — plan SGK'yı profil sandığı için Sprint 7.2 kapsamında değildi
+
+### Dokümantasyon + Release (Sprint 8b kapsamı)
+
+- README Sorumluluk Matrisi: M3 (650 dinamik), M4 (555 flag), M9 (yuvarlama), M10 (isExport+liability)
+- Skill dokümanları:
+  - `kod-listeleri-ubl-tr-v1.42.md §4.9` — 650 iç çelişki + kütüphane yaklaşımı
+  - `e-fatura-ubl-tr-v1.0.md §77` — Fatura + İrsaliye TR1.2
+- CHANGELOG.md — Sprint 1-7 implementation-log'ları tek v2.0.0 entry'ye konsolide
+- `package.json` 1.4.2 → 2.0.0
+- Git tag v2.0.0 + push
+- (Opsiyonel) Vitest coverage config + threshold
+- B-94 `examples/output/` regenerate (Sprint 8a veya 8b)
+
+---
+
+## Sprint 8a Hazırlık (Kullanıcı)
+
+Kullanıcı Sprint 8a öncesi:
+1. Mimsoft fixture örnekleri (IHRACKAYITLI+702, YATIRIMTESVIK, 351)
+2. edocument-service dev test durumu teyit
+3. B-62..B-69 ve B-83..B-86 için ek domain kararları (varsa)
 
 ---
 
