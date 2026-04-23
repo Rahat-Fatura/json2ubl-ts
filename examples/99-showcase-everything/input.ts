@@ -1,0 +1,74 @@
+import type { SimpleInvoiceInput } from '../../src';
+
+/**
+ * Showcase 1 — Kütüphanenin özet kapsamı. Tek faturada birleşen:
+ *
+ * - Çoklu KDV oranları (%1, %10, %20)
+ * - Satır iskonto (AllowanceCharge)
+ * - Tevkifat kodu 650 dinamik oran (M3/B-95)
+ * - EUR + ExchangeRate (yabancı para)
+ * - Notlar, OrderReference
+ * - PaymentMeans + IBAN
+ * - Ek belgeler (additionalDocuments)
+ */
+export const input: SimpleInvoiceInput = {
+  id: 'EXA2026000099998',
+  uuid: 'e1a2b3c4-9998-4999-8998-999999999998',
+  datetime: '2026-04-23T10:00:00',
+  profile: 'TEMELFATURA',
+  type: 'TEVKIFAT',
+  currencyCode: 'EUR',
+  exchangeRate: 36.75,
+
+  notes: [
+    'Showcase — tüm feature\'ları tek faturada gösteren örnek.',
+    '3 farklı KDV oranı + 650 dinamik tevkifat + iskonto + EUR.',
+  ],
+
+  orderReference: {
+    id: 'PO-SHOWCASE-2026-001',
+    issueDate: '2026-04-15',
+  },
+
+  additionalDocuments: [
+    { id: 'CERT-2026-001', issueDate: '2026-04-20', documentType: 'Ürün Sertifikası' },
+    { id: 'INSUR-2026-001', issueDate: '2026-04-22', documentType: 'Taşıma Sigorta Poliçesi' },
+  ],
+
+  sender: {
+    taxNumber: '1234567890', name: 'Sınır Tanımaz Showcase A.Ş.', taxOffice: 'Üsküdar',
+    address: 'Barbaros No:1', district: 'Üsküdar', city: 'İstanbul', zipCode: '34664',
+    phone: '+902161234567', email: 'showcase@sinir-tanimaz.example.tr',
+  },
+  customer: {
+    taxNumber: '9876543210', name: 'Yeşil Multi-Feature Alıcı Ltd.', taxOffice: 'Kadıköy',
+    address: 'Bağdat No:2', district: 'Kadıköy', city: 'İstanbul', zipCode: '34710',
+  },
+
+  paymentMeans: {
+    meansCode: '42',
+    accountNumber: 'TR330006100519786457841326',
+    dueDate: '2026-05-23',
+    paymentNote: 'Showcase — 30 gün vadeli',
+  },
+
+  lines: [
+    {
+      name: 'Temel Gıda Kalemi (%1 KDV)',
+      quantity: 20, price: 10, unitCode: 'Adet', kdvPercent: 1,
+      allowancePercent: 5, // %5 iskonto
+    },
+    {
+      name: 'İndirimli KDV Kalemi (%10)',
+      quantity: 10, price: 50, unitCode: 'Adet', kdvPercent: 10,
+      withholdingTaxCode: '650',
+      withholdingTaxPercent: 30, // dinamik
+    },
+    {
+      name: 'Standart KDV Kalemi (%20)',
+      quantity: 5, price: 200, unitCode: 'Adet', kdvPercent: 20,
+    },
+  ],
+};
+
+export default input;

@@ -1,0 +1,93 @@
+import type { SimpleInvoiceInput } from '../../src';
+
+/**
+ * Showcase 2 — IHRACAT profili tam kapsamı: yabancı BuyerCustomer (VAT ID),
+ * çok satırlı (5 kalem), her satırda farklı INCOTERMS + GTIP + teslim noktası,
+ * USD + ExchangeRate, 301 istisna kodu.
+ */
+export const input: SimpleInvoiceInput = {
+  id: 'EXA2026000099999',
+  uuid: 'e1a2b3c4-9999-4999-8999-999999999999',
+  datetime: '2026-04-23T10:00:00',
+  profile: 'IHRACAT',
+  type: 'ISTISNA',
+  currencyCode: 'USD',
+  exchangeRate: 32.50,
+
+  kdvExemptionCode: '301',
+
+  notes: [
+    'Showcase — tam IHRACAT senaryosu (5 satır + INCOTERMS + gümrük).',
+    'Each line has distinct GTIP and INCOTERMS for export traceability.',
+  ],
+
+  orderReference: {
+    id: 'EXP-PO-2026-999',
+    issueDate: '2026-04-10',
+  },
+
+  sender: {
+    taxNumber: '1234567890', name: 'Sınır Tanımaz Exports A.Ş.', taxOffice: 'Üsküdar',
+    address: 'Barbaros No:1', district: 'Üsküdar', city: 'İstanbul', zipCode: '34664',
+  },
+  customer: {
+    taxNumber: '2222222222', name: 'Global Partners Multi-Country', taxOffice: 'Zürich',
+    address: 'Bahnhofstrasse 1', district: 'Zürich', city: 'Zürich', country: 'Switzerland',
+    zipCode: '8001',
+  },
+
+  buyerCustomer: {
+    name: 'Global Partners AG',
+    taxNumber: 'CHE-123.456.789',
+    address: 'Bahnhofstrasse 1',
+    district: 'Zürich',
+    city: 'Zürich',
+    country: 'Switzerland',
+    zipCode: '8001',
+  },
+
+  lines: [
+    {
+      name: 'Premium Tekstil',
+      quantity: 100, price: 20, unitCode: 'Adet', kdvPercent: 0,
+      delivery: {
+        deliveryTermCode: 'FOB', gtipNo: '620342000010',
+        deliveryAddress: { address: 'Ambarlı Liman', district: 'Avcılar', city: 'İstanbul', country: 'Türkiye' },
+      },
+    },
+    {
+      name: 'El Yapımı Halı',
+      quantity: 10, price: 500, unitCode: 'Adet', kdvPercent: 0,
+      delivery: {
+        deliveryTermCode: 'CIF', gtipNo: '570110100000',
+        deliveryAddress: { address: 'Zürich Flughafen', district: 'Kloten', city: 'Zurich', country: 'Switzerland' },
+      },
+    },
+    {
+      name: 'Bakır El Sanatı',
+      quantity: 25, price: 80, unitCode: 'Adet', kdvPercent: 0,
+      delivery: {
+        deliveryTermCode: 'EXW', gtipNo: '741400000000',
+        deliveryAddress: { address: 'Fabrika', district: 'Üsküdar', city: 'İstanbul', country: 'Türkiye' },
+      },
+    },
+    {
+      name: 'Kafeine Kahve',
+      quantity: 50, price: 15, unitCode: 'Adet', kdvPercent: 0,
+      delivery: {
+        deliveryTermCode: 'DAP', gtipNo: '090111000000',
+        deliveryAddress: { address: 'Dietikon Depot', district: 'Dietikon', city: 'Zurich', country: 'Switzerland' },
+      },
+    },
+    {
+      name: 'Şekerli Özel Ürün',
+      quantity: 30, price: 25, unitCode: 'Adet', kdvPercent: 0,
+      delivery: {
+        deliveryTermCode: 'DDP', gtipNo: '170310000000',
+        deliveryAddress: { address: 'Merkez Depo', district: 'Central', city: 'Zurich', country: 'Switzerland' },
+      },
+    },
+  ],
+};
+
+export default input;

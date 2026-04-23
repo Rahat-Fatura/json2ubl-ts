@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+  xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+  xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+  xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
+  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+  xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 UBL-Invoice-2.1.xsd">
+  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+  <cbc:CustomizationID>TR1.2</cbc:CustomizationID>
+  <cbc:ProfileID>TEMELFATURA</cbc:ProfileID>
+  <cbc:ID>EXA2026000099998</cbc:ID>
+  <cbc:CopyIndicator>false</cbc:CopyIndicator>
+  <cbc:UUID>e1a2b3c4-9998-4999-8998-999999999998</cbc:UUID>
+  <cbc:IssueDate>2026-04-23</cbc:IssueDate>
+  <cbc:IssueTime>10:00:00</cbc:IssueTime>
+  <cbc:InvoiceTypeCode>TEVKIFAT</cbc:InvoiceTypeCode>
+  <cbc:Note>Showcase — tüm feature&apos;ları tek faturada gösteren örnek.</cbc:Note>
+  <cbc:Note>3 farklı KDV oranı + 650 dinamik tevkifat + iskonto + EUR.</cbc:Note>
+  <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+  <cbc:LineCountNumeric>3</cbc:LineCountNumeric>
+  <cac:OrderReference>
+    <cbc:ID>PO-SHOWCASE-2026-001</cbc:ID>
+    <cbc:IssueDate>2026-04-15</cbc:IssueDate>
+  </cac:OrderReference>
+  <cac:AdditionalDocumentReference>
+    <cbc:ID>CERT-2026-001</cbc:ID>
+    <cbc:IssueDate>2026-04-20</cbc:IssueDate>
+    <cbc:DocumentType>Ürün Sertifikası</cbc:DocumentType>
+  </cac:AdditionalDocumentReference>
+  <cac:AdditionalDocumentReference>
+    <cbc:ID>INSUR-2026-001</cbc:ID>
+    <cbc:IssueDate>2026-04-22</cbc:IssueDate>
+    <cbc:DocumentType>Taşıma Sigorta Poliçesi</cbc:DocumentType>
+  </cac:AdditionalDocumentReference>
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">1234567890</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>Sınır Tanımaz Showcase A.Ş.</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Barbaros No:1</cbc:StreetName>
+        <cbc:CitySubdivisionName>Üsküdar</cbc:CitySubdivisionName>
+        <cbc:CityName>İstanbul</cbc:CityName>
+        <cbc:PostalZone>34664</cbc:PostalZone>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cac:TaxScheme>
+          <cbc:Name>Üsküdar</cbc:Name>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+      <cac:Contact>
+        <cbc:Telephone>+902161234567</cbc:Telephone>
+        <cbc:ElectronicMail>showcase@sinir-tanimaz.example.tr</cbc:ElectronicMail>
+      </cac:Contact>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">9876543210</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>Yeşil Multi-Feature Alıcı Ltd.</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Bağdat No:2</cbc:StreetName>
+        <cbc:CitySubdivisionName>Kadıköy</cbc:CitySubdivisionName>
+        <cbc:CityName>İstanbul</cbc:CityName>
+        <cbc:PostalZone>34710</cbc:PostalZone>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cac:TaxScheme>
+          <cbc:Name>Kadıköy</cbc:Name>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:PaymentMeans>
+    <cbc:PaymentMeansCode>42</cbc:PaymentMeansCode>
+    <cbc:PaymentDueDate>2026-05-23</cbc:PaymentDueDate>
+    <cac:PayeeFinancialAccount>
+      <cbc:ID>TR330006100519786457841326</cbc:ID>
+      <cbc:PaymentNote>Showcase — 30 gün vadeli</cbc:PaymentNote>
+    </cac:PayeeFinancialAccount>
+  </cac:PaymentMeans>
+  <cac:AllowanceCharge>
+    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+    <cbc:Amount currencyID="EUR">10.00</cbc:Amount>
+  </cac:AllowanceCharge>
+  <cac:PricingExchangeRate>
+    <cbc:SourceCurrencyCode>EUR</cbc:SourceCurrencyCode>
+    <cbc:TargetCurrencyCode>TRY</cbc:TargetCurrencyCode>
+    <cbc:CalculationRate>36.750000</cbc:CalculationRate>
+  </cac:PricingExchangeRate>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="EUR">251.90</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="EUR">190.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="EUR">1.90</cbc:TaxAmount>
+      <cbc:Percent>1.00</cbc:Percent>
+            <cac:TaxCategory>
+        <cbc:TaxExemptionReasonCode>351</cbc:TaxExemptionReasonCode>
+        <cbc:TaxExemptionReason>KDV İstisna Olmayan Diğer</cbc:TaxExemptionReason>
+                <cac:TaxScheme>
+          <cbc:Name>KDV</cbc:Name>
+          <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="EUR">500.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="EUR">50.00</cbc:TaxAmount>
+      <cbc:Percent>10.00</cbc:Percent>
+            <cac:TaxCategory>
+        <cbc:TaxExemptionReasonCode>351</cbc:TaxExemptionReasonCode>
+        <cbc:TaxExemptionReason>KDV İstisna Olmayan Diğer</cbc:TaxExemptionReason>
+                <cac:TaxScheme>
+          <cbc:Name>KDV</cbc:Name>
+          <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="EUR">1000.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="EUR">200.00</cbc:TaxAmount>
+      <cbc:Percent>20.00</cbc:Percent>
+            <cac:TaxCategory>
+        <cbc:TaxExemptionReasonCode>351</cbc:TaxExemptionReasonCode>
+        <cbc:TaxExemptionReason>KDV İstisna Olmayan Diğer</cbc:TaxExemptionReason>
+                <cac:TaxScheme>
+          <cbc:Name>KDV</cbc:Name>
+          <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+  <cac:WithholdingTaxTotal>
+    <cbc:TaxAmount currencyID="EUR">15.00</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="EUR">50.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="EUR">15.00</cbc:TaxAmount>
+      <cbc:Percent>30.00</cbc:Percent>
+            <cac:TaxCategory>
+                <cac:TaxScheme>
+          <cbc:Name>Diğer</cbc:Name>
+          <cbc:TaxTypeCode>650</cbc:TaxTypeCode>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:WithholdingTaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="EUR">1690.00</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="EUR">1690.00</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="EUR">1941.90</cbc:TaxInclusiveAmount>
+    <cbc:AllowanceTotalAmount currencyID="EUR">10.00</cbc:AllowanceTotalAmount>
+    <cbc:PayableAmount currencyID="EUR">1926.90</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">20.00</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">190.00</cbc:LineExtensionAmount>
+    <cac:AllowanceCharge>
+      <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+      <cbc:MultiplierFactorNumeric>0.1</cbc:MultiplierFactorNumeric>
+      <cbc:Amount currencyID="EUR">10.00</cbc:Amount>
+      <cbc:BaseAmount currencyID="EUR">200.00</cbc:BaseAmount>
+    </cac:AllowanceCharge>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="EUR">1.90</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="EUR">190.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="EUR">1.90</cbc:TaxAmount>
+        <cbc:Percent>1.00</cbc:Percent>
+                <cac:TaxCategory>
+                    <cac:TaxScheme>
+            <cbc:Name>KDV</cbc:Name>
+            <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Name>Temel Gıda Kalemi (%1 KDV)</cbc:Name>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">10.00</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>2</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">10.00</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">500.00</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="EUR">50.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="EUR">500.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="EUR">50.00</cbc:TaxAmount>
+        <cbc:Percent>10.00</cbc:Percent>
+                <cac:TaxCategory>
+                    <cac:TaxScheme>
+            <cbc:Name>KDV</cbc:Name>
+            <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:WithholdingTaxTotal>
+      <cbc:TaxAmount currencyID="EUR">15.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="EUR">50.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="EUR">15.00</cbc:TaxAmount>
+        <cbc:Percent>30.00</cbc:Percent>
+                <cac:TaxCategory>
+                    <cac:TaxScheme>
+            <cbc:Name>Diğer</cbc:Name>
+            <cbc:TaxTypeCode>650</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:WithholdingTaxTotal>
+    <cac:Item>
+      <cbc:Name>İndirimli KDV Kalemi (%10)</cbc:Name>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">50.00</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>3</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">5.00</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">1000.00</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="EUR">200.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="EUR">1000.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="EUR">200.00</cbc:TaxAmount>
+        <cbc:Percent>20.00</cbc:Percent>
+                <cac:TaxCategory>
+                    <cac:TaxScheme>
+            <cbc:Name>KDV</cbc:Name>
+            <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Name>Standart KDV Kalemi (%20)</cbc:Name>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">200.00</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+</Invoice>
