@@ -56,4 +56,47 @@ Sprint 8a tamamlandı (commit `966a049`): 641/641 test yeşil, 108 bulgudan kod 
 
 ---
 
-<!-- 8b.1 → 8b.14 alt-commit bölümleri commit sırasında eklenecek -->
+## Sprint 8b.1 — Eski examples temizlik + yeni iskelet
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8b.1: Eski examples temizlik + yeni iskelet`
+
+### Yapılanlar
+
+1. **Silinen eski yapı (v1.x kalıntı):**
+   - `examples/output/` — 30 alt-dizin (01-temel-satis → 30-iskontolu-tevkifat, her biri `input.json + output.xml + calculation.json + summary.txt`)
+   - `examples/run-all.ts` (eski versiyon — `SimpleInvoiceBuilder` + `scenarios.ts` senaryo array'i)
+   - `examples/scenarios.ts`
+   - `examples/session-demo.ts`
+
+   **Gerekçe:** Üretilen XML'ler `CustomizationID=TR1.2.1` (M8 sonrası Fatura için yanlış), boş `UBLExtensions` (kütüphane üretmemeli) ve Sprint 1-8a validator/serializer değişikliklerini yansıtmıyordu.
+
+2. **Yeni iskelet:**
+   - `examples/run-all.ts` — auto-discover runner: `examples/NN-slug/run.ts` klasörlerini regex filtreleyip (`^(\d{2}|99)-`) dynamic import ile sırayla çalıştırır. CLI filtre desteği (`npx tsx examples/run-all.ts yatirimtesvik`).
+   - `examples/README.md` — 38 senaryo katalogu (tablo formatı, profil bazlı §1-§11 gruplama, fixture paralellik matrisi, kasıtlı kapsam dışı bölümü, CustomizationID uyarısı).
+
+3. **`package.json` scripts:** `"examples": "tsx examples/run-all.ts"` mevcut komut aynı dosyayı çağırıyor, güncelleme gerekmedi.
+
+### Test Durumu
+
+- Başlangıç: 641/641 yeşil
+- Son: **641/641 yeşil** (kod değişikliği yok — sadece `examples/` dizini)
+- `npx tsx examples/run-all.ts` smoke: 0 senaryo, graceful exit
+
+### Değişiklik İstatistikleri
+
+- Disk'ten silinen: 30 alt-dizin × 4 dosya (`examples/output/*` gitignored — git commit'e dahil değil) + 3 tracked TS dosyası (`run-all.ts`, `scenarios.ts`, `session-demo.ts`)
+- Git commit diff: `examples/scenarios.ts` (-), `examples/session-demo.ts` (-), `examples/run-all.ts` (reset + yeni), `examples/README.md` (yeni)
+- `examples/run-all.ts` — 72 LOC (yeni auto-discover, eski 186 LOC replaced)
+- `examples/README.md` — 138 LOC (katalog)
+
+### Disiplin Notları
+
+- **`src/` read-only:** Bu commit'te kod dosyasına dokunulmadı.
+- **Git tracking:** Silinen 30 alt-dizin git'te tracked'di; `git rm` ile kaldırıldı. Revert edilebilir (önceki commit'ten restore).
+- **Auto-discover:** Yeni runner regex filtre ile klasörlerini bulur; 8b.2+ commit'lerinde yeni klasörler eklendikçe otomatik dahil olur.
+- **Katalog link'leri:** README'de `./NN-slug/` relatif link'leri var; klasörler henüz yok (8b.2+'de dolacak). 8b.14'te tüm link'ler canlı olur.
+
+---
+
+<!-- 8b.2 → 8b.14 alt-commit bölümleri commit sırasında eklenecek -->
