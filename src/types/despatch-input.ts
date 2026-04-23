@@ -42,6 +42,18 @@ export interface DespatchInput {
   additionalDocuments?: AdditionalDocumentInput[];
   /** Signature bilgisi */
   signatureInfo?: SignatureInput;
+
+  // === B-19: DespatchSupplierParty/DespatchContact/Name (UBL-TR §5.4 "Teslim Eden") ===
+  /** Teslim eden kişinin adı — DespatchSupplierParty altındaki DespatchContact/Name */
+  despatchContactName?: string;
+
+  // === B-48: XSD opsiyonel 3 party tipi (UBL-DespatchAdvice-2.1.xsd:26-28) ===
+  /** Alıcı müşteri (BuyerCustomerParty) — delivery'den farklı tarafsa */
+  buyerCustomer?: PartyInput;
+  /** Satıcı (SellerSupplierParty) — supplier'dan farklı tarafsa */
+  sellerSupplier?: PartyInput;
+  /** Sipariş veren (OriginatorCustomerParty) — komisyoncu/özel senaryo */
+  originator?: PartyInput;
 }
 
 /** Sevkiyat bilgileri */

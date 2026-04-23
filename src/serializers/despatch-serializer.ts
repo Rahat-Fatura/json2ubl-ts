@@ -67,9 +67,14 @@ export function serializeDespatch(input: DespatchInput, prettyPrint: boolean = t
 
   // 14. Signature — business logic tarafından eklenir, serializer üretmez
 
-  // 15. DespatchSupplierParty
+  // 15. DespatchSupplierParty (+ B-19: DespatchContact/Name)
   parts.push(`${ind}<cac:DespatchSupplierParty>`);
   parts.push(serializeParty(input.supplier, ind + '  '));
+  if (isNonEmpty(input.despatchContactName)) {
+    parts.push(`${ind}  <cac:DespatchContact>`);
+    parts.push(`${ind}    ${cbcOptionalTag('Name', input.despatchContactName)}`);
+    parts.push(`${ind}  </cac:DespatchContact>`);
+  }
   parts.push(`${ind}</cac:DespatchSupplierParty>`);
 
   // 16. DeliveryCustomerParty
@@ -77,7 +82,24 @@ export function serializeDespatch(input: DespatchInput, prettyPrint: boolean = t
   parts.push(serializeParty(input.customer, ind + '  '));
   parts.push(`${ind}</cac:DeliveryCustomerParty>`);
 
-  // 19. Shipment
+  // 17-19. B-48: Opsiyonel 3 party (XSD sırası: Buyer → Seller → Originator)
+  if (input.buyerCustomer) {
+    parts.push(`${ind}<cac:BuyerCustomerParty>`);
+    parts.push(serializeParty(input.buyerCustomer, ind + '  '));
+    parts.push(`${ind}</cac:BuyerCustomerParty>`);
+  }
+  if (input.sellerSupplier) {
+    parts.push(`${ind}<cac:SellerSupplierParty>`);
+    parts.push(serializeParty(input.sellerSupplier, ind + '  '));
+    parts.push(`${ind}</cac:SellerSupplierParty>`);
+  }
+  if (input.originator) {
+    parts.push(`${ind}<cac:OriginatorCustomerParty>`);
+    parts.push(serializeParty(input.originator, ind + '  '));
+    parts.push(`${ind}</cac:OriginatorCustomerParty>`);
+  }
+
+  // 20. Shipment
   parts.push(serializeShipmentBlock(input, ind));
 
   // 20. DespatchLine (zorunlu, çoklu)
