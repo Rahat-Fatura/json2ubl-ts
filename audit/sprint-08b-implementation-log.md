@@ -161,4 +161,48 @@ Sprint 8a tamamlandı (commit `966a049`): 641/641 test yeşil, 108 bulgudan kod 
 
 ---
 
-<!-- 8b.3 → 8b.14 alt-commit bölümleri commit sırasında eklenecek -->
+## Sprint 8b.3 — §2 TICARIFATURA (3) + §3 YATIRIMTESVIK (3)
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8b.3: §2 TICARIFATURA + §3 YATIRIMTESVIK (6 senaryo)`
+
+### Yapılanlar
+
+6 senaryo tam yapısıyla kuruldu (`09-ticarifatura-satis` … `14-yatirimtesvik-iade`). Her klasörde 6 dosya standartı korundu.
+
+### Senaryo Detayı
+
+| # | Slug | Kapsam | Validator mod | Payable |
+|---|------|--------|----------------|---------|
+| 09 | ticarifatura-satis | TEMELFATURA'dan fark: IADE yok | strict | 2.400 TRY |
+| 10 | ticarifatura-tevkifat-650-dinamik | **M3/B-95:** 650 dinamik %25 | **basic** (B-NEW-11) | 1.150 TRY |
+| 11 | ticarifatura-istisna | İstisna 213 (201-250 aralığı) | strict | 1.000 TRY |
+| 12 | yatirimtesvik-satis-makina | f13 paralel, ytbNo + ItemClass 01 + productTrace+serial+brand+model | strict | 672 TRY |
+| 13 | yatirimtesvik-satis-insaat | f14 paralel, ItemClass 03 (satırda extra alan gerekmez) | strict | 672 TRY |
+| 14 | yatirimtesvik-iade | IADE + BillingReference + B-08 istisnası | strict | 240 TRY |
+
+### Keşif (iteratif düzeltme)
+
+- **14 ilk build fail:** `datetime` gelecek tarih (2026-04-24 > bugün 2026-04-23) + `model` alanı eksik (Kod 01 Makine için zorunlu). Her ikisi düzeltildi.
+- **B-NEW-11 workaround 10'da da uygulandı** (10 → basic mod, TICARIFATURA + TEVKIFAT tek satır).
+
+### Test Durumu
+
+- Başlangıç: 641/641 yeşil
+- Son: **641/641 yeşil** (src/ dokunulmadı)
+- `npx tsx examples/run-all.ts` → **14 başarılı, 0 hatalı / 14 toplam**
+
+### Değişiklik İstatistikleri
+
+- 6 senaryo × 6 dosya = 36 dosya (input.ts ~40-75 LOC, validation-errors.ts ~60 LOC, README ~50-80 LOC, run.ts 4 LOC)
+- Toplam net ~1.500 LOC yeni kod + doc
+
+### Disiplin Notları
+
+- **`src/` read-only:** ✓
+- **Yeni M/AR:** Yok. Tüm "not-caught" case'ler B-NEW-XX ACIK-SORULAR §4'e referans.
+- **Mimsoft fixture paralelliği:** f13 → 12, f14 → 13 (yapısal aynılık).
+
+---
+
+<!-- 8b.4 → 8b.14 alt-commit bölümleri commit sırasında eklenecek -->

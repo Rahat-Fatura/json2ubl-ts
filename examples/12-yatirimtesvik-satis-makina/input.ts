@@ -1,0 +1,73 @@
+import type { SimpleInvoiceInput } from '../../src';
+
+/**
+ * YATIRIMTESVIK + SATIS + Makine/Teçhizat (itemClassificationCode=01).
+ * Fixture paralelliği: `__tests__/fixtures/mimsoft-real-invoices/f13-yatirimtesvik-satis-makina.xml`
+ *
+ * B-08: YTB profilinde
+ * - `ytbNo` (6 haneli numerik) zorunlu
+ * - Kod 01 (Makine) için: `productTraceId`, `serialId` zorunlu (satır seviyesi)
+ * - Satır `kdvPercent > 0` (IADE hariç) — SATIS'ta KDV var ama istisna üzerinden düşer
+ *
+ * Beklenen: 2 satır, 280 TRY her biri. KDV teşvik kapsamı.
+ */
+export const input: SimpleInvoiceInput = {
+  id: 'EXA2026000000012',
+  uuid: 'e1a2b3c4-0012-4000-8012-000000000012',
+  datetime: '2026-04-23T19:00:00',
+  profile: 'YATIRIMTESVIK',
+  type: 'SATIS',
+  currencyCode: 'TRY',
+
+  ytbNo: '123456',
+  ytbIssueDate: '2026-01-15',
+
+  sender: {
+    taxNumber: '1234567890',
+    name: 'Sınır Tanımaz Makine Tic. A.Ş.',
+    taxOffice: 'Üsküdar',
+    address: 'Barbaros Bulvarı No:123 Kat:5',
+    district: 'Üsküdar',
+    city: 'İstanbul',
+    zipCode: '34664',
+  },
+
+  customer: {
+    taxNumber: '9876543210',
+    name: 'Teşvikli Üretici Ltd. Şti.',
+    taxOffice: 'Kadıköy',
+    address: 'Organize Sanayi Bölgesi No:12',
+    district: 'Tuzla',
+    city: 'İstanbul',
+    zipCode: '34956',
+  },
+
+  lines: [
+    {
+      name: 'Sanayi Tipi Kompresör',
+      quantity: 1,
+      price: 200,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+      itemClassificationCode: '01', // Makine/Teçhizat
+      productTraceId: 'KOMP-2026-0001',
+      serialId: 'SN-2026-MAKINA-000001',
+      brand: 'DemoMakine',
+      model: 'DMK-2000',
+    },
+    {
+      name: 'Endüstriyel Pres Makinesi',
+      quantity: 1,
+      price: 360,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+      itemClassificationCode: '01',
+      productTraceId: 'PRES-2026-0002',
+      serialId: 'SN-2026-MAKINA-000002',
+      brand: 'DemoMakine',
+      model: 'DPM-500',
+    },
+  ],
+};
+
+export default input;
