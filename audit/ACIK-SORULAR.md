@@ -496,3 +496,66 @@ Aşağıdakiler için Mimsoft pre-validation ve production log davranışı:
 ---
 
 > **SONUÇ:** 25 açık sorudan 15'i "senin kararın" (hemen verilebilir), 10'u "dış teyit" (Mimsoft email + prod log). Sprint 1 başlamadan kararlar ~1 saat; Mimsoft email cevabı 1-3 gün. Paralel yürüt: Sprint 1-2 senin kararlarınla başlat, Mimsoft cevapları Sprint 3-6'ya yetişir.
+
+---
+
+## §4 — Sprint 8b Sırasında Keşfedilen src/ Eksiklikleri (8c Hotfix Adayları)
+
+Sprint 8b.2 (TEMELFATURA senaryo paketi) yazımı sırasında `validation-errors.ts` içindeki invalid case'ler `examples/_dev-capture-errors.ts` ile çalıştırıldığında aşağıdaki src/ eksiklikleri saptandı. Sprint 8b disiplini gereği `src/` read-only; bulgular Sprint 8c'de hotfix olarak giderilecek.
+
+### B-NEW-01 — SimpleLineInput.kdvPercent alt sınır kontrolü yok
+**Dosya:** `src/calculator/simple-types.ts` + ilgili validator.
+**Gözlem:** `kdvPercent: -10` build başarılı, XML'de negatif oran.
+**Öneri:** Runtime kontrol: `0 ≤ kdvPercent ≤ 100`.
+
+### B-NEW-02 — SimpleLineInput.quantity alt sınır kontrolü yok
+**Gözlem:** `quantity: 0` build başarılı.
+**Öneri:** `quantity > 0` runtime kontrolü.
+
+### B-NEW-03 — SimpleLineTaxInput.percent üst sınır kontrolü yok
+**Gözlem:** `taxes: [{ code: '0011', percent: 150 }]` build başarılı.
+**Öneri:** `0 ≤ percent ≤ 100`.
+
+### B-NEW-04 — 351 tek-satır KDV>0 yakalanmıyor
+**Dosya:** `src/validators/cross-validators.ts`.
+**Gözlem:** Tek satırlı fatura, `kdvExemptionCode=351`, `kdvPercent=20` → build başarılı. M5 `requiresZeroKdvLine` tek-satır edge case'inde tetiklenmiyor.
+
+### B-NEW-05 — type=SATIS + kdvExemptionCode=702 basic modda geçiyor
+**Gözlem:** Simple-input `basic` validator M5 forbidden-type cross-check matrisini tetiklemiyor. strict'e geçince yakalıyor ama B-07 ALICIDIBSATIRKOD gereksinimi sebebiyle strict kullanılamıyor (B-NEW-12 ile bağlantılı).
+**Öneri:** Simple-input `basic` modunda M5 forbidden-type kontrolünü yay.
+
+### B-NEW-06 — type=IHRACKAYITLI + kdvExemptionCode yok yakalanmıyor
+**Gözlem:** `type: 'IHRACKAYITLI'` ama `kdvExemptionCode` silinmiş → build başarılı.
+**Öneri:** Tip × exemption zorunluluğu haritası (IHRACKAYITLI → 701-704 zorunlu).
+
+### B-NEW-07 — IHRACKAYITLI satır KDV>0 yakalanmıyor (basic mod)
+**Gözlem:** 702 satırında `kdvPercent=20`. Build başarılı (basic modda). 8b.2/07 senaryosunda gözlemlendi.
+
+### B-NEW-08 — type=SGK ama sgk obje eksik yakalanmıyor
+**Gözlem:** `type: 'SGK'` + `delete sgk` → build başarılı.
+**Öneri:** Tip × sgk zorunluluğu runtime kontrolü.
+
+### B-NEW-09 — sgk.type whitelist kontrolü yok
+**Gözlem:** `sgk.type: 'FOOBAR'` build başarılı.
+**Öneri:** Enum whitelist kontrolü (SAGLIK_ECZ/HAS/OPT/MED/ABONELIK/MAL_HIZMET/DIGER).
+
+### B-NEW-10 — sgk.documentNo boş yakalanmıyor
+**Gözlem:** `sgk.documentNo: ''` build başarılı.
+
+### B-NEW-11 (ÖNEMLI) — TEVKIFAT + SATIS tek satır strict'te B-81 + M5 çakışması
+**Dosya:** `src/calculator/simple-invoice-mapper.ts:249-251` ("B-81 minimal fix").
+**Gözlem:** Calculator TEVKIFAT tipinde `taxExemptionReason.kdv = '351'` otomatik atıyor, mapper bunu belge seviyesi `TaxExemptionReasonCode=351`'e çeviriyor; M5 `requiresZeroKdvLine` kuralı tetiklenip KDV>0 olan geçerli TEVKIFAT faturasını **false positive** olarak reddediyor.
+**Etki:** `SimpleInvoiceBuilder` + `validationLevel: 'strict'` + `withholdingTaxCode` tek satırlı senaryoda fail.
+**Geçici çözüm (8b):** Affected senaryolarda (05) `validationLevel: 'basic'` kullanılıyor.
+**Kalıcı çözüm (8c):** Ya calculator TEVKIFAT'ta 351 atamaz, ya da M5 TEVKIFAT × 351 kombinasyonunu requiresZeroKdvLine kontrolünden muaf tutar.
+
+### B-NEW-12 — IHRACKAYITLI+702 için simple-input AlıcıDİBKod ağacını desteklemiyor
+**Dosya:** `src/types/common.ts` LineDeliveryInput (shipment/transportHandlingUnits path'i) — `SimpleLineInput.delivery` bu ağaca erişim sağlamıyor.
+**Etki:** 07-senaryosu strict validator'dan geçmiyor (ALICIDIBSATIRKOD eksik hatası, path: `lines[0].delivery.shipment.transportHandlingUnits[].customsDeclarations[].issuerParty.partyIdentifications[]`).
+**Geçici çözüm (8b):** basic mod.
+**Kalıcı çözüm (8c):** SimpleLineInput'a `buyerTaxCode` veya `alicidibsatirkod` alanı eklenip mapper'da uygun yerine yerleştirilir.
+
+### Özet
+**Toplam:** 12 hotfix adayı (10 runtime zorunluluk boşluğu + 2 design mismatch).
+**Disiplin:** Sprint 8b src/ read-only — her bulgu bu dosyada işaretli, kod değişikliği yapılmadı.
+**Sprint 8c:** Bu 12 madde 2.0.0 bump öncesi hotfix olarak giderilmelidir; her biri ayrı commit. Snapshot değişikliği `__tests__/examples/` test suite'ini etkileyecek → validation-errors.ts güncellemesi eş zamanlı.

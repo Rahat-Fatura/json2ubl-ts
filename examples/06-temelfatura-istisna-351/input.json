@@ -1,0 +1,36 @@
+{
+  "id": "EXA2026000000006",
+  "uuid": "e1a2b3c4-0006-4000-8006-000000000006",
+  "datetime": "2026-04-23T13:00:00",
+  "profile": "TEMELFATURA",
+  "type": "SATIS",
+  "currencyCode": "TRY",
+  "kdvExemptionCode": "351",
+  "sender": {
+    "taxNumber": "1234567890",
+    "name": "Sınır Tanımaz Ticaret A.Ş.",
+    "taxOffice": "Üsküdar",
+    "address": "Barbaros Bulvarı No:123 Kat:5",
+    "district": "Üsküdar",
+    "city": "İstanbul",
+    "zipCode": "34664"
+  },
+  "customer": {
+    "taxNumber": "9876543210",
+    "name": "Yeşil Alıcı Ltd. Şti.",
+    "taxOffice": "Kadıköy",
+    "address": "Bağdat Caddesi No:456",
+    "district": "Kadıköy",
+    "city": "İstanbul",
+    "zipCode": "34710"
+  },
+  "lines": [
+    {
+      "name": "İstisna Olmayan Diğer Mal",
+      "quantity": 10,
+      "price": 10,
+      "unitCode": "Adet",
+      "kdvPercent": 0
+    }
+  ]
+}

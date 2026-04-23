@@ -6,3 +6,4 @@ coverage/
 examples/output/
 schematrons/
 xmls/
+examples/_dev-*.ts

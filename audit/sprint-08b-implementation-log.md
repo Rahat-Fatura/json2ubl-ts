@@ -99,4 +99,66 @@ Sprint 8a tamamlandı (commit `966a049`): 641/641 test yeşil, 108 bulgudan kod 
 
 ---
 
-<!-- 8b.2 → 8b.14 alt-commit bölümleri commit sırasında eklenecek -->
+## Sprint 8b.2 — §1 TEMELFATURA (8 senaryo, 01-08)
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8b.2: §1 TEMELFATURA (8 senaryo, 01-08) + ACIK-SORULAR §4`
+
+### Yapılanlar
+
+1. **`examples/_lib/runScenario.ts`** oluşturuldu — ortak helper: input.json + output.xml yazar, hata detayını console'a basar, `throw err` ile runner'a bildirir. Her run.ts ~4 satıra indi.
+
+2. **8 senaryo** tam yapısıyla kuruldu (`01-temelfatura-satis` … `08-temelfatura-sgk`). Her klasörde 6 dosya: `README.md`, `input.ts`, `input.json` (auto-generated), `output.xml` (auto-generated), `run.ts`, `validation-errors.ts`.
+
+3. **Fixture paralelliği:** 02→f10, 03→f11, 06→f15, 07→f12, 08→f16 (yapısal aynılık, tutar eşdeğerliği — VKN/UUID/tarih fiktif).
+
+4. **`_dev-capture-errors.ts` dev helper** (gitignored `examples/_dev-*.ts`) — bir senaryonun `validation-errors.ts`'indeki tüm invalid case'leri build'e verip UblBuildError.errors'u console'a döker. Her senaryoda gerçek validator çıktısıyla `expectedErrors` kalibrasyonu için.
+
+5. **Validation-errors genişletilmiş interface** — `ExpectedValidationError[]` + `expectedErrorMessage` (pre-check Error throws) + `notCaughtYet` (kütüphanenin henüz yakalamadığı → 8c hotfix) + per-case `validationLevel` override.
+
+6. **`audit/ACIK-SORULAR.md` §4 eklendi** — 12 src/ eksikliği notu (B-NEW-01..B-NEW-12). Sprint 8c hotfix adayları.
+
+### Senaryo Detayı
+
+| # | Slug | Kapsam | Validator mod | Payable |
+|---|------|--------|----------------|---------|
+| 01 | temelfatura-satis | Baseline — VKN + KDV %20 tek satır | strict | 1.200 TRY |
+| 02 | temelfatura-satis-gelir-stopaji | f10 paralel — 0003 %23 Gelir Stopajı | strict | 14.550 TRY |
+| 03 | temelfatura-satis-kurumlar-stopaji | f11 paralel — 0011 %32 Kurumlar Stopajı | strict | 13.200 TRY |
+| 04 | temelfatura-iade | BillingReference zorunlu (Schematron IADEInvioceCheck) | strict | 600 TRY |
+| 05 | temelfatura-tevkifat | KDV tevkifatı kod 603 %70 | **basic** (B-NEW-11) | 1.060 TRY |
+| 06 | temelfatura-istisna-351 | f15 paralel — 351 kodu + KDV=0 | strict | 100 TRY |
+| 07 | temelfatura-ihrackayitli-702 | f12 paralel — 702 + GTİP + buyerCode | **basic** (B-NEW-12) | 100 TRY |
+| 08 | temelfatura-sgk | f16 paralel — SGK/SAGLIK_ECZ + KDV %20 | strict | 120 TRY |
+
+### Sapmalar (Plan'a Göre)
+
+- **S1 — validationLevel basic fallback:** 05 ve 07 senaryoları strict modda kütüphane bug/eksikliği (B-NEW-11, B-NEW-12) nedeniyle fail ediyordu. Plan "R4 gerçek hatayı yakala" ve "R7 src/ read-only" gereklerini birleştirerek: 05, 07 için per-scenario `validationLevel: 'basic'` uygulanıyor. README'lerinde kısıtlama belirtildi; ACIK-SORULAR §4'te hotfix adayları olarak listelendi.
+- **S2 — validation-errors interface genişledi:** Plan 4 `ExpectedValidationError` dedi; gerçekte bazı invalid case'ler `Error` (UblBuildError değil) veya hiç hata üretmiyor. Interface `expectedErrorMessage` + `notCaughtYet` alanlarıyla genişletildi. Bu 8b.9 test suite'ine uyumludur (test runner üç durum arasında ayrım yapar).
+- **S3 — `_dev-capture-errors.ts` dev helper:** Plan bu dosyayı öngörmemişti; `_dev-*.ts` gitignored pattern ile iteratif validator hatalarını yakalamak için eklendi.
+
+### Test Durumu
+
+- Başlangıç: 641/641 yeşil
+- Son: **641/641 yeşil** (src/ dokunulmadı)
+- `npx tsx examples/run-all.ts` → 8 başarılı, 0 hatalı / 8 toplam
+- Her senaryo izolasyon smoke: `npx tsx examples/NN-slug/run.ts` OK
+
+### Değişiklik İstatistikleri
+
+- Yeni: `examples/_lib/runScenario.ts` (44 LOC)
+- Yeni: 8 senaryo × 6 dosya = 48 dosya (input.ts ~30-55 LOC, validation-errors.ts ~55-90 LOC, README ~80-130 LOC, run.ts ~4 LOC, input.json + output.xml auto-generated)
+- `audit/ACIK-SORULAR.md` — §4 ek bölüm (12 madde, ~80 LOC)
+- `.gitignore` — `examples/_dev-*.ts` pattern
+- Toplam net ~2.400 LOC yeni kod + doc
+
+### Disiplin Notları
+
+- **`src/` read-only:** ✓ Kod dosyasına dokunulmadı; bug/eksiklikler ACIK-SORULAR §4'te.
+- **Plan kopya pattern'i:** ✓ (8b.0'da zaten uygulandı)
+- **Yeni M/AR:** Yok. B-NEW-01..12 src/ hotfix, mimari karar değil.
+- **XSD vs runtime:** ✓ validation-errors.ts'lerde keyfi runtime zorunluluk icat edilmedi; `notCaughtYet` sadece var olan eksikleri belgeler.
+
+---
+
+<!-- 8b.3 → 8b.14 alt-commit bölümleri commit sırasında eklenecek -->
