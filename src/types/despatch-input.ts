@@ -68,8 +68,24 @@ export interface DespatchShipmentInput {
   driverPersons?: DriverPersonInput[];
   /** Taşıyıcı firma — sürücü veya taşıyıcı zorunlu */
   carrierParty?: CarrierPartyInput;
-  /** Plaka bilgileri */
+  /** Plaka bilgileri (TransportMeans/RoadTransport/LicensePlateID path) */
   licensePlates?: LicensePlateInput[];
+  /** B-72: Shipment/cbc:ID değeri (default: '1') */
+  shipmentId?: string;
+  /** B-73: Shipment/GoodsItem/cbc:ValueAmount */
+  goodsItem?: {
+    valueAmount?: { value: number; currencyId?: string };
+  };
+  /** B-49: Canonical DORSEPLAKA path — Shipment/TransportHandlingUnit/TransportEquipment/ID */
+  transportHandlingUnits?: TransportHandlingUnitInput[];
+}
+
+/** Canonical TransportHandlingUnit/TransportEquipment/ID — B-49 */
+export interface TransportHandlingUnitInput {
+  /** TransportEquipment cbc:ID (örn. plaka numarası) */
+  transportEquipmentId: string;
+  /** schemeID (default: 'DORSEPLAKA') */
+  schemeId?: string;
 }
 
 /** Sürücü bilgileri */

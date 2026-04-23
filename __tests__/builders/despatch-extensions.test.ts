@@ -75,6 +75,77 @@ describe('DespatchBuilder — B-19 DespatchContact/Name', () => {
   });
 });
 
+describe('DespatchBuilder — B-72 Shipment ID override + B-73 GoodsItem.ValueAmount', () => {
+  it('shipmentId default "1" emit edilir', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    const xml = builder.build(input);
+    expect(xml).toMatch(/<cac:Shipment>\s*<cbc:ID>1<\/cbc:ID>/);
+  });
+
+  it('shipmentId override edilir', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    input.shipment.shipmentId = 'SHP-2024-001';
+    const xml = builder.build(input);
+    expect(xml).toMatch(/<cac:Shipment>\s*<cbc:ID>SHP-2024-001<\/cbc:ID>/);
+  });
+
+  it('B-73 GoodsItem.ValueAmount emit edilir (TRY default)', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    input.shipment.goodsItem = { valueAmount: { value: 1500 } };
+    const xml = builder.build(input);
+    expect(xml).toContain('<cbc:ValueAmount currencyID="TRY">1500</cbc:ValueAmount>');
+  });
+
+  it('B-73 ValueAmount currencyId override', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    input.shipment.goodsItem = { valueAmount: { value: 250, currencyId: 'USD' } };
+    const xml = builder.build(input);
+    expect(xml).toContain('<cbc:ValueAmount currencyID="USD">250</cbc:ValueAmount>');
+  });
+});
+
+describe('DespatchBuilder — B-49 Canonical DORSEPLAKA (TransportHandlingUnit)', () => {
+  it('TransportHandlingUnit emit edilir, LicensePlate ile yan yana kullanılabilir', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    input.shipment.licensePlates = [{ plateNumber: '34ABC123', schemeId: 'PLAKA' }];
+    input.shipment.transportHandlingUnits = [{ transportEquipmentId: '34XYZ789' }];
+    const xml = builder.build(input);
+    // Codelist path
+    expect(xml).toContain('<cbc:LicensePlateID schemeID="PLAKA">34ABC123</cbc:LicensePlateID>');
+    // Canonical path
+    expect(xml).toContain('<cac:TransportHandlingUnit>');
+    expect(xml).toContain('<cac:TransportEquipment>');
+    expect(xml).toContain('<cbc:ID schemeID="DORSEPLAKA">34XYZ789</cbc:ID>');
+  });
+
+  it('TransportHandlingUnit XSD sırasında: Delivery < TransportHandlingUnit < /Shipment', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    input.shipment.transportHandlingUnits = [{ transportEquipmentId: '06DRS001' }];
+    const xml = builder.build(input);
+    const deliveryEndIdx = xml.indexOf('</cac:Delivery>');
+    const thuIdx = xml.indexOf('<cac:TransportHandlingUnit>');
+    const shipmentEndIdx = xml.indexOf('</cac:Shipment>');
+    expect(deliveryEndIdx).toBeLessThan(thuIdx);
+    expect(thuIdx).toBeLessThan(shipmentEndIdx);
+  });
+
+  it('schemeId override edilir', () => {
+    const builder = new DespatchBuilder();
+    const input = createValidDespatchInput();
+    input.shipment.transportHandlingUnits = [
+      { transportEquipmentId: 'CONT-001', schemeId: 'CONTAINER' },
+    ];
+    const xml = builder.build(input);
+    expect(xml).toContain('<cbc:ID schemeID="CONTAINER">CONT-001</cbc:ID>');
+  });
+});
+
 describe('DespatchBuilder — B-48 3 opsiyonel party tipi', () => {
   it('buyerCustomer emit edilir, diğerleri yok', () => {
     const builder = new DespatchBuilder();

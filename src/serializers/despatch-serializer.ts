@@ -120,10 +120,15 @@ function serializeShipmentBlock(input: DespatchInput, indent: string): string {
   const lines: string[] = [];
 
   lines.push(`${indent}<cac:Shipment>`);
-  lines.push(`${i2}${cbcOptionalTag('ID', '1')}`);
+  // B-72: shipmentId override (default '1')
+  lines.push(`${i2}${cbcOptionalTag('ID', s.shipmentId ?? '1')}`);
 
-  // GoodsItem (placeholder)
+  // GoodsItem — B-73: opsiyonel ValueAmount (XSD sequence: ValueAmount(1689) → RequiredCustomsID(1696))
   lines.push(`${i2}<cac:GoodsItem>`);
+  if (s.goodsItem?.valueAmount !== undefined) {
+    const va = s.goodsItem.valueAmount;
+    lines.push(`${i3}<cbc:ValueAmount currencyID="${va.currencyId ?? 'TRY'}">${va.value}</cbc:ValueAmount>`);
+  }
   lines.push(`${i3}${cbcOptionalTag('RequiredCustomsID', '')}`);
   lines.push(`${i2}</cac:GoodsItem>`);
 
@@ -183,6 +188,16 @@ function serializeShipmentBlock(input: DespatchInput, indent: string): string {
   lines.push(`${i3}</cac:Despatch>`);
 
   lines.push(`${i2}</cac:Delivery>`);
+
+  // B-49: TransportHandlingUnit canonical DORSEPLAKA path (XSD sequence: Delivery < THU)
+  for (const thu of s.transportHandlingUnits ?? []) {
+    lines.push(`${i2}<cac:TransportHandlingUnit>`);
+    lines.push(`${i3}<cac:TransportEquipment>`);
+    lines.push(`${i3}  ${cbcOptionalTag('ID', thu.transportEquipmentId, { schemeID: thu.schemeId ?? 'DORSEPLAKA' })}`);
+    lines.push(`${i3}</cac:TransportEquipment>`);
+    lines.push(`${i2}</cac:TransportHandlingUnit>`);
+  }
+
   lines.push(`${indent}</cac:Shipment>`);
 
   return joinLines(lines);
