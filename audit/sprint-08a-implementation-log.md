@@ -2,13 +2,14 @@
 sprint: 8a
 baslik: Devir bulgu temizliği + Mimsoft fixture regresyon + Cross-cutting integration
 tarih_basi: 2026-04-23
+tarih_sonu: 2026-04-23
 plan: audit/sprint-08a-plan.md
 fix_plani: audit/FIX-PLANI-v3.md §243-246 (Sprint 5 devir listesi) + §805-810 (B-78) + §852-886 (B-83..B-86) + §1043-1047 (B-104)
 onceki_sprint: audit/sprint-07-implementation-log.md (commit 566bd89)
 sonraki_sprint: Sprint 8b (Dokümantasyon + Release + v2.0.0 tag)
-toplam_commit: 0 (devam ediyor)
+toplam_commit: 9 atomik alt-commit (8a.1 → 8a.9)
 test_durumu_basi: 573 / 573 yeşil (35 dosya)
-test_durumu_sonu: — (sprint devam ediyor)
+test_durumu_sonu: 641 / 641 yeşil (40 dosya) — +68 test, plan hedef aralığında
 ---
 
 ## Kapsam (Sprint 8a Planından)
@@ -465,3 +466,152 @@ Plan'daki cross-cutting integration test: `calculateDocument() → mapSimpleToIn
 - **Builder round-trip kapsam dışı:** Fixture'ların birebir builder karşılığını oluşturmak Sprint 8a kapsamını aşar; Paket F (calc↔serialize round-trip) sayısal patterni kullandı. Tam builder → XML karşılaştırması post-v2.0.0'a ertelendi.
 - **F12 rename eşleşmesi:** Sprint 8a.1'de `f12_ihrachkayitli-702.xml.xml` → `f12-ihrackayitli-702.xml` rename'i bu test'lerde doğru ismin kullanılmasını sağladı.
 - **F10/F11 duplikasyon yok:** Mevcut `mimsoft-stopaj.test.ts` calculator-level, `f12-f17.test.ts` structural — farklı katmanlar.
+
+---
+
+## Sprint 8a.9 — Paket H: Oportunistik + log finalize + Sprint 8b devir
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8a.9: Paket H SGK/YOLCU coverage + log finalize + Sprint 8b devir`
+
+### Kapsam
+
+Plan Paket H opsiyoneldi. Sprint 7.2'de kapsam dışı bırakılan iki durum için minimum coverage:
+- SGK `InvoiceTypeCode` + default profil tespiti
+- YOLCUBERABERFATURA profili ISTISNA tipi override
+
+### Test Değişiklikleri
+
+**`__tests__/calculator/document-calculator.test.ts`** — `profil tespiti` describe'ına 2 yeni test:
+- `Paket H: SGK tipi + default profil TEMELFATURA` — SGK sadece TEMELFATURA'da izinli
+- `Paket H: YOLCUBERABERFATURA profili ISTISNA tipi ile override (M2)` — M2 kuralı coverage
+
+**Plan sapması:** Plan "default profil TICARIFATURA" demişti; gerçek `PROFILE_TYPE_MATRIX`'e göre SGK sadece TEMELFATURA'da izinli (f16 fixture'ı da TEMELFATURA). Test expectation düzeltildi.
+
+### Test Durumu
+
+- Başlangıç (8a.8 sonu): 639 / 639 yeşil (40 dosya)
+- Son (8a.9 kapanışı): **641 / 641 yeşil** (40 dosya, +2)
+- TypeScript strict: temiz
+
+---
+
+## Sprint 8a Kapanış Özeti
+
+### Test Büyümesi
+
+| Sprint | Test Δ | Toplam | Açıklama |
+|--------|--------|--------|----------|
+| 8a.1 | +2 | 575 | Plan kopyası + f12 rename + B-T08/B-104 atomik |
+| 8a.2 | +14 | 589 | Paket A — common validators (B-62/63/64/65/68/69) |
+| 8a.3 | +7 | 596 | Paket B.1 — type/profile (B-29/30/31) |
+| 8a.4 | +12 | 608 | Paket B.2 — YTB CalcSeq (B-67) + invoice-rules (B-78) |
+| 8a.5 | +9 | 617 | Paket C — despatch (B-66/B-85, B-84/86 zaten kapalı) |
+| 8a.6 | +3 | 620 | Paket D — KAMU BuyerCustomer additionalIdentifiers (B-83) |
+| 8a.7 | +3 | 623 | Paket F — calc↔serialize round-trip integration |
+| 8a.8 | +16 | 639 | Paket G — Mimsoft f12-f17 structural+monetary |
+| 8a.9 | +2 | **641** | Paket H — SGK/YOLCU coverage + log finalize |
+| **Toplam** | **+68** | — | Plan hedef +59..+68 aralığında, maksimumda |
+
+### Kapatılan Bulgular (16 total)
+
+| ID | Açıklama | Paket |
+|----|----------|-------|
+| **B-T08** | 8 test lokasyonunda nationalityId: 'TR' → '12345678901' | 8a.1 |
+| **B-104** | DriverPerson.nationalityId 11-hane TCKN validator | 8a.1 |
+| **B-62** | 1460415308 VKN (TaxFreeInvoice) profil cross-check | 8a.2 |
+| **B-63** | 7750409379 VKN (SGK) tip cross-check | 8a.2 |
+| **B-64** | ExchangeRate.calculationRate format aktif | 8a.2 |
+| **B-65** | IssueDate aralık kontrolü (2005 ↔ bugün) | 8a.2 |
+| **B-68** | ProfileID runtime whitelist (InvoiceProfileId) | 8a.2 |
+| **B-69** | additionalIdentifiers schemeID whitelist | 8a.2 |
+| **B-29** | IHRACAT satır PriceAmount/LineExtensionAmount > 0 | 8a.3 |
+| **B-30** | WithholdingTaxTotal ters yön (izinli tipler dışı yasak) | 8a.3 |
+| **B-31** | IADE grubu DocumentTypeCode='IADE' zorunlu | 8a.3 |
+| **B-67** | YTB ISTISNA satır calculationSequenceNumeric=-1 | 8a.4 |
+| **B-78** | validateInvoiceState 5 Schematron paraleli uyarı | 8a.4 |
+| **B-66** | MATBUDAN AdditionalDocument ID+IssueDate dolu | 8a.5 |
+| **B-85** | CarrierParty VKN/TCKN format + schemeID whitelist | 8a.5 |
+| **B-83** | KAMU BuyerCustomer additionalIdentifiers emit | 8a.6 |
+
+### Keşifler / Plan Sapmaları
+
+1. **B-84 ve B-86 zaten kapatılmış (Sprint 6):** Sprint 7 devir listesi yanlışlıkla bu ikisini tekrar işaretlemiş; Sprint 8a.5'te keşfedildi, kod değişikliği gerekmedi.
+2. **B-91 post-v2.0.0'a ertelendi:** FIX-PLANI-v3 §925-930 "serializer hardcode → risk yok" gerekçesi netliğiyle plan'dan çıkarıldı.
+3. **f13-f17 fixture tracking:** `git add __tests__/` kullanımı nedeniyle Sprint 8a.2'de erken eklendiler (plan'da 8a.8 içindi). İçerik değişmedi, log'a not düşüldü.
+4. **Sprint 8a.9 SGK default profil:** Plan "TICARIFATURA" demişti; gerçek matris SGK'yı sadece TEMELFATURA'da izinli gösterdi (f16 fixture ile paralel). Test düzeltildi.
+
+### Mimari Karar Etkisi
+
+**Sprint 8a yeni M/AR kararı gerektirmedi.** M1-M10 + AR-1..AR-8 hepsi stabil kaldı:
+- AR-1 (`cbcRequired/cbcOptional` split) — B-83 çözümünde rol aldı; mapper/serializer yolu temiz.
+- M7 (config-derived) — B-62/B-63 özel VKN'ler `special-vkn-config.ts`'de; TCKN_REGEX/VKN_REGEX `constants.ts`'de.
+- M4 (555 flag) — B-78.1 uyarısı mevcut flag'i kullandı.
+- B-83 Sprint 5'teki "serializer tema uyumsuz" gerekçesi AR-1 sonrası ortadan kalkmış bulundu; yeni tema açılmadı.
+
+### `src/` Değişiklikleri Özeti
+
+| Dosya | Sprint | Değişiklik |
+|-------|--------|------------|
+| `src/config/constants.ts` | 8a.1 | TCKN_REGEX + VKN_REGEX eklendi |
+| `src/config/special-vkn-config.ts` | 8a.2 | Yeni dosya — TAXFREE/SGK özel VKN matrisleri |
+| `src/calculator/simple-types.ts` | 8a.6 | SimpleBuyerCustomerInput.identifications alanı |
+| `src/calculator/simple-invoice-mapper.ts` | 8a.6 | identifications → party.additionalIdentifiers eşleme |
+| `src/calculator/invoice-rules.ts` | 8a.4 | validateInvoiceState 7 yeni flag + 5 warning |
+| `src/serializers/party-serializer.ts` | 8a.6 | serializeBuyerCustomerParty additionalIdentifiers emit |
+| `src/validators/common-validators.ts` | 8a.2 | B-62/63/64/65/68/69 kuralları |
+| `src/validators/despatch-validators.ts` | 8a.1, 8a.5 | B-104 + B-66 + B-85 (validateCarrierParty export) |
+| `src/validators/profile-validators.ts` | 8a.3, 8a.4 | B-29 IHRACAT amount + B-67 YTB CalcSeq |
+| `src/validators/type-validators.ts` | 8a.3 | B-30 ters yön + B-31 documentTypeCode |
+
+---
+
+## Sprint 8b Devir Listesi (Dokümantasyon + Release)
+
+Sprint 8a kod değişikliklerini kilitledi. Sprint 8b yalnızca doküman + release operasyonu:
+
+### Dokümantasyon
+- **B-92** — `examples/output/*.xml` regenerate (Sprint 1-8a tüm src değişikleri sonrası)
+- **B-93** — `ublExtensionsPlaceholder` dead code + test cleanup (varsa)
+- **B-94** — `examples/README.md` + workflow doc
+- **B-95, B-96, B-102** — README Sorumluluk Matrisi güncelleme:
+  - M3 (650 dinamik yüzde)
+  - M4 (555 flag `allowReducedKdvRate`)
+  - M9 (float calc + XML 2-basamak yuvarlama)
+  - M10 (isExport=true → liability ignore)
+- **B-S01..B-S05** — Skill doc güncellemeleri:
+  - `kod-listeleri-ubl-tr-v1.42.md §4.9` — 650 iç çelişki + kütüphane yaklaşımı
+  - `e-fatura-ubl-tr-v1.0.md §77` — Fatura + İrsaliye TR1.2
+
+### Release
+- **CHANGELOG.md** — Sprint 1-8a implementation-log'larını tek v2.0.0 entry'sine konsolide (Added/Changed/Removed/Fixed kategorileri)
+- **package.json** — 1.4.2 → 2.0.0 bump
+- **git tag v2.0.0** + origin/main push
+- (Opsiyonel) Vitest coverage config + threshold
+
+### Post-v2.0.0 Ertelenen
+
+- **B-91** — UBLVersion/CustomizationID/CopyIndicator runtime (serializer hardcode → risk yok)
+- **9015 vergi kodu** — kullanıcı iç teyit sonrası `tax-config.ts`'e
+- **ÖTV İstisna 101-108** — documentType mimarisi revize
+- **001 Konaklama Diplomatik İstisna** — KONAKLAMAVERGISI tipi
+- **219, 307, 318 İsim güncellemeleri** — semantik değişim
+- **Currency M7 full** — +38 kod
+- **Payment Means M7 full** — UN/EDIFACT
+
+### ACIK-SORULAR Durumu
+
+Plan'da R7 olarak belirtilen 7 dış-teyit-bağlı soru (ACIK-SORULAR #3/#6/#15/#16/#18/#20/#24) Sprint 8a'yı bloke etmedi. Sprint 8b release öncesi kullanıcı bu sorular için Mimsoft/GİB teyidi alırsa, yanıtlar CHANGELOG notlarına veya post-v2.0.0 işlemlerine dönüşür.
+
+---
+
+## Sprint 8a Disiplin Notları (Geneltoplam)
+
+- **Plan kopya pattern'i (feedback memory):** `audit/sprint-08a-plan.md` 8a.1 ilk commit'te oluşturuldu.
+- **M7 config-derived:** Sprint 8a'da eklenen tüm sabitler `constants.ts` veya dedicated config dosyalarında; magic number yok.
+- **Atomik alt-commit:** 9 atomik commit (8a.1 → 8a.9), her commit ayrı test bloku + log güncellemesi.
+- **`src/` yazıldı:** Sprint 7 read-only kuralı Sprint 8a'da kaldırıldı; toplam 10 src dosyası değişti.
+- **Test konsolidasyonu:** 5 yeni test dosyası + 3 mevcut test dosyası genişletildi. Sprint 7 testleri (35 dosya, 573 test) hepsi korundu.
+- **N1 placeholder yasağı:** Tüm yeni test isimleri `B-XX:` veya `Paket N:` prefix'li açıklayıcı.
+- **XSD vs runtime (feedback memory):** B-91 "XSD opsiyonel alanlara runtime zorunluluk yok" disiplinine uyarak ertelendi.
+- **Mimari kilit:** M1-M10 + AR-1..AR-8 hepsi stabil — sprint sırasında hiçbir karar yeniden açılmadı.

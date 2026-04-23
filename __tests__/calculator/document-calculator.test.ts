@@ -321,6 +321,24 @@ describe('document-calculator', () => {
       expect(result.profile).toBe('OZELFATURA');
       expect(result.type).toBe('ISTISNA');
     });
+
+    // Paket H (Sprint 8a.9) — oportunistik coverage
+    it('Paket H: SGK tipi + default profil TEMELFATURA', () => {
+      // PROFILE_TYPE_MATRIX: SGK sadece TEMELFATURA'da izinli (satır 17, constants.ts).
+      const result = calculateDocument(makeInput({ type: 'SGK' }));
+      expect(result.type).toBe('SGK');
+      expect(result.profile).toBe('TEMELFATURA');
+    });
+
+    it('Paket H: YOLCUBERABERFATURA profili ISTISNA tipi ile override (M2)', () => {
+      const result = calculateDocument(makeInput({
+        profile: 'YOLCUBERABERFATURA',
+        type: 'ISTISNA',
+        lines: [{ name: 'Yolcu Ürün', quantity: 1, price: 500, kdvPercent: 0 }],
+      }));
+      expect(result.profile).toBe('YOLCUBERABERFATURA');
+      expect(result.type).toBe('ISTISNA');
+    });
   });
 
   describe('istisna kodu eşleştirme', () => {
