@@ -313,3 +313,57 @@ Sprint 7 devir listesi B-84/B-86'yı tekrar işaretlemiş görünüyor ama kod z
 - **B-85 helper ayrı:** `CarrierPartyInput` `PartyInput`'tan farklı (adres alanları yok), bu yüzden `validateParty` yerine ayrı `validateCarrierParty` helper. Aynı PARTY_IDENTIFICATION_SCHEME_IDS seti kullanılır (B-69 ile paralel).
 - **B-84/B-86 devir keşfi:** Sprint 7 devir listesi bu iki bulguyu tekrar işaretlemiş ama Sprint 6'da zaten kapatılmışlar. Log'da net belirtildi; kod değişikliği gereksiz.
 - **M7 uyum:** TCKN_REGEX / VKN_REGEX constants'da (Sprint 8a.1'de eklenmişti), PARTY_IDENTIFICATION_SCHEME_IDS constants'da (Sprint 2'de eklenmişti). Yeni magic değer/set oluşturulmadı.
+
+---
+
+## Sprint 8a.6 — Paket D: B-83 KAMU BuyerCustomer PartyIdentification
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8a.6: Paket D B-83 KAMU BuyerCustomer additionalIdentifiers serializer`
+
+### Kapsam
+
+| Bulgu | Schematron ref |
+|-------|----------------|
+| **B-83** (FIX-PLANI-v3 §852-857) | Denetim 05 §6.6 (O11) — KAMU aracı kurum PartyIdentification atanmıyor |
+
+Bulgu Sprint 5'te "serializer tema uyumsuz" gerekçesiyle ertelenmişti. AR-1 (`cbcRequiredTag`/`cbcOptionalTag` split, Sprint 3) sonrası serializer yolları temizlendi — bu sprint'te mapping + serializer emit açıkça yapıldı, yeni tema gerekmedi (plan R1 notu teyit).
+
+### Kod Değişiklikleri
+
+1. **`src/calculator/simple-types.ts`**:
+   - `SimpleBuyerCustomerInput` arayüzüne yeni opsiyonel alan: `identifications?: Array<{ schemeId: string; value: string; }>`.
+   - JSDoc: KAMU aracı kurum MUSTERINO/MERSISNO, IHRACAT ek tanımlayıcı vb. schemeId PARTY_IDENTIFICATION_SCHEME_IDS ile kontrol edilir (B-69 downstream).
+
+2. **`src/calculator/simple-invoice-mapper.ts` — `buildBuyerCustomer`:**
+   - `bc.identifications` dolu ise `result.party.additionalIdentifiers` olarak eşlendi (schemeId + value copy).
+
+3. **`src/serializers/party-serializer.ts` — `serializeBuyerCustomerParty`:**
+   - VKN/TCKN PartyIdentification emit'inden SONRA `party.additionalIdentifiers` loop'u eklendi (normal `serializePartyBlock` patterni ile birebir).
+   - Output: her ek tanımlayıcı için ayrı `<cac:PartyIdentification><cbc:ID schemeID="X">Y</cbc:ID></cac:PartyIdentification>` bloğu.
+
+### Test Değişiklikleri
+
+**`__tests__/calculator/simple-invoice-mapper.test.ts`** — B-83 describe bloğu eklendi (+3 test):
+- **identifications yok → additionalIdentifiers undefined** (default davranış korundu)
+- **KAMU + 2 identification → mapper 2 ek tanımlayıcı dolduruyor** (MUSTERINO + MERSISNO)
+- **E2E XML çıktı kontrolü** — `schemeID="MUSTERINO"` ve değer XML'de görünüyor
+
+### Test Durumu
+
+- Başlangıç (8a.5 sonu): 617 / 617 yeşil (38 dosya)
+- Son (8a.6 kapanışı): **620 / 620 yeşil** (38 dosya, +3)
+- TypeScript strict: temiz
+
+### Değişiklik İstatistikleri
+
+- `src/calculator/simple-types.ts` — +7 satır (yeni opsiyonel alan + JSDoc)
+- `src/calculator/simple-invoice-mapper.ts` — +7 satır (identifications → additionalIdentifiers map)
+- `src/serializers/party-serializer.ts` — +9 satır (additionalIdentifiers emit loop)
+- `__tests__/calculator/simple-invoice-mapper.test.ts` — +42 satır (B-83 describe + 3 test)
+
+### Disiplin Notları
+
+- **Serializer pattern tutarlılığı:** `serializePartyBlock` (normal party) zaten Sprint 2'den beri `additionalIdentifiers` emit ediyordu (line 26-32); `serializeBuyerCustomerParty` bu kod patterni ile birebir aynı yapıldı. İki yol artık `additionalIdentifiers` emit konusunda senkronize.
+- **Sprint 5 ertelenme gerekçesi ("serializer tema uyumsuz") çözüldü:** AR-1 sonrası `cbcOptionalTag({ schemeID })` çağrısı mevcut pattern'e oturdu; yeni tema açılmadı.
+- **Ad karşılığı (`identifications` vs `additionalIdentifiers`):** SimpleInvoiceInput DTO tarafında kullanıcı dostu "identifications" ismi; InvoiceInput core tipinde UBL-TR resmi ismi "additionalIdentifiers" korundu. Mapper isim çevirisi yapar.

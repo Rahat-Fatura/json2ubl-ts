@@ -73,3 +73,50 @@ describe('B-81 — mapper TEVKIFAT+351 istisna kodunu korur', () => {
     expect(kdvSubtotal?.taxExemptionReasonCode).toBe('351');
   });
 });
+
+describe('B-83 — mapper buyerCustomer.identifications → additionalIdentifiers eşlemesi', () => {
+  it('identifications verilmezse additionalIdentifiers undefined', () => {
+    const invoiceInput = mapSimpleToInvoiceInput(makeInput({
+      profile: 'KAMU',
+      buyerCustomer: {
+        name: 'Devlet Kurumu', taxNumber: '1111111110',
+        address: 'Gov. Addr', district: 'Çankaya', city: 'Ankara', country: 'Türkiye',
+      },
+    }));
+    expect(invoiceInput.buyerCustomer?.party?.additionalIdentifiers).toBeUndefined();
+  });
+
+  it('KAMU + identifications verilirse additionalIdentifiers dolu', () => {
+    const invoiceInput = mapSimpleToInvoiceInput(makeInput({
+      profile: 'KAMU',
+      buyerCustomer: {
+        name: 'Devlet Kurumu', taxNumber: '1111111110',
+        address: 'Gov. Addr', district: 'Çankaya', city: 'Ankara', country: 'Türkiye',
+        identifications: [
+          { schemeId: 'MUSTERINO', value: 'M-12345' },
+          { schemeId: 'MERSISNO', value: '0001234567891011' },
+        ],
+      },
+    }));
+    const ids = invoiceInput.buyerCustomer?.party?.additionalIdentifiers;
+    expect(ids).toHaveLength(2);
+    expect(ids?.[0]).toEqual({ schemeId: 'MUSTERINO', value: 'M-12345' });
+    expect(ids?.[1]).toEqual({ schemeId: 'MERSISNO', value: '0001234567891011' });
+  });
+
+  it('identifications XML çıktısına yansır (PartyIdentification element)', () => {
+    const builder = new SimpleInvoiceBuilder({ validationLevel: 'none' });
+    const result = builder.build(makeInput({
+      profile: 'KAMU',
+      paymentMeans: { meansCode: '42', accountNumber: 'TR330006100519786457841326' },
+      buyerCustomer: {
+        name: 'Devlet Kurumu', taxNumber: '1111111110',
+        address: 'Gov. Addr', district: 'Çankaya', city: 'Ankara', country: 'Türkiye',
+        identifications: [{ schemeId: 'MUSTERINO', value: 'M-12345' }],
+      },
+    }));
+    expect(result.xml).toContain('<cac:BuyerCustomerParty>');
+    expect(result.xml).toContain('schemeID="MUSTERINO"');
+    expect(result.xml).toContain('M-12345');
+  });
+});

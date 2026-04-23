@@ -308,6 +308,12 @@ export interface SimpleBuyerCustomerInput {
     phone?: string;
     /** E-posta */
     email?: string;
+    /**
+     * Ek taraf tanımlayıcıları (B-83) — KAMU aracı kurum MUSTERINO/MERSISNO,
+     * IHRACAT ek tanımlayıcı vb. `party.additionalIdentifiers`'a eşlenir.
+     * schemeId PARTY_IDENTIFICATION_SCHEME_IDS seti ile kontrol edilir (B-69).
+     */
+    identifications?: Array<{ schemeId: string; value: string; }>;
 }
 
 /** Fatura dönemi (SGK faturaları vb.) */

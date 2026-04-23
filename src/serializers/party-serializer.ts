@@ -200,6 +200,15 @@ export function serializeBuyerCustomerParty(buyer: BuyerCustomerInput, indent: s
     lines.push(`${i2}  </cac:PartyIdentification>`);
   }
 
+  // B-83: additionalIdentifiers emit — KAMU aracı kurum MUSTERINO/MERSISNO vb.
+  if (party.additionalIdentifiers) {
+    for (const aid of party.additionalIdentifiers) {
+      lines.push(`${i2}  <cac:PartyIdentification>`);
+      lines.push(`${i2}    ${cbcOptionalTag('ID', aid.value, { schemeID: aid.schemeId })}`);
+      lines.push(`${i2}  </cac:PartyIdentification>`);
+    }
+  }
+
   if (isNonEmpty(party.name)) {
     lines.push(`${i2}  <cac:PartyName>`);
     lines.push(`${i2}    ${cbcOptionalTag('Name', party.name)}`);

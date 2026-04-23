@@ -590,6 +590,13 @@ function buildBuyerCustomer(simple: SimpleInvoiceInput, profile: string): BuyerC
       registrationName: bc.name,
     },
   };
+  // B-83: identifications → party.additionalIdentifiers eşlemesi (KAMU + IHRACAT vb.)
+  if (bc.identifications && bc.identifications.length > 0) {
+    result.party.additionalIdentifiers = bc.identifications.map(id => ({
+      schemeId: id.schemeId,
+      value: id.value,
+    }));
+  }
   if (partyType) {
     result.partyType = partyType;
   }
