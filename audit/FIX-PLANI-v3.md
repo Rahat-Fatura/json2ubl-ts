@@ -318,7 +318,12 @@ zaten uygulanmış olduğu için ek commit açılmadı.
 
 ### Sprint 8 — Dokümantasyon + Skill + CHANGELOG + v2.0.0 Release (2 gün)
 
-**Kapsanan Bulgular:** B-92, B-93, B-94, B-95, B-96, B-102, B-S01..B-S05
+> **Not (Sprint 8b.0, 2026-04-23):** Orijinal Sprint 8 üç alt-sprinte ayrıldı:
+> - **Sprint 8a** (tamamlandı, commit `966a049`): Devir bulgu temizliği + cross-cutting + Mimsoft fixture regresyon. Kapsanan: B-92 ✅, B-94 ✅. 641/641 test yeşil.
+> - **Sprint 8b** (devam ediyor, 2026-04-23 başladı): Comprehensive Examples Pack + README Sorumluluk Matrisi + CHANGELOG v2.0.0 + skill doc updates + dead code cleanup. Kapsanan: → B-93, → B-95, → B-96, → B-102, → B-S01..B-S05. Plan: `audit/sprint-08b-plan.md`, Log: `audit/sprint-08b-implementation-log.md`.
+> - **Sprint 8c** (planlı): `package.json` 1.4.2 → 2.0.0 bump + `git tag v2.0.0` + npm publish + GitHub release notes.
+
+**Kapsanan Bulgular:** B-92 ✅, B-93 (→ 8b), B-94 ✅, B-95 (→ 8b), B-96 (→ 8b), B-102 (→ 8b), B-S01..B-S05 (→ 8b)
 **İptal:** B-103 (Kategori A)
 
 **Ana kararlar:**
