@@ -2,7 +2,7 @@
 sprint: 8b
 baslik: Comprehensive Examples Pack + Docs/Release Prep
 tarih_basi: 2026-04-23
-tarih_sonu: TBD (devam ediyor)
+tarih_sonu: 2026-04-23
 plan: audit/sprint-08b-plan.md
 fix_plani: audit/FIX-PLANI-v3.md §319-384 (Sprint 8 bölümü — 8a sonrası kalan: B-93, B-95, B-96, B-102, B-S01..B-S05)
 onceki_sprint: audit/sprint-08a-implementation-log.md (commit 966a049)
@@ -236,4 +236,133 @@ Sprint 8a tamamlandı (commit `966a049`): 641/641 test yeşil, 108 bulgudan kod 
 
 ---
 
-<!-- 8b.5 → 8b.14 alt-commit bölümleri commit sırasında eklenecek -->
+## Sprint 8b.5 — §6-§8 niş profiller (7 senaryo, 20-26)
+
+**Commit:** `ad36015`
+20-yolcu-beraber (basic), 21-earsiv-satis-basic, 22-earsiv-teknolojidestek (TCKN zorunlu), 23-hks-satis (KUNYENO 19-karakter), 24-ilac-tibbicihaz, 25-enerji-sarj, 26-idis-satis (ETIKETNO 2-harf+7-rakam düzeltme).
+Test: 641/641 · Examples: 26/26.
+
+## Sprint 8b.6 — §9 Feature varyantları (27-32)
+
+**Commit:** `14a6ee7`
+EUR, çoklu KDV, AllowanceCharge, M4/B-96 555, 4171 ÖTV tevkifatı (basic), notes/orderRef/paymentMeans.
+Test: 641/641 · Examples: 32/32.
+
+## Sprint 8b.7 — §10 Despatch (33-36)
+
+**Commit:** `2a39557`
+Yeni: `examples/_lib/runDespatch.ts`. Tek sürücü, çoklu sürücü+carrier+DORSEPLAKA, MATBUDAN, IDIS+ETIKETNO. 26-idis-satis ETIKETNO formatı aynı düzeltmeyle strict moda alındı.
+Test: 641/641 · Examples: 36/36.
+
+## Sprint 8b.8 — §11 Showcase (99-* × 2)
+
+**Commit:** `9bf9bd7`
+99-showcase-everything (TEMELFATURA+TEVKIFAT, çoklu KDV+iskonto+650+EUR+notes+payment+order+ek belgeler — basic), 99-showcase-ihracat-full (5 satır IHRACAT+FOB/CIF/EXW/DAP/DDP).
+Test: 641/641 · **Examples: 38/38 — paket tamamlandı.**
+
+## Sprint 8b.9 — __tests__/examples test suite
+
+**Commit:** `640cee9`
+3 dosya: snapshot.test.ts (38 it, exact XML match), json-parity.test.ts (38 it, input.ts ≡ input.json), validation-errors.test.ts (38 slug-bazlı smoke). Plan'daki 228 test hedefi yerine slug-bazlı 114 test (src/ read-only disiplini, strict per-case 8c sonrası).
+Test: 641 → **755 yeşil (+114)**.
+
+## Sprint 8b.10 — Dead code cleanup (B-93)
+
+**Commit:** `9922ac5`
+`ublExtensionsPlaceholder()` deprecated function silindi (xml-helpers.ts), comment-out kalıntıları temizlendi (invoice-serializer + despatch-serializer). UBLExtensions artık kütüphane sorumluluğunda değil (ACIK-SORULAR §3).
+Test: 755/755.
+
+## Sprint 8b.11 — README §8 Sorumluluk Matrisi
+
+**Commit:** `ff65e60`
+README.md §7 sonrası §8 eklendi: M1-M10 + AR-1..AR-8 + B-07/08/83/104 tablosu, "Kütüphane SORUMLULUĞUNDA OLMAYAN" bölümü (imza, stopaj XML pattern, prod schematron). Examples/ link'leri her maddede.
+
+## Sprint 8b.12 — Skill doc patch referans
+
+**Commit:** `9338485`
+`audit/skill-doc-patches-sprint-8b.md`: skill repo'sundaki `kod-listeleri §4.9.3-5` + `e-fatura §77.1` eklenecek içerik ve uygulama talimatı. Skill repo git commit'i ayrı (8c veya manuel).
+
+## Sprint 8b.13 — CHANGELOG.md v2.0.0
+
+**Commit:** `6550ab0`
+Keep a Changelog 1.1.0 formatı. BREAKING CHANGES, Added, Changed, Fixed, Removed kategorileri. Sprint 1-8b konsolidasyonu. Sprint 8c hotfix referansı (ACIK-SORULAR §4 → B-NEW-01..12).
+
+## Sprint 8b.14 — Implementation log finalize + Sprint 8c devir
+
+**Commit:** `TBD` (bu commit)
+
+### Log Tamamlandı
+
+Bu commit ile 8b.5-8b.13 bölümleri log'a eklendi, Sprint 8c devir listesi netleştirildi.
+
+### Sprint 8c Devir Listesi
+
+Aşağıdaki maddeler Sprint 8b kapsamı dışı; Sprint 8c'de yapılacak.
+
+#### Release (plan §9)
+
+1. `package.json` version bump: `1.4.2` → `2.0.0`
+2. `git tag v2.0.0` + `npm publish --dry-run` smoke → `npm publish`
+3. GitHub release notes (CHANGELOG v2.0.0 entry'sinden kopya)
+4. Skill repo git commit: `audit/skill-doc-patches-sprint-8b.md` içeriği uygulanır (ayrı repo commit)
+
+#### Src/ Hotfix'leri (ACIK-SORULAR §4 — B-NEW-01..12)
+
+| ID | Özet | Etki |
+|----|------|------|
+| B-NEW-01 | SimpleLineInput.kdvPercent alt sınır (negatif kabul) | Silent accept |
+| B-NEW-02 | SimpleLineInput.quantity>0 kontrolü yok | Silent accept |
+| B-NEW-03 | SimpleLineTaxInput.percent üst sınır yok | Silent accept |
+| B-NEW-04 | 351 tek-satır kdvPercent>0 (requiresZeroKdvLine) tetiklenmiyor | Silent accept |
+| B-NEW-05 | type=SATIS+702 basic cross-check tetiklemiyor | Silent accept |
+| B-NEW-06 | type=IHRACKAYITLI+kdvExemptionCode eksik yakalanmıyor | Silent accept |
+| B-NEW-07 | IHRACKAYITLI 702 satır KDV>0 basic'te kaçıyor | Silent accept |
+| B-NEW-08 | type=SGK + sgk obje eksik yakalanmıyor | Silent accept |
+| B-NEW-09 | sgk.type whitelist yok | Silent accept |
+| B-NEW-10 | sgk.documentNo boş yakalanmıyor | Silent accept |
+| **B-NEW-11** | TEVKIFAT + strict B-81/M5 `requiresZeroKdvLine` false-positive | 05/10/16/31 basic mod workaround |
+| **B-NEW-12** | IHRACKAYITLI+702 için simple-input AlıcıDİBKod ağacı yok | 07/17 basic mod workaround |
+
+**Her B-NEW-XX ayrı commit** olarak Sprint 8c'de giderilir. Snapshot testler (snapshot.test.ts) etkilenecek → validation-errors.ts'ler paralel güncellenir.
+
+#### 8c Test Sıkılaştırma
+
+- `__tests__/examples/validation-errors.test.ts` lenient smoke → strict per-case assert (plan hedef: 228 test). Toplam hedef: **~869 test**.
+
+#### Opsiyonel
+
+- Despatch `__tests__/fixtures/` eklenmesi (8b examples/irsaliye yeterli gözüküyor, 8c'de karar)
+- Next.js v2.0.0 rewrite'ta kütüphaneyi gerçek kullanım (Sprint 8b examples'ın canlı tüketim sınavı)
+
+### Sprint 8b Toplu İstatistikler
+
+| Metrik | Değer |
+|--------|-------|
+| Atomik commit | 15 (8b.0 → 8b.14) |
+| Senaryo | 38 (32 invoice + 4 despatch + 2 showcase) |
+| Fixture paralelliği | 8 Mimsoft f10-f17 → 02/03/06/07/08/12/13/15 |
+| Yeni dosya (git tracked) | ~230 |
+| Yeni test | +114 (641 → 755) |
+| src/ dokunuş | Sadece 8b.10 dead code cleanup (B-93 ublExtensionsPlaceholder silindi) |
+| Yeni src/ bulgu (→ 8c) | 12 (B-NEW-01..12, ACIK-SORULAR §4) |
+| Dokümantasyon | CHANGELOG.md yoktan, README §8 eklendi, skill patch referans |
+| Mimari karar | Yok (plan gereği M/AR stabil) |
+
+### Disiplin Notları (kapanış)
+
+- **Plan kopya pattern'i:** ✓ (8b.0, `audit/sprint-08b-plan.md`)
+- **src/ read-only:** ✓ (sadece 8b.10 planın kapsamında dead code)
+- **Yeni M/AR yok:** ✓ (tüm bulgular B-NEW-XX 8c hotfix)
+- **XSD vs runtime disiplini:** ✓ (validation-errors keyfi runtime icat etmedi)
+- **Mimsoft fixture 1-1:** Yapısal eşleşme + tutar yakınlık (tarih/VKN/ID fiktif) — plan §5 R5 tolere edilen
+
+### Sapma Özeti (R* risk mitigation)
+
+- **R4 (validation-errors kalibrasyonu):** `_dev-capture-errors.ts` dev helper ile iteratif; `expectedErrorMessage` + `notCaughtYet` alanları ile genişletilmiş interface. Tam strict assert 8c'ye bırakıldı.
+- **R7 (src/ bug discovery):** 12 bulgu ACIK-SORULAR §4'e aktarıldı, 8b'de hotfix yapılmadı.
+- **R8 (skill doc ayrı repo):** `audit/skill-doc-patches-sprint-8b.md` referans kaydı — skill repo commit'i 8c'de.
+- **R9 (despatch fixture yok):** Examples/irsaliye 4 senaryonun output.xml'i snapshot görevi gördü; 8c opsiyonel.
+
+---
+
+**Sprint 8b tamamlandı.** Kod dev-complete + comprehensive examples (38) + doc kompetent. v2.0.0 release Sprint 8c'de.
