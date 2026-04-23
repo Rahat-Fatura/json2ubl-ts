@@ -101,7 +101,57 @@ B-T01, B-T02, B-T03, B-T05 → **zaten çözülmüş, Sprint 7'de yeniden test e
 
 ## Sprint 7.2 — B-T06 Profil Coverage
 
-_TBD — 7.2 commit sonrası doldurulacak._
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 7.2: B-T06 özel profil test coverage (YATIRIMTESVIK/ILAC_TIBBICIHAZ/IDIS/HKS/ENERJI/OZELFATURA)`
+
+### Plan Düzeltmesi (SGK profil değil)
+
+Plan (`audit/sprint-07-plan.md` §5.2) 7 profil listeliyordu: YATIRIMTESVIK, ILAC, SGK, ENERJI, IDIS, HKS, OZELFATURA.
+
+**Bulgu:** `src/types/enums.ts` incelendi:
+- `InvoiceProfileId` enum'ında **SGK yok** — SGK bir `InvoiceTypeCode` (tip kodu).
+- ILAC enum değeri `ILAC_TIBBICIHAZ` (plan'da "ILAC" kısaltması kullanılmış).
+
+**Düzeltme:** Sprint 7.2 kapsamı **6 profil** (SGK hariç):
+1. YATIRIMTESVIK (SATIS ok)
+2. ILAC_TIBBICIHAZ (SATIS ok)
+3. IDIS (SATIS ok)
+4. HKS (HKSSATIS zorunlu)
+5. ENERJI (SARJ/SARJANLIK zorunlu)
+6. OZELFATURA (ISTISNA zorunlu — M2 kuralı)
+
+`PROFILE_TYPE_MATRIX` ön-kontrolü tüm 6 profilin tanımlı olduğunu doğruladı (`src/config/constants.ts:13-58`). Sprint 8a'ya ertelenen profil yok.
+
+### Yapılanlar
+
+`__tests__/calculator/document-calculator.test.ts` 'profil tespiti' describe'ına KAMU testinden sonra 6 yeni test eklendi (satır 275 civarı):
+
+```ts
+it('B-T06: YATIRIMTESVIK profili override çalışmalı', ...);
+it('B-T06: ILAC_TIBBICIHAZ profili override çalışmalı', ...);
+it('B-T06: IDIS profili override çalışmalı', ...);
+it('B-T06: HKS profili HKSSATIS tipi ile override çalışmalı', ...);
+it('B-T06: ENERJI profili SARJ tipi ile override çalışmalı', ...);
+it('B-T06: OZELFATURA profili ISTISNA zorunlu (M2)', ...);
+```
+
+**Pattern:** Her test `makeInput({ profile: <PROFIL>, [type: <TIP>] })` → `expect(result.profile).toBe(<PROFIL>)`. Profil-spesifik tip override'ı yalnızca HKS/ENERJI/OZELFATURA için (diğerleri default SATIS kabul).
+
+### Test Durumu
+
+- Başlangıç (7.1 sonu): 554/554 yeşil (34 dosya)
+- Son (7.2 kapanışı): **560/560 yeşil** (34 dosya, +6 test)
+- TypeScript strict: temiz
+
+### Değişiklik İstatistikleri
+
+- `__tests__/calculator/document-calculator.test.ts` — 32 satır ekleme (6 yeni it bloğu)
+
+### Kapsam Dışı (Sprint 8a/8b)
+
+- **Profil-spesifik derinlik** (S4 kararı kapsamı dışı): YATIRIMTESVIK belgeReferance, ILAC_TIBBICIHAZ ilaçSicilNo, IDIS SEVKIYATNO vb. alan testleri Sprint 8a Mimsoft fixture sonrası.
+- **YOLCUBERABERFATURA profili** (M2 ISTISNA zorunlu): Plan kapsamında yoktu, Sprint 8a'ya ertelet — mevcut IHRACAT M2 kuralı testi zaten pattern'i kapsar.
+- **SGK InvoiceTypeCode testi**: `type: 'SGK'` + default TICARIFATURA profili testi Sprint 8a'ya ertelet (plan SGK'yı profil sandığı için bu kapsamda değildi).
 
 ---
 

@@ -272,6 +272,55 @@ describe('document-calculator', () => {
       const result = calculateDocument(makeInput({ profile: 'KAMU' }));
       expect(result.profile).toBe('KAMU');
     });
+
+    // B-T06: Özel profil coverage (Sprint 7.2) — SGK bir InvoiceTypeCode,
+    // profile değil (PROFILE_TYPE_MATRIX satır 13 src/config/constants.ts).
+    it('B-T06: YATIRIMTESVIK profili override çalışmalı', () => {
+      const result = calculateDocument(makeInput({ profile: 'YATIRIMTESVIK' }));
+      expect(result.profile).toBe('YATIRIMTESVIK');
+      expect(result.type).toBe('SATIS');
+    });
+
+    it('B-T06: ILAC_TIBBICIHAZ profili override çalışmalı', () => {
+      const result = calculateDocument(makeInput({ profile: 'ILAC_TIBBICIHAZ' }));
+      expect(result.profile).toBe('ILAC_TIBBICIHAZ');
+      expect(result.type).toBe('SATIS');
+    });
+
+    it('B-T06: IDIS profili override çalışmalı', () => {
+      const result = calculateDocument(makeInput({ profile: 'IDIS' }));
+      expect(result.profile).toBe('IDIS');
+      expect(result.type).toBe('SATIS');
+    });
+
+    it('B-T06: HKS profili HKSSATIS tipi ile override çalışmalı', () => {
+      const result = calculateDocument(makeInput({
+        profile: 'HKS',
+        type: 'HKSSATIS',
+      }));
+      expect(result.profile).toBe('HKS');
+      expect(result.type).toBe('HKSSATIS');
+    });
+
+    it('B-T06: ENERJI profili SARJ tipi ile override çalışmalı', () => {
+      const result = calculateDocument(makeInput({
+        profile: 'ENERJI',
+        type: 'SARJ',
+      }));
+      expect(result.profile).toBe('ENERJI');
+      expect(result.type).toBe('SARJ');
+    });
+
+    it('B-T06: OZELFATURA profili ISTISNA zorunlu (M2)', () => {
+      // OZELFATURA PROFILE_TYPE_MATRIX'te yalnız ISTISNA kabul eder (M2 kararı).
+      const result = calculateDocument(makeInput({
+        profile: 'OZELFATURA',
+        type: 'ISTISNA',
+        lines: [{ name: 'İhraç Ürün', quantity: 1, price: 1000, kdvPercent: 0 }],
+      }));
+      expect(result.profile).toBe('OZELFATURA');
+      expect(result.type).toBe('ISTISNA');
+    });
   });
 
   describe('istisna kodu eşleştirme', () => {
