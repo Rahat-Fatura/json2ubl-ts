@@ -119,9 +119,8 @@ function serializeShipmentBlock(input: DespatchInput, indent: string): string {
     lines.push(`${i3}</cac:TransportMeans>`);
   }
 
-  // DriverPerson — B-20 fix: PERSON_SEQ (FirstName → FamilyName → Title → MiddleName → NationalityID)
-  if (s.driverPerson) {
-    const dp = s.driverPerson;
+  // DriverPerson — B-20 + AR-2: PERSON_SEQ her sürücü için (XSD maxOccurs=unbounded)
+  for (const dp of s.driverPersons ?? []) {
     const personInner = emitInOrder(PERSON_SEQ, {
       FirstName: () => cbcRequiredTag('FirstName', dp.firstName, 'DriverPerson'),
       FamilyName: () => cbcRequiredTag('FamilyName', dp.familyName, 'DriverPerson'),

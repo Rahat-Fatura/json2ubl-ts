@@ -37,11 +37,11 @@ function createValidDespatchInput(): DespatchInput {
         postalZone: '06100',
         country: 'Türkiye',
       },
-      driverPerson: {
+      driverPersons: [{
         firstName: 'Mehmet',
         familyName: 'Kara',
         nationalityId: 'TR',
-      },
+      }],
       licensePlates: [
         { plateNumber: '06ABC123', schemeId: 'PLAKA' },
       ],
@@ -129,7 +129,15 @@ describe('DespatchBuilder', () => {
     it('sürücü ve taşıyıcı yoksa hata verir', () => {
       const builder = new DespatchBuilder();
       const input = createValidDespatchInput();
-      input.shipment.driverPerson = undefined;
+      input.shipment.driverPersons = undefined;
+      input.shipment.carrierParty = undefined;
+      expect(() => builder.build(input)).toThrow(UblBuildError);
+    });
+
+    it('boş driverPersons array sürücü yok sayılır', () => {
+      const builder = new DespatchBuilder();
+      const input = createValidDespatchInput();
+      input.shipment.driverPersons = [];
       input.shipment.carrierParty = undefined;
       expect(() => builder.build(input)).toThrow(UblBuildError);
     });
@@ -169,6 +177,56 @@ describe('DespatchBuilder', () => {
       input.id = '';
       const xml = builder.buildUnsafe(input);
       expect(xml).toContain('</DespatchAdvice>');
+    });
+  });
+
+  describe('AR-2 çoklu DriverPerson', () => {
+    it('2 sürücü emit eder', () => {
+      const builder = new DespatchBuilder();
+      const input = createValidDespatchInput();
+      input.shipment.driverPersons = [
+        { firstName: 'Mehmet', familyName: 'Kara', nationalityId: 'TR' },
+        { firstName: 'Ayşe', familyName: 'Yıldız', nationalityId: 'TR' },
+      ];
+      const xml = builder.build(input);
+      const driverOpenCount = (xml.match(/<cac:DriverPerson>/g) ?? []).length;
+      expect(driverOpenCount).toBe(2);
+      expect(xml).toContain('<cbc:FirstName>Mehmet</cbc:FirstName>');
+      expect(xml).toContain('<cbc:FirstName>Ayşe</cbc:FirstName>');
+    });
+
+    it('carrierParty-only (driverPersons undefined) başarılı', () => {
+      const builder = new DespatchBuilder();
+      const input = createValidDespatchInput();
+      input.shipment.driverPersons = undefined;
+      input.shipment.carrierParty = {
+        vknTckn: '1234567890',
+        taxIdType: 'VKN',
+        name: 'Taşıyıcı A.Ş.',
+      };
+      const xml = builder.build(input);
+      expect(xml).toContain('<cac:CarrierParty>');
+      expect(xml).not.toContain('<cac:DriverPerson>');
+    });
+
+    it('eksik alanlı sürücülerde validation hatası indexli path üretir', () => {
+      const builder = new DespatchBuilder();
+      const input = createValidDespatchInput();
+      input.shipment.driverPersons = [
+        { firstName: 'Mehmet', familyName: 'Kara', nationalityId: 'TR' },
+        // @ts-expect-error test: eksik firstName
+        { familyName: 'Yıldız', nationalityId: 'TR' },
+      ];
+      let caught: unknown;
+      try {
+        builder.build(input);
+      } catch (e) {
+        caught = e;
+      }
+      expect(caught).toBeInstanceOf(UblBuildError);
+      const err = caught as UblBuildError;
+      const paths = err.errors.map(v => v.path);
+      expect(paths).toContain('shipment.driverPersons[1].firstName');
     });
   });
 });

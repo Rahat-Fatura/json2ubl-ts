@@ -93,23 +93,24 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
       }
     }
 
-    // DriverPerson veya CarrierParty (en az biri zorunlu)
-    if (!s.driverPerson && !s.carrierParty) {
-      errors.push(missingField('shipment.driverPerson/carrierParty',
+    // DriverPersons veya CarrierParty (en az biri zorunlu — AR-2: array)
+    const hasDriver = (s.driverPersons?.length ?? 0) > 0;
+    if (!hasDriver && !s.carrierParty) {
+      errors.push(missingField('shipment.driverPersons/carrierParty',
         'Sürücü veya taşıyıcı firma bilgilerinden en az biri zorunludur'));
     }
 
-    if (s.driverPerson) {
-      if (!isNonEmpty(s.driverPerson.firstName)) {
-        errors.push(missingField('shipment.driverPerson.firstName', 'Sürücü adı zorunludur'));
+    s.driverPersons?.forEach((dp, i) => {
+      if (!isNonEmpty(dp.firstName)) {
+        errors.push(missingField(`shipment.driverPersons[${i}].firstName`, 'Sürücü adı zorunludur'));
       }
-      if (!isNonEmpty(s.driverPerson.familyName)) {
-        errors.push(missingField('shipment.driverPerson.familyName', 'Sürücü soyadı zorunludur'));
+      if (!isNonEmpty(dp.familyName)) {
+        errors.push(missingField(`shipment.driverPersons[${i}].familyName`, 'Sürücü soyadı zorunludur'));
       }
-      if (!isNonEmpty(s.driverPerson.nationalityId)) {
-        errors.push(missingField('shipment.driverPerson.nationalityId', 'Sürücü uyruk kodu zorunludur'));
+      if (!isNonEmpty(dp.nationalityId)) {
+        errors.push(missingField(`shipment.driverPersons[${i}].nationalityId`, 'Sürücü uyruk kodu zorunludur'));
       }
-    }
+    });
 
     // Plaka schemeID kontrolü
     s.licensePlates?.forEach((lp, i) => {

@@ -52,8 +52,8 @@ export interface DespatchShipmentInput {
   actualDespatchTime: string;
   /** Teslimat adresi — zorunlu */
   deliveryAddress: AddressInput;
-  /** Sürücü bilgileri — sürücü veya taşıyıcı zorunlu */
-  driverPerson?: DriverPersonInput;
+  /** Sürücüler — sürücü (en az 1) veya taşıyıcı zorunlu (AR-2: çoklu destek) */
+  driverPersons?: DriverPersonInput[];
   /** Taşıyıcı firma — sürücü veya taşıyıcı zorunlu */
   carrierParty?: CarrierPartyInput;
   /** Plaka bilgileri */
