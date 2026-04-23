@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DespatchAdvice xmlns="urn:oasis:names:specification:ubl:schema:xsd:DespatchAdvice-2"
+  xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+  xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+  xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
+  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+  xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="urn:oasis:names:specification:ubl:schema:xsd:DespatchAdvice-2 UBL-DespatchAdvice-2.1.xsd">
+  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+  <cbc:CustomizationID>TR1.2</cbc:CustomizationID>
+  <cbc:ProfileID>TEMELIRSALIYE</cbc:ProfileID>
+  <cbc:ID>IRS2026000000034</cbc:ID>
+  <cbc:CopyIndicator>false</cbc:CopyIndicator>
+  <cbc:UUID>e1a2b3c4-0034-4000-8034-000000000034</cbc:UUID>
+  <cbc:IssueDate>2026-04-23</cbc:IssueDate>
+  <cbc:IssueTime>11:00:00</cbc:IssueTime>
+  <cbc:DespatchAdviceTypeCode>SEVK</cbc:DespatchAdviceTypeCode>
+  <cbc:LineCountNumeric>1</cbc:LineCountNumeric>
+  <cac:DespatchSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">1234567890</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>Sınır Tanımaz Lojistik A.Ş.</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Barbaros Bulvarı No:123</cbc:StreetName>
+        <cbc:CitySubdivisionName>Üsküdar</cbc:CitySubdivisionName>
+        <cbc:CityName>İstanbul</cbc:CityName>
+        <cbc:PostalZone>34664</cbc:PostalZone>
+        <cbc:District>Üsküdar</cbc:District>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cac:TaxScheme>
+          <cbc:Name>Üsküdar</cbc:Name>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:DespatchSupplierParty>
+  <cac:DeliveryCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">9876543210</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>Yeşil Alıcı Ltd. Şti.</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Bağdat Caddesi No:456</cbc:StreetName>
+        <cbc:CitySubdivisionName>Kadıköy</cbc:CitySubdivisionName>
+        <cbc:CityName>İstanbul</cbc:CityName>
+        <cbc:PostalZone>34710</cbc:PostalZone>
+        <cbc:District>Kadıköy</cbc:District>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cac:TaxScheme>
+          <cbc:Name>Kadıköy</cbc:Name>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:DeliveryCustomerParty>
+  <cac:Shipment>
+    <cbc:ID>1</cbc:ID>
+    <cac:GoodsItem>
+    </cac:GoodsItem>
+    <cac:ShipmentStage>
+      <cac:TransportMeans>
+        <cac:RoadTransport>
+          <cbc:LicensePlateID schemeID="PLAKA">34ABC123</cbc:LicensePlateID>
+          <cbc:LicensePlateID schemeID="DORSE">34DEF456</cbc:LicensePlateID>
+        </cac:RoadTransport>
+      </cac:TransportMeans>
+      <cac:DriverPerson>
+        <cbc:FirstName>Mehmet</cbc:FirstName>
+        <cbc:FamilyName>Birinci Sürücü</cbc:FamilyName>
+        <cbc:NationalityID>12345678901</cbc:NationalityID>
+      </cac:DriverPerson>
+      <cac:DriverPerson>
+        <cbc:FirstName>Ali</cbc:FirstName>
+        <cbc:FamilyName>İkinci Sürücü</cbc:FamilyName>
+        <cbc:NationalityID>23456789012</cbc:NationalityID>
+      </cac:DriverPerson>
+    </cac:ShipmentStage>
+    <cac:Delivery>
+      <cac:DeliveryAddress>
+        <cbc:StreetName>Bağdat Caddesi No:456</cbc:StreetName>
+        <cbc:CitySubdivisionName>Kadıköy</cbc:CitySubdivisionName>
+        <cbc:CityName>İstanbul</cbc:CityName>
+        <cbc:PostalZone>34710</cbc:PostalZone>
+        <cbc:District>Kadıköy</cbc:District>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:DeliveryAddress>
+      <cac:CarrierParty>
+        <cac:PartyIdentification>
+          <cbc:ID schemeID="VKN">5555555555</cbc:ID>
+        </cac:PartyIdentification>
+        <cac:PartyName>
+          <cbc:Name>Hızlı Taşımacılık A.Ş.</cbc:Name>
+        </cac:PartyName>
+      </cac:CarrierParty>
+      <cac:Despatch>
+        <cbc:ActualDespatchDate>2026-04-23</cbc:ActualDespatchDate>
+        <cbc:ActualDespatchTime>15:00:00</cbc:ActualDespatchTime>
+      </cac:Despatch>
+    </cac:Delivery>
+    <cac:TransportHandlingUnit>
+      <cac:TransportEquipment>
+        <cbc:ID schemeID="DORSEPLAKA">34DEF456</cbc:ID>
+      </cac:TransportEquipment>
+    </cac:TransportHandlingUnit>
+  </cac:Shipment>
+  <cac:DespatchLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:DeliveredQuantity unitCode="Adet">100.00</cbc:DeliveredQuantity>
+    <cac:OrderLineReference>
+      <cbc:LineID>1</cbc:LineID>
+    </cac:OrderLineReference>
+    <cac:Item>
+      <cbc:Name>Büyük Hacim Ürün — Çok Şoförlü Sevkiyat</cbc:Name>
+    </cac:Item>
+  </cac:DespatchLine>
+</DespatchAdvice>

@@ -44,7 +44,7 @@ export const input: SimpleInvoiceInput = {
       unitCode: 'Adet',
       kdvPercent: 20,
       additionalItemIdentifications: [
-        { schemeId: 'ETIKETNO', value: 'ETK-2026-00042-001' },
+        { schemeId: 'ETIKETNO', value: 'ET0000001' },
       ],
     },
   ],

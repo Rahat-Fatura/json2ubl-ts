@@ -111,7 +111,7 @@
     <cac:Item>
       <cbc:Name>Ambalajlı Ürün — IDIS İzlenebilirlik</cbc:Name>
       <cac:AdditionalItemIdentification>
-        <cbc:ID schemeID="ETIKETNO">ETK-2026-00042-001</cbc:ID>
+        <cbc:ID schemeID="ETIKETNO">ET0000001</cbc:ID>
       </cac:AdditionalItemIdentification>
     </cac:Item>
     <cac:Price>
