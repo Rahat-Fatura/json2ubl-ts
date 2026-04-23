@@ -262,3 +262,54 @@ Sprint 5'te kullanıcı prompt'uyla dar tutulmuş **B-29..B-31, B-62..B-69, B-78
 - **B-78 strict-false pattern:** Flag'lar `=== false` ile karşılaştırılır, `undefined`/`null` değerler warning üretmez. Mevcut `invoice-session.ts` caller bu flag'ları göndermediği için regresyon olmaz; UI kademeli olarak flag'ları eklediğinde warning'ler aktif olur.
 - **B-67 tekil subtotal:** YTB ISTISNA satırında birden fazla KDV subtotal olabilir mi? Schematron tek `cac:TaxSubtotal` bekliyor; `find` tek match yeterli. Multi-subtotal senaryoları Sprint 8a kapsamında değil.
 - **validateInvoiceState caller uyumu:** `invoice-session.ts:514-528` caller değiştirilmedi — yeni flag'lar opsiyonel ve UI katmanı (edocument-service vb.) gönder/gönderme özgürlüğüne sahip.
+
+---
+
+## Sprint 8a.5 — Paket C: Despatch validators (B-66 + B-85)
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8a.5: Paket C despatch B-66 MATBUDAN + B-85 CarrierParty`
+
+### Kapsam Bulgusu
+
+Sprint 7 devir listesinde Paket C'ye giriş: **B-66, B-84, B-85, B-86**. İnceleme sırasında tespit edildi:
+
+| Bulgu | Durum | Neden |
+|-------|-------|-------|
+| **B-84** DespatchLineId numeric | ✅ Zaten yapılmış (Sprint 6) | `despatch-validators.ts:144` `/^\d+$/.test(line.id)` mevcut |
+| **B-86** MATBUDAN + DocumentType='MATBU' | ✅ Zaten yapılmış (Sprint 6) | `despatch-validators.ts:162-168` `hasMatbu` kontrolü mevcut |
+| **B-66** MATBUDAN ID+IssueDate dolu | ⏳ Bu sprint'te | Sadece liste boş-değilliği vardı |
+| **B-85** CarrierParty VKN/TCKN + schemeID | ⏳ Bu sprint'te | CarrierParty için hiçbir validator yoktu |
+
+Sprint 7 devir listesi B-84/B-86'yı tekrar işaretlemiş görünüyor ama kod zaten Sprint 6'daki O4/O7 commit'lerinde kapatılmış. Bu durum `sprint-06-implementation-log.md` ile paraleldir.
+
+### Kod Değişiklikleri
+
+1. **`src/validators/despatch-validators.ts`**:
+   - Import: `CarrierPartyInput`, `VKN_REGEX`, `PARTY_IDENTIFICATION_SCHEME_IDS`, `invalidValue` eklendi
+   - **B-66:** MATBUDAN additionalDocuments loop'una her item için `id` + `issueDate` non-empty + `DATE_REGEX.test(issueDate)` kontrolü
+   - **B-85:** `shipment.carrierParty` varsa `validateCarrierParty(cp, path)` çağrısı (driver kontrolünden sonra)
+   - Yeni export: `validateCarrierParty()` helper — VKN/TCKN format + `additionalIdentifiers.schemeID` whitelist (B-69 ile aynı set).
+
+### Test Değişiklikleri
+
+**`__tests__/validators/despatch-b66-b85.test.ts`** — yeni dosya (+9 test):
+- **B-66 (4):** id boş reddet, issueDate boş reddet, issueDate invalid format reddet, geçerli MATBUDAN kabul
+- **B-85 (5):** VKN 9-hane reddet, TCKN 10-hane reddet, invalid schemeID reddet, geçerli carrierParty kabul, `validateDespatch` üzerinden regression
+
+### Test Durumu
+
+- Başlangıç (8a.4 sonu): 608 / 608 yeşil (37 dosya)
+- Son (8a.5 kapanışı): **617 / 617 yeşil** (38 dosya, +9)
+- TypeScript strict: temiz
+
+### Değişiklik İstatistikleri
+
+- `src/validators/despatch-validators.ts` — +38 satır (B-66 loop + B-85 validateCarrierParty helper + call)
+- `__tests__/validators/despatch-b66-b85.test.ts` — yeni dosya (109 satır)
+
+### Disiplin Notları
+
+- **B-85 helper ayrı:** `CarrierPartyInput` `PartyInput`'tan farklı (adres alanları yok), bu yüzden `validateParty` yerine ayrı `validateCarrierParty` helper. Aynı PARTY_IDENTIFICATION_SCHEME_IDS seti kullanılır (B-69 ile paralel).
+- **B-84/B-86 devir keşfi:** Sprint 7 devir listesi bu iki bulguyu tekrar işaretlemiş ama Sprint 6'da zaten kapatılmışlar. Log'da net belirtildi; kod değişikliği gereksiz.
+- **M7 uyum:** TCKN_REGEX / VKN_REGEX constants'da (Sprint 8a.1'de eklenmişti), PARTY_IDENTIFICATION_SCHEME_IDS constants'da (Sprint 2'de eklenmişti). Yeni magic değer/set oluşturulmadı.

@@ -1,13 +1,14 @@
 import type { ValidationError } from '../errors/ubl-build-error';
-import type { DespatchInput } from '../types/despatch-input';
+import type { DespatchInput, CarrierPartyInput } from '../types/despatch-input';
 import { DespatchProfileId, DespatchTypeCode } from '../types/enums';
 import {
   INVOICE_ID_REGEX, UUID_REGEX, DATE_REGEX, TIME_REGEX,
   POSTAL_ZONE_REGEX, SEVKIYAT_NO_REGEX, ETIKET_NO_REGEX,
-  LICENSE_PLATE_SCHEME_IDS, TCKN_REGEX,
+  LICENSE_PLATE_SCHEME_IDS, TCKN_REGEX, VKN_REGEX,
+  PARTY_IDENTIFICATION_SCHEME_IDS,
 } from '../config/constants';
 import { validateParty } from './common-validators';
-import { missingField, invalidFormat, profileRequirement } from './validation-result';
+import { missingField, invalidFormat, invalidValue, profileRequirement } from './validation-result';
 import { isNonEmpty } from '../utils/formatters';
 
 /**
@@ -131,6 +132,11 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
           'PLAKA veya DORSE', lp.schemeId));
       }
     });
+
+    // B-85: CarrierParty VKN/TCKN format + schemeID whitelist (CommonSchematron:505-509)
+    if (s.carrierParty) {
+      errors.push(...validateCarrierParty(s.carrierParty, 'shipment.carrierParty'));
+    }
   }
 
   // §5.2 DespatchLine zorunlu alanlar
@@ -166,6 +172,20 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
         errors.push(profileRequirement('MATBUDAN', 'additionalDocuments.documentType',
           "MATBUDAN tipinde en az bir AdditionalDocumentReference DocumentType='MATBU' olmalıdır"));
       }
+      // B-66: Her MATBUDAN referansında ID + IssueDate dolu olmalı (CommonSchematron:703)
+      input.additionalDocuments.forEach((d, i) => {
+        if (!isNonEmpty(d.id)) {
+          errors.push(missingField(`additionalDocuments[${i}].id`,
+            'MATBUDAN AdditionalDocumentReference için ID zorunludur (B-66)'));
+        }
+        if (!isNonEmpty(d.issueDate)) {
+          errors.push(missingField(`additionalDocuments[${i}].issueDate`,
+            'MATBUDAN AdditionalDocumentReference için IssueDate zorunludur (B-66)'));
+        } else if (!DATE_REGEX.test(d.issueDate)) {
+          errors.push(invalidFormat(`additionalDocuments[${i}].issueDate`,
+            'YYYY-MM-DD', d.issueDate));
+        }
+      });
     }
   }
 
@@ -205,6 +225,33 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
       }
     });
   }
+
+  return errors;
+}
+
+/**
+ * B-85: CarrierParty VKN/TCKN format + additionalIdentifiers schemeID whitelist.
+ * Schematron CommonSchematron:505-509.
+ * Downstream: B-69 (PARTY_IDENTIFICATION_SCHEME_IDS aynı set kullanılır).
+ */
+export function validateCarrierParty(cp: CarrierPartyInput | undefined | null, path: string): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!cp) return errors;
+
+  if (!isNonEmpty(cp.vknTckn)) {
+    errors.push(missingField(`${path}.vknTckn`, 'Taşıyıcı firma VKN veya TCKN zorunludur'));
+  } else if (cp.taxIdType === 'VKN' && !VKN_REGEX.test(cp.vknTckn)) {
+    errors.push(invalidFormat(`${path}.vknTckn`, 'VKN 10 hane (numeric)', cp.vknTckn));
+  } else if (cp.taxIdType === 'TCKN' && !TCKN_REGEX.test(cp.vknTckn)) {
+    errors.push(invalidFormat(`${path}.vknTckn`, 'TCKN 11 hane (numeric)', cp.vknTckn));
+  }
+
+  cp.additionalIdentifiers?.forEach((id, i) => {
+    if (!PARTY_IDENTIFICATION_SCHEME_IDS.has(id.schemeId)) {
+      errors.push(invalidValue(`${path}.additionalIdentifiers[${i}].schemeId`,
+        'PARTY_IDENTIFICATION_SCHEME_IDS listesinden', id.schemeId));
+    }
+  });
 
   return errors;
 }
