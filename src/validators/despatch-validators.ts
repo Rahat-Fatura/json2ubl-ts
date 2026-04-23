@@ -4,7 +4,7 @@ import { DespatchProfileId, DespatchTypeCode } from '../types/enums';
 import {
   INVOICE_ID_REGEX, UUID_REGEX, DATE_REGEX, TIME_REGEX,
   POSTAL_ZONE_REGEX, SEVKIYAT_NO_REGEX, ETIKET_NO_REGEX,
-  LICENSE_PLATE_SCHEME_IDS,
+  LICENSE_PLATE_SCHEME_IDS, TCKN_REGEX,
 } from '../config/constants';
 import { validateParty } from './common-validators';
 import { missingField, invalidFormat, profileRequirement } from './validation-result';
@@ -116,7 +116,11 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
         errors.push(missingField(`shipment.driverPersons[${i}].familyName`, 'Sürücü soyadı zorunludur'));
       }
       if (!isNonEmpty(dp.nationalityId)) {
-        errors.push(missingField(`shipment.driverPersons[${i}].nationalityId`, 'Sürücü uyruk kodu zorunludur'));
+        errors.push(missingField(`shipment.driverPersons[${i}].nationalityId`, 'Sürücü TCKN (nationalityId) zorunludur'));
+      } else if (!TCKN_REGEX.test(dp.nationalityId)) {
+        // B-104: Skill §7.1 — NationalityID = TCKN (11-hane numeric), 'TR' ISO kodu reddedilir
+        errors.push(invalidFormat(`shipment.driverPersons[${i}].nationalityId`,
+          '11-hane TCKN', dp.nationalityId));
       }
     });
 

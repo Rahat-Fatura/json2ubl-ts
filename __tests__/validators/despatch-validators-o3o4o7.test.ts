@@ -39,7 +39,7 @@ function createValidDespatchInput(): DespatchInput {
       driverPersons: [{
         firstName: 'Mehmet',
         familyName: 'Kara',
-        nationalityId: 'TR',
+        nationalityId: '12345678901',
       }],
     },
     lines: [{
@@ -152,5 +152,31 @@ describe('despatch-validators — O7 MATBUDAN + DocumentType cross-check', () =>
     input.additionalDocuments = undefined;
     const errors = validateDespatch(input);
     expect(errors.filter(e => e.path?.includes('additionalDocuments'))).toHaveLength(0);
+  });
+});
+
+describe('despatch-validators — B-104 DriverPerson nationalityId TCKN (11-hane)', () => {
+  it('B-104: geçerli 11-hane TCKN kabul eder', () => {
+    const input = createValidDespatchInput();
+    input.shipment.driverPersons = [{
+      firstName: 'Mehmet',
+      familyName: 'Kara',
+      nationalityId: '12345678901',
+    }];
+    const errors = validateDespatch(input);
+    expect(errors.filter(e => e.path?.endsWith('.nationalityId'))).toHaveLength(0);
+  });
+
+  it('B-104: nationalityId="TR" (ISO kodu) reddedilir', () => {
+    const input = createValidDespatchInput();
+    input.shipment.driverPersons = [{
+      firstName: 'Mehmet',
+      familyName: 'Kara',
+      nationalityId: 'TR',
+    }];
+    const errors = validateDespatch(input);
+    const err = errors.find(e => e.path === 'shipment.driverPersons[0].nationalityId');
+    expect(err).toBeDefined();
+    expect(err?.code).toBe('INVALID_FORMAT');
   });
 });

@@ -39,7 +39,7 @@ function createValidDespatchInput(): DespatchInput {
       driverPersons: [{
         firstName: 'Mehmet',
         familyName: 'Kara',
-        nationalityId: 'TR',
+        nationalityId: '12345678901',
       }],
     },
     lines: [{

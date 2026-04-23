@@ -286,6 +286,12 @@ export const EXCHANGE_RATE_REGEX = /^\d{1,15}(\.\d{1,6})?$/;
 /** Türkiye IBAN formatı */
 export const TR_IBAN_REGEX = /^TR\d{7}[A-Z0-9]{17}$/;
 
+/** TCKN formatı: 11 hane numeric (Skill §7.1) */
+export const TCKN_REGEX = /^\d{11}$/;
+
+/** VKN formatı: 10 hane numeric */
+export const VKN_REGEX = /^\d{10}$/;
+
 /** SEVKIYATNO formatı: SE-0000000 */
 export const SEVKIYAT_NO_REGEX = /^SE-\d{7}$/;
 

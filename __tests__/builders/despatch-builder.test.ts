@@ -40,7 +40,7 @@ function createValidDespatchInput(): DespatchInput {
       driverPersons: [{
         firstName: 'Mehmet',
         familyName: 'Kara',
-        nationalityId: 'TR',
+        nationalityId: '12345678901',
       }],
       licensePlates: [
         { plateNumber: '06ABC123', schemeId: 'PLAKA' },
@@ -214,8 +214,8 @@ describe('DespatchBuilder', () => {
       const builder = new DespatchBuilder();
       const input = createValidDespatchInput();
       input.shipment.driverPersons = [
-        { firstName: 'Mehmet', familyName: 'Kara', nationalityId: 'TR' },
-        { firstName: 'Ayşe', familyName: 'Yıldız', nationalityId: 'TR' },
+        { firstName: 'Mehmet', familyName: 'Kara', nationalityId: '12345678901' },
+        { firstName: 'Ayşe', familyName: 'Yıldız', nationalityId: '12345678901' },
       ];
       const xml = builder.build(input);
       const driverOpenCount = (xml.match(/<cac:DriverPerson>/g) ?? []).length;
@@ -242,9 +242,9 @@ describe('DespatchBuilder', () => {
       const builder = new DespatchBuilder();
       const input = createValidDespatchInput();
       input.shipment.driverPersons = [
-        { firstName: 'Mehmet', familyName: 'Kara', nationalityId: 'TR' },
+        { firstName: 'Mehmet', familyName: 'Kara', nationalityId: '12345678901' },
         // @ts-expect-error test: eksik firstName
-        { familyName: 'Yıldız', nationalityId: 'TR' },
+        { familyName: 'Yıldız', nationalityId: '12345678901' },
       ];
       let caught: unknown;
       try {
