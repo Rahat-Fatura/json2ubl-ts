@@ -1,0 +1,107 @@
+import type { SimpleInvoiceInput } from '../../src';
+
+/**
+ * IHRACAT profili — çok satırlı gelişmiş ihracat senaryosu.
+ * 18-basic'e kıyasla:
+ * - 3 satır farklı GTIP kodları
+ * - Her satırda farklı INCOTERMS (FOB, CIF, EXW)
+ * - Farklı teslim noktaları
+ * - USD + ExchangeRate
+ */
+export const input: SimpleInvoiceInput = {
+  id: 'EXA2026000000019',
+  uuid: 'e1a2b3c4-0019-4000-8019-000000000019',
+  datetime: '2026-04-23T14:00:00',
+  profile: 'IHRACAT',
+  type: 'ISTISNA',
+  currencyCode: 'USD',
+  exchangeRate: 32.50,
+
+  kdvExemptionCode: '301',
+
+  sender: {
+    taxNumber: '1234567890',
+    name: 'Sınır Tanımaz İhracat A.Ş.',
+    taxOffice: 'Üsküdar',
+    address: 'Barbaros Bulvarı No:123 Kat:5',
+    district: 'Üsküdar',
+    city: 'İstanbul',
+    zipCode: '34664',
+  },
+
+  customer: {
+    taxNumber: '2222222222',
+    name: 'Global Trade Holdings (Multi-Country)',
+    address: 'Central Office',
+    district: 'Zurich',
+    city: 'Zurich',
+    country: 'Switzerland',
+    zipCode: '8001',
+  },
+
+  buyerCustomer: {
+    name: 'Global Trade Holdings AG',
+    taxNumber: 'CHE-123.456.789',
+    address: 'Bahnhofstrasse 45',
+    district: 'Zurich',
+    city: 'Zurich',
+    country: 'Switzerland',
+    zipCode: '8001',
+  },
+
+  lines: [
+    {
+      name: 'Premium Tekstil',
+      quantity: 50,
+      price: 20,
+      unitCode: 'Adet',
+      kdvPercent: 0,
+      delivery: {
+        deliveryTermCode: 'FOB', // Free On Board — risk Türkiye limanında geçer
+        gtipNo: '620342000010',
+        deliveryAddress: {
+          address: 'Ambarlı Limanı',
+          district: 'Avcılar',
+          city: 'İstanbul',
+          country: 'Türkiye',
+        },
+      },
+    },
+    {
+      name: 'El Yapımı Halı',
+      quantity: 10,
+      price: 150,
+      unitCode: 'Adet',
+      kdvPercent: 0,
+      delivery: {
+        deliveryTermCode: 'CIF', // Cost, Insurance & Freight — satıcı sorumluluğu var
+        gtipNo: '570110100000',
+        deliveryAddress: {
+          address: 'Zurich Havalimanı Kargo Terminali',
+          district: 'Kloten',
+          city: 'Zurich',
+          country: 'Switzerland',
+        },
+      },
+    },
+    {
+      name: 'Bakır El İşi',
+      quantity: 25,
+      price: 50,
+      unitCode: 'Adet',
+      kdvPercent: 0,
+      delivery: {
+        deliveryTermCode: 'EXW', // Ex Works — alıcı fabrikadan teslim alır
+        gtipNo: '741400000000',
+        deliveryAddress: {
+          address: 'Sınır Tanımaz Fabrika — Üretim Hattı',
+          district: 'Üsküdar',
+          city: 'İstanbul',
+          country: 'Türkiye',
+        },
+      },
+    },
+  ],
+};
+
+export default input;

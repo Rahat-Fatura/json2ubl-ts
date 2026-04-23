@@ -1,0 +1,86 @@
+import type { SimpleInvoiceInput } from '../../src';
+
+/**
+ * KAMU profili — kamu kurumları alıcı olduğunda kullanılan fatura.
+ * Fixture paralelliği: `__tests__/fixtures/mimsoft-real-invoices/f17-kamu.xml`
+ *
+ * KAMU profili zorunluları:
+ * - `paymentMeans` (ödeme bilgisi + IBAN)
+ * - IBAN formatı: `TR` + 2 kontrol hanesi + 7 banka/şube + 16 hesap = 26 karakter
+ *
+ * Beklenen: 3 satır, toplam ~17.220 TRY.
+ */
+export const input: SimpleInvoiceInput = {
+  id: 'EXA2026000000015',
+  uuid: 'e1a2b3c4-0015-4000-8015-000000000015',
+  datetime: '2026-04-23T10:00:00',
+  profile: 'KAMU',
+  type: 'SATIS',
+  currencyCode: 'TRY',
+
+  sender: {
+    taxNumber: '1234567890',
+    name: 'Sınır Tanımaz Tedarikçi A.Ş.',
+    taxOffice: 'Üsküdar',
+    address: 'Barbaros Bulvarı No:123 Kat:5',
+    district: 'Üsküdar',
+    city: 'İstanbul',
+    zipCode: '34664',
+  },
+
+  customer: {
+    taxNumber: '1460415308', // KAMU alıcı VKN
+    name: 'T.C. Çalışma ve Sosyal Güvenlik Bakanlığı',
+    taxOffice: 'Çankaya',
+    address: 'Emek Mahallesi No:1',
+    district: 'Çankaya',
+    city: 'Ankara',
+    zipCode: '06510',
+  },
+
+  // KAMU profili BuyerCustomerParty zorunlu — aracı kurum VKN (B-83)
+  buyerCustomer: {
+    name: 'Kamu İhale Kurumu — Aracı',
+    taxNumber: '3333333333',
+    address: 'Mevlana Bulvarı No:233',
+    district: 'Çankaya',
+    city: 'Ankara',
+    country: 'Türkiye',
+    zipCode: '06520',
+    identifications: [
+      { schemeId: 'MUSTERINO', value: 'KAMU-MUSTERI-2026-000042' },
+    ],
+  },
+
+  paymentMeans: {
+    meansCode: '42', // EFT
+    accountNumber: 'TR330006100519786457841326', // 26-hane TR IBAN
+    dueDate: '2026-05-23',
+  },
+
+  lines: [
+    {
+      name: 'Ofis Mobilyası — Çalışma Masası',
+      quantity: 15,
+      price: 300,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+    },
+    {
+      name: 'Klima — Standart Split',
+      quantity: 5,
+      price: 1500,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+    },
+    {
+      name: 'Kurulum ve Montaj Hizmeti',
+      quantity: 1,
+      price: 2850,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+    },
+  ],
+};
+
+export default input;

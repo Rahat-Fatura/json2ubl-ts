@@ -205,4 +205,35 @@ Sprint 8a tamamlandı (commit `966a049`): 641/641 test yeşil, 108 bulgudan kod 
 
 ---
 
-<!-- 8b.4 → 8b.14 alt-commit bölümleri commit sırasında eklenecek -->
+## Sprint 8b.4 — §4 KAMU (3) + §5 IHRACAT (2)
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8b.4: §4 KAMU + §5 IHRACAT (5 senaryo)`
+
+### Senaryo Detayı
+
+| # | Slug | Kapsam | Validator mod |
+|---|------|--------|----------------|
+| 15 | kamu-satis | f17 paralel, BuyerCustomer + TR IBAN (B-83) | strict |
+| 16 | kamu-tevkifat | KAMU + 601 %40 tevkifat | basic (B-NEW-11) |
+| 17 | kamu-ihrackayitli | KAMU + 702 + GTİP | basic (B-NEW-12) |
+| 18 | ihracat-istisna-basic | IHRACAT + 301 + USD + buyerCustomer | strict |
+| 19 | ihracat-istisna-multiline-incoterms | 3 satır + FOB/CIF/EXW | strict |
+
+### İteratif Düzeltmeler
+
+- **15 fail:** `buyerCustomer` KAMU profilinde zorunlu (runtime kontrol yakaladı). Kamu aracı kurum + MUSTERINO identifications eklendi.
+- **16, 17:** buyerCustomer KAMU profilinden alındığı için onlara da eklendi (aynı hata pattern'i).
+
+### Test Durumu
+
+- Başlangıç: 641/641 yeşil
+- Son: **641/641 yeşil** · `npx tsx examples/run-all.ts` → 19/19 başarılı.
+
+### Değişiklik İstatistikleri
+
+- 5 senaryo × 6 dosya = 30 dosya, ~1.300 LOC
+
+---
+
+<!-- 8b.5 → 8b.14 alt-commit bölümleri commit sırasında eklenecek -->

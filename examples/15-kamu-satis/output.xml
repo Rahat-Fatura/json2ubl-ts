@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+  xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+  xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+  xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
+  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+  xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 UBL-Invoice-2.1.xsd">
+  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+  <cbc:CustomizationID>TR1.2</cbc:CustomizationID>
+  <cbc:ProfileID>KAMU</cbc:ProfileID>
+  <cbc:ID>EXA2026000000015</cbc:ID>
+  <cbc:CopyIndicator>false</cbc:CopyIndicator>
+  <cbc:UUID>e1a2b3c4-0015-4000-8015-000000000015</cbc:UUID>
+  <cbc:IssueDate>2026-04-23</cbc:IssueDate>
+  <cbc:IssueTime>10:00:00</cbc:IssueTime>
+  <cbc:InvoiceTypeCode>SATIS</cbc:InvoiceTypeCode>
+  <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
+  <cbc:LineCountNumeric>3</cbc:LineCountNumeric>
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">1234567890</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>Sınır Tanımaz Tedarikçi A.Ş.</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Barbaros Bulvarı No:123 Kat:5</cbc:StreetName>
+        <cbc:CitySubdivisionName>Üsküdar</cbc:CitySubdivisionName>
+        <cbc:CityName>İstanbul</cbc:CityName>
+        <cbc:PostalZone>34664</cbc:PostalZone>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cac:TaxScheme>
+          <cbc:Name>Üsküdar</cbc:Name>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">1460415308</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>T.C. Çalışma ve Sosyal Güvenlik Bakanlığı</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Emek Mahallesi No:1</cbc:StreetName>
+        <cbc:CitySubdivisionName>Çankaya</cbc:CitySubdivisionName>
+        <cbc:CityName>Ankara</cbc:CityName>
+        <cbc:PostalZone>06510</cbc:PostalZone>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cac:TaxScheme>
+          <cbc:Name>Çankaya</cbc:Name>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:BuyerCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">3333333333</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="MUSTERINO">KAMU-MUSTERI-2026-000042</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>Kamu İhale Kurumu — Aracı</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Mevlana Bulvarı No:233</cbc:StreetName>
+        <cbc:CitySubdivisionName>Çankaya</cbc:CitySubdivisionName>
+        <cbc:CityName>Ankara</cbc:CityName>
+        <cbc:PostalZone>06520</cbc:PostalZone>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>Kamu İhale Kurumu — Aracı</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:BuyerCustomerParty>
+  <cac:PaymentMeans>
+    <cbc:PaymentMeansCode>42</cbc:PaymentMeansCode>
+    <cbc:PaymentDueDate>2026-05-23</cbc:PaymentDueDate>
+    <cac:PayeeFinancialAccount>
+      <cbc:ID>TR330006100519786457841326</cbc:ID>
+    </cac:PayeeFinancialAccount>
+  </cac:PaymentMeans>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="TRY">2970.00</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="TRY">14850.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="TRY">2970.00</cbc:TaxAmount>
+      <cbc:Percent>20.00</cbc:Percent>
+            <cac:TaxCategory>
+                <cac:TaxScheme>
+          <cbc:Name>KDV</cbc:Name>
+          <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="TRY">14850.00</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="TRY">14850.00</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="TRY">17820.00</cbc:TaxInclusiveAmount>
+    <cbc:AllowanceTotalAmount currencyID="TRY">0.00</cbc:AllowanceTotalAmount>
+    <cbc:PayableAmount currencyID="TRY">17820.00</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">15.00</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="TRY">4500.00</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="TRY">900.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="TRY">4500.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="TRY">900.00</cbc:TaxAmount>
+        <cbc:Percent>20.00</cbc:Percent>
+                <cac:TaxCategory>
+                    <cac:TaxScheme>
+            <cbc:Name>KDV</cbc:Name>
+            <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Name>Ofis Mobilyası — Çalışma Masası</cbc:Name>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="TRY">300.00</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>2</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">5.00</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="TRY">7500.00</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="TRY">1500.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="TRY">7500.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="TRY">1500.00</cbc:TaxAmount>
+        <cbc:Percent>20.00</cbc:Percent>
+                <cac:TaxCategory>
+                    <cac:TaxScheme>
+            <cbc:Name>KDV</cbc:Name>
+            <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Name>Klima — Standart Split</cbc:Name>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="TRY">1500.00</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>3</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">1.00</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="TRY">2850.00</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="TRY">570.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="TRY">2850.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="TRY">570.00</cbc:TaxAmount>
+        <cbc:Percent>20.00</cbc:Percent>
+                <cac:TaxCategory>
+                    <cac:TaxScheme>
+            <cbc:Name>KDV</cbc:Name>
+            <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Name>Kurulum ve Montaj Hizmeti</cbc:Name>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="TRY">2850.00</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+</Invoice>
