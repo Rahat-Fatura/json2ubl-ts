@@ -334,6 +334,21 @@ export function validateInvoiceState(state: {
   hasBuyerCustomer?: boolean;
   ytbNo?: string;
   hasSevkiyatNo?: boolean;
+  // B-78: Schematron paraleli UI uyarıları (v2.0.0)
+  /** M4: 555 kodu için `allowReducedKdvRate` flag'ı açık mı */
+  allowReducedKdvRate?: boolean;
+  /** YTB belge seviyesi KDV subtotals taxAmount>0 AND percent>0 hepsi true mu */
+  ytbAllKdvPositive?: boolean;
+  /** IHRACKAYITLI+702: satırda GTİP (RequiredCustomsID, 12 hane) var mı */
+  hasGtip?: boolean;
+  /** IHRACKAYITLI+702: satırda ALICIDIBSATIRKOD var mı */
+  hasAliciDibKod?: boolean;
+  /** TaxTypeCode 4171 herhangi bir subtotalda kullanılıyor mu */
+  has4171Code?: boolean;
+  /** IHRACAT: supplier RegistrationName ve TaxOffice dolu mu */
+  ihracatPartyComplete?: boolean;
+  /** YOLCUBERABERFATURA: buyer nationalityId + passportId dolu mu */
+  yolcuBuyerComplete?: boolean;
 }): ValidationWarning[] {
   const warnings: ValidationWarning[] = [];
 
@@ -392,6 +407,52 @@ export function validateInvoiceState(state: {
     warnings.push({ field: 'ytbNo', message: 'Yatırım Teşvik faturalarında YTB numarası zorunludur.', severity: 'error' });
   } else if (state.profile === 'YATIRIMTESVIK' && state.ytbNo && (state.ytbNo.length !== 6 || !/^\d{6}$/.test(state.ytbNo))) {
     warnings.push({ field: 'ytbNo', message: 'YTB numarası 6 haneli numerik olmalıdır.', severity: 'error' });
+  }
+
+  // B-78.1: 555 KDV kodu + M4 flag kapalı (allowReducedKdvRate=false) → hata
+  if (state.kdvExemptionCode === '555' && !state.allowReducedKdvRate) {
+    warnings.push({ field: 'kdvExemptionCode',
+      message: '555 kodu kullanımı için allowReducedKdvRate flag açık olmalıdır (M4).', severity: 'error' });
+  }
+
+  // B-78.2: YATIRIMTESVIK profili + KDV subtotal hepsi pozitif değil → uyarı
+  if (state.profile === 'YATIRIMTESVIK' && state.ytbAllKdvPositive === false) {
+    warnings.push({ field: 'taxTotals',
+      message: 'YATIRIMTESVIK faturalarında tüm KDV subtotal TaxAmount ve Percent > 0 olmalıdır (B-08).',
+      severity: 'error' });
+  }
+
+  // B-78.3: IHRACKAYITLI + 702 kodu → GTİP + ALICIDIBSATIRKOD zorunlu
+  if (state.type === 'IHRACKAYITLI' && state.kdvExemptionCode === '702') {
+    if (state.hasGtip === false) {
+      warnings.push({ field: 'lines.delivery.goodsItems.requiredCustomsId',
+        message: 'IHRACKAYITLI+702 için satırda GTİP (RequiredCustomsID) zorunludur (B-07).',
+        severity: 'error' });
+    }
+    if (state.hasAliciDibKod === false) {
+      warnings.push({ field: 'lines.delivery.transportHandlingUnit.customsDeclaration',
+        message: 'IHRACKAYITLI+702 için satırda ALICIDIBSATIRKOD zorunludur (B-07).',
+        severity: 'error' });
+    }
+  }
+
+  // B-78.4: TaxTypeCode 4171 sadece TEVKIFAT/IADE/SGK/YTBIADE tiplerinde izinli
+  if (state.has4171Code && !['TEVKIFAT', 'IADE', 'SGK', 'YTBIADE'].includes(state.type)) {
+    warnings.push({ field: 'taxTotals.taxTypeCode',
+      message: 'TaxTypeCode 4171 sadece TEVKIFAT, IADE, SGK, YTBIADE tiplerinde kullanılabilir.',
+      severity: 'error' });
+  }
+
+  // B-78.5: IHRACAT supplier detay / YOLCU buyer detay
+  if (state.profile === 'IHRACAT' && state.ihracatPartyComplete === false) {
+    warnings.push({ field: 'supplier',
+      message: 'IHRACAT profilinde supplier RegistrationName ve vergi dairesi zorunludur.',
+      severity: 'error' });
+  }
+  if (state.profile === 'YOLCUBERABERFATURA' && state.yolcuBuyerComplete === false) {
+    warnings.push({ field: 'buyerCustomer.party',
+      message: 'YOLCUBERABERFATURA profilinde alıcı NationalityID ve PasaportNo zorunludur.',
+      severity: 'error' });
   }
 
   // IDIS → SEVKIYATNO zorunlu

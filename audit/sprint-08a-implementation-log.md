@@ -203,3 +203,62 @@ Sprint 5'te kullanıcı prompt'uyla dar tutulmuş **B-29..B-31, B-62..B-69, B-78
 - **`WITHHOLDING_ALLOWED_TYPES` yeniden kullanım:** Bu sabit constants.ts'de zaten vardı (77-81); B-30 yeni bir set oluşturmadı, mevcut M7 config'i kullandı.
 - **B-31 mevcut kod regresyonu:** `simple-invoice-mapper.ts:442-455` `buildBillingReference` zaten `documentTypeCode` üretir (isIadeGroup bazlı otomatik); manuel builder path'inde test fixture güncelleme gerekti.
 - **B-29 kapsam sınırı:** Sadece IHRACAT profili için uygulandı. YOLCUBERABERFATURA/OZELFATURA için Schematron ayrı kural önermedi; B-T78'de genel satır amount kontrolü Paket B.2'de ele alınacak.
+
+---
+
+## Sprint 8a.4 — Paket B.2: B-67 + B-78 (YTB CalcSeqNum + validateInvoiceState)
+
+**Tarih:** 2026-04-23
+**Commit hedef başlığı:** `Sprint 8a.4: Paket B.2 YTB CalcSeq + invoice-rules Schematron paraleli`
+
+### Kapsam
+
+| Bulgu | Kapsamı | Schematron ref |
+|-------|---------|----------------|
+| **B-67** | YTB ISTISNA satır KDV subtotal `calculationSequenceNumeric=-1` zorunlu | CommonSchematron:467-469 |
+| **B-78** | `validateInvoiceState` 5 Schematron paraleli UI uyarısı eksik | FIX-PLANI-v3 §805-810 |
+
+### Kod Değişiklikleri
+
+1. **`src/validators/profile-validators.ts` — `validateYatirimTesvikRules`:**
+   - ISTISNA satır loop'unda `line.taxTotal?.taxSubtotals?.find(ts => ts.taxTypeCode === '0015')` bulup `calculationSequenceNumeric === -1` kontrolü.
+   - `undefined` veya `0` gibi değerler reddedilir.
+
+2. **`src/calculator/invoice-rules.ts` — `validateInvoiceState`:**
+   - State input tipine 7 yeni opsiyonel flag eklendi (`allowReducedKdvRate`, `ytbAllKdvPositive`, `hasGtip`, `hasAliciDibKod`, `has4171Code`, `ihracatPartyComplete`, `yolcuBuyerComplete`).
+   - 5 yeni warning:
+     - **B-78.1:** 555 kodu + `allowReducedKdvRate=false` → hata (M4 bypass gerekli)
+     - **B-78.2:** YATIRIMTESVIK + `ytbAllKdvPositive=false` → hata (B-08 paraleli)
+     - **B-78.3:** IHRACKAYITLI+702 + `hasGtip=false` veya `hasAliciDibKod=false` → hata (B-07 paraleli, 2 uyarı)
+     - **B-78.4:** `has4171Code=true` + tip ∉ {TEVKIFAT, IADE, SGK, YTBIADE} → hata
+     - **B-78.5:** IHRACAT+`ihracatPartyComplete=false` veya YOLCU+`yolcuBuyerComplete=false` → hata (2 uyarı)
+
+**Not:** `invoice-session.ts` caller bu yeni flag'ları opsiyonel olarak kullanabilir; mevcut çağrım bozulmaz (tüm flag'lar undefined kalabilir, yalnızca açıkça `false` verilirse warning üretir — `=== false` strict karşılaştırma).
+
+### Test Değişiklikleri
+
+**`__tests__/validators/b67-b78-invoice-rules.test.ts`** — yeni dosya (+12 test):
+- **B-67 (3):** calcSeq yok/0 reddet, -1 kabul
+- **B-78.1 (2):** 555+false reddet, 555+true kabul
+- **B-78.2 (1):** YATIRIMTESVIK + ytbAllKdvPositive=false reddet
+- **B-78.3 (2):** GTİP eksik reddet, ALICIDIBSATIRKOD eksik reddet
+- **B-78.4 (2):** 4171+SATIS reddet, 4171+TEVKIFAT kabul
+- **B-78.5 (2):** IHRACAT+ihracatPartyComplete=false reddet, YOLCU+yolcuBuyerComplete=false reddet
+
+### Test Durumu
+
+- Başlangıç (8a.3 sonu): 596 / 596 yeşil (36 dosya)
+- Son (8a.4 kapanışı): **608 / 608 yeşil** (37 dosya, +12)
+- TypeScript strict: temiz
+
+### Değişiklik İstatistikleri
+
+- `src/validators/profile-validators.ts` — +10 satır (B-67 calcSeq kontrolü)
+- `src/calculator/invoice-rules.ts` — +50 satır (B-78 state genişletme + 5 warning bloğu)
+- `__tests__/validators/b67-b78-invoice-rules.test.ts` — yeni dosya (137 satır)
+
+### Disiplin Notları
+
+- **B-78 strict-false pattern:** Flag'lar `=== false` ile karşılaştırılır, `undefined`/`null` değerler warning üretmez. Mevcut `invoice-session.ts` caller bu flag'ları göndermediği için regresyon olmaz; UI kademeli olarak flag'ları eklediğinde warning'ler aktif olur.
+- **B-67 tekil subtotal:** YTB ISTISNA satırında birden fazla KDV subtotal olabilir mi? Schematron tek `cac:TaxSubtotal` bekliyor; `find` tek match yeterli. Multi-subtotal senaryoları Sprint 8a kapsamında değil.
+- **validateInvoiceState caller uyumu:** `invoice-session.ts:514-528` caller değiştirilmedi — yeni flag'lar opsiyonel ve UI katmanı (edocument-service vb.) gönder/gönderme özgürlüğüne sahip.

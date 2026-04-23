@@ -275,6 +275,16 @@ export function validateYatirimTesvikRules(input: InvoiceInput, source: string):
         `ISTISNA tipinde Harcama Tipi sadece 01 veya 02 olabilir (gelen: ${code})`));
     }
 
+    // B-67: ISTISNA tipinde satır KDV subtotal calculationSequenceNumeric=-1 zorunlu
+    // Schematron: CommonSchematron:467-469 (YatirimTesvikCalculationSequenceNumericCheck)
+    if (isIstisna) {
+      const kdvSub = line.taxTotal?.taxSubtotals?.find(ts => ts.taxTypeCode === '0015');
+      if (kdvSub && kdvSub.calculationSequenceNumeric !== -1) {
+        errors.push(profileRequirement(source, `lines[${i}].taxTotal.taxSubtotals.calculationSequenceNumeric`,
+          `YTB ISTISNA satırı KDV subtotal CalculationSequenceNumeric=-1 olmalıdır (gelen: ${kdvSub.calculationSequenceNumeric ?? 'yok'}) (B-67)`));
+      }
+    }
+
     // ISTISNA + Kod 01 → TaxExemptionReasonCode 308 zorunlu
     // Schematron: YatirimTesvikTaxExemptionReasonCode308Check
     if (isIstisna && code === '01') {
