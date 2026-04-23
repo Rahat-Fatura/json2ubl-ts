@@ -59,8 +59,12 @@ export interface InvoiceInput {
   taxCurrencyCode?: string;
   /** Fiyatlandırma para birimi kodu */
   pricingCurrencyCode?: string;
-  /** Döviz kuru — currencyCode≠TRY ise zorunlu */
+  /** Ödeme para birimi kodu — B-74 (cbc:PaymentCurrencyCode, XSD:23) */
+  paymentCurrencyCode?: string;
+  /** Döviz kuru (PricingExchangeRate) — currencyCode≠TRY ise zorunlu */
   exchangeRate?: ExchangeRateInput;
+  /** Vergi döviz kuru — B-71 (cac:TaxExchangeRate, XSD:45) */
+  taxExchangeRate?: ExchangeRateInput;
   /** Signature bilgisi (cac:Signature) */
   signatureInfo?: SignatureInput;
 
@@ -89,6 +93,8 @@ export interface InvoiceInput {
   despatchReferences?: DocumentReferenceInput[];
   /** Teslim alma referansları */
   receiptReferences?: DocumentReferenceInput[];
+  /** Özel/komisyoncu referansları — B-39 (cac:OriginatorDocumentReference, XSD:32) */
+  originatorDocumentReferences?: DocumentReferenceInput[];
   /** Ek belge referansları (XSLT vb.) */
   additionalDocuments?: AdditionalDocumentInput[];
   /** İndirim/Ek yükler */

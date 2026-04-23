@@ -103,6 +103,13 @@ export function serializeInvoice(
         );
     }
 
+    // 15. PaymentCurrencyCode — B-74 (XSD:23, cbc:PaymentCurrencyCode)
+    if (input.paymentCurrencyCode) {
+        parts.push(
+            `${ind}${cbcOptionalTag("PaymentCurrencyCode", input.paymentCurrencyCode)}`,
+        );
+    }
+
     // 18. AccountingCost (opsiyonel — SGK faturaları için)
     if (input.accountingCost) {
         parts.push(`${ind}${cbcOptionalTag("AccountingCost", input.accountingCost)}`);
@@ -150,6 +157,19 @@ export function serializeInvoice(
                 serializeDocumentReference(
                     ref,
                     "ReceiptDocumentReference",
+                    ind,
+                ),
+            );
+        }
+    }
+
+    // 25. OriginatorDocumentReference — B-39 (XSD:32, cac:OriginatorDocumentReference 0..n)
+    if (input.originatorDocumentReferences) {
+        for (const ref of input.originatorDocumentReferences) {
+            parts.push(
+                serializeDocumentReference(
+                    ref,
+                    "OriginatorDocumentReference",
                     ind,
                 ),
             );
@@ -227,7 +247,11 @@ export function serializeInvoice(
     }
 
     // 42-45. ExchangeRate (dövizli faturalarda) — B-11 fix: AllowanceCharge SONRASI
-    // UBL-Invoice-2.1.xsd:42-45 (TaxExchangeRate/PricingExchangeRate/...)
+    // UBL-Invoice-2.1.xsd:45-48 (TaxExchangeRate/PricingExchangeRate/...)
+    // B-71: TaxExchangeRate (XSD:45) — PricingExchangeRate'ten önce emit
+    if (input.taxExchangeRate) {
+        parts.push(serializeExchangeRate(input.taxExchangeRate, ind, 'TaxExchangeRate'));
+    }
     if (input.exchangeRate) {
         parts.push(serializeExchangeRate(input.exchangeRate, ind));
     }

@@ -26,8 +26,15 @@ export function serializeLegalMonetaryTotal(mt: MonetaryTotalInput, currencyCode
   return [`${indent}<cac:LegalMonetaryTotal>`, body, `${indent}</cac:LegalMonetaryTotal>`].join('\n');
 }
 
-/** PricingExchangeRate → XML fragment (§1.3). Sequence: EXCHANGE_RATE_SEQ. */
-export function serializeExchangeRate(er: ExchangeRateInput, indent: string = ''): string {
+/**
+ * ExchangeRate → XML fragment (§1.3). Sequence: EXCHANGE_RATE_SEQ.
+ * tagName varsayılan 'PricingExchangeRate'; B-71 için 'TaxExchangeRate' geçilebilir.
+ */
+export function serializeExchangeRate(
+  er: ExchangeRateInput,
+  indent: string = '',
+  tagName: string = 'PricingExchangeRate',
+): string {
   const inner = emitInOrder(EXCHANGE_RATE_SEQ, {
     SourceCurrencyCode: () => cbcOptionalTag('SourceCurrencyCode', er.sourceCurrencyCode),
     TargetCurrencyCode: () => cbcOptionalTag('TargetCurrencyCode', er.targetCurrencyCode),
@@ -35,7 +42,7 @@ export function serializeExchangeRate(er: ExchangeRateInput, indent: string = ''
     Date: () => (isNonEmpty(er.date) ? cbcOptionalTag('Date', er.date) : ''),
   });
   const body = joinLines(inner.map(s => indent + '  ' + s));
-  return [`${indent}<cac:PricingExchangeRate>`, body, `${indent}</cac:PricingExchangeRate>`].join('\n');
+  return [`${indent}<cac:${tagName}>`, body, `${indent}</cac:${tagName}>`].join('\n');
 }
 
 /**
