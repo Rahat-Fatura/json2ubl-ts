@@ -1,0 +1,32 @@
+{
+  "id": "yatirimtesvik-satis-baseline-makine",
+  "kind": "invoice",
+  "profile": "YATIRIMTESVIK",
+  "type": "SATIS",
+  "variantSlug": "baseline-makine",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "ytbNo",
+      "makine"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:49:38.408Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — YATIRIMTESVIK+SATIS, itemClassificationCode 01 makine"
+}

@@ -1,0 +1,32 @@
+{
+  "id": "ilac_tibbicihaz-iade-baseline",
+  "kind": "invoice",
+  "profile": "ILAC_TIBBICIHAZ",
+  "type": "IADE",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      10
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "billingReference",
+      "ilac"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:49:38.408Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — ILAC_TIBBICIHAZ+IADE"
+}

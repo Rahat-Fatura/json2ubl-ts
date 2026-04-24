@@ -1,0 +1,44 @@
+import type { SimpleInvoiceInput } from '../../../../src';
+
+export const input: SimpleInvoiceInput = {
+  id: 'MTX2026000000075',
+  uuid: 'a1000075-0001-4000-8001-000000000075',
+  datetime: '2026-04-24T10:00:00',
+  profile: 'YATIRIMTESVIK',
+  type: 'SATIS',
+  currencyCode: 'TRY',
+  ytbNo: '123456',
+  ytbIssueDate: '2026-01-15',
+  sender: {
+    taxNumber: '1234567890',
+    name: 'Matrix Makine Tic.',
+    taxOffice: 'Beşiktaş',
+    address: 'Levent Mah. No:42',
+    district: 'Beşiktaş',
+    city: 'İstanbul',
+  },
+  customer: {
+    taxNumber: '9876543210',
+    name: 'Matrix Teşvikli Üretici',
+    taxOffice: 'Kadıköy',
+    address: 'Bağdat Cad. No:100',
+    district: 'Kadıköy',
+    city: 'İstanbul',
+  },
+  lines: [
+    {
+      name: 'Sanayi kompresör',
+      quantity: 1,
+      price: 1000,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+      itemClassificationCode: '01',
+      productTraceId: 'KOMP-MTX-075',
+      serialId: 'SN-MTX-075',
+      brand: 'Matrix',
+      model: 'MTX-MAK-01',
+    },
+  ],
+};
+
+export default input;

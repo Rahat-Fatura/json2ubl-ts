@@ -1,0 +1,34 @@
+{
+  "id": "yatirimtesvik-istisna-phantom-339-insaat",
+  "kind": "invoice",
+  "profile": "YATIRIMTESVIK",
+  "type": "ISTISNA",
+  "variantSlug": "phantom-339-insaat",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "339"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": true,
+    "specialIdentifiers": [
+      "ytbNo",
+      "phantom-kdv"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:49:38.409Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "YATIRIMTESVIK+ISTISNA Phantom KDV — 339 + inşaat (M12)"
+}

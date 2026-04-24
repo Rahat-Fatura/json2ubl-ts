@@ -1,0 +1,34 @@
+{
+  "id": "yatirimtesvik-istisna-phantom-308-makine",
+  "kind": "invoice",
+  "profile": "YATIRIMTESVIK",
+  "type": "ISTISNA",
+  "variantSlug": "phantom-308-makine",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "308"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": true,
+    "specialIdentifiers": [
+      "ytbNo",
+      "phantom-kdv"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:49:38.409Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "YATIRIMTESVIK+ISTISNA Phantom KDV — 308 + makine (M12)"
+}

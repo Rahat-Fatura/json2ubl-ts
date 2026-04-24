@@ -1802,6 +1802,393 @@ export const validSpecs: ValidSpec[] = [
       lines: [{ name: 'EV AC şarj anlık', quantity: 20, price: 5, unitCode: 'KWH', kdvPercent: 20 }],
     },
   },
+
+  // ═════════════════════════════════════════════════════════════════════
+  // ILAC_TIBBICIHAZ — 5 baseline (her satırda ILAC/TIBBICIHAZ/DIGER zorunlu)
+  // ═════════════════════════════════════════════════════════════════════
+
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'ILAC_TIBBICIHAZ', type: 'SATIS',
+    notes: 'Baseline — ILAC_TIBBICIHAZ+SATIS, ILAC scheme ID',
+    dimensions: {
+      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ilac'],
+    },
+    input: {
+      id: 'MTX2026000000070',
+      uuid: 'a1000070-0001-4000-8001-000000000070',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'ILAC_TIBBICIHAZ', type: 'SATIS', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER, name: 'Matrix İlaç Tedarik A.Ş.' },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Reçeteli ilaç', quantity: 10, price: 50, unitCode: 'Adet', kdvPercent: 10,
+        additionalItemIdentifications: [{ schemeId: 'ILAC', value: 'ILAC-MTX-070-001' }],
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'ILAC_TIBBICIHAZ', type: 'ISTISNA',
+    notes: 'Baseline — ILAC_TIBBICIHAZ+ISTISNA, TIBBICIHAZ + kod 213',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['213'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['tibbicihaz'],
+    },
+    input: {
+      id: 'MTX2026000000071',
+      uuid: 'a1000071-0001-4000-8001-000000000071',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'ILAC_TIBBICIHAZ', type: 'ISTISNA', currencyCode: 'TRY',
+      kdvExemptionCode: '213',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Tıbbi cihaz', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0,
+        additionalItemIdentifications: [{ schemeId: 'TIBBICIHAZ', value: 'MED-MTX-071-001' }],
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'ILAC_TIBBICIHAZ', type: 'TEVKIFAT',
+    notes: 'Baseline — ILAC_TIBBICIHAZ+TEVKIFAT',
+    dimensions: {
+      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: ['603'], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ilac'],
+    },
+    input: {
+      id: 'MTX2026000000072',
+      uuid: 'a1000072-0001-4000-8001-000000000072',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'ILAC_TIBBICIHAZ', type: 'TEVKIFAT', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Tevkifatlı ilaç', quantity: 10, price: 50, unitCode: 'Adet', kdvPercent: 10, withholdingTaxCode: '603',
+        additionalItemIdentifications: [{ schemeId: 'ILAC', value: 'ILAC-MTX-072' }],
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'ILAC_TIBBICIHAZ', type: 'IADE',
+    notes: 'Baseline — ILAC_TIBBICIHAZ+IADE',
+    dimensions: {
+      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['billingReference', 'ilac'],
+    },
+    input: {
+      id: 'MTX2026000000073',
+      uuid: 'a1000073-0001-4000-8001-000000000073',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'ILAC_TIBBICIHAZ', type: 'IADE', currencyCode: 'TRY',
+      billingReference: { id: 'MTX2026000000070', issueDate: '2026-04-24' },
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'İade — ilaç', quantity: 5, price: 50, unitCode: 'Adet', kdvPercent: 10,
+        additionalItemIdentifications: [{ schemeId: 'ILAC', value: 'ILAC-MTX-073' }],
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'ILAC_TIBBICIHAZ', type: 'IHRACKAYITLI',
+    notes: 'Baseline — ILAC_TIBBICIHAZ+IHRACKAYITLI',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['702'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['gtip', 'alicidibkod', 'ilac'],
+    },
+    input: {
+      id: 'MTX2026000000074',
+      uuid: 'a1000074-0001-4000-8001-000000000074',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'ILAC_TIBBICIHAZ', type: 'IHRACKAYITLI', currencyCode: 'TRY',
+      kdvExemptionCode: '702',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'İhraç ilaç', quantity: 10, price: 50, unitCode: 'Adet', kdvPercent: 0,
+        additionalItemIdentifications: [{ schemeId: 'ILAC', value: 'ILAC-MTX-074' }],
+        delivery: {
+          gtipNo: '300490000011', alicidibsatirkod: '12345678901',
+          deliveryAddress: { address: 'Liman', district: 'Ambarlı', city: 'İstanbul', country: 'Türkiye' },
+        },
+      }],
+    },
+  },
+
+  // ═════════════════════════════════════════════════════════════════════
+  // YATIRIMTESVIK — 4 baseline + 2 phantom (SATIS/ISTISNA/IADE/TEVKIFAT)
+  // Bug#1 gereği TEVKIFATIADE atlandı
+  // ═════════════════════════════════════════════════════════════════════
+
+  {
+    kind: 'invoice', variantSlug: 'baseline-makine', profile: 'YATIRIMTESVIK', type: 'SATIS',
+    notes: 'Baseline — YATIRIMTESVIK+SATIS, itemClassificationCode 01 makine',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ytbNo', 'makine'],
+    },
+    input: {
+      id: 'MTX2026000000075',
+      uuid: 'a1000075-0001-4000-8001-000000000075',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'YATIRIMTESVIK', type: 'SATIS', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      sender: { ...STANDARD_SENDER, name: 'Matrix Makine Tic.' },
+      customer: { ...STANDARD_CUSTOMER, name: 'Matrix Teşvikli Üretici' },
+      lines: [{
+        name: 'Sanayi kompresör', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        itemClassificationCode: '01',
+        productTraceId: 'KOMP-MTX-075', serialId: 'SN-MTX-075', brand: 'Matrix', model: 'MTX-MAK-01',
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'phantom-308-makine', profile: 'YATIRIMTESVIK', type: 'ISTISNA',
+    notes: 'YATIRIMTESVIK+ISTISNA Phantom KDV — 308 + makine (M12)',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: ['308'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: true,
+      specialIdentifiers: ['ytbNo', 'phantom-kdv'],
+    },
+    input: {
+      id: 'MTX2026000000076',
+      uuid: 'a1000076-0001-4000-8001-000000000076',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'YATIRIMTESVIK', type: 'ISTISNA', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      kdvExemptionCode: '308',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Teşvikli makine', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        itemClassificationCode: '01', kdvExemptionCode: '308',
+        productTraceId: 'MAKINA-MTX-076', serialId: 'SN-MTX-076', brand: 'Matrix', model: 'MTX-03',
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'phantom-339-insaat', profile: 'YATIRIMTESVIK', type: 'ISTISNA',
+    notes: 'YATIRIMTESVIK+ISTISNA Phantom KDV — 339 + inşaat (M12)',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: ['339'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: true,
+      specialIdentifiers: ['ytbNo', 'phantom-kdv'],
+    },
+    input: {
+      id: 'MTX2026000000077',
+      uuid: 'a1000077-0001-4000-8001-000000000077',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'YATIRIMTESVIK', type: 'ISTISNA', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      kdvExemptionCode: '339',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Teşvikli inşaat', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        itemClassificationCode: '02', kdvExemptionCode: '339',
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'YATIRIMTESVIK', type: 'IADE',
+    notes: 'Baseline — YATIRIMTESVIK+IADE (IADE grubunda kdvPercent>0 serbest)',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ytbNo', 'billingReference'],
+    },
+    input: {
+      id: 'MTX2026000000078',
+      uuid: 'a1000078-0001-4000-8001-000000000078',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'YATIRIMTESVIK', type: 'IADE', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      billingReference: { id: 'MTX2026000000075', issueDate: '2026-04-24' },
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Teşvikli iade', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        itemClassificationCode: '01',
+        productTraceId: 'IADE-MTX-078', serialId: 'SN-IADE-MTX', brand: 'Matrix', model: 'MTX-IADE',
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'YATIRIMTESVIK', type: 'TEVKIFAT',
+    notes: 'Baseline — YATIRIMTESVIK+TEVKIFAT',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: ['603'], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ytbNo'],
+    },
+    input: {
+      id: 'MTX2026000000079',
+      uuid: 'a1000079-0001-4000-8001-000000000079',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'YATIRIMTESVIK', type: 'TEVKIFAT', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Tevkifatlı teşvikli hizmet', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603',
+        itemClassificationCode: '01',
+        productTraceId: 'TEV-MTX-079', serialId: 'SN-TEV-MTX', brand: 'Matrix', model: 'MTX-TEV',
+      }],
+    },
+  },
+
+  // ═════════════════════════════════════════════════════════════════════
+  // IDIS — 5 baseline (sender.identifications SEVKIYATNO zorunlu)
+  // ═════════════════════════════════════════════════════════════════════
+
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'IDIS', type: 'SATIS',
+    notes: 'Baseline — IDIS+SATIS, SEVKIYATNO (SE-format) satıcı kimliğinde',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['sevkiyatNo'],
+    },
+    input: {
+      id: 'MTX2026000000080',
+      uuid: 'a1000080-0001-4000-8001-000000000080',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'IDIS', type: 'SATIS', currencyCode: 'TRY',
+      sender: {
+        ...STANDARD_SENDER,
+        identifications: [{ schemeId: 'SEVKIYATNO', value: 'SE-0000080' }],
+      },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'İç dağıtım satış', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'ID0000080' }],
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'IDIS', type: 'ISTISNA',
+    notes: 'Baseline — IDIS+ISTISNA, kod 213',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['213'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['sevkiyatNo'],
+    },
+    input: {
+      id: 'MTX2026000000081',
+      uuid: 'a1000081-0001-4000-8001-000000000081',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'IDIS', type: 'ISTISNA', currencyCode: 'TRY',
+      kdvExemptionCode: '213',
+      sender: {
+        ...STANDARD_SENDER,
+        identifications: [{ schemeId: 'SEVKIYATNO', value: 'SE-0000081' }],
+      },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'IDIS istisna', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0,
+        additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'ID0000081' }],
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'IDIS', type: 'IADE',
+    notes: 'Baseline — IDIS+IADE',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['sevkiyatNo', 'billingReference'],
+    },
+    input: {
+      id: 'MTX2026000000082',
+      uuid: 'a1000082-0001-4000-8001-000000000082',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'IDIS', type: 'IADE', currencyCode: 'TRY',
+      billingReference: { id: 'MTX2026000000080', issueDate: '2026-04-24' },
+      sender: {
+        ...STANDARD_SENDER,
+        identifications: [{ schemeId: 'SEVKIYATNO', value: 'SE-0000082' }],
+      },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'IDIS iade', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'ID0000082' }],
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'IDIS', type: 'TEVKIFAT',
+    notes: 'Baseline — IDIS+TEVKIFAT',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: ['603'], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['sevkiyatNo'],
+    },
+    input: {
+      id: 'MTX2026000000083',
+      uuid: 'a1000083-0001-4000-8001-000000000083',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'IDIS', type: 'TEVKIFAT', currencyCode: 'TRY',
+      sender: {
+        ...STANDARD_SENDER,
+        identifications: [{ schemeId: 'SEVKIYATNO', value: 'SE-0000083' }],
+      },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'IDIS tevkifat', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603',
+        additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'ID0000083' }],
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'IDIS', type: 'IHRACKAYITLI',
+    notes: 'Baseline — IDIS+IHRACKAYITLI',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['702'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['sevkiyatNo', 'gtip', 'alicidibkod'],
+    },
+    input: {
+      id: 'MTX2026000000084',
+      uuid: 'a1000084-0001-4000-8001-000000000084',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'IDIS', type: 'IHRACKAYITLI', currencyCode: 'TRY',
+      kdvExemptionCode: '702',
+      sender: {
+        ...STANDARD_SENDER,
+        identifications: [{ schemeId: 'SEVKIYATNO', value: 'SE-0000084' }],
+      },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'IDIS ihraç', quantity: 10, price: 100, unitCode: 'Adet', kdvPercent: 0,
+        additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'ID0000084' }],
+        delivery: {
+          gtipNo: '620342000010', alicidibsatirkod: '12345678901',
+          deliveryAddress: { address: 'Liman', district: 'Ambarlı', city: 'İstanbul', country: 'Türkiye' },
+        },
+      }],
+    },
+  },
 ];
 
 export const invalidSpecs: InvalidSpec[] = [

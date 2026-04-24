@@ -1,0 +1,31 @@
+{
+  "id": "ilac_tibbicihaz-satis-baseline",
+  "kind": "invoice",
+  "profile": "ILAC_TIBBICIHAZ",
+  "type": "SATIS",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      10
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "ilac"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:49:38.407Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — ILAC_TIBBICIHAZ+SATIS, ILAC scheme ID"
+}

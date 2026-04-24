@@ -1,0 +1,35 @@
+{
+  "id": "ilac_tibbicihaz-ihrackayitli-baseline",
+  "kind": "invoice",
+  "profile": "ILAC_TIBBICIHAZ",
+  "type": "IHRACKAYITLI",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "702"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "gtip",
+      "alicidibkod",
+      "ilac"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:49:38.408Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — ILAC_TIBBICIHAZ+IHRACKAYITLI"
+}

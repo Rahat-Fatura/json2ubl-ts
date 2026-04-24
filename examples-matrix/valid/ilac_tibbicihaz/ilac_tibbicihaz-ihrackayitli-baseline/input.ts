@@ -1,0 +1,54 @@
+import type { SimpleInvoiceInput } from '../../../../src';
+
+export const input: SimpleInvoiceInput = {
+  id: 'MTX2026000000074',
+  uuid: 'a1000074-0001-4000-8001-000000000074',
+  datetime: '2026-04-24T10:00:00',
+  profile: 'ILAC_TIBBICIHAZ',
+  type: 'IHRACKAYITLI',
+  currencyCode: 'TRY',
+  kdvExemptionCode: '702',
+  sender: {
+    taxNumber: '1234567890',
+    name: 'Matrix Test Satıcı A.Ş.',
+    taxOffice: 'Beşiktaş',
+    address: 'Levent Mah. No:42',
+    district: 'Beşiktaş',
+    city: 'İstanbul',
+  },
+  customer: {
+    taxNumber: '9876543210',
+    name: 'Matrix Test Alıcı Ltd.',
+    taxOffice: 'Kadıköy',
+    address: 'Bağdat Cad. No:100',
+    district: 'Kadıköy',
+    city: 'İstanbul',
+  },
+  lines: [
+    {
+      name: 'İhraç ilaç',
+      quantity: 10,
+      price: 50,
+      unitCode: 'Adet',
+      kdvPercent: 0,
+      additionalItemIdentifications: [
+        {
+          schemeId: 'ILAC',
+          value: 'ILAC-MTX-074',
+        },
+      ],
+      delivery: {
+        gtipNo: '300490000011',
+        alicidibsatirkod: '12345678901',
+        deliveryAddress: {
+          address: 'Liman',
+          district: 'Ambarlı',
+          city: 'İstanbul',
+          country: 'Türkiye',
+        },
+      },
+    },
+  ],
+};
+
+export default input;
