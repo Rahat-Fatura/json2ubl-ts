@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "INVALID_FORMAT",
+      "path": "uuid",
+      "message": "Geçersiz format: uuid"
+    }
+  ]
+}

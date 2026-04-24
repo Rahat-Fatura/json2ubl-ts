@@ -1,0 +1,14 @@
+{
+  "errors": [
+    {
+      "code": "INVALID_FORMAT",
+      "path": "profileId",
+      "message": "Geçersiz format: profileId"
+    },
+    {
+      "code": "INVALID_PROFILE",
+      "path": "profileId",
+      "message": "Bilinmeyen ProfileID: BILINMEYEN"
+    }
+  ]
+}

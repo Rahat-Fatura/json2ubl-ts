@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "YTB_ISTISNA_EXEMPTION_CODE_MISMATCH",
+      "path": "lines[0].kdvExemptionCode",
+      "message": "ItemClassificationCode=01 için exemption code 308 beklenir, 339 verilmiş (lines[0])"
+    }
+  ]
+}

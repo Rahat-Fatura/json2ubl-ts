@@ -1,0 +1,16 @@
+{
+  "id": "type-requirement-iade-billingreference-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "TYPE_REQUIREMENT",
+  "errorCodes": [
+    "TYPE_REQUIREMENT"
+  ],
+  "description": "TEMELFATURA+IADE billingReference eksik",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "IADE",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T12:57:22.349Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

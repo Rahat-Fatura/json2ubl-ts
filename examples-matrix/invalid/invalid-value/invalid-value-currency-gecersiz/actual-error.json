@@ -1,0 +1,14 @@
+{
+  "errors": [
+    {
+      "code": "INVALID_VALUE",
+      "path": "currencyCode",
+      "message": "Geçersiz değer: currencyCode"
+    },
+    {
+      "code": "MISSING_FIELD",
+      "path": "exchangeRate",
+      "message": "Dövizli faturalarda PricingExchangeRate zorunludur"
+    }
+  ]
+}

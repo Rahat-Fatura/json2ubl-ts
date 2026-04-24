@@ -1,0 +1,16 @@
+{
+  "id": "exemption-351-forbidden-for-nonzero-kdv-351-nonzero-kdv",
+  "kind": "invalid-invoice",
+  "primaryCode": "EXEMPTION_351_FORBIDDEN_FOR_NONZERO_KDV",
+  "errorCodes": [
+    "EXEMPTION_351_REQUIRES_ZERO_KDV_LINE"
+  ],
+  "description": "kdvExemptionCode=351 ama kdvPercent>0",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T12:57:22.351Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

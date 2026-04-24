@@ -1,0 +1,16 @@
+{
+  "id": "profile-requirement-ihracat-buyercustomer-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "PROFILE_REQUIREMENT",
+  "errorCodes": [
+    "PROFILE_REQUIREMENT"
+  ],
+  "description": "IHRACAT profilinde buyerCustomer eksik",
+  "profileContext": "IHRACAT",
+  "typeContext": "ISTISNA",
+  "validationLevel": "strict",
+  "isMultiError": true,
+  "generatedAt": "2026-04-24T12:57:22.347Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

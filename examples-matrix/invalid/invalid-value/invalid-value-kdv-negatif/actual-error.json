@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "INVALID_VALUE",
+      "path": "lines[0].kdvPercent",
+      "message": "KDV oranı 0-100 aralığında olmalı (lines[0].kdvPercent=-5)"
+    }
+  ]
+}

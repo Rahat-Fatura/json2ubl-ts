@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "INVALID_VALUE",
+      "path": "lines[0].quantity",
+      "message": "Miktar 0'dan büyük olmalı (lines[0].quantity=0)"
+    }
+  ]
+}

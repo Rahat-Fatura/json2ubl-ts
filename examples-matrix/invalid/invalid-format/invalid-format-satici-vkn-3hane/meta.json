@@ -1,0 +1,16 @@
+{
+  "id": "invalid-format-satici-vkn-3hane",
+  "kind": "invalid-invoice",
+  "primaryCode": "INVALID_FORMAT",
+  "errorCodes": [
+    "INVALID_FORMAT"
+  ],
+  "description": "Satıcı VKN 3 hane (10 veya 11 hane bekleniyor)",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T12:57:22.343Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

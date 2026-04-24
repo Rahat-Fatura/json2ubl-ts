@@ -1,0 +1,16 @@
+{
+  "id": "missing-field-lines-bos",
+  "kind": "invalid-invoice",
+  "primaryCode": "MISSING_FIELD",
+  "errorCodes": [
+    "MISSING_FIELD"
+  ],
+  "description": "lines dizisi boş (en az 1 satır zorunlu)",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T12:57:22.342Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

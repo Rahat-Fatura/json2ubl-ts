@@ -1,0 +1,16 @@
+{
+  "id": "unknown-exemption-code-kod-bilinmeyen-999",
+  "kind": "invalid-invoice",
+  "primaryCode": "UNKNOWN_EXEMPTION_CODE",
+  "errorCodes": [
+    "UNKNOWN_EXEMPTION_CODE"
+  ],
+  "description": "İstisna kodu whitelist dışında (999)",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "ISTISNA",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T12:57:22.350Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

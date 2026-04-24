@@ -1,0 +1,16 @@
+{
+  "id": "invalid-profile-profile-bilinmeyen",
+  "kind": "invalid-invoice",
+  "primaryCode": "INVALID_PROFILE",
+  "errorCodes": [
+    "INVALID_PROFILE"
+  ],
+  "description": "profile whitelist dışında (BILINMEYEN)",
+  "profileContext": "?",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T12:57:22.347Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "REDUCED_KDV_RATE_NOT_ALLOWED",
+      "path": "taxTotals[0].taxSubtotals[0].taxExemptionReasonCode",
+      "message": "Kod '555' için 'allowReducedKdvRate' seçeneği etkinleştirilmelidir (BuilderOptions.allowReducedKdvRate=true)."
+    }
+  ]
+}

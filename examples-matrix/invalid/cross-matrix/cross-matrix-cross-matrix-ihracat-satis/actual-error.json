@@ -1,0 +1,19 @@
+{
+  "errors": [
+    {
+      "code": "CROSS_MATRIX",
+      "path": "profileId/invoiceTypeCode",
+      "message": "ProfileID 'IHRACAT' ile InvoiceTypeCode 'SATIS' birlikte kullanılamaz"
+    },
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "buyerCustomer",
+      "message": "[IHRACAT] IHRACAT profilinde BuyerCustomerParty zorunludur"
+    },
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "lines[0].delivery",
+      "message": "[IHRACAT] IHRACAT profilinde her satırda Delivery zorunludur"
+    }
+  ]
+}

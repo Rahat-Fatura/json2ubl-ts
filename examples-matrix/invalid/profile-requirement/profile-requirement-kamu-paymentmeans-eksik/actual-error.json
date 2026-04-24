@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "paymentMeans",
+      "message": "[KAMU] KAMU profilinde PaymentMeans zorunludur"
+    }
+  ]
+}

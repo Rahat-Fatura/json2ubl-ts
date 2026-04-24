@@ -1,0 +1,14 @@
+{
+  "errors": [
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "buyerCustomer",
+      "message": "[IHRACAT] IHRACAT profilinde BuyerCustomerParty zorunludur"
+    },
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "lines[0].delivery",
+      "message": "[IHRACAT] IHRACAT profilinde her satırda Delivery zorunludur"
+    }
+  ]
+}

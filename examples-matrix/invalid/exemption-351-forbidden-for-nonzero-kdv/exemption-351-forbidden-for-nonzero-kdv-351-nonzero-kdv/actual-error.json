@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "EXEMPTION_351_REQUIRES_ZERO_KDV_LINE",
+      "path": "kdvExemptionCode",
+      "message": "'351' kodu belge seviyesinde verilmişse en az bir satırda KDV=0 olmalı"
+    }
+  ]
+}

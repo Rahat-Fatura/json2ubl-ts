@@ -1,0 +1,16 @@
+{
+  "id": "ihrackayitli-702-requires-gtip-ihrackayitli-702-gtip-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "IHRACKAYITLI_702_REQUIRES_GTIP",
+  "errorCodes": [
+    "IHRACKAYITLI_702_REQUIRES_GTIP"
+  ],
+  "description": "IHRACKAYITLI+702 satırında GTİP eksik (12 hane zorunlu)",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "IHRACKAYITLI",
+  "validationLevel": "strict",
+  "isMultiError": true,
+  "generatedAt": "2026-04-24T12:57:22.353Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

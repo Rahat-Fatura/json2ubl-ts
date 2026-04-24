@@ -1,0 +1,29 @@
+{
+  "errors": [
+    {
+      "code": "UNKNOWN_EXEMPTION_CODE",
+      "path": "taxTotals[0].taxSubtotals[0].taxExemptionReasonCode",
+      "message": "Bilinmeyen istisna kodu: '999'"
+    },
+    {
+      "code": "UNKNOWN_EXEMPTION_CODE",
+      "path": "lines[0].taxTotal.taxSubtotals[0].taxExemptionReasonCode",
+      "message": "Bilinmeyen istisna kodu: '999'"
+    },
+    {
+      "code": "INVALID_VALUE",
+      "path": "taxTotals.taxSubtotals[0].taxExemptionReasonCode",
+      "message": "Geçersiz değer: taxTotals.taxSubtotals[0].taxExemptionReasonCode"
+    },
+    {
+      "code": "TYPE_REQUIREMENT",
+      "path": "taxTotals.taxSubtotals[0].taxExemptionReason",
+      "message": "[ISTISNA] İstisna faturalarında TaxExemptionReason zorunludur"
+    },
+    {
+      "code": "TYPE_REQUIREMENT",
+      "path": "taxTotals.taxSubtotals[0].taxExemptionReason",
+      "message": "[ISTISNA] KDV tutarı 0 ise TaxExemptionReason zorunludur"
+    }
+  ]
+}

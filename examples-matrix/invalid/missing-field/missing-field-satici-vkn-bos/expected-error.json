@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "MISSING_FIELD",
+      "path": "supplier.vknTckn",
+      "messageIncludes": "VKN veya TCKN zorunludur"
+    }
+  ]
+}

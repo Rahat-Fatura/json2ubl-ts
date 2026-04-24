@@ -22,7 +22,7 @@
     "phantomKdv": false,
     "specialIdentifiers": []
   },
-  "generatedAt": "2026-04-24T12:27:36.485Z",
+  "generatedAt": "2026-04-24T12:57:22.296Z",
   "generatedBy": "examples-matrix/scaffold.ts",
   "review": "auto-ok",
   "notes": "Baseline — TEMELFATURA+SATIS, tek satır %20 KDV, TRY"

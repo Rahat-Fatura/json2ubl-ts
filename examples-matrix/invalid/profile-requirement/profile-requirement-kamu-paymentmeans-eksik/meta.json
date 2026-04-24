@@ -1,0 +1,16 @@
+{
+  "id": "profile-requirement-kamu-paymentmeans-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "PROFILE_REQUIREMENT",
+  "errorCodes": [
+    "PROFILE_REQUIREMENT"
+  ],
+  "description": "KAMU profilinde paymentMeans eksik",
+  "profileContext": "KAMU",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": true,
+  "generatedAt": "2026-04-24T12:57:22.348Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

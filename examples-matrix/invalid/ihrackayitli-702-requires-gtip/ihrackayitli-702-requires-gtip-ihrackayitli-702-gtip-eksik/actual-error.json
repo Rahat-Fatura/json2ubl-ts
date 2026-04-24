@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "IHRACKAYITLI_702_REQUIRES_GTIP",
+      "path": "lines[0].delivery.shipment.goodsItems[].requiredCustomsId",
+      "message": "IHRACKAYITLI + 702 için her satırda 12 haneli GTİP (RequiredCustomsID) zorunlu"
+    }
+  ]
+}

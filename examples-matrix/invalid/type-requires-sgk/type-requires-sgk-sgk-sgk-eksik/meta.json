@@ -1,0 +1,16 @@
+{
+  "id": "type-requires-sgk-sgk-sgk-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "TYPE_REQUIRES_SGK",
+  "errorCodes": [
+    "TYPE_REQUIRES_SGK"
+  ],
+  "description": "TEMELFATURA+SGK tipi ama sgk objesi yok",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "SGK",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T12:57:22.349Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT",
+      "path": "lines[0].kdvPercent",
+      "message": "YATIRIMTESVIK+ISTISNA kombinasyonunda her satırda 0 < kdvPercent ≤ 100 zorunlu; kdvPercent=0 phantom KDV için yasak (lines[0])"
+    }
+  ]
+}

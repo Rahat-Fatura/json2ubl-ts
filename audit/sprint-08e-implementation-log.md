@@ -316,6 +316,22 @@ _8e sırasında `src/**` altında keşfedilen bug'lar burada konsolide edilir. D
 - **Kritiklik:** Major
 - **Sprint 8f öncelik:** Yüksek (semantik use-case engelli)
 
+### Bug #2 — OZELMATRAH tipinde ozelMatrah eksikliği sessiz geçiyor
+
+- **Keşif:** 8e.10
+- **Dosya:** `src/validators/type-validators.ts` (validateOzelMatrah)
+- **Özet:** `type: 'OZELMATRAH'` + `ozelMatrah` objesi hiç verilmeden build yapıldığında hiçbir validation hatası üretilmiyor (`actual.errors = []`). Validator bu durumda TYPE_REQUIREMENT atmıyor.
+- **Kritiklik:** Minör → Major (özellikle OZELMATRAH semantiği gereği ozelMatrah zorunlu)
+- **Sprint 8f öncelik:** Orta
+
+### Bug #3 — YATIRIMTESVIK ytbNo eksikse ContractDocumentReference hatası atılıyor
+
+- **Keşif:** 8e.10
+- **Dosya:** `src/validators/profile-validators.ts` (validateYatirimTesvik)
+- **Özet:** `profile: 'YATIRIMTESVIK'` + `ytbNo` eksik input'ta, validator ytbNo eksikliği için hata atmak yerine ContractDocumentReference hatası atıyor. Semantik olarak ytbNo için ayrı bir PROFILE_REQUIREMENT beklenir.
+- **Kritiklik:** Minör (hata üretiliyor ama path/mesaj yanıltıcı)
+- **Sprint 8f öncelik:** Düşük
+
 ---
 
 ## Test Delta Özeti

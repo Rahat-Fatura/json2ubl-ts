@@ -1,0 +1,14 @@
+{
+  "errors": [
+    {
+      "code": "INVALID_FORMAT",
+      "path": "issueDate",
+      "message": "Geçersiz format: issueDate"
+    },
+    {
+      "code": "INVALID_FORMAT",
+      "path": "issueTime",
+      "message": "Geçersiz format: issueTime"
+    }
+  ]
+}

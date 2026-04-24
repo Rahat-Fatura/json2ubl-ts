@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "MISSING_FIELD",
+      "path": "supplier.cityName",
+      "message": "Party için PostalAddress/CityName zorunludur (B-34)"
+    }
+  ]
+}

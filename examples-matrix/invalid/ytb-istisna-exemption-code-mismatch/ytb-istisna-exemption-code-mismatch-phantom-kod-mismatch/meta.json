@@ -1,0 +1,16 @@
+{
+  "id": "ytb-istisna-exemption-code-mismatch-phantom-kod-mismatch",
+  "kind": "invalid-invoice",
+  "primaryCode": "YTB_ISTISNA_EXEMPTION_CODE_MISMATCH",
+  "errorCodes": [
+    "YTB_ISTISNA_EXEMPTION_CODE_MISMATCH"
+  ],
+  "description": "YATIRIMTESVIK+ISTISNA itemClassificationCode=01 ama kod 339 (308 beklenen)",
+  "profileContext": "YATIRIMTESVIK",
+  "typeContext": "ISTISNA",
+  "validationLevel": "strict",
+  "isMultiError": true,
+  "generatedAt": "2026-04-24T12:57:22.352Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

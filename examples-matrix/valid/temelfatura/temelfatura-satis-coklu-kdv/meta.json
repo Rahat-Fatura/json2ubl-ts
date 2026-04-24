@@ -26,7 +26,7 @@
     "phantomKdv": false,
     "specialIdentifiers": []
   },
-  "generatedAt": "2026-04-24T12:27:36.487Z",
+  "generatedAt": "2026-04-24T12:57:22.298Z",
   "generatedBy": "examples-matrix/scaffold.ts",
   "review": "auto-ok",
   "notes": "Çoklu satır — karışık KDV oranları (%0 kodsuz 351, %10, %20)"

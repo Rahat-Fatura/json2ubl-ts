@@ -1,0 +1,14 @@
+{
+  "errors": [
+    {
+      "code": "MISSING_FIELD",
+      "path": "taxTotals[0].taxSubtotals",
+      "message": "En az bir TaxSubtotal zorunludur"
+    },
+    {
+      "code": "MISSING_FIELD",
+      "path": "lines",
+      "message": "En az bir InvoiceLine zorunludur"
+    }
+  ]
+}

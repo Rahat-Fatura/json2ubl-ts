@@ -28,7 +28,7 @@
       "taxRepresentative"
     ]
   },
-  "generatedAt": "2026-04-24T12:46:42.385Z",
+  "generatedAt": "2026-04-24T12:57:22.329Z",
   "generatedBy": "examples-matrix/scaffold.ts",
   "review": "auto-ok",
   "notes": "Baseline — YOLCUBERABERFATURA+ISTISNA, passport + nationalityId + taxRepresentativeParty"

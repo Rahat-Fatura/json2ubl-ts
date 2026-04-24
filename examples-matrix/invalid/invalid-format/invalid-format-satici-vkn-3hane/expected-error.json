@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "INVALID_FORMAT",
+      "path": "supplier.vknTckn",
+      "messageIncludes": "Geçersiz format"
+    }
+  ]
+}

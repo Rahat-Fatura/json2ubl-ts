@@ -1,0 +1,16 @@
+{
+  "id": "ytb-istisna-requires-nonzero-kdv-percent-phantom-kdv-yok",
+  "kind": "invalid-invoice",
+  "primaryCode": "YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT",
+  "errorCodes": [
+    "YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT"
+  ],
+  "description": "YATIRIMTESVIK+ISTISNA satırında kdvPercent=0 (phantom için >0 zorunlu)",
+  "profileContext": "YATIRIMTESVIK",
+  "typeContext": "ISTISNA",
+  "validationLevel": "strict",
+  "isMultiError": true,
+  "generatedAt": "2026-04-24T12:57:22.352Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

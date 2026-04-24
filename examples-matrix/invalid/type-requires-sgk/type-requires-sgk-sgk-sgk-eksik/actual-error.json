@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "TYPE_REQUIRES_SGK",
+      "path": "sgk",
+      "message": "SGK tipinde belge seviyesi sgk bilgisi zorunlu"
+    }
+  ]
+}
