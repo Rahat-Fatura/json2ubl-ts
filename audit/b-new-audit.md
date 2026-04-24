@@ -969,3 +969,120 @@ Bu 5 soru Sprint 8c'de hotfix'lere başlamadan önce Berkay tarafından netleşt
 ---
 
 **Audit dump tamamlandı.** Berkay bu dosyayı Mimsoft üretim verisi yanında tutarak her B-NEW için 7. bölümü (Karar) doldurur, Sprint 8c hotfix commit stratejisini netleştirir.
+
+---
+
+## B-NEW-13 (KRİTİK): YOLCUBERABERFATURA simple-input nationalityId + passportId + taxRepresentativeParty eksik
+
+**Keşif:** Sprint 8c Plan Modu — senaryo 20 (YOLCUBERABERFATURA+ISTISNA 322) basic mode workaround.
+**Öncelik:** Kritik (v2.0.0 release kapsamında 9/9 strict hedefi).
+**Mimsoft üretim etkisi:** Var (bavul ticareti üretimde).
+**Çözüm:** Sprint 8c.4 (commit aşağıda).
+
+### 1. Reproduction (mevcut ve eksik)
+
+```typescript
+// Önceki (basic mod workaround)
+buyerCustomer: {
+  name: 'Michael Schneider (Tourist)',
+  taxNumber: 'N12345678', // ← pasaport no taxNumber alanında (semantik yanlış)
+  // nationalityId YOK
+  // passportId YOK
+  ...
+}
+// taxRepresentativeParty yok — profil-validator tarafından reject
+```
+
+### 2. Expected (YOLCUBERABERFATURA strict mod GİB uyumlu)
+
+- `buyerCustomer.nationalityId` (ISO 3166-1 alpha-2 ülke kodu) **zorunlu**
+- `buyerCustomer.passportId` **zorunlu**
+- `taxRepresentativeParty` ayrı alan (ARACIKURUMVKN + ARACIKURUMETIKET) **zorunlu**
+
+### 3. Actual (Sprint 8c.4 öncesi)
+
+- `SimpleBuyerCustomerInput`'ta `nationalityId` ve `passportId` alanları yok
+- `SimpleInvoiceInput`'ta `taxRepresentativeParty` alanı yok
+- Senaryo 20 strict mod'da `profile-validators.ts` 3 hata: NationalityID, Pasaport no, TaxRepresentativeParty eksik.
+
+### 4. Root Cause
+
+- `src/calculator/simple-types.ts`:
+  - `SimpleBuyerCustomerInput` — B-104 skill §7.1 kapsamında `nationalityId` + `passportId` field'ları eksik
+  - `SimpleInvoiceInput` — `taxRepresentativeParty` field'ı eksik
+- `src/calculator/simple-invoice-mapper.ts`:
+  - `buildBuyerCustomer` — nationalityId/passportId eşlemesi yok
+  - `buildTaxRepresentative` — fonksiyon yok
+- `profile-validators.ts` validator zaten mevcut (Sprint 5/Sprint 6'da eklenmiş), eksik olan yalnız simple-input katmanı.
+
+### 5. Fix (Sprint 8c.4)
+
+- `simple-types.ts` genişletildi: `SimpleBuyerCustomerInput.nationalityId?: string` + `passportId?: string`; yeni `SimpleTaxRepresentativeInput { vknTckn, label, name? }` + `SimpleInvoiceInput.taxRepresentativeParty?: SimpleTaxRepresentativeInput`.
+- `simple-invoice-mapper.ts`:
+  - `buildBuyerCustomer` `party.nationalityId` ve `party.passportId` eşler.
+  - Yeni `buildTaxRepresentative` fonksiyonu `intermediaryVknTckn` + `intermediaryLabel` + `name` eşler.
+  - `buildInvoiceInput` `result.taxRepresentativeParty` atanır.
+- `examples/20-yolcu-beraber-istisna-yabanci/input.ts`:
+  - `buyerCustomer.taxNumber` '11 hane fiktif' olarak düzeltildi
+  - `nationalityId: 'DE'` + `passportId: 'N12345678'` eklendi
+  - `taxRepresentativeParty: { vknTckn, label, name }` eklendi
+
+### 6. Sonuç
+
+- Senaryo 20 strict modda başarılı build (manuel smoke).
+- XML: `NationalityID`, `IdentityDocumentReference/ID` (pasaport), `TaxRepresentativeParty` element'leri doğru yerde.
+- `basicModSlugs` kaldırma + snapshot regen 8c.9/8c.10'da.
+
+---
+
+## B-NEW-14 (KRİTİK): IDIS profili SEVKIYATNO + ETIKETNO schematron validator eksik
+
+**Keşif:** Sprint 8c Plan Modu — senaryo 26 (IDIS+SATIS) basic mode workaround.
+**Öncelik:** Kritik (v2.0.0 release kapsamında 9/9 strict hedefi).
+**Mimsoft üretim etkisi:** Var (IDIS izlenebilirlik üretimde).
+**Çözüm:** Sprint 8c.5 (commit aşağıda).
+
+### 1. Reproduction
+
+```typescript
+// Input geçerli format verir — validator kontrol ETMIYOR
+sender: {
+  identifications: [{ schemeId: 'SEVKIYATNO', value: 'SE-2026042' }],
+  // ...
+}
+lines: [
+  {
+    additionalItemIdentifications: [
+      { schemeId: 'ETIKETNO', value: 'ET0000001' },
+    ],
+    // ...
+  },
+]
+```
+
+### 2. Expected
+
+- Sender'da `SEVKIYATNO` schemeID'li identification **zorunlu**, format `/^SE-\d{7}$/`
+- Her line'da `ETIKETNO` schemeID'li additional identification **zorunlu**, format `/^[A-Z]{2}\d{7}$/`
+
+### 3. Actual (Sprint 8c.5 öncesi)
+
+- Validator kontrol eksik — format bozuk input'lar kabul ediliyor, eksik input'lar kabul ediliyor.
+
+### 4. Root Cause
+
+- `src/validators/profile-validators.ts` — IDIS branch yok (schematron kuralı eksik).
+
+### 5. Fix (Sprint 8c.5)
+
+- `profile-validators.ts` IDIS branch eklendi:
+  - `sender.additionalIdentifiers[SEVKIYATNO]` zorunlu + format regex
+  - Her `lines[].item.additionalItemIdentifications[ETIKETNO]` zorunlu + format regex
+- Yeni error code'lar: `IDIS_SEVKIYATNO_REQUIRED`, `IDIS_SEVKIYATNO_INVALID_FORMAT`, `IDIS_ETIKETNO_REQUIRED`, `IDIS_ETIKETNO_INVALID_FORMAT`.
+
+### 6. Sonuç
+
+- Senaryo 26 input'u zaten geçerli format sağlıyordu → snapshot değişmez.
+- Validator eksik input/format bozuk input'ları reject eder (yeni test case'ler 26'nın validation-errors.ts dosyasında).
+
+---

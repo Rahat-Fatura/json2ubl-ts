@@ -4,9 +4,9 @@ import type { SimpleInvoiceInput } from '../../src';
  * YOLCUBERABERFATURA profili — "bavul ticareti" olarak bilinen bu profil
  * turistin Türkiye'den aldığı malı ülkesine götürürken KDV iadesi için kullanılır.
  *
- * Kütüphane simple-input `buyerCustomer.taxNumber` alanına pasaport numarasını
- * koyar; gerçek GİB XML'inde `nationalityId` + `passportId` ayrı alanlar
- * (B-104 skill §7.1). Bu senaryo basic modda çalışır.
+ * Sprint 8c.4 / B-NEW-13: SimpleBuyerCustomerInput'a `nationalityId` + `passportId`
+ * alanları eklendi. `taxRepresentativeParty` ayrı alan olarak tanımlandı
+ * (aracı kurum — KDV iadesi işlemini yürüten firma).
  */
 export const input: SimpleInvoiceInput = {
   id: 'EXA2026000000020',
@@ -40,12 +40,20 @@ export const input: SimpleInvoiceInput = {
 
   buyerCustomer: {
     name: 'Michael Schneider (Tourist)',
-    taxNumber: 'N12345678', // Pasaport no fiktif
+    taxNumber: '99999999999', // Yurtdışı turist için 11 hane dolgu (TCKN olmadığı için)
     address: 'Hauptstrasse 15',
     district: 'Berlin',
     city: 'Berlin',
     country: 'Germany',
     zipCode: '10115',
+    nationalityId: 'DE', // ISO 3166-1 alpha-2 Almanya
+    passportId: 'N12345678',
+  },
+
+  taxRepresentativeParty: {
+    vknTckn: '9876543210',
+    label: 'MIMSOFT_TAXFREE_INTERMEDIARY',
+    name: 'Mimsoft Turizm KDV İade Aracı',
   },
 
   lines: [

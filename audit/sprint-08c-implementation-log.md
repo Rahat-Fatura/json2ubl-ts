@@ -150,7 +150,7 @@ Sprint 8b tamamlandı (commit `076946e`): 38 senaryo + 114 test + README §8 Sor
 ## Sprint 8c.3 — M11 + manual-exemption-validator test coverage
 
 **Tarih:** 2026-04-24
-**Commit hedefi:** `Sprint 8c.3: M11 self-exemption-types + manual-exemption-validator testleri`
+**Commit:** `069e59a`
 
 ### Yapılanlar
 
@@ -174,5 +174,52 @@ Sprint 8b tamamlandı (commit `076946e`): 38 senaryo + 114 test + README §8 Sor
 ### Plan İçi Disiplin
 
 - 8c.1'de fix ile birleşen config/validator için ek test coverage sağlandı. Plan'ın "test sayısı ~884" hedefi doğrultusunda birikmeli.
+
+---
+
+## Sprint 8c.4 — B-NEW-13 YOLCU passport + taxRepresentativeParty
+
+**Tarih:** 2026-04-24
+**Commit hedefi:** `Sprint 8c.4: B-NEW-13 YOLCU (nationalityId + passportId + taxRepresentativeParty)`
+
+### Yapılanlar
+
+1. **SimpleBuyerCustomerInput genişletildi** (`simple-types.ts`):
+   - `nationalityId?: string` — ISO 3166-1 alpha-2 ülke kodu (ör. 'DE')
+   - `passportId?: string` — pasaport numarası
+
+2. **Yeni tip SimpleTaxRepresentativeInput** (`simple-types.ts`):
+   - `vknTckn: string` — ARACIKURUMVKN (10 veya 11 hane)
+   - `label: string` — ARACIKURUMETIKET
+   - `name?: string` — aracı kurum tüzel adı (opsiyonel)
+
+3. **SimpleInvoiceInput.taxRepresentativeParty** eklendi — YOLCUBERABERFATURA profili için aracı kurum bilgisi.
+
+4. **Mapper genişletildi** (`simple-invoice-mapper.ts`):
+   - `buildBuyerCustomer` — `bc.nationalityId` → `party.nationalityId`; `bc.passportId` → `party.passportId` eşlemesi.
+   - Yeni `buildTaxRepresentative` fonksiyonu — `vknTckn`/`label`/`name` → `TaxRepresentativeInput` (`intermediaryVknTckn` + `intermediaryLabel` + `name`).
+   - `buildInvoiceInput` içinde `simple.taxRepresentativeParty` varsa `result.taxRepresentativeParty` atanır.
+
+5. **Senaryo 20 input.ts güncellendi**:
+   - `buyerCustomer.taxNumber: '99999999999'` (11 hane dolgu, TCKN olmadığı için)
+   - `buyerCustomer.nationalityId: 'DE'` + `passportId: 'N12345678'` eklendi
+   - `taxRepresentativeParty: { vknTckn: '9876543210', label: 'MIMSOFT_TAXFREE_INTERMEDIARY', name: 'Mimsoft Turizm KDV İade Aracı' }` eklendi
+
+6. **Snapshot regenerate** (20): XML'e `NationalityID`, `IdentityDocumentReference/ID` (pasaport), `TaxRepresentativeParty` element'leri eklendi.
+
+7. **`audit/b-new-audit.md`'ye B-NEW-13 + B-NEW-14 bölümleri** eklendi (reproduction, expected, actual, root cause, fix, sonuç).
+
+8. **Manuel strict mod doğrulaması** — senaryo 20 strict'te başarılı build; 3 UBL element XML'de mevcut.
+
+### Test Durumu
+
+- Başlangıç: 778/778 yeşil
+- Son: 778/778 yeşil (yeni test yok; strict mod per-case 8c.9'da toplu eklenecek)
+
+### Disiplin Notları
+
+- **Kapsam genişlemesi:** Plan 8c.4 sadece nationalityId + passportId diyordu. YOLCU validator `taxRepresentativeParty` zorunluluğunu da zaten kontrol ediyordu (Sprint 5/6'da eklenmişti); strict mod için simple-input katmanında da `taxRepresentativeParty` alanı eklendi. Aynı commit'te birleşti — iki farklı genişleme aynı semantik problemi (YOLCU profili strict mode desteği) çözüyor.
+- **Breaking disiplini:** Yeni opsiyonel alanlar — mevcut kullanıcı input'ları etkilenmez. CHANGELOG'da **Added**.
+- **20 senaryosu hâlâ `validationLevel: 'basic'` run.ts'te** — `basicModSlugs` set'inden 8c.9'da kaldırılacak (disiplin: 9/9 strict geçiş toplu commit).
 
 ---

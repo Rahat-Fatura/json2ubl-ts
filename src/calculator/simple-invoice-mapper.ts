@@ -29,6 +29,7 @@ import type {
   PeriodInput,
   ExchangeRateInput,
   BuyerCustomerInput,
+  TaxRepresentativeInput,
   ItemInput,
   AdditionalItemIdInput,
 } from '../types/common';
@@ -136,6 +137,11 @@ function buildInvoiceInput(
   // BuyerCustomerParty (IHRACAT / KAMU / YOLCUBERABERFATURA)
   if (simple.buyerCustomer) {
     result.buyerCustomer = buildBuyerCustomer(simple, calc.profile);
+  }
+
+  // TaxRepresentativeParty (YOLCUBERABERFATURA aracı kurum — B-NEW-13 / Sprint 8c.4)
+  if (simple.taxRepresentativeParty) {
+    result.taxRepresentativeParty = buildTaxRepresentative(simple.taxRepresentativeParty);
   }
 
   // ContractDocumentReference (YATIRIMTESVIK — YTBNO)
@@ -632,10 +638,29 @@ function buildBuyerCustomer(simple: SimpleInvoiceInput, profile: string): BuyerC
       value: id.value,
     }));
   }
+  // B-NEW-13 (Sprint 8c.4): YOLCUBERABERFATURA — nationalityId + passportId
+  if (bc.nationalityId) {
+    result.party.nationalityId = bc.nationalityId;
+  }
+  if (bc.passportId) {
+    result.party.passportId = bc.passportId;
+  }
   if (partyType) {
     result.partyType = partyType;
   }
   return result;
+}
+
+// ─── TaxRepresentativeParty (YOLCUBERABERFATURA) ────────────────────────────────
+
+function buildTaxRepresentative(
+  trp: NonNullable<SimpleInvoiceInput['taxRepresentativeParty']>,
+): TaxRepresentativeInput {
+  return {
+    intermediaryVknTckn: trp.vknTckn,
+    intermediaryLabel: trp.label,
+    name: trp.name,
+  };
 }
 
 // ─── Sözleşme Referansı (YATIRIMTESVIK) ──────────────────────────────────────────

@@ -72,7 +72,7 @@
         <cbc:ID schemeID="PARTYTYPE">TAXFREE</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyIdentification>
-        <cbc:ID schemeID="VKN">N12345678</cbc:ID>
+        <cbc:ID schemeID="TCKN">99999999999</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
         <cbc:Name>Michael Schneider (Tourist)</cbc:Name>
@@ -89,8 +89,25 @@
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>Michael Schneider (Tourist)</cbc:RegistrationName>
       </cac:PartyLegalEntity>
+      <cac:Person>
+        <cbc:NationalityID>DE</cbc:NationalityID>
+        <cac:IdentityDocumentReference>
+          <cbc:ID>N12345678</cbc:ID>
+        </cac:IdentityDocumentReference>
+      </cac:Person>
     </cac:Party>
   </cac:BuyerCustomerParty>
+  <cac:TaxRepresentativeParty>
+    <cac:PartyIdentification>
+      <cbc:ID schemeID="ARACIKURUMVKN">9876543210</cbc:ID>
+    </cac:PartyIdentification>
+    <cac:PartyIdentification>
+      <cbc:ID schemeID="ARACIKURUMETIKET">MIMSOFT_TAXFREE_INTERMEDIARY</cbc:ID>
+    </cac:PartyIdentification>
+    <cac:PartyName>
+      <cbc:Name>Mimsoft Turizm KDV İade Aracı</cbc:Name>
+    </cac:PartyName>
+  </cac:TaxRepresentativeParty>
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="TRY">0.00</cbc:TaxAmount>
     <cac:TaxSubtotal>

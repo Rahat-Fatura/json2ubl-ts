@@ -333,6 +333,30 @@ export interface SimpleBuyerCustomerInput {
      * schemeId PARTY_IDENTIFICATION_SCHEME_IDS seti ile kontrol edilir (B-69).
      */
     identifications?: Array<{ schemeId: string; value: string; }>;
+    /**
+     * Uyruk (ISO 3166-1 alpha-2 ülke kodu, ör. 'DE', 'US') —
+     * YOLCUBERABERFATURA profili için zorunlu (B-NEW-13 / Sprint 8c.4).
+     */
+    nationalityId?: string;
+    /**
+     * Pasaport numarası — YOLCUBERABERFATURA profili için zorunlu (B-NEW-13).
+     */
+    passportId?: string;
+}
+
+/**
+ * TaxRepresentativeParty — YOLCUBERABERFATURA profili aracı kurum (B-NEW-13).
+ *
+ * Aracı kurum (ör. bavul ticaretinde aracı firma) turiste KDV iadesi işlemini
+ * yürütür. UBL: cac:TaxRepresentativeParty. Sprint 8c.4 ile eklendi.
+ */
+export interface SimpleTaxRepresentativeInput {
+    /** ARACIKURUMVKN — VKN (10 hane) veya TCKN (11 hane) */
+    vknTckn: string;
+    /** ARACIKURUMETIKET — aracı kurum etiket adı */
+    label: string;
+    /** Aracı kurum tüzel adı (opsiyonel) */
+    name?: string;
 }
 
 /** Fatura dönemi (SGK faturaları vb.) */
@@ -419,6 +443,11 @@ export interface SimpleInvoiceInput {
     // ── Profil bazlı opsiyonel alanlar ───────────────────────────────────────
     /** İhracat alıcı bilgisi (IHRACAT profili için) */
     buyerCustomer?: SimpleBuyerCustomerInput;
+    /**
+     * Aracı kurum bilgisi — YOLCUBERABERFATURA profili için zorunlu (B-NEW-13).
+     * Turiste KDV iadesi işlemini yürüten aracı firma.
+     */
+    taxRepresentativeParty?: SimpleTaxRepresentativeInput;
     /** SGK fatura bilgisi (SGK tipi için) */
     sgk?: SimpleSgkInput;
     /** Online satış bilgisi (e-Arşiv internet satışları için) */

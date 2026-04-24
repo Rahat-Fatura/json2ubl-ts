@@ -26,12 +26,19 @@
   },
   "buyerCustomer": {
     "name": "Michael Schneider (Tourist)",
-    "taxNumber": "N12345678",
+    "taxNumber": "99999999999",
     "address": "Hauptstrasse 15",
     "district": "Berlin",
     "city": "Berlin",
     "country": "Germany",
-    "zipCode": "10115"
+    "zipCode": "10115",
+    "nationalityId": "DE",
+    "passportId": "N12345678"
+  },
+  "taxRepresentativeParty": {
+    "vknTckn": "9876543210",
+    "label": "MIMSOFT_TAXFREE_INTERMEDIARY",
+    "name": "Mimsoft Turizm KDV İade Aracı"
   },
   "lines": [
     {
