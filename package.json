@@ -23,7 +23,11 @@
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
     "examples": "tsx examples/run-all.ts",
-    "examples:filter": "tsx examples/run-all.ts"
+    "examples:filter": "tsx examples/run-all.ts",
+    "matrix:scaffold": "tsx examples-matrix/scaffold.ts",
+    "matrix:run": "tsx examples-matrix/run-all.ts",
+    "matrix:find": "tsx examples-matrix/find.ts",
+    "matrix:readme": "tsx examples-matrix/_lib/meta-indexer.ts --write"
   },
   "keywords": [
     "ubl",
