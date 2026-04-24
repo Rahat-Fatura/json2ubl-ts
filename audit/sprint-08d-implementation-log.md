@@ -169,3 +169,43 @@ if (line.phantomKdv) {
 - **M11 bozulmadı:** `resolveExemptionReason` mantığı değişmedi, YATIRIMTESVIK+ISTISNA için self-exemption fallback hâlâ çalışıyor.
 
 ---
+
+## Sprint 8d.3 — Mapper satır-level §2.1.4 phantom KDV
+
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8d.3: Mapper satır-level §2.1.4 phantom KDV (M12)`
+
+### Yapılanlar
+
+1. **`src/calculator/simple-invoice-mapper.ts` `buildSingleLine` güncellemesi:**
+   - `CalculatedTaxSubtotal.calculationSequenceNumeric` → `TaxSubtotalInput.calculationSequenceNumeric` propagate edilir
+   - Satır `taxTotal.taxAmount`: `cl.phantomKdv ? 0 : cl.taxes.taxTotal` — phantom satırda dış parent TaxAmount=0 (§2.1.4 "Vazgeçilen KDV dip'e girmez")
+   - Exemption code yazım koşulu genişletildi: klasik `amount===0` durumuna ek olarak `cl.phantomKdv === true` durumunda da satır TaxSubtotal.TaxExemptionReasonCode/Reason doldurulur
+
+2. **Yeni test dosyası:** `__tests__/calculator/simple-invoice-mapper-phantom-line.test.ts` (8 test)
+   - YATIRIMTESVIK+ISTISNA: satır TaxTotal.TaxAmount=0, TaxSubtotal TaxAmount=300, Percent=20, CalcSeqNum=-1, exemption=308 (5 test)
+   - EARSIVFATURA+YTBISTISNA + İnşaat (339, kdvPercent=18, taxAmount=270) — aynı §2.1.4 stili (1 test)
+   - **Regression:** YATIRIMTESVIK+SATIS (CalcSeqNum undefined, TaxAmount=200) ve TEMELFATURA+ISTISNA (kdvPercent=0, exemption 350 korunur) (2 test)
+
+### Config notu (out-of-scope bulgu)
+
+`src/calculator/exemption-config.ts:62` 308 kodunu "13/e Limanlara Bağlantı..." olarak tanımlıyor. GİB YATIRIMTESVIK PDF §4 ise 308'i "13/d Teşvikli Yatırım Malları" olarak tanımlıyor. Bu discrepancy kodlar listesi v1.42 ile YTB teknik kılavuzu v1.1 arasında — Sprint 8d kapsamı dışı. Phantom davranışı kod tanımından bağımsız çalışır; gerekirse ayrı bir B-NEW bug raporu.
+
+### Değişiklik İstatistikleri
+
+- `src/calculator/simple-invoice-mapper.ts` — `buildSingleLine` phantom-aware (~10 satır net)
+- `__tests__/calculator/simple-invoice-mapper-phantom-line.test.ts` — yeni (~200 satır, 8 test)
+
+### Test Durumu
+
+- Başlangıç: 831/831 yeşil
+- Son: **839/839 yeşil** (+8 mapper phantom line)
+- Regression: 38 snapshot test değişmeden geçti
+- Typecheck: temiz
+
+### Disiplin Notları
+
+- Mapper phantom kontrolü tek noktada: `cl.phantomKdv` flag'i. `isPhantomKdvCombination` mapper'da çağrılmaz — document-calculator'ın kararı taşınır.
+- Satır-level TaxSubtotal §2.1.4 stili birleşik şablon (§9 S1=B kararı); §2.1.5 varyantı uygulanmaz.
+
+---

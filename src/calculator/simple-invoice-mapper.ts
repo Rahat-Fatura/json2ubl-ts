@@ -343,7 +343,15 @@ function buildSingleLine(
       taxTypeName: ts.name,
     };
 
-    if (ts.amount === 0 && ts.code === '0015' && lineExemptionCode) {
+    // M12 phantom KDV: CalculationSequenceNumeric=-1 propagate edilir
+    if (ts.calculationSequenceNumeric !== undefined) {
+      subtotal.calculationSequenceNumeric = ts.calculationSequenceNumeric;
+    }
+
+    // İstisna kodu: klasik KDV=0 istisna satırı VEYA phantom KDV satırı (§2.1.4 stili)
+    const isPhantomKdvSub = ts.code === '0015' && cl.phantomKdv;
+    const isZeroKdvExemption = ts.amount === 0 && ts.code === '0015' && !!lineExemptionCode;
+    if ((isPhantomKdvSub || isZeroKdvExemption) && lineExemptionCode) {
       subtotal.taxExemptionReasonCode = lineExemptionCode;
       subtotal.taxExemptionReason = lineExemptionName;
     }
@@ -351,8 +359,10 @@ function buildSingleLine(
     return subtotal;
   });
 
+  // M12: phantom satırda dış TaxTotal/TaxAmount=0 (PDF §2.1.4 "Vazgeçilen KDV Tutarı").
+  // Dip toplamlara girmediği için 0; iç TaxSubtotal phantom değerleri taşır.
   const taxTotal: TaxTotalInput = {
-    taxAmount: cl.taxes.taxTotal,
+    taxAmount: cl.phantomKdv ? 0 : cl.taxes.taxTotal,
     taxSubtotals,
   };
 
