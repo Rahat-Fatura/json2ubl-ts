@@ -1,0 +1,16 @@
+{
+  "id": "yatirimtesvik-requires-ytbno-yatirimtesvik-ytbno-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "YATIRIMTESVIK_REQUIRES_YTBNO",
+  "errorCodes": [
+    "YATIRIMTESVIK_REQUIRES_YTBNO"
+  ],
+  "description": "YATIRIMTESVIK profilinde ytbNo eksik → YATIRIMTESVIK_REQUIRES_YTBNO",
+  "profileContext": "YATIRIMTESVIK",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T14:04:41.648Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

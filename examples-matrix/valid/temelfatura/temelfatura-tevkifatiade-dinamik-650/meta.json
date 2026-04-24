@@ -1,0 +1,31 @@
+{
+  "id": "temelfatura-tevkifatiade-dinamik-650",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "TEVKIFATIADE",
+  "variantSlug": "dinamik-650",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [
+      "650"
+    ],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:03:11.512Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "TEVKIFATIADE + 650 dinamik kod %50 — iade+tevkifat kombinasyonunda dinamik yüzde"
+}

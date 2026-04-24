@@ -1,0 +1,33 @@
+{
+  "id": "ilac_tibbicihaz-tevkifatiade-baseline",
+  "kind": "invoice",
+  "profile": "ILAC_TIBBICIHAZ",
+  "type": "TEVKIFATIADE",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      10
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [
+      "603"
+    ],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "ilac"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:03:11.523Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — ILAC_TIBBICIHAZ+TEVKIFATIADE, kod 603"
+}

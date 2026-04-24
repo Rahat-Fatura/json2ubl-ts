@@ -1,0 +1,33 @@
+{
+  "id": "earsivfatura-ytbtevkifatiade-kod-620-tekstil",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "YTBTEVKIFATIADE",
+  "variantSlug": "kod-620-tekstil",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [
+      "620"
+    ],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "ytbNo"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:03:11.520Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Varyant — EARSIVFATURA+YTBTEVKIFATIADE, kod 620 %50 tekstil"
+}

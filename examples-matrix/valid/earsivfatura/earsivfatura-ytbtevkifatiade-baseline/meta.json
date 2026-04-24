@@ -1,0 +1,33 @@
+{
+  "id": "earsivfatura-ytbtevkifatiade-baseline",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "YTBTEVKIFATIADE",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [
+      "603"
+    ],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "ytbNo"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:03:11.520Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — EARSIVFATURA+YTBTEVKIFATIADE, ytbNo + kod 603 + itemClassificationCode 03"
+}

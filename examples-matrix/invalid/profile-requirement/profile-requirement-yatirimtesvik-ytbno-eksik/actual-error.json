@@ -1,9 +1,0 @@
-{
-  "errors": [
-    {
-      "code": "PROFILE_REQUIREMENT",
-      "path": "contractReference",
-      "message": "[YATIRIMTESVIK] Yatırım Teşvik profilinde ContractDocumentReference zorunludur"
-    }
-  ]
-}
