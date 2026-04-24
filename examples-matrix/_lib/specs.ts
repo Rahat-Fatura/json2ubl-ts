@@ -18,6 +18,30 @@
  */
 
 import type { ValidSpec, InvalidSpec } from './scenario-spec';
+import type { SimplePartyInput } from '../../src/calculator/simple-types';
+
+/**
+ * Tekrarı azaltmak için standart sender/customer template'leri.
+ * Spec içinde `sender: STANDARD_SENDER` gibi kullanılır, override gereken
+ * field'lar spread sonrası eklenir.
+ */
+const STANDARD_SENDER: SimplePartyInput = {
+  taxNumber: '1234567890',
+  name: 'Matrix Test Satıcı A.Ş.',
+  taxOffice: 'Beşiktaş',
+  address: 'Levent Mah. No:42',
+  district: 'Beşiktaş',
+  city: 'İstanbul',
+};
+
+const STANDARD_CUSTOMER: SimplePartyInput = {
+  taxNumber: '9876543210',
+  name: 'Matrix Test Alıcı Ltd.',
+  taxOffice: 'Kadıköy',
+  address: 'Bağdat Cad. No:100',
+  district: 'Kadıköy',
+  city: 'İstanbul',
+};
 
 export const validSpecs: ValidSpec[] = [
   // ───────────────────────────────────────────────────────────────────────
@@ -671,6 +695,265 @@ export const validSpecs: ValidSpec[] = [
           quantity: 2,
           price: 500,
           unitCode: 'Gece',
+          kdvPercent: 20,
+        },
+      ],
+    },
+  },
+
+  // ─── TEMELFATURA Tip-özel varyantlar + feature cross (8e.3) ───
+  // TEMELFATURA+ISTISNA kod 201 — diplomatik istisna
+  {
+    kind: 'invoice',
+    variantSlug: 'kod-201',
+    profile: 'TEMELFATURA',
+    type: 'ISTISNA',
+    notes: 'İstisna kodu 201 — diplomatik temsilci/konsolosluk',
+    dimensions: {
+      kdvBreakdown: [0],
+      currency: 'TRY',
+      exchangeRate: false,
+      exemptionCodes: ['201'],
+      withholdingCodes: [],
+      allowanceCharge: { line: false, document: false },
+      lineCount: 1,
+      paymentMeans: false,
+      reducedKdvGate: false,
+      phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000013',
+      uuid: 'a1000013-0001-4000-8001-000000000013',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA',
+      type: 'ISTISNA',
+      currencyCode: 'TRY',
+      kdvExemptionCode: '201',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER, name: 'Matrix Diplomatik Temsilci' },
+      lines: [
+        {
+          name: 'Diplomatik hizmet',
+          quantity: 1,
+          price: 1000,
+          unitCode: 'Adet',
+          kdvPercent: 0,
+        },
+      ],
+    },
+  },
+
+  // TEMELFATURA+ISTISNA kod 301 — Türkiye dışı teslim
+  {
+    kind: 'invoice',
+    variantSlug: 'kod-301',
+    profile: 'TEMELFATURA',
+    type: 'ISTISNA',
+    notes: 'İstisna kodu 301 — Türkiye dışında gerçekleşen ifa',
+    dimensions: {
+      kdvBreakdown: [0],
+      currency: 'TRY',
+      exchangeRate: false,
+      exemptionCodes: ['301'],
+      withholdingCodes: [],
+      allowanceCharge: { line: false, document: false },
+      lineCount: 1,
+      paymentMeans: false,
+      reducedKdvGate: false,
+      phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000014',
+      uuid: 'a1000014-0001-4000-8001-000000000014',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA',
+      type: 'ISTISNA',
+      currencyCode: 'TRY',
+      kdvExemptionCode: '301',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        {
+          name: 'Yurt dışı danışmanlık',
+          quantity: 1,
+          price: 1000,
+          unitCode: 'Adet',
+          kdvPercent: 0,
+        },
+      ],
+    },
+  },
+
+  // TEMELFATURA+TEVKIFAT 650 dinamik stopaj %50
+  {
+    kind: 'invoice',
+    variantSlug: 'dinamik-650',
+    profile: 'TEMELFATURA',
+    type: 'TEVKIFAT',
+    notes: 'TEVKIFAT + 650 dinamik kod, kullanıcı belirlediği %50 oran',
+    dimensions: {
+      kdvBreakdown: [20],
+      currency: 'TRY',
+      exchangeRate: false,
+      exemptionCodes: [],
+      withholdingCodes: ['650'],
+      allowanceCharge: { line: false, document: false },
+      lineCount: 1,
+      paymentMeans: false,
+      reducedKdvGate: false,
+      phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000015',
+      uuid: 'a1000015-0001-4000-8001-000000000015',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA',
+      type: 'TEVKIFAT',
+      currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        {
+          name: 'Dinamik tevkifatlı hizmet',
+          quantity: 1,
+          price: 1000,
+          unitCode: 'Adet',
+          kdvPercent: 20,
+          withholdingTaxCode: '650',
+          withholdingTaxPercent: 50,
+        },
+      ],
+    },
+  },
+
+  // TEMELFATURA+SATIS USD döviz
+  {
+    kind: 'invoice',
+    variantSlug: 'usd-doviz',
+    profile: 'TEMELFATURA',
+    type: 'SATIS',
+    notes: 'Yabancı para birimi — USD + ExchangeRate 32.1',
+    dimensions: {
+      kdvBreakdown: [20],
+      currency: 'USD',
+      exchangeRate: true,
+      exemptionCodes: [],
+      withholdingCodes: [],
+      allowanceCharge: { line: false, document: false },
+      lineCount: 1,
+      paymentMeans: false,
+      reducedKdvGate: false,
+      phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000016',
+      uuid: 'a1000016-0001-4000-8001-000000000016',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA',
+      type: 'SATIS',
+      currencyCode: 'USD',
+      exchangeRate: 32.1,
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        {
+          name: 'USD ödeme — yazılım hizmeti',
+          quantity: 1,
+          price: 500,
+          unitCode: 'Adet',
+          kdvPercent: 20,
+        },
+      ],
+    },
+  },
+
+  // TEMELFATURA+SATIS çoklu satır tek KDV
+  {
+    kind: 'invoice',
+    variantSlug: 'coklu-satir',
+    profile: 'TEMELFATURA',
+    type: 'SATIS',
+    notes: 'Çoklu satır — 3 satır aynı KDV %20',
+    dimensions: {
+      kdvBreakdown: [20],
+      currency: 'TRY',
+      exchangeRate: false,
+      exemptionCodes: [],
+      withholdingCodes: [],
+      allowanceCharge: { line: false, document: false },
+      lineCount: 3,
+      paymentMeans: false,
+      reducedKdvGate: false,
+      phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000017',
+      uuid: 'a1000017-0001-4000-8001-000000000017',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA',
+      type: 'SATIS',
+      currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        { name: 'Ürün A', quantity: 1, price: 100, unitCode: 'Adet', kdvPercent: 20 },
+        { name: 'Ürün B', quantity: 2, price: 200, unitCode: 'Adet', kdvPercent: 20 },
+        { name: 'Ürün C', quantity: 5, price: 50, unitCode: 'Adet', kdvPercent: 20 },
+      ],
+    },
+  },
+
+  // TEMELFATURA+SATIS Note + OrderReference
+  {
+    kind: 'invoice',
+    variantSlug: 'not-siparis',
+    profile: 'TEMELFATURA',
+    type: 'SATIS',
+    notes: 'Fatura notları + OrderReference + DespatchReference referansları',
+    dimensions: {
+      kdvBreakdown: [20],
+      currency: 'TRY',
+      exchangeRate: false,
+      exemptionCodes: [],
+      withholdingCodes: [],
+      allowanceCharge: { line: false, document: false },
+      lineCount: 1,
+      paymentMeans: false,
+      reducedKdvGate: false,
+      phantomKdv: false,
+      specialIdentifiers: ['orderReference', 'despatchReference'],
+    },
+    input: {
+      id: 'MTX2026000000018',
+      uuid: 'a1000018-0001-4000-8001-000000000018',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA',
+      type: 'SATIS',
+      currencyCode: 'TRY',
+      notes: [
+        'Sözleşme no: SOZ-2026-0042',
+        'Ödeme: 30 gün vadeli',
+      ],
+      orderReference: {
+        id: 'ORD-2026-0042',
+        issueDate: '2026-04-20',
+      },
+      despatchReferences: [
+        { id: 'IRS-2026-001', issueDate: '2026-04-22' },
+      ],
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        {
+          name: 'Sözleşme kapsamı hizmet',
+          quantity: 1,
+          price: 1000,
+          unitCode: 'Adet',
           kdvPercent: 20,
         },
       ],

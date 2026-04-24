@@ -1,0 +1,29 @@
+{
+  "id": "temelfatura-satis-usd-doviz",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "SATIS",
+  "variantSlug": "usd-doviz",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "USD",
+    "exchangeRate": true,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T12:38:50.164Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Yabancı para birimi — USD + ExchangeRate 32.1"
+}

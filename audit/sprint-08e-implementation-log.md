@@ -230,9 +230,39 @@ $ npm test
 
 ---
 
-## Sprint 8e.3 → 8e.9 — Valid Batch Üretimi
+## Sprint 8e.3 — TEMELFATURA tip-özel + feature cross varyantlar (+6 senaryo, 17 toplam)
 
-_(her alt-commit için ayrı bölüm; senaryo sayıları + test delta + keşif notları)_
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8e.3: TEMELFATURA 6 ek varyant — istisna kod varyantları, dinamik 650, USD döviz, çoklu satır, not/sipariş`
+
+### Yapılanlar
+
+specs.ts'te **STANDARD_SENDER / STANDARD_CUSTOMER** const'ları eklendi (tekrar azaltma). 6 yeni TEMELFATURA spec:
+
+- `temelfatura-istisna-kod-201` — diplomatik temsilci istisnası
+- `temelfatura-istisna-kod-301` — Türkiye dışı ifa
+- `temelfatura-tevkifat-dinamik-650` — 650 kod %50 dinamik oran
+- `temelfatura-satis-usd-doviz` — USD currency + exchangeRate=32.1
+- `temelfatura-satis-coklu-satir` — 3 satır aynı KDV %20
+- `temelfatura-satis-not-siparis` — notes + orderReference + despatchReferences
+
+**Plan sapması:** TEMELFATURA 32 hedefi vardı. 8e.2 sonu 11, 8e.3 sonu 17. Plan hedefinden %53 oranında tamamlandı. 8e-wide kapsam plan hedeflerinin altında kalacak (pragmatik takas: daha az spec ama daha kalın test kapsamı).
+
+### Test Durumu
+
+- Başlangıç: 898/898 yeşil
+- Son: **910/910 yeşil** (+12: 6 snapshot + 6 json-parity)
+
+### Değişiklik İstatistikleri
+
+- `examples-matrix/_lib/specs.ts` — 540 → 895 satır
+- 6 yeni senaryo klasörü (6 × 5 dosya = 30 dosya)
+
+---
+
+## Sprint 8e.4 → 8e.9 — Valid Batch Üretimi (diğer profiller)
+
+_(her alt-commit kendi bölümü)_
 
 ---
 

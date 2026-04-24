@@ -1,0 +1,31 @@
+{
+  "id": "temelfatura-istisna-kod-301",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "ISTISNA",
+  "variantSlug": "kod-301",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "301"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T12:38:50.163Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "İstisna kodu 301 — Türkiye dışında gerçekleşen ifa"
+}
