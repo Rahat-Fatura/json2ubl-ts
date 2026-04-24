@@ -2189,6 +2189,218 @@ export const validSpecs: ValidSpec[] = [
       }],
     },
   },
+
+  // ═════════════════════════════════════════════════════════════════════
+  // Despatch (e-İrsaliye) — 6 baseline (3 profil × 2 tip)
+  // ═════════════════════════════════════════════════════════════════════
+
+  {
+    kind: 'despatch', variantSlug: 'baseline', profile: 'TEMELIRSALIYE', type: 'SEVK',
+    notes: 'Baseline — TEMELIRSALIYE+SEVK, tek sürücü + PLAKA',
+    dimensions: {
+      plates: ['PLAKA'], driverCount: 1, lineCount: 1,
+      additionalDocuments: false, specialIdentifiers: [],
+    },
+    input: {
+      id: 'IRS2026000000090',
+      uuid: 'a1000090-0001-4000-8001-000000000090',
+      profileId: 'TEMELIRSALIYE' as const,
+      despatchTypeCode: 'SEVK' as const,
+      issueDate: '2026-04-24',
+      issueTime: '10:00:00',
+      supplier: {
+        vknTckn: '1234567890', taxIdType: 'VKN',
+        name: 'Matrix Lojistik A.Ş.',
+        streetName: 'Barbaros Bulvarı No:123',
+        district: 'Üsküdar', citySubdivisionName: 'Üsküdar', cityName: 'İstanbul',
+        postalZone: '34664', country: 'Türkiye', taxOffice: 'Üsküdar',
+      },
+      customer: {
+        vknTckn: '9876543210', taxIdType: 'VKN',
+        name: 'Matrix Alıcı Ltd.',
+        streetName: 'Bağdat Caddesi No:456',
+        district: 'Kadıköy', citySubdivisionName: 'Kadıköy', cityName: 'İstanbul',
+        postalZone: '34710', country: 'Türkiye', taxOffice: 'Kadıköy',
+      },
+      shipment: {
+        actualDespatchDate: '2026-04-24', actualDespatchTime: '14:00:00',
+        deliveryAddress: {
+          streetName: 'Bağdat Caddesi No:456', district: 'Kadıköy',
+          citySubdivisionName: 'Kadıköy', cityName: 'İstanbul',
+          postalZone: '34710', country: 'Türkiye',
+        },
+        driverPersons: [{ firstName: 'Mehmet', familyName: 'Sürücü', nationalityId: '12345678901' }],
+        licensePlates: [{ plateNumber: '34ABC123', schemeId: 'PLAKA' }],
+      },
+      lines: [{ id: '1', deliveredQuantity: 10, unitCode: 'C62', item: { name: 'Standart paket' } }],
+    },
+  },
+
+  // Plate = DORSE varyantı
+  {
+    kind: 'despatch', variantSlug: 'dorse-plate', profile: 'TEMELIRSALIYE', type: 'SEVK',
+    notes: 'TEMELIRSALIYE+SEVK DORSE plaka varyantı',
+    dimensions: {
+      plates: ['PLAKA', 'DORSE'], driverCount: 1, lineCount: 1,
+      additionalDocuments: false, specialIdentifiers: [],
+    },
+    input: {
+      id: 'IRS2026000000091',
+      uuid: 'a1000091-0001-4000-8001-000000000091',
+      profileId: 'TEMELIRSALIYE' as const,
+      despatchTypeCode: 'SEVK' as const,
+      issueDate: '2026-04-24',
+      issueTime: '10:00:00',
+      supplier: {
+        vknTckn: '1234567890', taxIdType: 'VKN', name: 'Matrix Lojistik A.Ş.',
+        streetName: 'Barbaros No:123', district: 'Üsküdar', citySubdivisionName: 'Üsküdar',
+        cityName: 'İstanbul', postalZone: '34664', country: 'Türkiye', taxOffice: 'Üsküdar',
+      },
+      customer: {
+        vknTckn: '9876543210', taxIdType: 'VKN', name: 'Matrix Alıcı Ltd.',
+        streetName: 'Bağdat Cad. No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+        cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye', taxOffice: 'Kadıköy',
+      },
+      shipment: {
+        actualDespatchDate: '2026-04-24', actualDespatchTime: '14:00:00',
+        deliveryAddress: {
+          streetName: 'Bağdat No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+          cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye',
+        },
+        driverPersons: [{ firstName: 'Ali', familyName: 'Dorseci', nationalityId: '12345678901' }],
+        licensePlates: [
+          { plateNumber: '34ABC123', schemeId: 'PLAKA' },
+          { plateNumber: '34DRS456', schemeId: 'DORSE' },
+        ],
+      },
+      lines: [{ id: '1', deliveredQuantity: 20, unitCode: 'C62', item: { name: 'Tır yükü' } }],
+    },
+  },
+
+  {
+    kind: 'despatch', variantSlug: 'baseline', profile: 'TEMELIRSALIYE', type: 'MATBUDAN',
+    notes: 'Baseline — TEMELIRSALIYE+MATBUDAN (kağıt belge referansı zorunlu)',
+    dimensions: {
+      plates: ['PLAKA'], driverCount: 1, lineCount: 1,
+      additionalDocuments: true, specialIdentifiers: [],
+    },
+    input: {
+      id: 'IRS2026000000092',
+      uuid: 'a1000092-0001-4000-8001-000000000092',
+      profileId: 'TEMELIRSALIYE' as const,
+      despatchTypeCode: 'MATBUDAN' as const,
+      issueDate: '2026-04-24',
+      issueTime: '10:00:00',
+      supplier: {
+        vknTckn: '1234567890', taxIdType: 'VKN', name: 'Matrix Lojistik A.Ş.',
+        streetName: 'Barbaros No:123', district: 'Üsküdar', citySubdivisionName: 'Üsküdar',
+        cityName: 'İstanbul', postalZone: '34664', country: 'Türkiye', taxOffice: 'Üsküdar',
+      },
+      customer: {
+        vknTckn: '9876543210', taxIdType: 'VKN', name: 'Matrix Alıcı Ltd.',
+        streetName: 'Bağdat Cad. No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+        cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye', taxOffice: 'Kadıköy',
+      },
+      shipment: {
+        actualDespatchDate: '2026-04-24', actualDespatchTime: '14:00:00',
+        deliveryAddress: {
+          streetName: 'Bağdat No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+          cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye',
+        },
+        driverPersons: [{ firstName: 'Hasan', familyName: 'Matbu', nationalityId: '12345678901' }],
+        licensePlates: [{ plateNumber: '34MTB789', schemeId: 'PLAKA' }],
+      },
+      additionalDocuments: [{ documentType: 'MATBU', id: 'KAGIT-IRS-2026-0001', issueDate: '2026-04-23' }],
+      lines: [{ id: '1', deliveredQuantity: 5, unitCode: 'C62', item: { name: 'Kağıt arka dönem' } }],
+    },
+  },
+
+  {
+    kind: 'despatch', variantSlug: 'baseline', profile: 'HKSIRSALIYE', type: 'SEVK',
+    notes: 'Baseline — HKSIRSALIYE+SEVK (Hal Kayıt Sistemi irsaliyesi)',
+    dimensions: {
+      plates: ['PLAKA'], driverCount: 1, lineCount: 1,
+      additionalDocuments: false, specialIdentifiers: [],
+    },
+    input: {
+      id: 'IRS2026000000093',
+      uuid: 'a1000093-0001-4000-8001-000000000093',
+      profileId: 'HKSIRSALIYE' as const,
+      despatchTypeCode: 'SEVK' as const,
+      issueDate: '2026-04-24',
+      issueTime: '10:00:00',
+      supplier: {
+        vknTckn: '1234567890', taxIdType: 'VKN', name: 'Matrix Hal Lojistik',
+        streetName: 'Hal Kompleksi Blok 5', district: 'Bayrampaşa', citySubdivisionName: 'Bayrampaşa',
+        cityName: 'İstanbul', postalZone: '34055', country: 'Türkiye', taxOffice: 'Fatih',
+      },
+      customer: {
+        vknTckn: '9876543210', taxIdType: 'VKN', name: 'Matrix Market Zincir',
+        streetName: 'Bağdat Cad. No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+        cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye', taxOffice: 'Kadıköy',
+      },
+      shipment: {
+        actualDespatchDate: '2026-04-24', actualDespatchTime: '14:00:00',
+        deliveryAddress: {
+          streetName: 'Bağdat No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+          cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye',
+        },
+        driverPersons: [{ firstName: 'Veli', familyName: 'Halci', nationalityId: '12345678901' }],
+        licensePlates: [{ plateNumber: '34HKS001', schemeId: 'PLAKA' }],
+      },
+      lines: [{
+        id: '1', deliveredQuantity: 500, unitCode: 'KGM',
+        item: {
+          name: 'Domates',
+          additionalItemIdentifications: [{ schemeId: 'KUNYENO', value: 'KUN-2026-MTX93-DOM1' }],
+        },
+      }],
+    },
+  },
+
+  {
+    kind: 'despatch', variantSlug: 'baseline', profile: 'IDISIRSALIYE', type: 'SEVK',
+    notes: 'Baseline — IDISIRSALIYE+SEVK (İç Dağıtım)',
+    dimensions: {
+      plates: ['PLAKA'], driverCount: 1, lineCount: 1,
+      additionalDocuments: false, specialIdentifiers: ['sevkiyatNo'],
+    },
+    input: {
+      id: 'IRS2026000000094',
+      uuid: 'a1000094-0001-4000-8001-000000000094',
+      profileId: 'IDISIRSALIYE' as const,
+      despatchTypeCode: 'SEVK' as const,
+      issueDate: '2026-04-24',
+      issueTime: '10:00:00',
+      supplier: {
+        vknTckn: '1234567890', taxIdType: 'VKN', name: 'Matrix İç Dağıtım A.Ş.',
+        streetName: 'Barbaros No:123', district: 'Üsküdar', citySubdivisionName: 'Üsküdar',
+        cityName: 'İstanbul', postalZone: '34664', country: 'Türkiye', taxOffice: 'Üsküdar',
+        additionalIdentifiers: [{ schemeId: 'SEVKIYATNO', value: 'SE-0000094' }],
+      },
+      customer: {
+        vknTckn: '9876543210', taxIdType: 'VKN', name: 'Matrix Bayii Ltd.',
+        streetName: 'Bağdat Cad. No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+        cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye', taxOffice: 'Kadıköy',
+      },
+      shipment: {
+        actualDespatchDate: '2026-04-24', actualDespatchTime: '14:00:00',
+        deliveryAddress: {
+          streetName: 'Bağdat No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+          cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye',
+        },
+        driverPersons: [{ firstName: 'Osman', familyName: 'Dağıtım', nationalityId: '12345678901' }],
+        licensePlates: [{ plateNumber: '34IDS001', schemeId: 'PLAKA' }],
+      },
+      lines: [{
+        id: '1', deliveredQuantity: 15, unitCode: 'C62',
+        item: {
+          name: 'İç dağıtım ürün',
+          additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'ID0000094' }],
+        },
+      }],
+    },
+  },
 ];
 
 export const invalidSpecs: InvalidSpec[] = [

@@ -1,0 +1,20 @@
+{
+  "id": "hksirsaliye-sevk-baseline",
+  "kind": "despatch",
+  "profile": "HKSIRSALIYE",
+  "type": "SEVK",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "plates": [
+      "PLAKA"
+    ],
+    "driverCount": 1,
+    "lineCount": 1,
+    "additionalDocuments": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T12:52:53.729Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — HKSIRSALIYE+SEVK (Hal Kayıt Sistemi irsaliyesi)"
+}

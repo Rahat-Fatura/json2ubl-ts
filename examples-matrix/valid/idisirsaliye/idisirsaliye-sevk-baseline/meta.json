@@ -1,0 +1,22 @@
+{
+  "id": "idisirsaliye-sevk-baseline",
+  "kind": "despatch",
+  "profile": "IDISIRSALIYE",
+  "type": "SEVK",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "plates": [
+      "PLAKA"
+    ],
+    "driverCount": 1,
+    "lineCount": 1,
+    "additionalDocuments": false,
+    "specialIdentifiers": [
+      "sevkiyatNo"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:52:23.602Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — IDISIRSALIYE+SEVK (İç Dağıtım)"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "temelirsaliye-sevk-dorse-plate",
+  "kind": "despatch",
+  "profile": "TEMELIRSALIYE",
+  "type": "SEVK",
+  "variantSlug": "dorse-plate",
+  "dimensions": {
+    "plates": [
+      "PLAKA",
+      "DORSE"
+    ],
+    "driverCount": 1,
+    "lineCount": 1,
+    "additionalDocuments": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T12:52:23.601Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "TEMELIRSALIYE+SEVK DORSE plaka varyantı"
+}
