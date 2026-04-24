@@ -75,7 +75,8 @@ export const TEVKIFAT_GROUP_TYPES = new Set<InvoiceTypeCode>([
 
 /** WithholdingTaxTotal kullanılabilir tipler */
 export const WITHHOLDING_ALLOWED_TYPES = new Set<InvoiceTypeCode>([
-  InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.YTBTEVKIFAT,
+  InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE,
+  InvoiceTypeCode.YTBTEVKIFAT, InvoiceTypeCode.YTBTEVKIFATIADE,
   InvoiceTypeCode.IADE, InvoiceTypeCode.YTBIADE,
   InvoiceTypeCode.SGK, InvoiceTypeCode.SARJ, InvoiceTypeCode.SARJANLIK,
 ]);

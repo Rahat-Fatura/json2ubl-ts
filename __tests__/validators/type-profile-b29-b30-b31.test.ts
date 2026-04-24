@@ -57,6 +57,52 @@ describe('type-validators — B-30 WithholdingTaxTotal ters yön', () => {
     const errors = validateByType(input);
     expect(errors.filter(e => e.path === 'withholdingTaxTotals')).toHaveLength(0);
   });
+
+  // Sprint 8f.1 (Bug #1): TEVKIFATIADE + YTBTEVKIFATIADE tevkifatlı iade semantiği — stopaj zorunlu
+  it('B-30: TEVKIFATIADE tipinde WithholdingTaxTotal kabul edilir (Bug #1 fix)', () => {
+    const input = createSatisInput({
+      invoiceTypeCode: InvoiceTypeCode.TEVKIFATIADE,
+      withholdingTaxTotals: [{
+        taxAmount: 10,
+        taxSubtotals: [{
+          taxableAmount: 100, taxAmount: 10, percent: 10, taxTypeCode: '601',
+        }],
+      }],
+    });
+    const errors = validateByType(input);
+    expect(errors.filter(e => e.path === 'withholdingTaxTotals')).toHaveLength(0);
+  });
+
+  it('B-30: YTBTEVKIFATIADE tipinde WithholdingTaxTotal kabul edilir (Bug #1 fix)', () => {
+    const input = createSatisInput({
+      invoiceTypeCode: InvoiceTypeCode.YTBTEVKIFATIADE,
+      withholdingTaxTotals: [{
+        taxAmount: 10,
+        taxSubtotals: [{
+          taxableAmount: 100, taxAmount: 10, percent: 10, taxTypeCode: '601',
+        }],
+      }],
+    });
+    const errors = validateByType(input);
+    expect(errors.filter(e => e.path === 'withholdingTaxTotals')).toHaveLength(0);
+  });
+
+  it('B-30 regresyon: SATIS tipinde WithholdingTaxTotal HALA reddedilir (Bug #1 fix sonrası)', () => {
+    const input = createSatisInput({
+      invoiceTypeCode: InvoiceTypeCode.SATIS,
+      withholdingTaxTotals: [{
+        taxAmount: 10,
+        taxSubtotals: [{
+          taxableAmount: 100, taxAmount: 10, percent: 10, taxTypeCode: '601',
+        }],
+      }],
+    });
+    const errors = validateByType(input);
+    const wh = errors.find(e => e.code === 'INVALID_VALUE' && e.path === 'withholdingTaxTotals');
+    expect(wh).toBeDefined();
+    expect(wh!.expected).toContain('TEVKIFATIADE');
+    expect(wh!.expected).toContain('YTBTEVKIFATIADE');
+  });
 });
 
 describe('type-validators — B-31 IADE DocumentTypeCode zorunluluğu', () => {
