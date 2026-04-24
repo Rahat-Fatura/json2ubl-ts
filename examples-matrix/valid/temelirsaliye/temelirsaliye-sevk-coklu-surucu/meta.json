@@ -1,0 +1,21 @@
+{
+  "id": "temelirsaliye-sevk-coklu-surucu",
+  "kind": "despatch",
+  "profile": "TEMELIRSALIYE",
+  "type": "SEVK",
+  "variantSlug": "coklu-surucu",
+  "dimensions": {
+    "plates": [
+      "PLAKA",
+      "DORSE"
+    ],
+    "driverCount": 2,
+    "lineCount": 1,
+    "additionalDocuments": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:20:50.516Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "TEMELIRSALIYE+SEVK 2 sürücü + 2 plaka (çekici + dorse)"
+}

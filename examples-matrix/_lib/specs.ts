@@ -3615,6 +3615,97 @@ export const validSpecs: ValidSpec[] = [
       }],
     },
   },
+
+  // ─── Sprint 8f.10: Despatch genişletme (+2) ───
+  {
+    kind: 'despatch', variantSlug: 'coklu-surucu', profile: 'TEMELIRSALIYE', type: 'SEVK',
+    notes: 'TEMELIRSALIYE+SEVK 2 sürücü + 2 plaka (çekici + dorse)',
+    dimensions: {
+      plates: ['PLAKA', 'DORSE'], driverCount: 2, lineCount: 1,
+      additionalDocuments: false, specialIdentifiers: [],
+    },
+    input: {
+      id: 'IRS2026000000991',
+      uuid: 'a1000991-0001-4000-8001-000000000991',
+      profileId: 'TEMELIRSALIYE' as const,
+      despatchTypeCode: 'SEVK' as const,
+      issueDate: '2026-04-24',
+      issueTime: '10:00:00',
+      supplier: {
+        vknTckn: '1234567890', taxIdType: 'VKN', name: 'Matrix Lojistik A.Ş.',
+        streetName: 'Barbaros No:123', district: 'Üsküdar', citySubdivisionName: 'Üsküdar',
+        cityName: 'İstanbul', postalZone: '34664', country: 'Türkiye', taxOffice: 'Üsküdar',
+      },
+      customer: {
+        vknTckn: '9876543210', taxIdType: 'VKN', name: 'Matrix Alıcı Ltd.',
+        streetName: 'Bağdat Cad. No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+        cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye', taxOffice: 'Kadıköy',
+      },
+      shipment: {
+        actualDespatchDate: '2026-04-24', actualDespatchTime: '14:00:00',
+        deliveryAddress: {
+          streetName: 'Bağdat No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+          cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye',
+        },
+        driverPersons: [
+          { firstName: 'Ahmet', familyName: 'Yılmaz', nationalityId: '12345678901' },
+          { firstName: 'Mehmet', familyName: 'Kaya', nationalityId: '98765432109' },
+        ],
+        licensePlates: [
+          { plateNumber: '34ABC991', schemeId: 'PLAKA' },
+          { plateNumber: '34XYZ991', schemeId: 'DORSE' },
+        ],
+      },
+      lines: [{ id: '1', deliveredQuantity: 10, unitCode: 'C62', item: { name: 'Büyük sevkiyat' } }],
+    },
+  },
+  {
+    kind: 'despatch', variantSlug: 'coklu-satir', profile: 'IDISIRSALIYE', type: 'SEVK',
+    notes: 'IDISIRSALIYE+SEVK 3 satır farklı ETIKETNO',
+    dimensions: {
+      plates: ['PLAKA'], driverCount: 1, lineCount: 3,
+      additionalDocuments: false, specialIdentifiers: ['sevkiyatNo'],
+    },
+    input: {
+      id: 'IRS2026000000992',
+      uuid: 'a1000992-0001-4000-8001-000000000992',
+      profileId: 'IDISIRSALIYE' as const,
+      despatchTypeCode: 'SEVK' as const,
+      issueDate: '2026-04-24',
+      issueTime: '10:00:00',
+      supplier: {
+        vknTckn: '1234567890', taxIdType: 'VKN', name: 'Matrix İç Dağıtım A.Ş.',
+        streetName: 'Barbaros No:123', district: 'Üsküdar', citySubdivisionName: 'Üsküdar',
+        cityName: 'İstanbul', postalZone: '34664', country: 'Türkiye', taxOffice: 'Üsküdar',
+        additionalIdentifiers: [{ schemeId: 'SEVKIYATNO', value: 'SE-0000992' }],
+      },
+      customer: {
+        vknTckn: '9876543210', taxIdType: 'VKN', name: 'Matrix Bayii Ltd.',
+        streetName: 'Bağdat Cad. No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+        cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye', taxOffice: 'Kadıköy',
+      },
+      shipment: {
+        actualDespatchDate: '2026-04-24', actualDespatchTime: '14:00:00',
+        deliveryAddress: {
+          streetName: 'Bağdat No:456', district: 'Kadıköy', citySubdivisionName: 'Kadıköy',
+          cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye',
+        },
+        driverPersons: [{ firstName: 'Osman', familyName: 'Dağıtım', nationalityId: '12345678901' }],
+        licensePlates: [{ plateNumber: '34IDS001', schemeId: 'PLAKA' }],
+      },
+      lines: [
+        { id: '1', deliveredQuantity: 5, unitCode: 'C62', item: {
+          name: 'Ürün A', additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'AA0000992' }],
+        } },
+        { id: '2', deliveredQuantity: 3, unitCode: 'C62', item: {
+          name: 'Ürün B', additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'BB0000992' }],
+        } },
+        { id: '3', deliveredQuantity: 7, unitCode: 'C62', item: {
+          name: 'Ürün C', additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'CC0000992' }],
+        } },
+      ],
+    },
+  },
 ];
 
 /**

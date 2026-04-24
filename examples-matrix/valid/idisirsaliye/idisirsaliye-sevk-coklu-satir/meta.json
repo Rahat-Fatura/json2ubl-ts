@@ -1,0 +1,22 @@
+{
+  "id": "idisirsaliye-sevk-coklu-satir",
+  "kind": "despatch",
+  "profile": "IDISIRSALIYE",
+  "type": "SEVK",
+  "variantSlug": "coklu-satir",
+  "dimensions": {
+    "plates": [
+      "PLAKA"
+    ],
+    "driverCount": 1,
+    "lineCount": 3,
+    "additionalDocuments": false,
+    "specialIdentifiers": [
+      "sevkiyatNo"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:20:50.516Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "IDISIRSALIYE+SEVK 3 satır farklı ETIKETNO"
+}
