@@ -1,5 +1,5 @@
 /**
- * Sprint 8e — meta.json filter CLI.
+ * Sprint 8e/8f — meta.json filter CLI.
  *
  * Kullanım:
  *   npx tsx examples-matrix/find.ts --profile=TEMELFATURA
@@ -10,6 +10,13 @@
  *   npx tsx examples-matrix/find.ts --phantom-kdv
  *   npx tsx examples-matrix/find.ts --currency=EUR
  *
+ * Sprint 8f.14 — 4 yeni filtre:
+ *   npx tsx examples-matrix/find.ts --has-withholding
+ *   npx tsx examples-matrix/find.ts --line-count=3
+ *   npx tsx examples-matrix/find.ts --kind=invoice
+ *   npx tsx examples-matrix/find.ts --multi-error
+ *
+ * Filtreler AND ile birleşir (kombinasyon desteklenir).
  * Çıktı: eşleşen klasör yollarının listesi.
  */
 
@@ -24,20 +31,32 @@ interface Flags {
   errorCode?: string;
   exemption?: string;
   currency?: string;
+  lineCount?: number;
+  kind?: string;
   needsReview: boolean;
   phantomKdv: boolean;
+  hasWithholding: boolean;
+  multiError: boolean;
 }
 
 function parseFlags(argv: string[]): Flags {
-  const flags: Flags = { needsReview: false, phantomKdv: false };
+  const flags: Flags = {
+    needsReview: false, phantomKdv: false, hasWithholding: false, multiError: false,
+  };
   for (const a of argv) {
     if (a === '--needs-review') flags.needsReview = true;
     else if (a === '--phantom-kdv') flags.phantomKdv = true;
+    else if (a === '--has-withholding') flags.hasWithholding = true;
+    else if (a === '--multi-error') flags.multiError = true;
     else if (a.startsWith('--profile=')) flags.profile = a.slice('--profile='.length);
     else if (a.startsWith('--type=')) flags.type = a.slice('--type='.length);
     else if (a.startsWith('--error-code=')) flags.errorCode = a.slice('--error-code='.length);
-    else if (a.startsWith('--exemption=')) flags.exemption = a.slice('--exemption='.length);
+    else if (a.startsWith('--exemption=') || a.startsWith('--exemption-code=')) {
+      flags.exemption = a.split('=')[1];
+    }
     else if (a.startsWith('--currency=')) flags.currency = a.slice('--currency='.length);
+    else if (a.startsWith('--line-count=')) flags.lineCount = Number(a.slice('--line-count='.length));
+    else if (a.startsWith('--kind=')) flags.kind = a.slice('--kind='.length);
   }
   return flags;
 }
@@ -109,6 +128,22 @@ function matches(item: Result, flags: Flags): boolean {
   if (flags.phantomKdv) {
     const dims = m.dimensions as Record<string, unknown> | undefined;
     if (!dims?.phantomKdv) return false;
+  }
+  // Sprint 8f.14 — yeni filtreler
+  if (flags.hasWithholding) {
+    const dims = m.dimensions as Record<string, unknown> | undefined;
+    const codes = (dims?.withholdingCodes ?? []) as unknown[];
+    if (codes.length === 0) return false;
+  }
+  if (flags.lineCount !== undefined) {
+    const dims = m.dimensions as Record<string, unknown> | undefined;
+    if (Number(dims?.lineCount) !== flags.lineCount) return false;
+  }
+  if (flags.kind) {
+    if (String(m.kind) !== flags.kind) return false;
+  }
+  if (flags.multiError) {
+    if (m.isMultiError !== true) return false;
   }
   return true;
 }
