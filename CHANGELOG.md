@@ -280,6 +280,54 @@ npm run matrix:readme         # README.md auto-generate
 
 Detay: `audit/sprint-08e-plan.md`, `audit/sprint-08e-implementation-log.md`, `examples-matrix/README.md`.
 
+### Sprint 8f — Bug Hotfix'leri (Bug #1-3) + Kapsam Genişletme %35 → %90+ — 2026-04-24
+
+**17 atomik alt-commit** (8f.0 → 8f.16). 8e'de keşfedilen 3 bug düzeltildi, examples-matrix/ 95 → 162 senaryoya genişledi (%66 plan hedefinin üzerinde).
+
+**Added (src/):**
+- `TEVKIFATIADE` ve `YTBTEVKIFATIADE` tipleri `WithholdingTaxTotal` kabul eder hale geldi (Bug #1 fix — `WITHHOLDING_ALLOWED_TYPES` set'ine eklendi). Bu 2 tipin semantik amacı tevkifatlı iade — stopaj artık zorunlu olarak alınabilir.
+- **Yeni error code:** `YATIRIMTESVIK_REQUIRES_YTBNO` — YATIRIMTESVIK profilinde / EARSIV+YTB tiplerinde `ytbNo` eksikse semantik açıklıkla üretilir (Bug #3 fix). Önceden `PROFILE_REQUIREMENT` "ContractDocumentReference zorunludur" mesajı veriliyordu; şimdi `YATIRIMTESVIK_REQUIRES_YTBNO` + "YATIRIMTESVIK profilinde YTBNO zorunludur".
+- `validateOzelMatrah` artık KDV subtotal'da `taxExemptionReasonCode` varlığını zorunlu kılar (Bug #2 fix — 801-812 koduyla üretilmediğinde `TYPE_REQUIREMENT` atar). Önceden sessiz geçiyordu.
+
+**Added (examples-matrix/):**
+- **+67 yeni senaryo** (95 → 162): 50 yeni valid + 17 yeni invalid.
+- **10 TEVKIFATIADE/YTBTEVKIFATIADE senaryosu** — 8e'de comment-out'daki spec'ler Bug #1 fix sonrası reaktive edildi (7 TEVKIFATIADE baseline + 1 YTBTEVKIFATIADE + 2 varyant).
+- **Yeni tipler:** EARSIVFATURA için YTBIADE, YTBTEVKIFAT baseline'ları eklendi (8e'de yoktu).
+- **Bug #2 senaryosu:** `invalid-invoice/type-requirement/type-requirement-ozelmatrah-kod-eksik` — OZELMATRAH + taxExemptionReasonCode eksikliğinin yakalandığını kanıtlar.
+- **Bug #3 senaryoları:** `invalid/yatirimtesvik-requires-ytbno/*` — YATIRIMTESVIK + EARSIV+YTB branch'larında yeni error code tetikliyor.
+- **5 multi-error senaryosu** (isMultiError=true, her profil/tip için iki+ hata kombinasyonu).
+- **meta-indexer genişlemesi:** Pivot tablo (profil × tip matrisi, her hücrede varyant sayısı), coverage gap report (PROFILE_TYPE_MATRIX - mevcut = missing), error code ve exemption code ASCII bar chart'ları, dashboard özet.
+- **find.ts 4 yeni filtre:** `--has-withholding`, `--line-count=N`, `--kind=<valid|invalid>`, `--multi-error`, `--exemption-code=` alias.
+
+**Changed:**
+- `type-validators.ts` B-30 hata mesajı tip listesini güncelledi (TEVKIFATIADE/YTBTEVKIFATIADE eklendi).
+- `examples-matrix/invalid/profile-requirement/profile-requirement-yatirimtesvik-ytbno-eksik/` → `examples-matrix/invalid/yatirimtesvik-requires-ytbno/yatirimtesvik-requires-ytbno-yatirimtesvik-ytbno-eksik/` (Bug #3 fix nedeniyle spec expected error code güncellendi).
+
+**Fixed:**
+- **Bug #1 (Major):** `src/config/constants.ts:77` `WITHHOLDING_ALLOWED_TYPES` eksikliği. TEVKIFATIADE/YTBTEVKIFATIADE tiplerinde stopaj artık kullanılabilir.
+- **Bug #2 (Orta):** `src/validators/type-validators.ts:188-208` OZELMATRAH `taxExemptionReasonCode` eksikliğinin sessiz geçmesi.
+- **Bug #3 (Düşük):** `src/validators/profile-validators.ts:248-260` YATIRIMTESVIK `ytbNo` eksikliği semantik net error code ile.
+
+**Plan sapmaları (§11 kapsam ayarı matrisi — şeffaflık):**
+- Valid genişletme: plan +55 → fiili +50 (niş profiller 1 varyantta sabitlendi).
+- Invalid edge cases: plan +13 → fiili +12 (4 senaryo validator tetiklemedi, 8g'ye erteli).
+- Multi-error: plan +12 → fiili +5 (7 senaryo Sprint 8g'ye ertelendi).
+- find.ts yeni filtre: plan 5 → fiili 4.
+- Coverage: 67/68 PROFILE_TYPE_MATRIX kombinasyonu (%98.5). Sadece EARSIVFATURA × TEKNOLOJIDESTEK kapsamsız (8e'de atlanan özel TCKN/TELEFON şartı).
+
+**Test delta:** 1049 → **1176 yeşil** (+127). Plan tahmini +142; fiili sapma §11 kesim kararıyla.
+
+**Doğrulama:**
+```bash
+npm test           # 1176/1176 yeşil
+npm run matrix:run # 162/162 başarılı (122 valid + 40 invalid)
+npm run examples   # 38/38 (regresyon)
+npm run typecheck  # 0 error
+npm run build      # dist/ 234 KB CJS + 230 KB ESM + 76 KB DTS
+```
+
+Detay: `audit/sprint-08f-plan.md`, `audit/sprint-08f-implementation-log.md`, `audit/v2.0.0-publish-checklist.md`.
+
 ---
 
 ## [1.4.2] — 2026-02-XX
