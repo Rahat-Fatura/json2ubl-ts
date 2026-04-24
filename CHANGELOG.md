@@ -201,6 +201,87 @@ Detay: `audit/sprint-08d-plan.md`, `audit/sprint-08d-implementation-log.md`, `au
 
 ---
 
+### Sprint 8e — Publish Öncesi Kapsam Doğrulama (examples-matrix/) — 2026-04-24
+
+**Kapsam:** Kütüphane davranışının 272 senaryo hedefli script-assisted katalog ile somutlaştırılması. Plan hedef: 164 valid + 108 invalid. Fiili: **72 valid + 23 invalid = 95 senaryo** (plan hedefinin %35'i). Kapsam pragmatik takaslar nedeniyle kısaldı (her profil için 1 baseline + tip-özel + seçkin feature cross; fiili sürede builder tip-güvenli doğrulamasını geçen senaryolara odaklanıldı).
+
+#### Added (Sprint 8e)
+
+- **`examples-matrix/` paralel klasör** — mevcut 38 senaryoluk `examples/` dokunulmaz, yanına 95 senaryolu kapsam kataloğu eklendi:
+  - 72 valid senaryo, 15 profilde (TEMELFATURA 17, TICARIFATURA 8, KAMU 8, EARSIVFATURA 12, IHRACAT/YOLCUBERABERFATURA/OZELFATURA/HKS×2/ENERJI×2 toplam 7, ILAC_TIBBICIHAZ 5, YATIRIMTESVIK 5 (2 phantom M12), IDIS 5, Despatch 5).
+  - 23 invalid senaryo, 14 farklı error code (MISSING_FIELD, INVALID_FORMAT, INVALID_VALUE, INVALID_PROFILE, PROFILE_REQUIREMENT, TYPE_REQUIREMENT, UNKNOWN_EXEMPTION_CODE, CROSS_MATRIX, EXEMPTION_351_*, YTB_ISTISNA_*, IHRACKAYITLI_702_REQUIRES_GTIP, REDUCED_KDV_RATE_NOT_ALLOWED, TYPE_REQUIRES_SGK).
+- **`_lib/scenario-spec.ts`** — ValidSpec + InvalidSpec tip sistemi (discriminated union: invoice | despatch | invalid-invoice | invalid-despatch).
+- **`_lib/specs.ts`** — 95 hardcoded spec, explicit diff-friendly.
+- **`_lib/input-serializer.ts`** — obj → TS kaynak kodu (`examples/` pattern'iyle uyumlu; single-quote, trailing comma, identifier quote'suz).
+- **`scaffold.ts`** CLI — spec → klasör üretici, idempotent (`--force` / `--dry-run` / `--only <slug>`), `needs-manual-check` koruması.
+- **`run-all.ts`** — 2-seviye discovery (`<subdir>/<category>/<scenario>`), valid+invalid birleşik orkestratör (`--valid-only` / `--invalid-only` / `--only`).
+- **`_lib/runScenario.ts` + `_lib/runDespatch.ts`** — `examples/_lib/` klonları (src path 1 seviye derin).
+- **`_lib/runInvalid.ts`** — try/catch UblBuildError.errors → actual-error.json.
+- **`_lib/meta-indexer.ts`** + **auto-generated `examples-matrix/README.md`** — profil bazında gruplanmış markdown tablo (kullanıcı tarafından VSCode'dan tıklanabilir klasör linkleri).
+- **`find.ts`** CLI — meta.json filter (`--profile`, `--type`, `--error-code`, `--exemption`, `--currency`, `--needs-review`, `--phantom-kdv`).
+- **`package.json`** script'leri: `matrix:scaffold`, `matrix:run`, `matrix:find`, `matrix:readme`.
+- **4 yeni test dosyası** (`__tests__/examples-matrix/`): snapshot.test.ts, json-parity.test.ts, invalid-parity.test.ts, meta-integrity.test.ts.
+
+#### Unchanged (Sprint 8e)
+
+- **`src/**`**: R4 sıkı kuralı gereği dokunulmadı. 3 bug bulundu → Sprint 8f'e taşındı (aşağı, Bulunan Buglar bölümü).
+- **`examples/**`**: Mevcut 38 senaryo dokunulmadı.
+
+#### Bulunan Buglar (Sprint 8f'e ertelendi)
+
+- **Bug #1 (Major)** — `WITHHOLDING_ALLOWED_TYPES` (src/config/constants.ts:77) listesinde TEVKIFATIADE/YTBTEVKIFATIADE eksik. `withholdingTaxCode` kullanımı bu tiplerde INVALID_VALUE üretiyor. Etki: 4 tip (TEMELFATURA+TEVKIFATIADE, TICARIFATURA+TEVKIFATIADE, KAMU+TEVKIFATIADE, EARSIVFATURA+YTBTEVKIFATIADE) pratikte stopaj ile kullanılamıyor.
+- **Bug #2 (Orta)** — OZELMATRAH tipinde `ozelMatrah` objesi verilmeden build başarılı oluyor (validator TYPE_REQUIREMENT atmıyor). Dosya: `src/validators/type-validators.ts` validateOzelMatrah.
+- **Bug #3 (Düşük)** — YATIRIMTESVIK profilinde `ytbNo` eksikse validator doğrudan ytbNo hatası yerine `ContractDocumentReference` hatası atıyor. Dosya: `src/validators/profile-validators.ts` validateYatirimTesvik.
+
+#### Sprint 8e Commit Dağılımı (fiili 13 alt-commit — plan 18'den sıkıştırıldı)
+
+- **8e.0:** Plan kopyası + implementation log iskeleti + examples-matrix iskelet
+- **8e.1:** Scenario spec + input-serializer + scaffold CLI + 3 TEMELFATURA smoke
+- **8e.2:** runScenario/runDespatch klon + run-all + 9 ek TEMELFATURA baseline + snapshot/json-parity testleri (+Bug #1 keşfi)
+- **8e.3:** TEMELFATURA 6 ek varyant (istisna kodları, dinamik 650, USD döviz, çoklu satır, not/sipariş)
+- **8e.4:** TICARIFATURA 8 baseline
+- **8e.5:** KAMU 8 baseline (PaymentMeans + IBAN + BuyerCustomer)
+- **8e.6:** EARSIVFATURA 12 baseline (9 temel + 3 YTB including phantom KDV M12)
+- **8e.7:** IHRACAT+YOLCUBERABER+OZELFATURA+HKS+ENERJI 7 baseline
+- **8e.8:** ILAC_TIBBICIHAZ 5 + YATIRIMTESVIK 5 (2 phantom) + IDIS 5 baseline
+- **8e.9:** Despatch 5 baseline (TEMELIRSALIYE SEVK/MATBUDAN + DORSE, HKSIRSALIYE, IDISIRSALIYE)
+- **8e.10-12:** runInvalid altyapısı + 23 invalid senaryo (Sınıf A+B+C birleşik, +Bug #2 #3 keşfi)
+- **8e.14:** meta-indexer + auto-generated README + meta-integrity test (6 assertion)
+- **8e.15:** find.ts CLI + package.json matrix:* script'leri
+- **8e.16-17:** Full regression + CHANGELOG + log kapanış + Sprint 8f taslağı
+
+#### Plan Sapmaları (Şeffaflık)
+
+- **Plan 164 valid hedefi → fiili 72 (%44):** Her profil+tip çifti için 1 baseline (68 teorik) + seçkin tip-özel varyantlar. 68 baseline üstüne sınırlı feature cross (coklu-kdv, eur-doviz, usd-doviz, çoklu satır, not/sipariş, phantom KDV×4, KAMU IBAN'ları).
+- **Plan 108 invalid hedefi → fiili 23 (%21):** Sınıf A+B+C'nin ana kapsamı. Multi-error ve profil-context varyantları (plan 53) kısmen kapsandı. Sprint 8f'de genişletilebilir.
+- **18 commit → fiili 13 commit:** 8e.11, 8e.12, 8e.13 tek commit'te konsolide (8e.10-12), 8e.16 ve 8e.17 birleşti.
+- **Gerçekleşen senaryo azlığı pragmatik:** Her spec yazımı + builder'dan geçirme + test yeşilliği ~5 dakikalık bir işlem. Fiili sürede tam plan hedefine ulaşmak mümkün olmadı; fakat her profil+tip kombinasyonunun en az bir baseline'ı katalogda temsil edilmekte.
+
+#### Test Değişimi
+
+**876 → 1049 yeşil (+173):**
+- +72 snapshot regression (valid senaryo başına 1)
+- +72 json-parity (input.ts ≡ input.json)
+- +23 invalid-parity (expected ⊆ actual)
+- +6 meta-integrity assertions
+
+#### Kullanım (npm script'leri)
+
+```bash
+npm run matrix:scaffold       # spec'leri klasörlere üret (idempotent)
+npm run matrix:scaffold -- --force  # mevcut dosyaları ez
+npm run matrix:run            # tüm senaryoları çalıştır (input.json + output.xml / actual-error.json yaz)
+npm run matrix:run -- --valid-only
+npm run matrix:run -- --invalid-only
+npm run matrix:find -- --profile=TEMELFATURA --type=IHRACKAYITLI
+npm run matrix:find -- --phantom-kdv
+npm run matrix:readme         # README.md auto-generate
+```
+
+Detay: `audit/sprint-08e-plan.md`, `audit/sprint-08e-implementation-log.md`, `examples-matrix/README.md`.
+
+---
+
 ## [1.4.2] — 2026-02-XX
 
 Denetim öncesi son dev sürüm. Detay: git log + `audit/denetim-01..06.md`.

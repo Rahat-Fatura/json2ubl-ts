@@ -292,15 +292,82 @@ _(placeholder)_
 
 ---
 
-## Sprint 8e.16 — Full Regression + Bulunan Buglar Kapsam
+## Sprint 8e.16-17 — Full Regression + CHANGELOG + Log Kapanış + Sprint 8f Taslağı
 
-_(placeholder)_
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8e.16-17: Full regression + CHANGELOG 8e + log kapanış + Sprint 8f taslağı`
+
+### Full Regression Doğrulaması
+
+```
+$ npm test            # 1049 passed / 1049
+$ npm run examples    # 38/38 başarılı (mevcut examples/ dokunulmadı)
+$ npm run matrix:run  # 95/95 başarılı (72 valid + 23 invalid)
+$ npm run typecheck   # 0 error
+$ npm run build       # DTS 75.86 KB, dist/index.d.{ts,mts} üretildi
+```
+
+Hiçbir regression yok. Mevcut examples/ pattern'leri olduğu gibi çalışıyor. `src/**` dokunulmadı — `git diff origin/main -- src/` **boş**.
+
+### CHANGELOG Güncellemesi
+
+`CHANGELOG.md` altında `[2.0.0]` sürümü içinde Sprint 8e section'ı eklendi:
+- Added (examples-matrix/ scaffold + specs + CLI araçları)
+- Unchanged (src/, examples/ dokunulmadı)
+- Bulunan Buglar (3 bug — Sprint 8f'e erteli)
+- Commit dağılımı (fiili 13 commit)
+- Plan sapmaları şeffaflıkla kaydedildi (164→72 valid, 108→23 invalid)
+- Test değişimi (+173: 876 → 1049)
+- Kullanım örnekleri (npm run matrix:*)
+
+### Sprint 8f Taslağı
+
+Sprint 8f için aşağıdaki bulgular erteli:
+
+1. **Bug #1 (Major):** TEVKIFATIADE/YTBTEVKIFATIADE WithholdingTaxTotal whitelist'e ekleme (`src/config/constants.ts:77`). Etki: 4 tipin pratik kullanımı.
+2. **Bug #2 (Orta):** OZELMATRAH ozelMatrah eksikliğinin validation'a eklenmesi (`src/validators/type-validators.ts` validateOzelMatrah).
+3. **Bug #3 (Düşük):** YATIRIMTESVIK profilinde ytbNo eksikse açık hata mesajı (hâlen ContractDocumentReference path'i veriyor).
+4. **Kapsam genişletme (isteğe bağlı):** examples-matrix/ senaryo sayısını 164+108 plan hedefine yaklaştırma. Multi-error ve profil-context varyantları. 8e'de plan %35'i kapsandı.
+5. **Meta-indexer geliştirmeleri:** README'yi dynamic filter (profil bazında pivot, kod bazında dağılım grafikleri) ile zenginleştirme.
+
+Sprint 8f planı ayrı dosya olarak `audit/sprint-08f-plan.md`'de açılır (henüz yazılmadı — Berkay onay verirse).
+
+### Test Durumu
+
+- Başlangıç: 876/876 yeşil
+- Son: **1049/1049 yeşil (+173)**
+- examples/ dokunulmadı, 38/38 regression yeşil
+- examples-matrix/ 95 senaryo build başarılı
+
+### Dosya/Klasör İstatistiği Özeti (Kapanış)
+
+```
+examples-matrix/
+├── _lib/              # 7 dosya (scenario-spec + input-serializer + specs + runScenario + runDespatch + runInvalid + meta-indexer)
+├── valid/             # 72 senaryo (15 profil × N varyant)
+├── invalid/           # 23 senaryo (14 error code × N varyant)
+├── README.md          # auto-generated (meta-indexer)
+├── run-all.ts
+├── scaffold.ts
+└── find.ts
+
+__tests__/examples-matrix/
+├── snapshot.test.ts       # 72 test
+├── json-parity.test.ts    # 72 test
+├── invalid-parity.test.ts # 23 test
+└── meta-integrity.test.ts # 6 assertion
+
+Toplam Sprint 8e disk delta: ~2.4 MB (plan 5 MB eşiğinin altında).
+```
+
+### Disiplin Notları
+
+- **src/ read-only:** 13 alt-commit boyunca hiçbir src/ dosyasına dokunulmadı.
+- **Mimari karar:** Yeni M slot açılmadı — Sprint 8e kapsam doğrulama, semantik değişiklik yok.
+- **examples/ dokunulmaz:** Mevcut 38 senaryo korundu.
+- **Plan disiplini:** Plan hedefi 164+108'e ulaşılamadı. Şeffaflıkla CHANGELOG + log'a kaydedildi. Gerçekçi takaslar her batch'te kritik alanı kapsamaya odaklandı (her profil+tip için en az 1 baseline + tip-özel zorunluluklar).
 
 ---
-
-## Sprint 8e.17 — CHANGELOG + Log Kapanış + Sprint 8f Taslağı
-
-_(placeholder)_
 
 ---
 
@@ -334,15 +401,25 @@ _8e sırasında `src/**` altında keşfedilen bug'lar burada konsolide edilir. D
 
 ---
 
-## Test Delta Özeti
+## Test Delta Özeti (Kapanış)
 
 | Alt-commit | Yeni test | Kümülatif | Not |
 |---|---|---|---|
 | 8e.0 | 0 | 876 | Kod değişmedi, audit/examples-matrix iskelet |
-| 8e.1 | TBD | TBD | Generator MVP + scaffold smoke |
-| 8e.2 | TBD | TBD | 10 TEMELFATURA valid + snapshot discovery |
-| ... | ... | ... | ... |
-| **Hedef 8e.17** | — | **1313** | **+437 delta** (164 snapshot + 164 json-parity + 108 invalid + 1 meta-integrity) |
+| 8e.1 | 0 | 876 | Scaffold MVP (testsiz) |
+| 8e.2 | +22 | 898 | 11 TEMELFATURA snapshot + 11 json-parity |
+| 8e.3 | +12 | 910 | 6 ek TEMELFATURA |
+| 8e.4 | +12 | 922 | 8 TICARIFATURA (json-parity+snapshot 16; -4 TEVKIFATIADE) |
+| 8e.5 | +24 | 946 | 8 KAMU × 2 + 8 ek parity (+2 phantom gözetim) |
+| 8e.6 | +20 | 966 | 12 EARSIVFATURA × 2 - düzeltmeler |
+| 8e.7 | +14 | 980 | 7 küçük profil × 2 |
+| 8e.8 | +30 | 1010 | 15 ILAC+YATIRIMTESVIK+IDIS × 2 |
+| 8e.9 | +10 | 1020 | 5 Despatch × 2 |
+| 8e.10-12 | +23 | 1043 | 23 invalid-parity |
+| 8e.14 | +6 | 1049 | meta-integrity |
+| 8e.15 | 0 | 1049 | find CLI + script'ler (testsiz) |
+| 8e.16-17 | 0 | 1049 | Regression + doküman |
+| **Son** | **+173** | **1049** | Plan hedefi 1313 (+437); fiili %40 |
 
 ---
 
