@@ -221,8 +221,14 @@ function buildTaxTotals(
       taxTypeName: ts.name,
     };
 
-    // İstisna kodu ekle
-    if (shouldAddExemption(ts, calc, simple)) {
+    // M12 phantom KDV: CalculationSequenceNumeric=-1 propagate edilir
+    if (ts.calculationSequenceNumeric !== undefined) {
+      subtotal.calculationSequenceNumeric = ts.calculationSequenceNumeric;
+    }
+
+    // İstisna kodu ekle — phantom subtotal'da (CalcSeqNum=-1) her zaman yazılır (§2.1.4)
+    const isPhantomSub = ts.calculationSequenceNumeric === -1;
+    if (shouldAddExemption(ts, calc, simple) || isPhantomSub) {
       subtotal.taxExemptionReasonCode = calc.taxExemptionReason.kdv ?? undefined;
       subtotal.taxExemptionReason = calc.taxExemptionReason.kdvName ?? undefined;
     }
@@ -230,6 +236,8 @@ function buildTaxTotals(
     return subtotal;
   });
 
+  // calc.taxes.taxTotal phantom satırların KDV'si hariç (document-calculator 8d.2
+  // post-marking ile zaten doğru değeri tutar). Phantom kombinasyonda 0.
   return [{
     taxAmount: calc.taxes.taxTotal,
     taxSubtotals,

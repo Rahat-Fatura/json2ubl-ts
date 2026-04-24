@@ -209,3 +209,41 @@ if (line.phantomKdv) {
 - Satır-level TaxSubtotal §2.1.4 stili birleşik şablon (§9 S1=B kararı); §2.1.5 varyantı uygulanmaz.
 
 ---
+
+## Sprint 8d.4 — Mapper belge-level §2.1.4 phantom KDV
+
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8d.4: Mapper belge-level §2.1.4 phantom KDV (M12)`
+
+### Yapılanlar
+
+1. **`src/calculator/simple-invoice-mapper.ts` `buildTaxTotals` güncellemesi:**
+   - `CalculatedTaxSubtotal.calculationSequenceNumeric` → belge-level `TaxSubtotalInput.calculationSequenceNumeric` propagate
+   - Phantom TaxSubtotal'da (CalcSeqNum=-1 taşıyanlar) exemption code zorunlu olarak yazılır — `shouldAddExemption` false dönse bile (phantom durumunda amount>0 ve mevcut koşul `amount===0`'a bağlı olduğu için bypass gerekiyor)
+   - Dış parent TaxAmount değişmedi: `calc.taxes.taxTotal` zaten 8d.2'de phantom hariç toplam tutuyor (phantom kombinasyonda 0)
+
+2. **Yeni test dosyası:** `__tests__/calculator/simple-invoice-mapper-phantom-document.test.ts` (9 test)
+   - Belge-level Invoice/TaxTotal TaxAmount=0 (parent) (1 test)
+   - Belge-level TaxSubtotal phantom değerleri (TaxableAmount, TaxAmount, Percent, CalcSeqNum, exemption) (5 test)
+   - LegalMonetaryTotal phantom hariç (lineExt=taxExclusive=taxInclusive=payable=1500) (1 test)
+   - EARSIV+YTBISTISNA İnşaat (339) end-to-end belge-level (1 test)
+   - Regression: YATIRIMTESVIK+SATIS belge-level TaxTotal phantom yok (taxAmount=200, CalcSeqNum undefined) (1 test)
+
+### Değişiklik İstatistikleri
+
+- `src/calculator/simple-invoice-mapper.ts` — `buildTaxTotals` phantom-aware (~10 satır net)
+- `__tests__/calculator/simple-invoice-mapper-phantom-document.test.ts` — yeni (~185 satır, 9 test)
+
+### Test Durumu
+
+- Başlangıç: 839/839 yeşil
+- Son: **848/848 yeşil** (+9 mapper phantom document)
+- Regression: 38 snapshot test değişmeden geçti
+- Typecheck: temiz
+
+### Disiplin Notları
+
+- Phantom exemption code davranışı tek kural: `ts.calculationSequenceNumeric === -1` → exemption code koşulsuz yaz. Bu sadece belge-level buildTaxTotals için geçerli; satır-level buildSingleLine 8d.3'te kendi phantom koşullu (`cl.phantomKdv`) kurmuştu.
+- §9 S1=B kararı (her yerde §2.1.4) korunuyor — satır ve belge phantom TaxSubtotal aynı şekle sahip.
+
+---
