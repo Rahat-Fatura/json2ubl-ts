@@ -1,0 +1,35 @@
+{
+  "id": "yolcuberaberfatura-istisna-baseline",
+  "kind": "invoice",
+  "profile": "YOLCUBERABERFATURA",
+  "type": "ISTISNA",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "322"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "passport",
+      "nationalityId",
+      "taxRepresentative"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:46:42.385Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — YOLCUBERABERFATURA+ISTISNA, passport + nationalityId + taxRepresentativeParty"
+}

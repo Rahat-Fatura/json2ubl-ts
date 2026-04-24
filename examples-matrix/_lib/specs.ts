@@ -1623,6 +1623,185 @@ export const validSpecs: ValidSpec[] = [
       }],
     },
   },
+
+  // ═════════════════════════════════════════════════════════════════════
+  // IHRACAT + YOLCUBERABERFATURA + OZELFATURA + HKS + ENERJI (8 baseline)
+  // ═════════════════════════════════════════════════════════════════════
+
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'IHRACAT', type: 'ISTISNA',
+    notes: 'Baseline — IHRACAT+ISTISNA, USD döviz + buyerCustomer + delivery(FOB+GTİP)',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'USD', exchangeRate: true, exemptionCodes: ['301'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['buyerCustomer', 'gtip', 'incoterms'],
+    },
+    input: {
+      id: 'MTX2026000000060',
+      uuid: 'a1000060-0001-4000-8001-000000000060',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'IHRACAT', type: 'ISTISNA', currencyCode: 'USD', exchangeRate: 32.5,
+      kdvExemptionCode: '301',
+      sender: { ...STANDARD_SENDER, name: 'Matrix İhracat A.Ş.' },
+      customer: {
+        taxNumber: '2222222222',
+        name: 'Global Trade Holdings (Germany)',
+        address: 'Bahnhofstraße 123',
+        district: 'Munich', city: 'Bayern',
+      },
+      buyerCustomer: {
+        name: 'Global Trade Holdings GmbH',
+        taxNumber: 'DE123456789',
+        address: 'Bahnhofstraße 123', district: 'Munich', city: 'Bayern', country: 'Germany',
+      },
+      lines: [{
+        name: 'İhracat — tekstil', quantity: 100, price: 10, unitCode: 'Adet', kdvPercent: 0,
+        delivery: {
+          deliveryTermCode: 'FOB', gtipNo: '620342000010',
+          deliveryAddress: { address: 'Ambarlı Liman', district: 'Avcılar', city: 'İstanbul', country: 'Türkiye' },
+        },
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'YOLCUBERABERFATURA', type: 'ISTISNA',
+    notes: 'Baseline — YOLCUBERABERFATURA+ISTISNA, passport + nationalityId + taxRepresentativeParty',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['322'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['passport', 'nationalityId', 'taxRepresentative'],
+    },
+    input: {
+      id: 'MTX2026000000061',
+      uuid: 'a1000061-0001-4000-8001-000000000061',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'YOLCUBERABERFATURA', type: 'ISTISNA', currencyCode: 'TRY',
+      kdvExemptionCode: '322',
+      sender: {
+        taxNumber: '1460415308',
+        name: 'Matrix Bavul Ticaret A.Ş.',
+        taxOffice: 'Beyoğlu', address: 'İstiklal Cad. No:321',
+        district: 'Beyoğlu', city: 'İstanbul',
+      },
+      customer: { ...STANDARD_CUSTOMER, name: 'Matrix Turizm Aracı A.Ş.' },
+      buyerCustomer: {
+        name: 'Michael Schneider (Tourist)',
+        taxNumber: '99999999999',
+        address: 'Hauptstrasse 15', district: 'Berlin', city: 'Berlin', country: 'Germany',
+        nationalityId: 'DE', passportId: 'N12345678',
+      },
+      taxRepresentativeParty: {
+        vknTckn: '9876543210',
+        label: 'MATRIX_TAXFREE',
+        name: 'Matrix KDV İade Aracı',
+      },
+      lines: [{ name: 'El yapımı seramik', quantity: 1, price: 800, unitCode: 'Adet', kdvPercent: 0 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'OZELFATURA', type: 'ISTISNA',
+    notes: 'Baseline — OZELFATURA+ISTISNA (genel istisna profili)',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['322'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000062',
+      uuid: 'a1000062-0001-4000-8001-000000000062',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'OZELFATURA', type: 'ISTISNA', currencyCode: 'TRY',
+      kdvExemptionCode: '322',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'Özel fatura satır', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'HKS', type: 'HKSSATIS',
+    notes: 'Baseline — HKS+HKSSATIS, KUNYENO 19-char per line',
+    dimensions: {
+      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['kunyeno'],
+    },
+    input: {
+      id: 'MTX2026000000063',
+      uuid: 'a1000063-0001-4000-8001-000000000063',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'HKS', type: 'HKSSATIS', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER, name: 'Matrix Sebze Meyve Tic.', address: 'Hal Kompleksi Blok 5', district: 'Bayrampaşa' },
+      customer: { ...STANDARD_CUSTOMER, name: 'Matrix Market Zinciri Ltd.' },
+      lines: [{
+        name: 'Domates — Standart', quantity: 500, price: 20, unitCode: 'KGM', kdvPercent: 10,
+        additionalItemIdentifications: [{ schemeId: 'KUNYENO', value: 'KUN-2026-MTX63-DOM1' }],
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'HKS', type: 'HKSKOMISYONCU',
+    notes: 'Baseline — HKS+HKSKOMISYONCU, komisyoncu satış',
+    dimensions: {
+      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['kunyeno'],
+    },
+    input: {
+      id: 'MTX2026000000064',
+      uuid: 'a1000064-0001-4000-8001-000000000064',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'HKS', type: 'HKSKOMISYONCU', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER, name: 'Matrix Komisyoncu Hal' },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Biber — Komisyon satış', quantity: 200, price: 15, unitCode: 'KGM', kdvPercent: 10,
+        additionalItemIdentifications: [{ schemeId: 'KUNYENO', value: 'KUN-2026-MTX64-BIB1' }],
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'ENERJI', type: 'SARJ',
+    notes: 'Baseline — ENERJI+SARJ, araç şarj hizmeti',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000065',
+      uuid: 'a1000065-0001-4000-8001-000000000065',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'ENERJI', type: 'SARJ', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER, name: 'Matrix Şarj Operatörü A.Ş.' },
+      customer: { ...STANDARD_CUSTOMER, taxNumber: '12345678901', name: 'Matrix Araç Sürücüsü' },
+      lines: [{ name: 'EV DC Hızlı Şarj 45 kWh', quantity: 45, price: 8, unitCode: 'KWH', kdvPercent: 20 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'ENERJI', type: 'SARJANLIK',
+    notes: 'Baseline — ENERJI+SARJANLIK, operatörden anlık satış',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000066',
+      uuid: 'a1000066-0001-4000-8001-000000000066',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'ENERJI', type: 'SARJANLIK', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER, name: 'Matrix Şarj Operatörü A.Ş.' },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'EV AC şarj anlık', quantity: 20, price: 5, unitCode: 'KWH', kdvPercent: 20 }],
+    },
+  },
 ];
 
 export const invalidSpecs: InvalidSpec[] = [

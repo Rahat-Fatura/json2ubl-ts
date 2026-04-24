@@ -1,0 +1,31 @@
+{
+  "id": "hks-hkskomisyoncu-baseline",
+  "kind": "invoice",
+  "profile": "HKS",
+  "type": "HKSKOMISYONCU",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      10
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "kunyeno"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:47:12.300Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — HKS+HKSKOMISYONCU, komisyoncu satış"
+}
