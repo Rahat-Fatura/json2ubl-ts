@@ -127,7 +127,18 @@ M1–M10 tanımları v2'de (satır 359–388) verildi. v3'te hepsi aynen geçerl
 - **Gerekçe:** Önceki davranışta calculator `DEFAULT_EXEMPTIONS.satis = '351'` atıyordu; TEVKIFAT gibi self-exemption olmayan tiplerde `requiresZeroKdvLine: true` kuralıyla false-positive çakışma oluşuyordu (B-NEW-11). Kök çözüm: atama kaldırıldı, kontrol validator'a taşındı.
 - **Ek kurallar:** Aynı kalemde `kdvPercent=0` + `withholdingTaxCode` → `WITHHOLDING_INCOMPATIBLE_WITH_ZERO_KDV`; `kdvPercent>0` + kalem kodu `'351'` → `EXEMPTION_351_FORBIDDEN_FOR_NONZERO_KDV`.
 
-**Toplam mimari karar:** 11 (M1 ... M11).
+### M12 Phantom KDV (Vazgeçilen KDV Tutarı) — Sprint 8d
+
+**Karar:** YATIRIMTESVIK+ISTISNA ve EARSIVFATURA+YTBISTISNA kombinasyonlarında satır KDV matematiği (kdvPercent × lineExtension) TaxSubtotal içinde XML'e yazılır fakat LegalMonetaryTotal ve parent TaxTotal/TaxAmount'a dahil edilmez. `CalculationSequenceNumeric=-1` otomatik.
+
+- **Kapsam:** Yalnız YATIRIMTESVIK+ISTISNA, EARSIVFATURA+YTBISTISNA.
+- **Kaynak:** GİB "Yatırım Teşvik Kapsamında Yapılan Teslimlere İlişkin Fatura Teknik Kılavuzu v1.1" (Aralık 2025), §2.1.4 + §2.1.5.
+- **Giriş zorunluluğu:** Her satırda `0 < kdvPercent ≤ 100`. `kdvPercent=0` validation error (`YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT`). Her satırda exemption code — 308 (ItemClassificationCode=01 Makine/Teçhizat) veya 339 (ItemClassificationCode=02 İnşaat). 03/04 kategorilerinde ISTISNA yasak (PDF §4).
+- **XML stili (seçilen):** Hem satır hem belge seviyesinde §2.1.4 stili (TaxSubtotal: TaxAmount=300, Percent=20, CalcSeqNum=-1, exemption code dolu; parent TaxAmount=0). PDF §2.1.5 satır-level varyantı (Percent=0/TaxAmount=0) uygulanmaz — tek kod yolu tercih edildi; gerekçe: semantik tutarlılık + §2.1.5'in PDF'te açık gerekçesi yok (kılavuz TODO'su).
+- **Dosyalar:** `src/calculator/phantom-kdv-rules.ts` (yeni), `src/calculator/document-calculator.ts`, `src/calculator/line-calculator.ts` (tip), `src/calculator/simple-invoice-mapper.ts`, `src/validators/phantom-kdv-validator.ts` (yeni).
+- **M11 ile ilişki:** Ortogonal. M11 "manuel 351 muafiyeti" (self-exemption), M12 "vazgeçilen KDV gösterim kuralı". M11 YATIRIMTESVIK'i zaten self-exemption olarak işaretliyor; M12 onun üstüne phantom gösterim disiplinini ekler.
+
+**Toplam mimari karar:** 12 (M1 ... M12).
 
 ---
 
@@ -339,7 +350,8 @@ zaten uygulanmış olduğu için ek commit açılmadı.
 > **Not (Sprint 8b.0, 2026-04-23):** Orijinal Sprint 8 üç alt-sprinte ayrıldı:
 > - **Sprint 8a** (tamamlandı, commit `966a049`): Devir bulgu temizliği + cross-cutting + Mimsoft fixture regresyon. Kapsanan: B-92 ✅, B-94 ✅. 641/641 test yeşil.
 > - **Sprint 8b** (tamamlandı, commit `076946e`): Comprehensive Examples Pack + README Sorumluluk Matrisi + CHANGELOG v2.0.0 + skill doc updates + dead code cleanup. Kapsanan: B-93 ✅, B-95 ✅, B-96 ✅, B-102 ✅, B-S01..B-S05 ✅. 755/755 test yeşil. Keşif: B-NEW-01..12 (`audit/b-new-audit.md`).
-> - **Sprint 8c** (devam ediyor, 2026-04-24 başladı): B-NEW-01..14 hotfix dalgası + M11 (Manuel 351) + AR-9 (Reactive InvoiceSession isim) + 9/9 workaround senaryo strict mode + `package.json` 1.4.2 → 2.0.0 bump + `git tag v2.0.0` + npm publish + GitHub release notes. 14 atomik alt-commit. Plan: `audit/sprint-08c-plan.md`, Log: `audit/sprint-08c-implementation-log.md`. Hedef: 755 → ~884 test. Yeni B-NEW-13 (YOLCU passport) ve B-NEW-14 (IDIS ETIKETNO) sprint 8c'de tanımlanır + düzeltilir.
+> - **Sprint 8c** (tamamlandı, commit `2afd1a3`): B-NEW-01..14 hotfix dalgası + M11 (Manuel 351) + AR-9 (Reactive InvoiceSession isim) + 9/9 workaround senaryo strict mode + `package.json` 1.4.2 → 2.0.0 bump. 14 atomik alt-commit. 800/800 test yeşil. v2.0.0 publish **ertelendi** — Sprint 8d dahil edilecek.
+> - **Sprint 8d** (devam ediyor, 2026-04-24 başladı): M12 Phantom KDV (Vazgeçilen KDV Tutarı) — YATIRIMTESVIK+ISTISNA ve EARSIVFATURA+YTBISTISNA için GİB YATIRIMTESVIK Fatura Teknik Kılavuzu v1.1 (Aralık 2025) uyumu. 9 atomik alt-commit (8d.0 → 8d.8). Plan: `audit/sprint-08d-plan.md`, Log: `audit/sprint-08d-implementation-log.md`. Hedef: 800 → ~830-840 test. v2.0.0 publish 8d sonrası.
 
 **Kapsanan Bulgular:** B-92 ✅, B-93 (→ 8b), B-94 ✅, B-95 (→ 8b), B-96 (→ 8b), B-102 (→ 8b), B-S01..B-S05 (→ 8b)
 **İptal:** B-103 (Kategori A)

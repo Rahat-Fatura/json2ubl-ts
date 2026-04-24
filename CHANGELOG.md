@@ -150,6 +150,16 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 
 ---
 
+### Sprint 8d — M12 Phantom KDV (Vazgeçilen KDV Tutarı) — 2026-04-24
+
+> **Not:** Bu alt-section Sprint 8d ilerledikçe doldurulacak (8d.8 finalize commit'inde). Şu an placeholder.
+
+**Kapsam:** YATIRIMTESVIK+ISTISNA ve EARSIVFATURA+YTBISTISNA için GİB "Yatırım Teşvik Kapsamında Yapılan Teslimlere İlişkin Fatura Teknik Kılavuzu v1.1" (Aralık 2025) uyumu. 9 atomik alt-commit (8d.0 → 8d.8). v2.0.0 publish 8d sonrası.
+
+Detay: `audit/sprint-08d-plan.md`, `audit/sprint-08d-implementation-log.md`.
+
+---
+
 ## [1.4.2] — 2026-02-XX
 
 Denetim öncesi son dev sürüm. Detay: git log + `audit/denetim-01..06.md`.
