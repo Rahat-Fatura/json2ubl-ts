@@ -133,8 +133,16 @@ export interface SimpleLineDeliveryInput {
     deliveryAddress: SimpleAddressInput;
     /** Teslimat şartı kodu (INCOTERMS: "EXW", "FOB", "CIF" vb.) */
     deliveryTermCode?: string;
-    /** GTİP numarası */
+    /** GTİP numarası (12 hane, IHRACKAYITLI+702 için zorunlu) */
     gtipNo?: string;
+    /**
+     * Alıcı DİB Satır Kodu (11 hane, IHRACKAYITLI+702 için zorunlu — B-07).
+     *
+     * Mapper bu alanı Shipment/TransportHandlingUnit/CustomsDeclaration/
+     * IssuerParty/PartyIdentification[schemeID='ALICIDIBSATIRKOD'] UBL ağacına eşler.
+     * Sprint 8c.2 / B-NEW-12 ile eklendi.
+     */
+    alicidibsatirkod?: string;
     /** Taşıma modu kodu (ör: "1" Deniz, "3" Karayolu, "4" Havayolu) */
     transportModeCode?: string;
     /** Paket ID */

@@ -107,6 +107,15 @@
         <cac:GoodsItem>
           <cbc:RequiredCustomsID>620342000010</cbc:RequiredCustomsID>
         </cac:GoodsItem>
+        <cac:TransportHandlingUnit>
+          <cac:CustomsDeclaration>
+            <cac:IssuerParty>
+              <cac:PartyIdentification>
+                <cbc:ID schemeID="ALICIDIBSATIRKOD">12345678901</cbc:ID>
+              </cac:PartyIdentification>
+            </cac:IssuerParty>
+          </cac:CustomsDeclaration>
+        </cac:TransportHandlingUnit>
       </cac:Shipment>
     </cac:Delivery>
     <cac:TaxTotal>

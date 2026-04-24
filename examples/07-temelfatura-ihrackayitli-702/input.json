@@ -31,9 +31,9 @@
       "price": 10,
       "unitCode": "Adet",
       "kdvPercent": 0,
-      "buyerCode": "DIIB-2026-000042",
       "delivery": {
         "gtipNo": "620342000010",
+        "alicidibsatirkod": "12345678901",
         "deliveryAddress": {
           "address": "İhracat Serbest Bölgesi Gümrük Kapısı",
           "district": "Ambarlı",

@@ -46,9 +46,9 @@ export const input: SimpleInvoiceInput = {
       price: 10,
       unitCode: 'Adet',
       kdvPercent: 0,
-      buyerCode: 'DIIB-2026-000042', // AlıcıDİBKod (B-07)
       delivery: {
         gtipNo: '620342000010', // 12-hane GTİP (B-07)
+        alicidibsatirkod: '12345678901', // 11-hane AlıcıDİBSATIRKOD (B-07 / B-NEW-12)
         deliveryAddress: {
           address: 'İhracat Serbest Bölgesi Gümrük Kapısı',
           district: 'Ambarlı',

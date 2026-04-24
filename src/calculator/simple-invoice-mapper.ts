@@ -417,35 +417,53 @@ function buildSingleLine(
     };
   }
 
-  // Satır seviyesi teslimat (ihracat)
+  // Satır seviyesi teslimat (ihracat, IHRACKAYITLI+702)
   if (line.delivery) {
+    const del = line.delivery;
+    // transportHandlingUnits: packageTypeCode (paketleme) ve/veya alicidibsatirkod
+    // (B-07 IHRACKAYITLI+702 gümrük beyannamesi) için tek element oluştur.
+    const thuNeeded = del.packageTypeCode || del.alicidibsatirkod;
+    const transportHandlingUnits = thuNeeded ? [{
+      actualPackages: del.packageTypeCode
+        ? [{
+          packagingTypeCode: del.packageTypeCode,
+          quantity: del.packageQuantity,
+        }]
+        : undefined,
+      customsDeclarations: del.alicidibsatirkod
+        ? [{
+          issuerParty: {
+            partyIdentifications: [{
+              id: del.alicidibsatirkod,
+              schemeID: 'ALICIDIBSATIRKOD',
+            }],
+          },
+        }]
+        : undefined,
+    }] : undefined;
+
+    const shipmentNeeded = del.gtipNo || del.transportModeCode || thuNeeded;
+
     result.delivery = {
       deliveryAddress: {
-        streetName: line.delivery.deliveryAddress.address,
-        citySubdivisionName: line.delivery.deliveryAddress.district,
-        cityName: line.delivery.deliveryAddress.city,
-        postalZone: line.delivery.deliveryAddress.zipCode,
-        country: line.delivery.deliveryAddress.country ?? 'Türkiye',
+        streetName: del.deliveryAddress.address,
+        citySubdivisionName: del.deliveryAddress.district,
+        cityName: del.deliveryAddress.city,
+        postalZone: del.deliveryAddress.zipCode,
+        country: del.deliveryAddress.country ?? 'Türkiye',
       },
-      deliveryTerms: line.delivery.deliveryTermCode
-        ? { id: line.delivery.deliveryTermCode }
+      deliveryTerms: del.deliveryTermCode
+        ? { id: del.deliveryTermCode }
         : undefined,
-      shipment: line.delivery.gtipNo || line.delivery.transportModeCode
+      shipment: shipmentNeeded
         ? {
-          goodsItems: line.delivery.gtipNo
-            ? [{ requiredCustomsId: line.delivery.gtipNo }]
+          goodsItems: del.gtipNo
+            ? [{ requiredCustomsId: del.gtipNo }]
             : undefined,
-          shipmentStages: line.delivery.transportModeCode
-            ? [{ transportModeCode: line.delivery.transportModeCode }]
+          shipmentStages: del.transportModeCode
+            ? [{ transportModeCode: del.transportModeCode }]
             : undefined,
-          transportHandlingUnits: line.delivery.packageTypeCode
-            ? [{
-              actualPackages: [{
-                packagingTypeCode: line.delivery.packageTypeCode,
-                quantity: line.delivery.packageQuantity,
-              }],
-            }]
-            : undefined,
+          transportHandlingUnits,
         }
         : undefined,
     };
