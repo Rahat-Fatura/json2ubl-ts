@@ -1,0 +1,31 @@
+{
+  "id": "temelfatura-satis-document-indirim",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "SATIS",
+  "variantSlug": "document-indirim",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": true
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "allowanceCharge"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:06:46.995Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Belge seviyesi AllowanceCharge — %10 global indirim"
+}

@@ -1,0 +1,30 @@
+{
+  "id": "temelfatura-iade-coklu-kdv",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "IADE",
+  "variantSlug": "coklu-kdv",
+  "dimensions": {
+    "kdvBreakdown": [
+      10,
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 2,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:06:46.994Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "IADE çoklu KDV (%10 + %20) — satır bazında farklı oran"
+}

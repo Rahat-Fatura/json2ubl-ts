@@ -1,0 +1,29 @@
+{
+  "id": "temelfatura-satis-kdv-10",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "SATIS",
+  "variantSlug": "kdv-10",
+  "dimensions": {
+    "kdvBreakdown": [
+      10
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:06:46.993Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "TEMELFATURA+SATIS %10 KDV (gıda / temel ihtiyaç kategorisi)"
+}

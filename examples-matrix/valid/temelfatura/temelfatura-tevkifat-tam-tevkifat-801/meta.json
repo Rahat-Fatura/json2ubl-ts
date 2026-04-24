@@ -1,0 +1,31 @@
+{
+  "id": "temelfatura-tevkifat-tam-tevkifat-801",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "TEVKIFAT",
+  "variantSlug": "tam-tevkifat-801",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [
+      "801"
+    ],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:06:46.994Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Tam tevkifat — kod 801 %100 (örn. yolcu taşıma, özel sektör→kamu)"
+}

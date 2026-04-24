@@ -1,0 +1,46 @@
+import type { SimpleInvoiceInput } from '../../../../src';
+
+export const input: SimpleInvoiceInput = {
+  id: 'MTX2026000000916',
+  uuid: 'a1000916-0001-4000-8001-000000000916',
+  datetime: '2026-04-24T10:00:00',
+  profile: 'TEMELFATURA',
+  type: 'IHRACKAYITLI',
+  currencyCode: 'TRY',
+  kdvExemptionCode: '701',
+  sender: {
+    taxNumber: '1234567890',
+    name: 'Matrix Test Satıcı A.Ş.',
+    taxOffice: 'Beşiktaş',
+    address: 'Levent Mah. No:42',
+    district: 'Beşiktaş',
+    city: 'İstanbul',
+  },
+  customer: {
+    taxNumber: '9876543210',
+    name: 'Matrix Test Alıcı Ltd.',
+    taxOffice: 'Kadıköy',
+    address: 'Bağdat Cad. No:100',
+    district: 'Kadıköy',
+    city: 'İstanbul',
+    identifications: [
+      {
+        schemeId: 'ARACIKURUMVKN',
+        value: 'DIB20260001',
+      },
+    ],
+  },
+  lines: [
+    {
+      name: 'İhraç kayıtlı ürün',
+      quantity: 100,
+      price: 50,
+      unitCode: 'Adet',
+      kdvPercent: 0,
+      kdvExemptionCode: '701',
+      gtip: '8471300000',
+    },
+  ],
+};
+
+export default input;

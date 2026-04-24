@@ -1,0 +1,31 @@
+{
+  "id": "temelfatura-istisna-istisna-coklu-satir",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "ISTISNA",
+  "variantSlug": "istisna-coklu-satir",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "213"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 3,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:06:46.994Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "ISTISNA — 3 satır, aynı exemption kod 213 (deniz/hava tadil)"
+}

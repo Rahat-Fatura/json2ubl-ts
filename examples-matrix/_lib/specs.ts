@@ -1065,6 +1065,196 @@ export const validSpecs: ValidSpec[] = [
     },
   },
 
+  // ─── Sprint 8f.5: TEMELFATURA genişletme (+8) ───
+  // 1. TEMELFATURA+SATIS %10 KDV
+  {
+    kind: 'invoice', variantSlug: 'kdv-10', profile: 'TEMELFATURA', type: 'SATIS',
+    notes: 'TEMELFATURA+SATIS %10 KDV (gıda / temel ihtiyaç kategorisi)',
+    dimensions: {
+      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000911',
+      uuid: 'a1000911-0001-4000-8001-000000000911',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA', type: 'SATIS', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'Temel gıda ürünü', quantity: 10, price: 100, unitCode: 'Kg', kdvPercent: 10 }],
+    },
+  },
+  // 2. TEMELFATURA+SATIS %1 KDV
+  {
+    kind: 'invoice', variantSlug: 'kdv-1', profile: 'TEMELFATURA', type: 'SATIS',
+    notes: 'TEMELFATURA+SATIS %1 KDV (ekmek, süt gibi düşük kategori)',
+    dimensions: {
+      kdvBreakdown: [1], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000912',
+      uuid: 'a1000912-0001-4000-8001-000000000912',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA', type: 'SATIS', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'Ekmek', quantity: 100, price: 5, unitCode: 'Adet', kdvPercent: 1 }],
+    },
+  },
+  // 3. TEMELFATURA+IADE çoklu KDV
+  {
+    kind: 'invoice', variantSlug: 'coklu-kdv', profile: 'TEMELFATURA', type: 'IADE',
+    notes: 'IADE çoklu KDV (%10 + %20) — satır bazında farklı oran',
+    dimensions: {
+      kdvBreakdown: [10, 20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 2, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000913',
+      uuid: 'a1000913-0001-4000-8001-000000000913',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA', type: 'IADE', currencyCode: 'TRY',
+      billingReference: { id: 'MTX2026000000001', issueDate: '2026-04-24' },
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        { name: 'İade gıda', quantity: 5, price: 50, unitCode: 'Kg', kdvPercent: 10 },
+        { name: 'İade hizmet', quantity: 1, price: 500, unitCode: 'Adet', kdvPercent: 20 },
+      ],
+    },
+  },
+  // 4. TEMELFATURA+TEVKIFAT kod 801 %100 tam tevkifat
+  {
+    kind: 'invoice', variantSlug: 'tam-tevkifat-801', profile: 'TEMELFATURA', type: 'TEVKIFAT',
+    notes: 'Tam tevkifat — kod 801 %100 (örn. yolcu taşıma, özel sektör→kamu)',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: ['801'], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000914',
+      uuid: 'a1000914-0001-4000-8001-000000000914',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA', type: 'TEVKIFAT', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'Yolcu taşıma hizmeti', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '801' }],
+    },
+  },
+  // 5. TEMELFATURA+ISTISNA çoklu satır
+  {
+    kind: 'invoice', variantSlug: 'istisna-coklu-satir', profile: 'TEMELFATURA', type: 'ISTISNA',
+    notes: 'ISTISNA — 3 satır, aynı exemption kod 213 (deniz/hava tadil)',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['213'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 3, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000915',
+      uuid: 'a1000915-0001-4000-8001-000000000915',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA', type: 'ISTISNA', currencyCode: 'TRY',
+      kdvExemptionCode: '213',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        { name: 'Gemi bakım parçası A', quantity: 2, price: 500, unitCode: 'Adet', kdvPercent: 0 },
+        { name: 'Gemi bakım parçası B', quantity: 1, price: 1200, unitCode: 'Adet', kdvPercent: 0 },
+        { name: 'Uçak parçası C', quantity: 3, price: 800, unitCode: 'Adet', kdvPercent: 0 },
+      ],
+    },
+  },
+  // 6. TEMELFATURA+IHRACKAYITLI kod 701 (KDV 0 — 701 kodu tüm satır KDV=0 gerekli)
+  {
+    kind: 'invoice', variantSlug: 'ihrac-701', profile: 'TEMELFATURA', type: 'IHRACKAYITLI',
+    notes: 'IHRACKAYITLI — kod 701 (DİİB dışı) + GTİP, KDV=0 (701 kodu KDV 0 zorunlu)',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['701'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['gtip', 'alicidibkod'],
+    },
+    input: {
+      id: 'MTX2026000000916',
+      uuid: 'a1000916-0001-4000-8001-000000000916',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA', type: 'IHRACKAYITLI', currencyCode: 'TRY',
+      kdvExemptionCode: '701',
+      sender: { ...STANDARD_SENDER },
+      customer: {
+        ...STANDARD_CUSTOMER,
+        identifications: [{ schemeId: 'ARACIKURUMVKN', value: 'DIB20260001' }],
+      },
+      lines: [{
+        name: 'İhraç kayıtlı ürün',
+        quantity: 100, price: 50, unitCode: 'Adet', kdvPercent: 0,
+        kdvExemptionCode: '701',
+        gtip: '8471300000',
+      }],
+    },
+  },
+  // 7. TEMELFATURA+SGK çoklu satır
+  {
+    kind: 'invoice', variantSlug: 'sgk-coklu-satir', profile: 'TEMELFATURA', type: 'SGK',
+    notes: 'SGK — 2 satır (farklı medikal hizmet kodları)',
+    dimensions: {
+      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 2, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['sgk'],
+    },
+    input: {
+      id: 'MTX2026000000917',
+      uuid: 'a1000917-0001-4000-8001-000000000917',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA', type: 'SGK', currencyCode: 'TRY',
+      sgk: {
+        type: 'SAGLIK_HAS',
+        documentNo: 'SGK-HAS-2026-MTX917',
+        companyName: 'Matrix Test Hastane A.Ş.',
+        companyCode: 'SGK-HAS-MTX917',
+      },
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER, taxNumber: '9876543210', name: 'Sosyal Güvenlik Kurumu' },
+      lines: [
+        { name: 'Medikal muayene', quantity: 1, price: 500, unitCode: 'Adet', kdvPercent: 10 },
+        { name: 'Medikal tetkik', quantity: 2, price: 300, unitCode: 'Adet', kdvPercent: 10 },
+      ],
+    },
+  },
+  // 8. TEMELFATURA+SATIS + belge seviyesi AllowanceCharge
+  {
+    kind: 'invoice', variantSlug: 'document-indirim', profile: 'TEMELFATURA', type: 'SATIS',
+    notes: 'Belge seviyesi AllowanceCharge — %10 global indirim',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: true },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['allowanceCharge'],
+    },
+    input: {
+      id: 'MTX2026000000918',
+      uuid: 'a1000918-0001-4000-8001-000000000918',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'TEMELFATURA', type: 'SATIS', currencyCode: 'TRY',
+      documentAllowances: [{ reason: 'Toptan indirim', chargeIndicator: false, amount: 100, kdvPercent: 20 }],
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'İndirimli ürün', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+
   // ═════════════════════════════════════════════════════════════════════
   // TICARIFATURA — 8 baseline (SATIS/TEVKIFAT/~TEVKIFATIADE~/ISTISNA/
   // OZELMATRAH/IHRACKAYITLI/SGK/KOMISYONCU/KONAKLAMAVERGISI)
