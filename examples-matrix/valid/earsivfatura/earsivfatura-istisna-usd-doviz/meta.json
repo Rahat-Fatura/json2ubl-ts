@@ -1,0 +1,31 @@
+{
+  "id": "earsivfatura-istisna-usd-doviz",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "ISTISNA",
+  "variantSlug": "usd-doviz",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "USD",
+    "exchangeRate": true,
+    "exemptionCodes": [
+      "213"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:12:51.893Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "EARSIVFATURA+ISTISNA USD döviz + kod 213"
+}

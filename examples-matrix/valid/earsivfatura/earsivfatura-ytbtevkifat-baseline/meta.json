@@ -1,0 +1,33 @@
+{
+  "id": "earsivfatura-ytbtevkifat-baseline",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "YTBTEVKIFAT",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [
+      "603"
+    ],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "ytbNo"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:12:51.894Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "EARSIVFATURA+YTBTEVKIFAT baseline (ytbNo + withholdingCode 603 + kod 03)"
+}

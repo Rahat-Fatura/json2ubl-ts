@@ -1,0 +1,31 @@
+{
+  "id": "earsivfatura-satis-not-siparis",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "SATIS",
+  "variantSlug": "not-siparis",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "orderReference"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:12:51.893Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "EARSIVFATURA+SATIS notes + orderReference"
+}

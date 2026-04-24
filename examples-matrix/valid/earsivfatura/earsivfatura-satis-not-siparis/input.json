@@ -1,0 +1,41 @@
+{
+  "id": "MTX2026000000945",
+  "uuid": "a1000945-0001-4000-8001-000000000945",
+  "datetime": "2026-04-24T10:00:00",
+  "profile": "EARSIVFATURA",
+  "type": "SATIS",
+  "currencyCode": "TRY",
+  "notes": [
+    "E-arşiv not",
+    "Ödeme: havale"
+  ],
+  "orderReference": {
+    "id": "ORD-EARSIV-2026-001",
+    "issueDate": "2026-04-23"
+  },
+  "sender": {
+    "taxNumber": "1234567890",
+    "name": "Matrix Test Satıcı A.Ş.",
+    "taxOffice": "Beşiktaş",
+    "address": "Levent Mah. No:42",
+    "district": "Beşiktaş",
+    "city": "İstanbul"
+  },
+  "customer": {
+    "taxNumber": "9876543210",
+    "name": "Matrix Test Alıcı Ltd.",
+    "taxOffice": "Kadıköy",
+    "address": "Bağdat Cad. No:100",
+    "district": "Kadıköy",
+    "city": "İstanbul"
+  },
+  "lines": [
+    {
+      "name": "E-ticaret ürünü",
+      "quantity": 1,
+      "price": 1000,
+      "unitCode": "Adet",
+      "kdvPercent": 20
+    }
+  ]
+}

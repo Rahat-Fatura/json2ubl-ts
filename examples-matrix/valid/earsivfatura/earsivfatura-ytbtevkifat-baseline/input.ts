@@ -1,0 +1,41 @@
+import type { SimpleInvoiceInput } from '../../../../src';
+
+export const input: SimpleInvoiceInput = {
+  id: 'MTX2026000000948',
+  uuid: 'a1000948-0001-4000-8001-000000000948',
+  datetime: '2026-04-24T10:00:00',
+  profile: 'EARSIVFATURA',
+  type: 'YTBTEVKIFAT',
+  currencyCode: 'TRY',
+  ytbNo: '123456',
+  ytbIssueDate: '2026-01-15',
+  sender: {
+    taxNumber: '1234567890',
+    name: 'Matrix Test Satıcı A.Ş.',
+    taxOffice: 'Beşiktaş',
+    address: 'Levent Mah. No:42',
+    district: 'Beşiktaş',
+    city: 'İstanbul',
+  },
+  customer: {
+    taxNumber: '9876543210',
+    name: 'Matrix Test Alıcı Ltd.',
+    taxOffice: 'Kadıköy',
+    address: 'Bağdat Cad. No:100',
+    district: 'Kadıköy',
+    city: 'İstanbul',
+  },
+  lines: [
+    {
+      name: 'YTB tevkifatlı hizmet',
+      quantity: 1,
+      price: 1000,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+      withholdingTaxCode: '603',
+      itemClassificationCode: '03',
+    },
+  ],
+};
+
+export default input;

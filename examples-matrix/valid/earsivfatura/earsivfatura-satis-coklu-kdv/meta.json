@@ -1,0 +1,30 @@
+{
+  "id": "earsivfatura-satis-coklu-kdv",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "SATIS",
+  "variantSlug": "coklu-kdv",
+  "dimensions": {
+    "kdvBreakdown": [
+      10,
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 2,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:12:51.892Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "EARSIVFATURA+SATIS çoklu KDV (10 + 20)"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "earsivfatura-tevkifat-dinamik-650",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "TEVKIFAT",
+  "variantSlug": "dinamik-650",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [
+      "650"
+    ],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:12:51.892Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "EARSIVFATURA+TEVKIFAT 650 dinamik %30"
+}
