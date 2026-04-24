@@ -260,7 +260,15 @@ specs.ts'te **STANDARD_SENDER / STANDARD_CUSTOMER** const'ları eklendi (tekrar 
 
 ---
 
-## Sprint 8e.4 → 8e.9 — Valid Batch Üretimi (diğer profiller)
+## Sprint 8e.4 — TICARIFATURA 8 baseline (+8 senaryo, 25 toplam valid)
+
+SATIS, TEVKIFAT, ISTISNA (kod 213), OZELMATRAH (801), IHRACKAYITLI (702), SGK (SAGLIK_OPT), KOMISYONCU, KONAKLAMAVERGISI. TEVKIFATIADE Bug#1 kapsamı — atlandı.
+
+Test: 910 → **922 yeşil** (+12).
+
+---
+
+## Sprint 8e.5 → 8e.9 — Diğer profiller
 
 _(her alt-commit kendi bölümü)_
 

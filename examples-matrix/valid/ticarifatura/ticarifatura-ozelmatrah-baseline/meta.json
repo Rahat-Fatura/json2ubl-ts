@@ -1,0 +1,33 @@
+{
+  "id": "ticarifatura-ozelmatrah-baseline",
+  "kind": "invoice",
+  "profile": "TICARIFATURA",
+  "type": "OZELMATRAH",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "801"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "ozelMatrah"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:40:30.728Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — TICARIFATURA+OZELMATRAH, kod 801"
+}
