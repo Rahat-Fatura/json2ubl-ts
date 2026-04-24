@@ -290,3 +290,54 @@ if (line.phantomKdv) {
 - **Pipeline sırası:** `validateSimpleLineRanges` → `validateManualExemption` → `validateSgkInput` → `validatePhantomKdv`. Phantom kuralı en spesifik olduğu için en sonda.
 
 ---
+
+## Sprint 8d.6 — Integration test + GİB §2.1.4 fixture eşleme
+
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8d.6: Integration test + GİB §2.1.4 fixture eşleme (M12)`
+
+### Yapılanlar
+
+1. **`__tests__/fixtures/phantom-kdv/`** — 2 XML fragman fixture'ı (GİB §2.1.4 birebir):
+   - `taxsubtotal-phantom-308.xml` — Makine/Teçhizat (01, 308, Percent=20, TaxAmount=300)
+   - `taxsubtotal-phantom-339.xml` — İnşaat (02, 339, Percent=18, TaxAmount=270)
+   - Fragman string comparison: fixture normalized whitespace ile XML output içinde aranıyor (S4 manuel fixture kontrolü)
+
+2. **`__tests__/integration/phantom-kdv.test.ts`** (yeni, 12 test) — full pipeline:
+   - YATIRIMTESVIK+ISTISNA + Makine (308): 5 test
+     - XML üretimi hata vermez
+     - Fixture §2.1.4 fragmanını içerir (TaxableAmount=1500, TaxAmount=300, CalcSeqNum=-1, Percent=20.00, kod=308)
+     - LegalMonetaryTotal phantom hariç (hepsi 1500)
+     - Belge-level parent TaxTotal/TaxAmount=0
+     - Auto snapshot regression (__tests__/integration/__snapshots__/phantom-kdv.test.ts.snap)
+   - EARSIV+YTBISTISNA + İnşaat (339): 5 test (aynı kapsam)
+   - Negative validator: kdvPercent=0 ve ItemClassificationCode=03 → UblBuildError.errors[] içinde beklenen code bulunmalı (2 test)
+
+3. **Snapshot:** Jest auto snapshot dosyası `__tests__/integration/__snapshots__/phantom-kdv.test.ts.snap` otomatik oluşturuldu — her iki kombinasyon için tam XML çıktısı regression güvencesi sağlar.
+
+### Önemli detaylar
+
+- **Fixture Percent formatı "20.00"**: Serializer M9 disiplini gereği 2-basamak formatDecimal kullanıyor; fixture buna göre güncellendi (başlangıçta "20" yazdım, hata verdi).
+- **Fixture TaxExemptionReason:** Mapper `calc.taxExemptionReason.kdvName`'i XML'e yazıyor (mevcut config'ten geliyor — 308: "13/e Limanlara..."); fixture config ile eşleştirildi.
+- **Negative test throw assertion:** `UblBuildError.message` kısa özet, hata kodu `errors[].code` içinde. Bu yüzden `try/catch` + `caught!.errors.some(e => e.code === '...')` pattern'i gerekli.
+
+### Değişiklik İstatistikleri
+
+- `__tests__/fixtures/phantom-kdv/taxsubtotal-phantom-308.xml` — yeni
+- `__tests__/fixtures/phantom-kdv/taxsubtotal-phantom-339.xml` — yeni
+- `__tests__/integration/phantom-kdv.test.ts` — yeni (~240 satır, 12 test)
+- `__tests__/integration/__snapshots__/phantom-kdv.test.ts.snap` — auto oluşturuldu
+
+### Test Durumu
+
+- Başlangıç: 864/864 yeşil
+- Son: **876/876 yeşil** (+12 integration)
+- Regression: 38 example snapshot + 8d.1-5 testler (+64 phantom unit) hepsi korundu
+- Typecheck: temiz
+
+### Disiplin Notları
+
+- **S4 kararı uygulandı:** Hem auto snapshot (regression) hem manuel fixture (GİB §2.1.4 birebir eşleşme) mevcut.
+- **End-to-end akış onayı:** SimpleInvoiceInput → SimpleInvoiceBuilder → UBL-TR XML zincirinde phantom KDV davranışı beklendiği gibi çalışıyor — satır ve belge-level §2.1.4 stili, LegalMonetaryTotal phantom hariç, validator negatif testler aktif.
+
+---

@@ -1,0 +1,14 @@
+<cac:TaxSubtotal>
+    <cbc:TaxableAmount currencyID="TRY">1500.00</cbc:TaxableAmount>
+    <cbc:TaxAmount currencyID="TRY">270.00</cbc:TaxAmount>
+    <cbc:CalculationSequenceNumeric>-1</cbc:CalculationSequenceNumeric>
+    <cbc:Percent>18.00</cbc:Percent>
+    <cac:TaxCategory>
+        <cbc:TaxExemptionReasonCode>339</cbc:TaxExemptionReasonCode>
+        <cbc:TaxExemptionReason>İmalat Sanayii ile Turizme Yönelik Yatırım Teşvik Belgesi Kapsamındaki İnşaat İşlerine İlişkin Teslim ve Hizmetler</cbc:TaxExemptionReason>
+        <cac:TaxScheme>
+            <cbc:Name>KDV</cbc:Name>
+            <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+        </cac:TaxScheme>
+    </cac:TaxCategory>
+</cac:TaxSubtotal>
