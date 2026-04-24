@@ -19,10 +19,27 @@ export const invalidCases: InvalidCase[] = [
   {
     description: '(profile requirement) SEVKIYATNO sender identifications\'tan eksik',
     input: mutate((i) => { delete i.sender.identifications; }),
-    notCaughtYet: 'IDIS profili sender SEVKIYATNO zorunluluğu simple-input basic modda tetiklenmiyor.',
+    expectedErrors: [{ code: 'PROFILE_REQUIREMENT', messageIncludes: 'SEVKIYATNO' }],
+    validationLevel: 'strict',
   },
   {
-    description: '(format bozuk) ETIKETNO format regex reject',
+    description: '(format bozuk) SEVKIYATNO "SE-123" format regex reject (7 hane gerekli)',
+    input: mutate((i) => {
+      i.sender.identifications = [{ schemeId: 'SEVKIYATNO', value: 'SE-123' }];
+    }),
+    expectedErrors: [{ code: 'INVALID_FORMAT', messageIncludes: 'SEVKIYATNO' }],
+    validationLevel: 'strict',
+  },
+  {
+    description: '(profile requirement) ETIKETNO line\'dan eksik',
+    input: mutate((i) => {
+      delete i.lines[0].additionalItemIdentifications;
+    }),
+    expectedErrors: [{ code: 'PROFILE_REQUIREMENT', messageIncludes: 'ETIKETNO' }],
+    validationLevel: 'strict',
+  },
+  {
+    description: '(format bozuk) ETIKETNO "INVALID" format regex reject',
     input: mutate((i) => {
       if (i.lines[0].additionalItemIdentifications) {
         i.lines[0].additionalItemIdentifications[0].value = 'INVALID';

@@ -223,3 +223,33 @@ Sprint 8b tamamlandı (commit `076946e`): 38 senaryo + 114 test + README §8 Sor
 - **20 senaryosu hâlâ `validationLevel: 'basic'` run.ts'te** — `basicModSlugs` set'inden 8c.9'da kaldırılacak (disiplin: 9/9 strict geçiş toplu commit).
 
 ---
+
+## Sprint 8c.5 — B-NEW-14 plan hatası + 26 validation-errors test coverage
+
+**Tarih:** 2026-04-24
+**Commit hedefi:** `Sprint 8c.5: B-NEW-14 plan hatası düzeltmesi + 26 validation-errors test coverage`
+
+### Plan Varsayımı (Yanlıştı)
+
+Sprint 8c planlaması sırasında senaryo 26-idis-satis'in `validationLevel: 'basic'` workaround'unda olduğu varsayıldı. Gerçek: `snapshot.test.ts:basicModSlugs` set'inde 26 **yoktu** — senaryo zaten strict modda çalışıyordu. `validateIdis` fonksiyonu (`profile-validators.ts:341-369`) eksiksiz: SEVKIYATNO + ETIKETNO zorunluluk + regex format kontrolü mevcut.
+
+### Yapılanlar
+
+1. **`examples/26-idis-satis/validation-errors.ts` zenginleştirildi:**
+   - `SEVKIYATNO eksik` case `notCaughtYet` flag'ı kaldırıldı → `expectedErrors: [{ code: 'PROFILE_REQUIREMENT', messageIncludes: 'SEVKIYATNO' }]` + `validationLevel: 'strict'`
+   - **Yeni case:** `SEVKIYATNO "SE-123" format regex reject` (7 hane eksik) → `INVALID_FORMAT`
+   - **Yeni case:** `ETIKETNO line'dan eksik` → `PROFILE_REQUIREMENT`
+   - Mevcut `ETIKETNO format bozuk` (`INVALID_FORMAT`) ve `Satıcı VKN boş` (`MISSING_FIELD`) case'leri korundu.
+2. **`audit/b-new-audit.md` B-NEW-14 bölümü güncellendi** — "KRİTİK: validator eksik" yanlış varsayımı "PLAN HATASI → YOK: validator zaten mevcut" olarak düzeltildi.
+
+### Test Durumu
+
+- Başlangıç: 778/778 yeşil
+- Son: 778/778 yeşil (validation-errors.test.ts şu an slug-bazlı smoke — yeni case'ler 38 slug test'inin içinde değerlendirildi; strict per-case 8c.9'da açılacak)
+
+### Plan Sapması
+
+- **Commit sayısı güncelleme:** 14 → 13 atomik commit. 8c.5 "fix" commit'i olmadı, "test coverage + plan hatası düzeltmesi" olarak küçük kaldı (disiplin gereği numaralandırma korundu).
+- **`basicModSlugs` set'i** Sprint 8c başlangıcında 8 senaryo içeriyordu (05, 07, 10, 16, 17, 20, 31, 99). 26 zaten strict'teydi; plan "9/9 strict" hedefinde 26 için ek fix gereksizdi — "8/8 basic→strict geçiş" doğru sayım.
+
+---

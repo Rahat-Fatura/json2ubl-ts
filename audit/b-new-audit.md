@@ -1035,54 +1035,36 @@ buyerCustomer: {
 
 ---
 
-## B-NEW-14 (KRİTİK): IDIS profili SEVKIYATNO + ETIKETNO schematron validator eksik
+## B-NEW-14 (PLAN HATASI → YOK): IDIS profili SEVKIYATNO + ETIKETNO validator zaten mevcut
 
-**Keşif:** Sprint 8c Plan Modu — senaryo 26 (IDIS+SATIS) basic mode workaround.
-**Öncelik:** Kritik (v2.0.0 release kapsamında 9/9 strict hedefi).
-**Mimsoft üretim etkisi:** Var (IDIS izlenebilirlik üretimde).
-**Çözüm:** Sprint 8c.5 (commit aşağıda).
+**Keşif:** Sprint 8c Plan Modu — senaryo 26 (IDIS+SATIS) "basic mode workaround" olarak varsayılmıştı.
+**Öncelik:** — (plan varsayımı yanlışlandı)
+**Mimsoft üretim etkisi:** —
+**Çözüm:** Sprint 8c.5'te **sadece test coverage genişletildi** (fix gereksiz).
 
-### 1. Reproduction
+### Plan Varsayımı (Yanlıştı)
 
-```typescript
-// Input geçerli format verir — validator kontrol ETMIYOR
-sender: {
-  identifications: [{ schemeId: 'SEVKIYATNO', value: 'SE-2026042' }],
-  // ...
-}
-lines: [
-  {
-    additionalItemIdentifications: [
-      { schemeId: 'ETIKETNO', value: 'ET0000001' },
-    ],
-    // ...
-  },
-]
-```
+Sprint 8c planlaması sırasında 26-idis-satis senaryosunun `validationLevel: 'basic'` workaround'unda olduğu varsayıldı. Ancak commit `535ecd9` (8c.1) sonrası kontrol edildiğinde senaryo 26 `snapshot.test.ts:basicModSlugs` set'inde **yoktu** — yani 26 zaten strict modda çalışıyordu.
 
-### 2. Expected
+### Mevcut Durum
 
-- Sender'da `SEVKIYATNO` schemeID'li identification **zorunlu**, format `/^SE-\d{7}$/`
-- Her line'da `ETIKETNO` schemeID'li additional identification **zorunlu**, format `/^[A-Z]{2}\d{7}$/`
+- `src/validators/profile-validators.ts:341-369` içinde `validateIdis` fonksiyonu **eksiksiz mevcut**:
+  - `supplier.additionalIdentifiers[SEVKIYATNO]` zorunlu + `SEVKIYAT_NO_REGEX` format kontrolü
+  - Her `lines[].item.additionalItemIdentifications[ETIKETNO]` zorunlu + `ETIKET_NO_REGEX` format kontrolü
+  - Hata kodları: `PROFILE_REQUIREMENT` + `INVALID_FORMAT`
+- Senaryo 26 strict modda başarılı build (manuel smoke `npx tsx -e` doğrulandı).
 
-### 3. Actual (Sprint 8c.5 öncesi)
+### Sprint 8c.5 Yapılanlar (test coverage)
 
-- Validator kontrol eksik — format bozuk input'lar kabul ediliyor, eksik input'lar kabul ediliyor.
+- `examples/26-idis-satis/validation-errors.ts` zenginleştirildi:
+  - `SEVKIYATNO eksik` case `notCaughtYet` → `expectedErrors: [PROFILE_REQUIREMENT]` promote
+  - Yeni case: `SEVKIYATNO "SE-123" format regex reject` (7 hane eksik) → `INVALID_FORMAT`
+  - Yeni case: `ETIKETNO line'dan eksik` → `PROFILE_REQUIREMENT`
+  - Mevcut `ETIKETNO format bozuk` case korundu.
+- **Audit kaydı düzeltildi:** B-NEW-14 plan varsayımı yanlıştı; IDIS validator zaten mevcut.
 
-### 4. Root Cause
+### Sonuç
 
-- `src/validators/profile-validators.ts` — IDIS branch yok (schematron kuralı eksik).
-
-### 5. Fix (Sprint 8c.5)
-
-- `profile-validators.ts` IDIS branch eklendi:
-  - `sender.additionalIdentifiers[SEVKIYATNO]` zorunlu + format regex
-  - Her `lines[].item.additionalItemIdentifications[ETIKETNO]` zorunlu + format regex
-- Yeni error code'lar: `IDIS_SEVKIYATNO_REQUIRED`, `IDIS_SEVKIYATNO_INVALID_FORMAT`, `IDIS_ETIKETNO_REQUIRED`, `IDIS_ETIKETNO_INVALID_FORMAT`.
-
-### 6. Sonuç
-
-- Senaryo 26 input'u zaten geçerli format sağlıyordu → snapshot değişmez.
-- Validator eksik input/format bozuk input'ları reject eder (yeni test case'ler 26'nın validation-errors.ts dosyasında).
+B-NEW-14 kaldırıldı (fix yok). Sprint 8c 14 → **13 atomik commit**. 8c.5 commit'i "IDIS validation-errors test coverage + B-NEW-14 plan hatası düzeltmesi" olarak küçük kaldı.
 
 ---
