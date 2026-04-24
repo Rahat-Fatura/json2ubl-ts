@@ -1,0 +1,33 @@
+{
+  "id": "kamu-sgk-baseline",
+  "kind": "invoice",
+  "profile": "KAMU",
+  "type": "SGK",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": true,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "sgk",
+      "buyerCustomer",
+      "iban"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:42:07.827Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — KAMU+SGK, SAGLIK_HAS"
+}

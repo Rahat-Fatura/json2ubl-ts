@@ -1,0 +1,62 @@
+import type { SimpleInvoiceInput } from '../../../../src';
+
+export const input: SimpleInvoiceInput = {
+  id: 'MTX2026000000035',
+  uuid: 'a1000035-0001-4000-8001-000000000035',
+  datetime: '2026-04-24T10:00:00',
+  profile: 'KAMU',
+  type: 'SGK',
+  currencyCode: 'TRY',
+  sgk: {
+    type: 'SAGLIK_HAS',
+    documentNo: 'SGK-HAS-MTX035',
+    companyName: 'Matrix Hastane',
+    companyCode: 'SGK-HAS-MTX',
+  },
+  sender: {
+    taxNumber: '1234567890',
+    name: 'Matrix Test Satıcı A.Ş.',
+    taxOffice: 'Beşiktaş',
+    address: 'Levent Mah. No:42',
+    district: 'Beşiktaş',
+    city: 'İstanbul',
+  },
+  customer: {
+    taxNumber: '1460415308',
+    name: 'Sosyal Güvenlik Kurumu',
+    taxOffice: 'Kadıköy',
+    address: 'Bağdat Cad. No:100',
+    district: 'Kadıköy',
+    city: 'İstanbul',
+  },
+  buyerCustomer: {
+    name: 'Matrix Kamu Aracı Kurumu',
+    taxNumber: '3333333333',
+    address: 'Mevlana Bulvarı No:233',
+    district: 'Çankaya',
+    city: 'Ankara',
+    country: 'Türkiye',
+    identifications: [
+      {
+        schemeId: 'MUSTERINO',
+        value: 'KAMU-MUSTERI-2026-MTX',
+      },
+    ],
+  },
+  paymentMeans: {
+    meansCode: '42',
+    accountNumber: 'TR330006100519786457841326',
+    dueDate: '2026-05-24',
+  },
+  lines: [
+    {
+      name: 'Hastane tedavi',
+      quantity: 1,
+      price: 1000,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+    },
+  ],
+};
+
+export default input;

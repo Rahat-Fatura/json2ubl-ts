@@ -43,6 +43,26 @@ const STANDARD_CUSTOMER: SimplePartyInput = {
   city: 'İstanbul',
 };
 
+/** KAMU profili için aracı kurum template'i (BuyerCustomerParty). */
+const KAMU_BUYER_CUSTOMER = {
+  name: 'Matrix Kamu Aracı Kurumu',
+  taxNumber: '3333333333',
+  address: 'Mevlana Bulvarı No:233',
+  district: 'Çankaya',
+  city: 'Ankara',
+  country: 'Türkiye',
+  identifications: [
+    { schemeId: 'MUSTERINO', value: 'KAMU-MUSTERI-2026-MTX' },
+  ],
+};
+
+/** KAMU profili için PaymentMeans template'i (TR IBAN). */
+const KAMU_PAYMENT_MEANS = {
+  meansCode: '42',
+  accountNumber: 'TR330006100519786457841326',
+  dueDate: '2026-05-24',
+};
+
 export const validSpecs: ValidSpec[] = [
   // ───────────────────────────────────────────────────────────────────────
   // TEMELFATURA — 32 senaryo (10 baseline + 12 tip-özel + 10 feature cross)
@@ -1151,6 +1171,190 @@ export const validSpecs: ValidSpec[] = [
       sender: { ...STANDARD_SENDER },
       customer: { ...STANDARD_CUSTOMER },
       lines: [{ name: 'Konaklama — 3 gece', quantity: 3, price: 500, unitCode: 'Gece', kdvPercent: 20 }],
+    },
+  },
+
+  // ═════════════════════════════════════════════════════════════════════
+  // KAMU — 8 baseline (PaymentMeans + IBAN + BuyerCustomer zorunlu)
+  // ═════════════════════════════════════════════════════════════════════
+
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'KAMU', type: 'SATIS',
+    notes: 'Baseline — KAMU+SATIS, PaymentMeans + IBAN + aracı kurum',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: true, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['buyerCustomer', 'iban'],
+    },
+    input: {
+      id: 'MTX2026000000030',
+      uuid: 'a1000030-0001-4000-8001-000000000030',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'KAMU', type: 'SATIS', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER, taxNumber: '1460415308', name: 'T.C. Kamu Alıcı Kurumu' },
+      buyerCustomer: { ...KAMU_BUYER_CUSTOMER },
+      paymentMeans: { ...KAMU_PAYMENT_MEANS },
+      lines: [{ name: 'Kamu tedarik', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'KAMU', type: 'TEVKIFAT',
+    notes: 'Baseline — KAMU+TEVKIFAT, kod 603',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: ['603'], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: true, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['buyerCustomer', 'iban'],
+    },
+    input: {
+      id: 'MTX2026000000031',
+      uuid: 'a1000031-0001-4000-8001-000000000031',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'KAMU', type: 'TEVKIFAT', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER, taxNumber: '1460415308', name: 'T.C. Kamu Kurumu' },
+      buyerCustomer: { ...KAMU_BUYER_CUSTOMER },
+      paymentMeans: { ...KAMU_PAYMENT_MEANS },
+      lines: [{ name: 'Tevkifatlı kamu hizmeti', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603' }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'KAMU', type: 'ISTISNA',
+    notes: 'Baseline — KAMU+ISTISNA, kod 213',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['213'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: true, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['buyerCustomer', 'iban'],
+    },
+    input: {
+      id: 'MTX2026000000032',
+      uuid: 'a1000032-0001-4000-8001-000000000032',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'KAMU', type: 'ISTISNA', currencyCode: 'TRY',
+      kdvExemptionCode: '213',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER, taxNumber: '1460415308', name: 'T.C. Kamu Kurumu' },
+      buyerCustomer: { ...KAMU_BUYER_CUSTOMER },
+      paymentMeans: { ...KAMU_PAYMENT_MEANS },
+      lines: [{ name: 'İstisnalı kamu hizmet', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'KAMU', type: 'OZELMATRAH',
+    notes: 'Baseline — KAMU+OZELMATRAH, kod 801',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['801'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: true, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ozelMatrah', 'buyerCustomer', 'iban'],
+    },
+    input: {
+      id: 'MTX2026000000033',
+      uuid: 'a1000033-0001-4000-8001-000000000033',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'KAMU', type: 'OZELMATRAH', currencyCode: 'TRY',
+      kdvExemptionCode: '801',
+      ozelMatrah: { percent: 18, taxable: 500, amount: 90 },
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER, taxNumber: '1460415308', name: 'T.C. Kamu Kurumu' },
+      buyerCustomer: { ...KAMU_BUYER_CUSTOMER },
+      paymentMeans: { ...KAMU_PAYMENT_MEANS },
+      lines: [{ name: 'Özel matrah', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'KAMU', type: 'IHRACKAYITLI',
+    notes: 'Baseline — KAMU+IHRACKAYITLI, kod 702 + GTİP + ALICIDIBKOD',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['702'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: true, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['gtip', 'alicidibkod', 'buyerCustomer', 'iban'],
+    },
+    input: {
+      id: 'MTX2026000000034',
+      uuid: 'a1000034-0001-4000-8001-000000000034',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'KAMU', type: 'IHRACKAYITLI', currencyCode: 'TRY',
+      kdvExemptionCode: '702',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER, taxNumber: '1460415308', name: 'T.C. Kamu Kurumu' },
+      buyerCustomer: { ...KAMU_BUYER_CUSTOMER },
+      paymentMeans: { ...KAMU_PAYMENT_MEANS },
+      lines: [{
+        name: 'İhraç kayıtlı kamu tedarik', quantity: 10, price: 100, unitCode: 'Adet', kdvPercent: 0,
+        delivery: {
+          gtipNo: '620342000010', alicidibsatirkod: '12345678901',
+          deliveryAddress: { address: 'Liman', district: 'Ambarlı', city: 'İstanbul', country: 'Türkiye' },
+        },
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'KAMU', type: 'SGK',
+    notes: 'Baseline — KAMU+SGK, SAGLIK_HAS',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: true, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['sgk', 'buyerCustomer', 'iban'],
+    },
+    input: {
+      id: 'MTX2026000000035',
+      uuid: 'a1000035-0001-4000-8001-000000000035',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'KAMU', type: 'SGK', currencyCode: 'TRY',
+      sgk: { type: 'SAGLIK_HAS', documentNo: 'SGK-HAS-MTX035', companyName: 'Matrix Hastane', companyCode: 'SGK-HAS-MTX' },
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER, taxNumber: '1460415308', name: 'Sosyal Güvenlik Kurumu' },
+      buyerCustomer: { ...KAMU_BUYER_CUSTOMER },
+      paymentMeans: { ...KAMU_PAYMENT_MEANS },
+      lines: [{ name: 'Hastane tedavi', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'KAMU', type: 'KOMISYONCU',
+    notes: 'Baseline — KAMU+KOMISYONCU',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: true, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['buyerCustomer', 'iban'],
+    },
+    input: {
+      id: 'MTX2026000000036',
+      uuid: 'a1000036-0001-4000-8001-000000000036',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'KAMU', type: 'KOMISYONCU', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER, taxNumber: '1460415308', name: 'T.C. Kamu Kurumu' },
+      buyerCustomer: { ...KAMU_BUYER_CUSTOMER },
+      paymentMeans: { ...KAMU_PAYMENT_MEANS },
+      lines: [{ name: 'Komisyon kamu', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'KAMU', type: 'KONAKLAMAVERGISI',
+    notes: 'Baseline — KAMU+KONAKLAMAVERGISI',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: true, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['buyerCustomer', 'iban'],
+    },
+    input: {
+      id: 'MTX2026000000037',
+      uuid: 'a1000037-0001-4000-8001-000000000037',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'KAMU', type: 'KONAKLAMAVERGISI', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER, taxNumber: '1460415308', name: 'T.C. Kamu Kurumu' },
+      buyerCustomer: { ...KAMU_BUYER_CUSTOMER },
+      paymentMeans: { ...KAMU_PAYMENT_MEANS },
+      lines: [{ name: 'Konaklama — kamu görevlisi', quantity: 2, price: 500, unitCode: 'Gece', kdvPercent: 20 }],
     },
   },
 ];
