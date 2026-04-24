@@ -341,3 +341,54 @@ if (line.phantomKdv) {
 - **End-to-end akış onayı:** SimpleInvoiceInput → SimpleInvoiceBuilder → UBL-TR XML zincirinde phantom KDV davranışı beklendiği gibi çalışıyor — satır ve belge-level §2.1.4 stili, LegalMonetaryTotal phantom hariç, validator negatif testler aktif.
 
 ---
+
+## Sprint 8d.7 — Regression doğrulama
+
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8d.7: Regression doğrulama (kod değişikliği yok)`
+
+### Yapılanlar
+
+Kod değişikliği içermeyen saf doğrulama commit'i. Mevcut 38 example senaryosunun output.xml snapshot'larında ve 800/800 Sprint 8c test tabanında regression olmadığını doğrular.
+
+### Doğrulanan Hususlar
+
+1. **Example senaryo output.xml değişmedi** (git diff):
+   ```bash
+   git diff HEAD~6 HEAD -- 'examples/12-*/output.xml' 'examples/13-*/output.xml' 'examples/14-*/output.xml'
+   # 0 satır diff
+   ```
+   YATIRIMTESVIK+SATIS (senaryo 12, 13) ve YATIRIMTESVIK+IADE (senaryo 14) XML çıktıları birebir korundu. Bu kombinasyonlar phantom tetiklemez (`isPhantomKdvCombination` false döner).
+
+2. **38 example snapshot testi** (`__tests__/examples/snapshot.test.ts`) yeşil — mevcut senaryo XML'leri değişmediği için re-generation gerekmedi.
+
+3. **Mevcut validator testleri yeşil:**
+   - `yatirim-tesvik-validator.test.ts`: 23/23 (B-08 ytbNo, Makine/Teçhizat kuralları)
+   - `profile-validators.test.ts`: mevcut B-67 CalcSeqNum=-1 kontrolü yeşil (Sprint 8c altyapısı)
+   - `manual-exemption-validator.test.ts`: M11 self-exemption davranışı bozulmadı
+   - `cross-check-matrix.test.ts`: 308/339 ISTISNA_GROUP_ALLOWED_TYPES mevcut pattern etkilenmedi
+
+4. **Typecheck temiz:** `npm run typecheck` 0 hata.
+
+5. **Test sayımı doğrulama:**
+   - Sprint 8c çıkış: 800/800
+   - Sprint 8d.1: +16 (phantom-kdv-rules) → 816
+   - Sprint 8d.2: +15 (document-calculator-phantom) → 831
+   - Sprint 8d.3: +8 (mapper-phantom-line) → 839
+   - Sprint 8d.4: +9 (mapper-phantom-document) → 848
+   - Sprint 8d.5: +16 (phantom-kdv-validator) → 864
+   - Sprint 8d.6: +12 (integration/phantom-kdv) → 876
+   - Sprint 8d.7: +0 (regression doğrulama)
+   - **Toplam ara durum: 876/876 yeşil** (hedef 830-840'ı aştı)
+
+### Değişiklik İstatistikleri
+
+- Kod değişikliği: yok
+- Sadece bu log güncelleme (8d.7 bölümü eklenmesi)
+
+### Disiplin Notları
+
+- **Plan disiplini:** 8d.7 "saf git log + jest doğrulama commit'i — kod değişikliği yok". Plan §5 tam uygulandı.
+- **Test hedefi:** 830-840 hedefiydi, +76 eklendiği için 876'ya ulaşıldı. Ekstra testler özellikle integration ve phantom-kdv-validator R4 eşleşme kuralları için.
+
+---
