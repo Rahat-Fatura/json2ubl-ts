@@ -2715,6 +2715,52 @@ export const validSpecs: ValidSpec[] = [
     },
   },
 
+  // ─── Sprint 8f.8: ILAC_TIBBICIHAZ genişletme (+2) ───
+  {
+    kind: 'invoice', variantSlug: 'tibbicihaz', profile: 'ILAC_TIBBICIHAZ', type: 'SATIS',
+    notes: 'ILAC_TIBBICIHAZ+SATIS TIBBICIHAZ schemeId (ilaç yerine tıbbi cihaz)',
+    dimensions: {
+      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['tibbicihaz'],
+    },
+    input: {
+      id: 'MTX2026000000961',
+      uuid: 'a1000961-0001-4000-8001-000000000961',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'ILAC_TIBBICIHAZ', type: 'SATIS', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'MR cihazı', quantity: 1, price: 500000, unitCode: 'Adet', kdvPercent: 10,
+        additionalItemIdentifications: [{ schemeId: 'TIBBICIHAZ', value: 'TC-MTX-961' }],
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'diger-scheme', profile: 'ILAC_TIBBICIHAZ', type: 'SATIS',
+    notes: 'ILAC_TIBBICIHAZ+SATIS DIGER schemeId (istisnai ürün)',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['diger'],
+    },
+    input: {
+      id: 'MTX2026000000962',
+      uuid: 'a1000962-0001-4000-8001-000000000962',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'ILAC_TIBBICIHAZ', type: 'SATIS', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Yardımcı medikal sarf', quantity: 100, price: 20, unitCode: 'Adet', kdvPercent: 20,
+        additionalItemIdentifications: [{ schemeId: 'DIGER', value: 'DG-MTX-962' }],
+      }],
+    },
+  },
+
   // ═════════════════════════════════════════════════════════════════════
   // YATIRIMTESVIK — 4 baseline + 2 phantom (SATIS/ISTISNA/IADE/TEVKIFAT)
   // Bug#1 gereği TEVKIFATIADE atlandı
@@ -2866,6 +2912,108 @@ export const validSpecs: ValidSpec[] = [
         itemClassificationCode: '01',
         productTraceId: 'IADE-MTX-906', serialId: 'SN-IADE-906', brand: 'Matrix', model: 'MTX-IADE',
       }],
+    },
+  },
+
+  // ─── Sprint 8f.8: YATIRIMTESVIK genişletme (+4) ───
+  {
+    kind: 'invoice', variantSlug: 'kod-04-gayrimaddi', profile: 'YATIRIMTESVIK', type: 'SATIS',
+    notes: 'YATIRIMTESVIK+SATIS, harcama tipi 04 (gayrimaddi hak)',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ytbNo'],
+    },
+    input: {
+      id: 'MTX2026000000951',
+      uuid: 'a1000951-0001-4000-8001-000000000951',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'YATIRIMTESVIK', type: 'SATIS', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Yazılım lisansı (gayrimaddi)', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        itemClassificationCode: '04',
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'coklu-satir', profile: 'YATIRIMTESVIK', type: 'SATIS',
+    notes: 'YATIRIMTESVIK+SATIS 3 satır makine parçaları',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 3, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ytbNo'],
+    },
+    input: {
+      id: 'MTX2026000000952',
+      uuid: 'a1000952-0001-4000-8001-000000000952',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'YATIRIMTESVIK', type: 'SATIS', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        { name: 'Makine parçası A', quantity: 2, price: 500, unitCode: 'Adet', kdvPercent: 20,
+          itemClassificationCode: '01', productTraceId: 'PT-A-952', serialId: 'SN-A-952', brand: 'Matrix', model: 'PT-A' },
+        { name: 'Makine parçası B', quantity: 1, price: 1200, unitCode: 'Adet', kdvPercent: 20,
+          itemClassificationCode: '01', productTraceId: 'PT-B-952', serialId: 'SN-B-952', brand: 'Matrix', model: 'PT-B' },
+        { name: 'Yazılım destek', quantity: 1, price: 800, unitCode: 'Adet', kdvPercent: 20,
+          itemClassificationCode: '04' },
+      ],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'dinamik-650', profile: 'YATIRIMTESVIK', type: 'TEVKIFAT',
+    notes: 'YATIRIMTESVIK+TEVKIFAT 650 dinamik %40',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: ['650'], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ytbNo'],
+    },
+    input: {
+      id: 'MTX2026000000953',
+      uuid: 'a1000953-0001-4000-8001-000000000953',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'YATIRIMTESVIK', type: 'TEVKIFAT', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Dinamik tevkifatlı hizmet', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        withholdingTaxCode: '650', withholdingTaxPercent: 40,
+        itemClassificationCode: '03',
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'coklu-iade', profile: 'YATIRIMTESVIK', type: 'IADE',
+    notes: 'YATIRIMTESVIK+IADE 2 satır makine iadesi',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 2, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ytbNo'],
+    },
+    input: {
+      id: 'MTX2026000000954',
+      uuid: 'a1000954-0001-4000-8001-000000000954',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'YATIRIMTESVIK', type: 'IADE', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      billingReference: { id: 'MTX2026000000076', issueDate: '2026-04-24' },
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        { name: 'İade makine A', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+          itemClassificationCode: '01', productTraceId: 'IADE-A-954', serialId: 'SN-A-954', brand: 'Matrix', model: 'IADE-A' },
+        { name: 'İade makine B', quantity: 1, price: 2000, unitCode: 'Adet', kdvPercent: 20,
+          itemClassificationCode: '01', productTraceId: 'IADE-B-954', serialId: 'SN-B-954', brand: 'Matrix', model: 'IADE-B' },
+      ],
     },
   },
 
@@ -3032,6 +3180,68 @@ export const validSpecs: ValidSpec[] = [
       }],
     },
   },
+
+  // ─── Sprint 8f.8: IDIS genişletme (+2) ───
+  {
+    kind: 'invoice', variantSlug: 'coklu-satir', profile: 'IDIS', type: 'SATIS',
+    notes: 'IDIS+SATIS 3 satır (her satır ETIKETNO)',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 3, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['sevkiyatNo'],
+    },
+    input: {
+      id: 'MTX2026000000971',
+      uuid: 'a1000971-0001-4000-8001-000000000971',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'IDIS', type: 'SATIS', currencyCode: 'TRY',
+      sender: {
+        ...STANDARD_SENDER,
+        identifications: [{ schemeId: 'SEVKIYATNO', value: 'SE-0000971' }],
+      },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        { name: 'Ürün A', quantity: 1, price: 500, unitCode: 'Adet', kdvPercent: 20,
+          additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'AA0000971' }] },
+        { name: 'Ürün B', quantity: 2, price: 300, unitCode: 'Adet', kdvPercent: 20,
+          additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'BB0000971' }] },
+        { name: 'Ürün C', quantity: 5, price: 100, unitCode: 'Adet', kdvPercent: 20,
+          additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'CC0000971' }] },
+      ],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'ihrac-701', profile: 'IDIS', type: 'IHRACKAYITLI',
+    notes: 'IDIS+IHRACKAYITLI kod 701 (DİİB dışı)',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['701'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['sevkiyatNo', 'gtip'],
+    },
+    input: {
+      id: 'MTX2026000000972',
+      uuid: 'a1000972-0001-4000-8001-000000000972',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'IDIS', type: 'IHRACKAYITLI', currencyCode: 'TRY',
+      kdvExemptionCode: '701',
+      sender: {
+        ...STANDARD_SENDER,
+        identifications: [{ schemeId: 'SEVKIYATNO', value: 'SE-0000972' }],
+      },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'IDIS ihraç 701', quantity: 10, price: 100, unitCode: 'Adet', kdvPercent: 0,
+        additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'ID0000972' }],
+        delivery: {
+          gtipNo: '620342000010', alicidibsatirkod: '12345678901',
+          deliveryAddress: { address: 'Liman', district: 'Ambarlı', city: 'İstanbul', country: 'Türkiye' },
+        },
+      }],
+    },
+  },
+  // yukarı: ETIKETNO regex ^[A-Z]{2}\d{7}$; "ID0000972" = 2 harf + 7 rakam (7 karakter değil) — 9 karakter doğru.
 
   // ═════════════════════════════════════════════════════════════════════
   // Despatch (e-İrsaliye) — 6 baseline (3 profil × 2 tip)

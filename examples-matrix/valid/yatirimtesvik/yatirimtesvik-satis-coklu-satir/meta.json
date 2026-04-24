@@ -1,0 +1,31 @@
+{
+  "id": "yatirimtesvik-satis-coklu-satir",
+  "kind": "invoice",
+  "profile": "YATIRIMTESVIK",
+  "type": "SATIS",
+  "variantSlug": "coklu-satir",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 3,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "ytbNo"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:15:31.303Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "YATIRIMTESVIK+SATIS 3 satır makine parçaları"
+}

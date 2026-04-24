@@ -1,0 +1,31 @@
+{
+  "id": "idis-satis-coklu-satir",
+  "kind": "invoice",
+  "profile": "IDIS",
+  "type": "SATIS",
+  "variantSlug": "coklu-satir",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 3,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "sevkiyatNo"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:16:18.632Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "IDIS+SATIS 3 satır (her satır ETIKETNO)"
+}

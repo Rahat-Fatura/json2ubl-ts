@@ -1,0 +1,31 @@
+{
+  "id": "ilac_tibbicihaz-satis-diger-scheme",
+  "kind": "invoice",
+  "profile": "ILAC_TIBBICIHAZ",
+  "type": "SATIS",
+  "variantSlug": "diger-scheme",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "diger"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:15:31.300Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "ILAC_TIBBICIHAZ+SATIS DIGER schemeId (istisnai ürün)"
+}

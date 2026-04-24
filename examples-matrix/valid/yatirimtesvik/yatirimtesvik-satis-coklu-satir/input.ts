@@ -1,0 +1,64 @@
+import type { SimpleInvoiceInput } from '../../../../src';
+
+export const input: SimpleInvoiceInput = {
+  id: 'MTX2026000000952',
+  uuid: 'a1000952-0001-4000-8001-000000000952',
+  datetime: '2026-04-24T10:00:00',
+  profile: 'YATIRIMTESVIK',
+  type: 'SATIS',
+  currencyCode: 'TRY',
+  ytbNo: '123456',
+  ytbIssueDate: '2026-01-15',
+  sender: {
+    taxNumber: '1234567890',
+    name: 'Matrix Test Satıcı A.Ş.',
+    taxOffice: 'Beşiktaş',
+    address: 'Levent Mah. No:42',
+    district: 'Beşiktaş',
+    city: 'İstanbul',
+  },
+  customer: {
+    taxNumber: '9876543210',
+    name: 'Matrix Test Alıcı Ltd.',
+    taxOffice: 'Kadıköy',
+    address: 'Bağdat Cad. No:100',
+    district: 'Kadıköy',
+    city: 'İstanbul',
+  },
+  lines: [
+    {
+      name: 'Makine parçası A',
+      quantity: 2,
+      price: 500,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+      itemClassificationCode: '01',
+      productTraceId: 'PT-A-952',
+      serialId: 'SN-A-952',
+      brand: 'Matrix',
+      model: 'PT-A',
+    },
+    {
+      name: 'Makine parçası B',
+      quantity: 1,
+      price: 1200,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+      itemClassificationCode: '01',
+      productTraceId: 'PT-B-952',
+      serialId: 'SN-B-952',
+      brand: 'Matrix',
+      model: 'PT-B',
+    },
+    {
+      name: 'Yazılım destek',
+      quantity: 1,
+      price: 800,
+      unitCode: 'Adet',
+      kdvPercent: 20,
+      itemClassificationCode: '04',
+    },
+  ],
+};
+
+export default input;

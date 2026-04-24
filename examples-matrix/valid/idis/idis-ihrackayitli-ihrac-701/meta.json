@@ -1,0 +1,34 @@
+{
+  "id": "idis-ihrackayitli-ihrac-701",
+  "kind": "invoice",
+  "profile": "IDIS",
+  "type": "IHRACKAYITLI",
+  "variantSlug": "ihrac-701",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "701"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "sevkiyatNo",
+      "gtip"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:15:31.306Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "IDIS+IHRACKAYITLI kod 701 (DİİB dışı)"
+}
