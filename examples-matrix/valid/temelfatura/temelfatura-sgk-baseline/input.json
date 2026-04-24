@@ -1,0 +1,39 @@
+{
+  "id": "MTX2026000000010",
+  "uuid": "a1000010-0001-4000-8001-000000000010",
+  "datetime": "2026-04-24T10:00:00",
+  "profile": "TEMELFATURA",
+  "type": "SGK",
+  "currencyCode": "TRY",
+  "sgk": {
+    "type": "SAGLIK_ECZ",
+    "documentNo": "SGK-ECZ-2026-MTX001",
+    "companyName": "Matrix Test Eczane Ltd.",
+    "companyCode": "SGK-COMP-MTX"
+  },
+  "sender": {
+    "taxNumber": "1234567890",
+    "name": "Matrix Test Eczane Ltd.",
+    "taxOffice": "Beşiktaş",
+    "address": "Levent Mah. No:42",
+    "district": "Beşiktaş",
+    "city": "İstanbul"
+  },
+  "customer": {
+    "taxNumber": "9876543210",
+    "name": "Sosyal Güvenlik Kurumu",
+    "taxOffice": "Kadıköy",
+    "address": "SGK Bölge Müdürlüğü",
+    "district": "Kadıköy",
+    "city": "İstanbul"
+  },
+  "lines": [
+    {
+      "name": "Reçeteli ilaç",
+      "quantity": 10,
+      "price": 100,
+      "unitCode": "Adet",
+      "kdvPercent": 20
+    }
+  ]
+}

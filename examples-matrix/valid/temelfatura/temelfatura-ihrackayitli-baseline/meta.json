@@ -1,0 +1,34 @@
+{
+  "id": "temelfatura-ihrackayitli-baseline",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "IHRACKAYITLI",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "702"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "gtip",
+      "alicidibkod"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:33:22.197Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — TEMELFATURA+IHRACKAYITLI, kod 702 (DİİB) + GTİP 12 hane + ALICIDIBKOD 11 hane"
+}

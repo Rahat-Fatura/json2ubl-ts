@@ -1,0 +1,29 @@
+{
+  "id": "temelfatura-komisyoncu-baseline",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "KOMISYONCU",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T12:33:22.198Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — TEMELFATURA+KOMISYONCU, komisyoncu satış"
+}

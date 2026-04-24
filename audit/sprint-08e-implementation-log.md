@@ -160,9 +160,73 @@ $ npx tsx examples-matrix/scaffold.ts   # idempotent rerun
 
 ---
 
-## Sprint 8e.2 — runScenario klon + ilk 10 TEMELFATURA valid
+## Sprint 8e.2 — runScenario klon + run-all + 11 TEMELFATURA valid + 2 test dosyası
 
-_(placeholder)_
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8e.2: runScenario/runDespatch klon + run-all orchestrator + 11 TEMELFATURA valid + snapshot/json-parity testleri`
+
+### Yapılanlar
+
+1. **`examples-matrix/_lib/runScenario.ts`** (+ `runDespatch.ts`) — `examples/_lib/` klonu; `../../../src` yerine `../../src` (matrix klasörü bir seviye daha derinde). Side-effect: `input.json` + `output.xml` yazar, hata durumunda error detay console'a + rethrow.
+2. **`examples-matrix/run-all.ts`** — valid + invalid discovery (`<subdir>/<category>/<scenario>` 2 seviye). Filtreleme: `--only`, `--valid-only`, `--invalid-only`. Dynamic import + exit code 1 on any error.
+3. **`examples-matrix/_lib/specs.ts`** — 9 ek TEMELFATURA baseline: IADE, TEVKIFAT, ~~TEVKIFATIADE~~, ISTISNA (kod 213), OZELMATRAH (kod 801), IHRACKAYITLI (kod 702 + GTİP + ALICIDIBKOD), SGK (SAGLIK_ECZ), KOMISYONCU, KONAKLAMAVERGISI. Toplam valid spec: 3 → 11.
+4. **`__tests__/examples-matrix/snapshot.test.ts`** — `examples/snapshot.test.ts`'in matrix eşleniği. `discoverScenarios()` iki-seviye klasör taraması; meta.json'dan `kind` (invoice/despatch) + `dimensions.reducedKdvGate` (allowReducedKdvRate flag) türetir. output.xml yoksa senaryo atlanır.
+5. **`__tests__/examples-matrix/json-parity.test.ts`** — `examples/json-parity.test.ts`'in matrix eşleniği. input.ts ≡ input.json deep-equal.
+
+### Smoke + Regression
+
+```
+$ npx tsx examples-matrix/scaffold.ts
+  Toplam: 12   Yazıldı: 9   Atlandı (mevcut): 3
+
+$ npx tsx examples-matrix/run-all.ts
+  Sonuç: 11 başarılı, 1 hatalı / 12 toplam
+  Hatalar:
+    - valid/temelfatura/temelfatura-tevkifatiade-baseline: Geçersiz değer: withholdingTaxTotals
+
+# TEVKIFATIADE spec comment-out + klasör silme sonrası
+$ npx tsx examples-matrix/run-all.ts
+  Sonuç: 11 başarılı, 0 hatalı / 11 toplam
+
+$ npm test
+  Test Files  55 passed (55)
+       Tests  898 passed (898)   # +22 (11 snapshot + 11 json-parity)
+```
+
+### Bulunan Buglar
+
+**Bug #1 — `WITHHOLDING_ALLOWED_TYPES` listesinde TEVKIFATIADE/YTBTEVKIFATIADE eksik**
+
+- **Dosya:** `src/config/constants.ts:77` (WITHHOLDING_ALLOWED_TYPES set), `src/validators/type-validators.ts:33-38` (B-30 kuralı — WithholdingTaxTotal ters-yön kontrolü)
+- **Gözlem:** TEVKIFATIADE tipinde `withholdingTaxCode` set etmek INVALID_VALUE hatası üretiyor. Builder satırdaki `withholdingTaxCode`'u otomatik `input.withholdingTaxTotals`'a ekliyor, sonra validator "WithholdingTaxTotal sadece TEVKIFAT/YTBTEVKIFAT/IADE/YTBIADE/SGK/SARJ/SARJANLIK tiplerinde kullanılabilir" diyor — listede TEVKIFATIADE yok.
+- **Etki:** TEVKIFATIADE (tevkifatlı iade) ve YTBTEVKIFATIADE tipleri pratikte stopaj bilgisi ile üretilemiyor. Bu tiplerin doğal semantiği tevkifatlı iade — withholdingTaxCode zorunlu gibi görünüyor.
+- **Beklenen:** Validator TEVKIFATIADE/YTBTEVKIFATIADE tiplerinde WithholdingTaxTotal'a izin vermeli (IADE ve TEVKIFAT'ın kesişimi = TEVKIFATIADE).
+- **Kritiklik:** **Major** — semantik olarak bu tipin var olma amacını engelliyor.
+- **Kapsam:** src/ read-only kuralı gereği bu sprintte fix yok. Sprint 8f'e taşındı.
+- **Geçici çözüm:** `temelfatura-tevkifatiade-baseline` ve gelecekte eklenecek diğer TEVKIFATIADE/YTBTEVKIFATIADE spec'leri geçici olarak specs.ts'te comment-out (8e.3 ve sonrasında bu tiplerin senaryoları atlanır; plan hedefinden net -2 senaryo).
+
+### Değişiklik İstatistikleri
+
+- `examples-matrix/_lib/runScenario.ts` — yeni, 53 satır
+- `examples-matrix/_lib/runDespatch.ts` — yeni, 42 satır
+- `examples-matrix/run-all.ts` — yeni, 98 satır
+- `examples-matrix/_lib/specs.ts` — 171 → 540 satır (9 yeni spec + 1 comment-out)
+- `__tests__/examples-matrix/snapshot.test.ts` — yeni, 98 satır
+- `__tests__/examples-matrix/json-parity.test.ts` — yeni, 48 satır
+- `examples-matrix/valid/temelfatura/` — 11 senaryo klasörü (input.ts + input.json + run.ts + meta.json + output.xml, her biri)
+
+### Test Durumu
+
+- Başlangıç: 876/876 yeşil
+- Son: **898/898 yeşil** (+22: 11 snapshot + 11 json-parity)
+
+### Disiplin Notları
+
+- `src/` dokunulmadı — Bug #1 yalnızca loglandı, Sprint 8f'e taşındı (R4 sıkı)
+- Feature cross'lar (coklu-kdv, eur-doviz) 8e.1'de üretildi; 8e.2'de sadece 9 tip baseline eklendi (10 hedef - 1 bug = 9 fiili)
+- TEVKIFATIADE spec comment-out: gelecekte Sprint 8f fix'inden sonra yeniden aktifleştirilebilir
+
+---
 
 ---
 
@@ -204,14 +268,15 @@ _(placeholder)_
 
 ## Bulunan Buglar
 
-_8e sırasında `src/**` altında keşfedilen bug'lar burada loglanır. Her bug için:_
-- _Keşif sprint'i (8e.X)_
-- _Etkilenen dosya + satır_
-- _Beklenen davranış / gerçekleşen davranış_
-- _Kritiklik (kritik / major / minör)_
-- _Sprint 8f'de öncelik tahmini_
+_8e sırasında `src/**` altında keşfedilen bug'lar burada konsolide edilir. Detaylı keşif ilgili alt-commit bölümünde._
 
-_Şu an: **boş (Sprint 8e henüz başladı).**_
+### Bug #1 — TEVKIFATIADE/YTBTEVKIFATIADE WithholdingTaxTotal whitelist'te yok
+
+- **Keşif:** 8e.2
+- **Dosya:** `src/config/constants.ts:77` (WITHHOLDING_ALLOWED_TYPES), `src/validators/type-validators.ts:33-38` (B-30)
+- **Özet:** TEVKIFATIADE tipinde `withholdingTaxCode` kullanımı INVALID_VALUE hatası üretiyor. Bu tipin semantiği (tevkifatlı iade) stopaj zorunluluğu barındırmalı.
+- **Kritiklik:** Major
+- **Sprint 8f öncelik:** Yüksek (semantik use-case engelli)
 
 ---
 
