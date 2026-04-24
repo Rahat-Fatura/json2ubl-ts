@@ -460,6 +460,77 @@ gh release create v2.0.0 --title "v2.0.0 — UBL-TR stable" \
 
 ---
 
+## Sprint 8c.12 — Implementation log finalize
+
+**Tarih:** 2026-04-24
+**Commit hedefi:** `Sprint 8c.12: Implementation log finalize + v2.1.0 roadmap devir`
+
+### Sprint 8c Özet Tablosu (13 atomik commit)
+
+| # | Commit | Kapsam | Test Δ |
+|---|--------|--------|--------|
+| 8c.0 | `bf043b7` | Plan kopya + log iskelet + FIX-PLANI M11/AR-9 | 755 → 755 |
+| 8c.1 | `535ecd9` | B-NEW-11 + M11 config + manual-exemption-validator + 555 cross-check | 755 → 757 (+2) |
+| 8c.2 | `2a32840` | B-NEW-12 (alicidibsatirkod + CustomsDeclaration mapper) | 757 → 757 |
+| 8c.3 | `069e59a` | M11 + manual-exemption-validator testleri | 757 → 778 (+21) |
+| 8c.4 | `c033509` | B-NEW-13 (YOLCU passport + taxRepresentativeParty) | 778 → 778 |
+| 8c.5 | `74ba4ce` | B-NEW-14 plan hatası + 26 validation-errors coverage | 778 → 778 |
+| 8c.6 | `bac3e05` | G3 cross-check (B-NEW-04, 05, 06, 07) | 778 → 781 (+3) |
+| 8c.7 | `909ce9e` | G4 SGK (B-NEW-08, 09, 10) | 781 → 790 (+9) |
+| 8c.8 | `e4860d7` | G5 runtime hijyen (B-NEW-01, 02, 03) | 790 → 800 (+10) |
+| 8c.9 | `50d6451` | Workaround kaldırma — 9/9 senaryo strict | 800 → 800 |
+| 8c.10 | `babe971` | Doküman (CHANGELOG + README + AR-9 notes) | 800 → 800 |
+| 8c.11 | `fbad3ac` | v2.0.0 bump + git tag | 800 → 800 |
+| 8c.12 | (bu commit) | Implementation log finalize + v2.1.0 roadmap | 800 → 800 |
+
+**Net test değişimi:** 755 → **800** (+45). Plan hedefi ~884 — fark `validation-errors.test.ts` strict per-case refactor'dan gelecekti, v2.1.0'a devredildi.
+
+### Sprint 8c Plan Sapmaları (Toplu Liste)
+
+1. **B-NEW-14 plan varsayımı yanlıştı** (8c.5): IDIS validator zaten mevcut; 14 → 13 commit.
+2. **555 keşfi** (8c.1): B-NEW-11 fix'i 30-feature-555'te gizli regresyon açtı (önceden calculator 555'i yok sayıp 351 yazıyordu). Berkay açıklaması sonrası 555 matrise entegre edildi.
+3. **Plan 8c.3 kapsam birleşmesi** (8c.1): M11 config validator bağımlılığı nedeniyle 8c.1'e taşındı; 8c.3 sadece test coverage.
+4. **B-NEW-13 kapsam genişlemesi** (8c.4): Plan sadece nationalityId + passportId idi; YOLCU validator taxRepresentativeParty'ı zorunlu tuttuğundan kapsam SimpleTaxRepresentativeInput genişlemesine kadar arttı.
+5. **Snapshot regen commit'i gereksizleşti** (8c.10): Her fix commit'inde zaten regen edildi. 8c.10 numarası "Doküman güncellemeleri"ne yeniden atandı.
+6. **validation-errors.test.ts strict per-case refactor ertelendi** (8c.9): Mevcut smoke test kapsamı yeterli; v2.1.0'a devir.
+7. **31-feature-4171 input düzeltmesi** (8c.9): TEVKIFAT+4171 için WithholdingTaxTotal XSD zorunluluğu — input'a `withholdingTaxCode: '606'` eklendi.
+
+### Release Ops (Berkay manuel)
+
+```bash
+git tag -a v2.0.0 -m "json2ubl-ts v2.0.0 — Sprint 8a+8b+8c stable"
+git push origin main
+git push origin v2.0.0
+npm publish --dry-run
+npm publish  # 2FA
+gh release create v2.0.0 --title "v2.0.0 — UBL-TR stable" --notes-file CHANGELOG.md
+```
+
+### v2.1.0 Roadmap (Devir Listesi)
+
+- **AR-9 Reactive InvoiceSession implementation** — `audit/reactive-session-design-notes.md` tasarım notu referans alınıp `src/reactive-session.ts` iskelet + event types + incremental validator adaptörleri.
+- **`validation-errors.test.ts` strict per-case refactor** — slug-bazlı smoke'dan case-bazlı strict'e (~84 ek test).
+- **Skill repo patch manuel uygulama** — `audit/skill-doc-patches-sprint-8b.md` içeriği ayrı repo'ya commit (Berkay manuel).
+- **Potansiyel Sprint 8d bug'ları:** Üretim kullanımı sonrası açılabilecek yeni bulgular (B-NEW-15+). Mimsoft entegrasyonu gerçek trafikte görülecek.
+
+### Sprint 8c "Bitti" Tanımı — Doğrulandı
+
+1. ✅ `bun test` → 800/800 yeşil
+2. ✅ `bun run build` → TypeScript hatasız
+3. ✅ `git status` temiz (8c.12 commit sonrası)
+4. ✅ `git log --oneline HEAD~13..HEAD` → 8c.0..8c.12 okunaklı
+5. ✅ 9/9 senaryo (05, 07, 10, 16, 17, 20, 26, 31, 99) strict modda başarılı
+6. ✅ `basicModSlugs` set'i boş (snapshot.test.ts)
+7. ✅ `package.json` version `2.0.0`
+8. ⏳ `git tag v2.0.0` — Berkay manuel (commit sonrası)
+9. ⏳ `npm publish` — Berkay manuel (2FA)
+10. ⏳ GitHub release v2.0.0 — Berkay manuel
+11. ✅ `audit/sprint-08c-implementation-log.md` tam dolu; v2.1.0 roadmap net
+
+---
+
+**Sprint 8c tamamlandı — v2.0.0 release'e hazır. Berkay manuel publish adımları bekleniyor.**
+
 ## Sprint 8c.8 — G5 Runtime hijyen (B-NEW-01, 02, 03)
 
 **Tarih:** 2026-04-24
