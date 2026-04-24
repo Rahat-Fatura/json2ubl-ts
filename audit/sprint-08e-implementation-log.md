@@ -76,7 +76,87 @@ Sprint 8d tamamlandı (commit `cbdbe73`): 876/876 test yeşil, `package.json=2.0
 
 ## Sprint 8e.1 — Generator MVP + scaffold CLI
 
-_(placeholder — 8e.1 commit'inde doldurulacak)_
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8e.1: Scenario spec + input-serializer + scaffold CLI + 3 TEMELFATURA smoke senaryo`
+
+### Yapılanlar
+
+1. **`examples-matrix/_lib/scenario-spec.ts`** — tip tanımları:
+   - `ValidInvoiceSpec`, `ValidDespatchSpec`, `InvalidInvoiceSpec`, `InvalidDespatchSpec`
+   - `ScenarioDimensions` (kdvBreakdown, currency, exchangeRate, exemptionCodes, withholdingCodes, allowanceCharge, lineCount, paymentMeans, reducedKdvGate, phantomKdv, specialIdentifiers)
+   - `DespatchDimensions` (plates, driverCount, lineCount, additionalDocuments, specialIdentifiers)
+   - `ExpectedError` + `ReviewStatus` ('auto-ok' | 'needs-manual-check')
+   - Discriminator: `kind: 'invoice' | 'despatch' | 'invalid-invoice' | 'invalid-despatch'`
+
+2. **`examples-matrix/_lib/input-serializer.ts`** — obj → okunaklı TS kaynak:
+   - `objectToTsLiteral(value, indent=2)`: primitive + object + array + Date desteği
+   - Single-quote string literal + control char `\\xNN` escape
+   - Valid identifier key'ler quote'suz (örn. `foo:`), diğerleri tırnaklı
+   - Trailing comma her listede
+   - `buildInvoiceInputSource(input, relativeSrcImport)` → `examples/01-temelfatura-satis/input.ts` pattern'iyle aynı çıktı (named + default export)
+   - `buildDespatchInputSource(...)` eşleniği
+
+3. **`examples-matrix/_lib/specs.ts`** — hardcoded spec array'leri:
+   - `validSpecs: ValidSpec[]` — şu an 3 TEMELFATURA+SATIS senaryo:
+     - `baseline` — tek satır, %20 KDV, TRY
+     - `coklu-kdv` — 3 satır (%0 kodsuz 351, %10, %20)
+     - `eur-doviz` — tek satır EUR + exchangeRate=35.5
+   - `invalidSpecs: InvalidSpec[]` — boş (8e.10-8e.13'te doldurulacak)
+   - `allSpecs` birleşik export
+
+4. **`examples-matrix/scaffold.ts`** — CLI:
+   - `specs.ts`'i okur, her spec için klasör + input.ts + run.ts + meta.json (invalid için +expected-error.json) yazar
+   - **Idempotent**: varsayılan olarak mevcut dosyaları dokunmaz
+   - **Flag'ler**: `--force` (ez), `--dry-run` (yazma), `--only <slug>` (filtre)
+   - **`needs-manual-check` koruması**: mevcut `meta.json`'da bu review değeri varsa klasör `--force`'da bile atlanır
+   - Çıktı: `✅ written` / `⏭️ skipped-exists` / `🛡️ skipped-manual-check`
+
+### Smoke Test Sonuçları
+
+```
+$ npx tsx examples-matrix/scaffold.ts
+  ✅  [valid] temelfatura-satis-baseline
+  ✅  [valid] temelfatura-satis-coklu-kdv
+  ✅  [valid] temelfatura-satis-eur-doviz
+  Toplam: 3   Yazıldı: 3   Atlandı: 0   Korundu: 0   Hata: 0
+
+$ npx tsx examples-matrix/scaffold.ts   # idempotent rerun
+  ⏭️  [valid] temelfatura-satis-baseline (zaten mevcut)
+  ⏭️  [valid] temelfatura-satis-coklu-kdv (zaten mevcut)
+  ⏭️  [valid] temelfatura-satis-eur-doviz (zaten mevcut)
+  Toplam: 3   Yazıldı: 0   Atlandı: 3   Korundu: 0   Hata: 0
+```
+
+Üretilen dosyalar: 3 klasör × 3 dosya = 9 dosya (`input.ts` + `run.ts` + `meta.json` her biri). Input.ts çıktısı `examples/01-temelfatura-satis/input.ts` pattern'iyle birebir uyumlu.
+
+### Değişiklik İstatistikleri
+
+- `examples-matrix/_lib/scenario-spec.ts` — yeni, 131 satır (tip tanımları)
+- `examples-matrix/_lib/input-serializer.ts` — yeni, 126 satır (serializer + source builders)
+- `examples-matrix/_lib/specs.ts` — yeni, 171 satır (3 başlangıç spec)
+- `examples-matrix/scaffold.ts` — yeni, 234 satır (CLI)
+- `examples-matrix/valid/temelfatura/temelfatura-satis-baseline/{input.ts,run.ts,meta.json}` — üretildi
+- `examples-matrix/valid/temelfatura/temelfatura-satis-coklu-kdv/{input.ts,run.ts,meta.json}` — üretildi
+- `examples-matrix/valid/temelfatura/temelfatura-satis-eur-doviz/{input.ts,run.ts,meta.json}` — üretildi
+
+### Test Durumu
+
+- Başlangıç: 876/876 yeşil
+- Son: 876/876 yeşil (test eklenmedi — runScenario + snapshot test 8e.2'de)
+- Typecheck: temiz (tsconfig `include: ["src"]`; examples-matrix/ kapsam dışı — build etkilenmez)
+
+### Mimari Sapmalar
+
+- **Plan'daki `scenario-generator.ts` dosyası kaldırıldı.** Plan'da spec → input objesi inşa eden ayrı bir adım öngörülmüştü. Pragmatik olarak spec'te input objesi zaten tam halde (hardcoded array pattern'i gereği) — generator lüzumsuz. Bu küçük sapma plan bütünlüğünü bozmuyor; spec → input doğrudan.
+
+### Disiplin Notları
+
+- `src/**` dokunulmadı (R4 sıkı korundu)
+- `examples/**` dokunulmadı
+- scaffold.ts çalıştırıldı ama üretilen dosyalar diske yazıldı (commit'e dahil)
+- 8e.2'de `runScenario.ts` eklenecek; o ana kadar `run.ts`'ler çalıştırılamaz (import çözülmez). Test yok, sorun yok.
+
+---
 
 ---
 

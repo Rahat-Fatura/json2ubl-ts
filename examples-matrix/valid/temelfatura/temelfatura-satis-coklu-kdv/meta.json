@@ -1,0 +1,33 @@
+{
+  "id": "temelfatura-satis-coklu-kdv",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "SATIS",
+  "variantSlug": "coklu-kdv",
+  "dimensions": {
+    "kdvBreakdown": [
+      0,
+      10,
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "351"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 3,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T12:27:36.487Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Çoklu satır — karışık KDV oranları (%0 kodsuz 351, %10, %20)"
+}
