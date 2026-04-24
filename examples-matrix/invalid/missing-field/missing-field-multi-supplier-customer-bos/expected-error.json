@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "code": "MISSING_FIELD",
+      "path": "supplier.vknTckn"
+    },
+    {
+      "code": "MISSING_FIELD",
+      "path": "customer.name"
+    }
+  ]
+}

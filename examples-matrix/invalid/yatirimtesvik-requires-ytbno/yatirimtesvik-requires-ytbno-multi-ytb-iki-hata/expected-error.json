@@ -1,0 +1,11 @@
+{
+  "errors": [
+    {
+      "code": "YATIRIMTESVIK_REQUIRES_YTBNO"
+    },
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "messageIncludes": "ItemClassificationCode"
+    }
+  ]
+}

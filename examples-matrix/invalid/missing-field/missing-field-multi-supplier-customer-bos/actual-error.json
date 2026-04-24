@@ -1,0 +1,14 @@
+{
+  "errors": [
+    {
+      "code": "MISSING_FIELD",
+      "path": "supplier.vknTckn",
+      "message": "VKN veya TCKN zorunludur"
+    },
+    {
+      "code": "MISSING_FIELD",
+      "path": "customer.name",
+      "message": "VKN sahibi için PartyName zorunludur"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "messageIncludes": "BuyerCustomer"
+    },
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "messageIncludes": "vergi dairesi"
+    }
+  ]
+}

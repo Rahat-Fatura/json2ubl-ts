@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "TYPE_REQUIREMENT",
+      "path": "billingReferences",
+      "message": "[IADE] İade tipi faturalarda BillingReference/InvoiceDocumentReference zorunludur"
+    }
+  ]
+}

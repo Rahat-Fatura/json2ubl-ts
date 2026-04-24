@@ -1,0 +1,14 @@
+{
+  "errors": [
+    {
+      "code": "YATIRIMTESVIK_REQUIRES_YTBNO",
+      "path": "contractReference",
+      "message": "YATIRIMTESVIK profilinde YTBNO (6 haneli numerik) zorunludur"
+    },
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "lines[0].item.commodityClassification.itemClassificationCode",
+      "message": "[YATIRIMTESVIK] Yatırım Teşvik profilinde ItemClassificationCode zorunludur"
+    }
+  ]
+}

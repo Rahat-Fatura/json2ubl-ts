@@ -1,0 +1,16 @@
+{
+  "id": "profile-requirement-multi-ihracat-iki-hata",
+  "kind": "invalid-invoice",
+  "primaryCode": "PROFILE_REQUIREMENT",
+  "errorCodes": [
+    "PROFILE_REQUIREMENT"
+  ],
+  "description": "Multi-error: IHRACAT buyerCustomer + supplier.taxOffice birlikte eksik",
+  "profileContext": "IHRACAT",
+  "typeContext": "ISTISNA",
+  "validationLevel": "strict",
+  "isMultiError": true,
+  "generatedAt": "2026-04-24T14:26:57.659Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

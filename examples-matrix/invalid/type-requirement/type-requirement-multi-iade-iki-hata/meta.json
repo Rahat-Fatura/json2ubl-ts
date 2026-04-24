@@ -1,0 +1,16 @@
+{
+  "id": "type-requirement-multi-iade-iki-hata",
+  "kind": "invalid-invoice",
+  "primaryCode": "TYPE_REQUIREMENT",
+  "errorCodes": [
+    "TYPE_REQUIREMENT"
+  ],
+  "description": "Multi-error: IADE billingReference eksik + KDV 0 TaxExemptionReason eksik",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "IADE",
+  "validationLevel": "strict",
+  "isMultiError": true,
+  "generatedAt": "2026-04-24T14:26:57.658Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

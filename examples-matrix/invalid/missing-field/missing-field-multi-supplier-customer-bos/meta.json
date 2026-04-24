@@ -1,0 +1,16 @@
+{
+  "id": "missing-field-multi-supplier-customer-bos",
+  "kind": "invalid-invoice",
+  "primaryCode": "MISSING_FIELD",
+  "errorCodes": [
+    "MISSING_FIELD"
+  ],
+  "description": "Multi-error: supplier.vkn + customer.name birlikte boş",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": true,
+  "generatedAt": "2026-04-24T14:26:57.657Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

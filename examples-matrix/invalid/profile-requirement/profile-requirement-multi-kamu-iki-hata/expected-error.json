@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "messageIncludes": "PaymentMeans"
+    },
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "messageIncludes": "VKN"
+    }
+  ]
+}
