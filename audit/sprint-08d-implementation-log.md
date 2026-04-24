@@ -247,3 +247,46 @@ if (line.phantomKdv) {
 - §9 S1=B kararı (her yerde §2.1.4) korunuyor — satır ve belge phantom TaxSubtotal aynı şekle sahip.
 
 ---
+
+## Sprint 8d.5 — phantom-kdv-validator
+
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8d.5: phantom-kdv-validator + pipeline entegrasyonu (M12)`
+
+### Yapılanlar
+
+1. **`src/validators/phantom-kdv-validator.ts`** (yeni, ~95 satır) — 4 kural:
+   - **R1 — `YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT`:** phantom kombinasyonda `0 < kdvPercent ≤ 100` zorunlu. `kdvPercent=0` veya aralık dışı değer hata.
+   - **R2 — `YTB_ISTISNA_REQUIRES_EXEMPTION_CODE`:** exemption code zorunlu (satır bazlı veya belge fallback) ve 308 veya 339 whitelist'inde olmalı.
+   - **R3 — `YTB_ISTISNA_FORBIDDEN_ITEM_CLASSIFICATION`:** PDF §4 gereği 03 (Arsa/Arazi) ve 04 (Diğer) phantom'da yasak.
+   - **R4 — `YTB_ISTISNA_EXEMPTION_CODE_MISMATCH`:** ItemClassificationCode ↔ exemption code eşleşmesi (01↔308, 02↔339).
+   - Pipeline: `isPhantomKdvCombination(profile, type)` false ise erken return — non-phantom kombinasyonları etkilemez.
+
+2. **`src/calculator/simple-invoice-builder.ts`:** `validatePhantomKdv` pipeline'a eklendi (`validationLevel ≠ 'none'` koşulunda; diğer 3 simple-input validator'dan sonra).
+
+3. **Yeni test dosyası:** `__tests__/validators/phantom-kdv-validator.test.ts` (16 test)
+   - Non-phantom kombinasyonlarda pas: YATIRIMTESVIK+SATIS, TEMELFATURA+ISTISNA, EARSIV+YTBSATIS (3 test)
+   - YATIRIMTESVIK+ISTISNA: geçerli + R1 (kdvPercent=0, >100) + R2 (code eksik, 351 whitelist dışı, belge fallback) + R3 (cls=03, 04) + R4 (01+339, 02+308) (10 test)
+   - EARSIV+YTBISTISNA: geçerli İnşaat + kdvPercent=0 (2 test)
+   - Çoklu hata aynı satırda yakalanır (1 test)
+
+### Değişiklik İstatistikleri
+
+- `src/validators/phantom-kdv-validator.ts` — yeni (~95 satır)
+- `src/calculator/simple-invoice-builder.ts` — import + pipeline entegrasyonu (2 satır)
+- `__tests__/validators/phantom-kdv-validator.test.ts` — yeni (~205 satır, 16 test)
+
+### Test Durumu
+
+- Başlangıç: 848/848 yeşil
+- Son: **864/864 yeşil** (+16 phantom-kdv-validator)
+- Regression: 38 snapshot test değişmedi
+- Typecheck: temiz
+
+### Disiplin Notları
+
+- **Validator kapsamı:** Yalnız simple-input seviyesinde çalışır. InvoiceInput tabanlı `InvoiceBuilder` doğrudan kullanılırsa validator tetiklenmez (expert mod — mevcut pattern korundu).
+- **R4 whitelist eşlemesi:** `phantomKdvExemptionCodeFor(itemCls)` helper'ını kullanır — M11 self-exemption kurallarıyla çakışmaz.
+- **Pipeline sırası:** `validateSimpleLineRanges` → `validateManualExemption` → `validateSgkInput` → `validatePhantomKdv`. Phantom kuralı en spesifik olduğu için en sonda.
+
+---

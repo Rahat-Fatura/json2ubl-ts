@@ -25,6 +25,7 @@ import type { ValidationError } from '../errors/ubl-build-error';
 import { validateManualExemption } from '../validators/manual-exemption-validator';
 import { validateSgkInput } from '../validators/sgk-input-validator';
 import { validateSimpleLineRanges } from '../validators/simple-line-range-validator';
+import { validatePhantomKdv } from '../validators/phantom-kdv-validator';
 import { UblBuildError } from '../errors/ubl-build-error';
 
 export interface SimpleBuilderOptions extends BuilderOptions {
@@ -74,6 +75,7 @@ export class SimpleInvoiceBuilder {
         ...validateSimpleLineRanges(input),
         ...validateManualExemption(input),
         ...validateSgkInput(input),
+        ...validatePhantomKdv(input),
       ];
       if (simpleInputErrors.length > 0) {
         throw new UblBuildError(simpleInputErrors);
