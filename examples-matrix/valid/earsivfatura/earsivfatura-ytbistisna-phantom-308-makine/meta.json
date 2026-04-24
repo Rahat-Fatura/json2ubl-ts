@@ -1,0 +1,34 @@
+{
+  "id": "earsivfatura-ytbistisna-phantom-308-makine",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "YTBISTISNA",
+  "variantSlug": "phantom-308-makine",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "308"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": true,
+    "specialIdentifiers": [
+      "ytbNo",
+      "phantom-kdv"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:44:52.555Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "EARSIVFATURA+YTBISTISNA — Phantom KDV (M12): kod 308 + itemClassificationCode 01"
+}

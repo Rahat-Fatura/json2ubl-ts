@@ -1,0 +1,31 @@
+{
+  "id": "earsivfatura-sgk-baseline",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "SGK",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "sgk"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:44:05.547Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — EARSIVFATURA+SGK, MAL_HIZMET"
+}

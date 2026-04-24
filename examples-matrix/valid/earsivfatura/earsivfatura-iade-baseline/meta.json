@@ -1,0 +1,31 @@
+{
+  "id": "earsivfatura-iade-baseline",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "IADE",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "billingReference"
+    ]
+  },
+  "generatedAt": "2026-04-24T12:44:05.545Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "Baseline — EARSIVFATURA+IADE, billingReference"
+}

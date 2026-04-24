@@ -1357,6 +1357,272 @@ export const validSpecs: ValidSpec[] = [
       lines: [{ name: 'Konaklama — kamu görevlisi', quantity: 2, price: 500, unitCode: 'Gece', kdvPercent: 20 }],
     },
   },
+
+  // ═════════════════════════════════════════════════════════════════════
+  // EARSIVFATURA — 12 baseline (9 temel + 3 YTB)
+  // Bug#1 nedeniyle TEVKIFATIADE / YTBTEVKIFATIADE atlandı
+  // TEKNOLOJIDESTEK ayrıca atlandı (customer.TCKN + satırda TELEFON/TABLET_PC şartı)
+  // ═════════════════════════════════════════════════════════════════════
+
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'SATIS',
+    notes: 'Baseline — EARSIVFATURA+SATIS',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000040',
+      uuid: 'a1000040-0001-4000-8001-000000000040',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'SATIS', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'E-arşiv satış', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'IADE',
+    notes: 'Baseline — EARSIVFATURA+IADE, billingReference',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['billingReference'],
+    },
+    input: {
+      id: 'MTX2026000000041',
+      uuid: 'a1000041-0001-4000-8001-000000000041',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'IADE', currencyCode: 'TRY',
+      billingReference: { id: 'MTX2026000000040', issueDate: '2026-04-24' },
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'E-arşiv iade', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'TEVKIFAT',
+    notes: 'Baseline — EARSIVFATURA+TEVKIFAT',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: ['603'], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000042',
+      uuid: 'a1000042-0001-4000-8001-000000000042',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'TEVKIFAT', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'E-arşiv tevkifat', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603' }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'ISTISNA',
+    notes: 'Baseline — EARSIVFATURA+ISTISNA, kod 213',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['213'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000043',
+      uuid: 'a1000043-0001-4000-8001-000000000043',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'ISTISNA', currencyCode: 'TRY',
+      kdvExemptionCode: '213',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'E-arşiv istisna', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'OZELMATRAH',
+    notes: 'Baseline — EARSIVFATURA+OZELMATRAH',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['801'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ozelMatrah'],
+    },
+    input: {
+      id: 'MTX2026000000044',
+      uuid: 'a1000044-0001-4000-8001-000000000044',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'OZELMATRAH', currencyCode: 'TRY',
+      kdvExemptionCode: '801',
+      ozelMatrah: { percent: 18, taxable: 500, amount: 90 },
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'E-arşiv özel matrah', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'IHRACKAYITLI',
+    notes: 'Baseline — EARSIVFATURA+IHRACKAYITLI',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['702'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['gtip', 'alicidibkod'],
+    },
+    input: {
+      id: 'MTX2026000000045',
+      uuid: 'a1000045-0001-4000-8001-000000000045',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'IHRACKAYITLI', currencyCode: 'TRY',
+      kdvExemptionCode: '702',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'E-arşiv ihraç kayıtlı', quantity: 10, price: 100, unitCode: 'Adet', kdvPercent: 0,
+        delivery: {
+          gtipNo: '620342000010', alicidibsatirkod: '12345678901',
+          deliveryAddress: { address: 'Liman', district: 'Ambarlı', city: 'İstanbul', country: 'Türkiye' },
+        },
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'SGK',
+    notes: 'Baseline — EARSIVFATURA+SGK, MAL_HIZMET',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['sgk'],
+    },
+    input: {
+      id: 'MTX2026000000046',
+      uuid: 'a1000046-0001-4000-8001-000000000046',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'SGK', currencyCode: 'TRY',
+      sgk: { type: 'MAL_HIZMET', documentNo: 'SGK-MAL-MTX046', companyName: 'Matrix Medikal Tedarik', companyCode: 'SGK-MAL-MTX' },
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'Medikal tedarik', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'KOMISYONCU',
+    notes: 'Baseline — EARSIVFATURA+KOMISYONCU',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000047',
+      uuid: 'a1000047-0001-4000-8001-000000000047',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'KOMISYONCU', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'E-arşiv komisyon', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'KONAKLAMAVERGISI',
+    notes: 'Baseline — EARSIVFATURA+KONAKLAMAVERGISI',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000048',
+      uuid: 'a1000048-0001-4000-8001-000000000048',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'KONAKLAMAVERGISI', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{ name: 'Konaklama — e-arşiv', quantity: 2, price: 500, unitCode: 'Gece', kdvPercent: 20 }],
+    },
+  },
+
+  // YTB tipleri (YATIRIMTESVIK kuralları geçerli) — ytbNo + itemClassificationCode zorunlu
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'YTBSATIS',
+    notes: 'Baseline — EARSIVFATURA+YTBSATIS, ytbNo + kod 01 makine',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['ytbNo'],
+    },
+    input: {
+      id: 'MTX2026000000049',
+      uuid: 'a1000049-0001-4000-8001-000000000049',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'YTBSATIS', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Teşvikli makine', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        itemClassificationCode: '01', productTraceId: 'MAKINA-MTX-049',
+        serialId: 'SN-MTX-049', brand: 'Matrix', model: 'MTX-01',
+      }],
+    },
+  },
+  // EARSIVFATURA+YTBISTISNA — Phantom KDV (M12)! 308 (makine) veya 339 (inşaat)
+  {
+    kind: 'invoice', variantSlug: 'phantom-308-makine', profile: 'EARSIVFATURA', type: 'YTBISTISNA',
+    notes: 'EARSIVFATURA+YTBISTISNA — Phantom KDV (M12): kod 308 + itemClassificationCode 01',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: ['308'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: true,
+      specialIdentifiers: ['ytbNo', 'phantom-kdv'],
+    },
+    input: {
+      id: 'MTX2026000000050',
+      uuid: 'a1000050-0001-4000-8001-000000000050',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'YTBISTISNA', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      kdvExemptionCode: '308',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Teşvikli makine — phantom KDV', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        itemClassificationCode: '01', kdvExemptionCode: '308',
+        productTraceId: 'MAKINA-MTX-050', serialId: 'SN-MTX-050', brand: 'Matrix', model: 'MTX-02',
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'phantom-339-insaat', profile: 'EARSIVFATURA', type: 'YTBISTISNA',
+    notes: 'EARSIVFATURA+YTBISTISNA — Phantom KDV: kod 339 + itemClassificationCode 02 inşaat',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: ['339'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: true,
+      specialIdentifiers: ['ytbNo', 'phantom-kdv'],
+    },
+    input: {
+      id: 'MTX2026000000051',
+      uuid: 'a1000051-0001-4000-8001-000000000051',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'YTBISTISNA', currencyCode: 'TRY',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      kdvExemptionCode: '339',
+      sender: { ...STANDARD_SENDER },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [{
+        name: 'Teşvikli inşaat hizmeti', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        itemClassificationCode: '02', kdvExemptionCode: '339',
+      }],
+    },
+  },
 ];
 
 export const invalidSpecs: InvalidSpec[] = [
