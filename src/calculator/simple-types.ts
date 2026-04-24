@@ -271,11 +271,26 @@ export interface SimpleOzelMatrahInput {
     amount: number;
 }
 
+/**
+ * SGK tipi literal union (B-NEW-09 / Sprint 8c.7).
+ *
+ * Önceden `string` idi; TS tip daraltma için union'a çevrildi. Runtime validator
+ * `validateSgkInput` ayrıca set-based kontrol uygular.
+ */
+export type SimpleSgkType =
+  | 'SAGLIK_ECZ'
+  | 'SAGLIK_HAS'
+  | 'SAGLIK_OPT'
+  | 'SAGLIK_MED'
+  | 'ABONELIK'
+  | 'MAL_HIZMET'
+  | 'DIGER';
+
 /** SGK faturası bilgisi */
 export interface SimpleSgkInput {
-    /** SGK tipi (SAGLIK_ECZ, SAGLIK_HAS, SAGLIK_OPT, SAGLIK_MED, ABONELIK, MAL_HIZMET, DIGER) */
-    type: string;
-    /** Döküm numarası */
+    /** SGK tipi — whitelist kontrolü runtime'da tetiklenir (B-NEW-09) */
+    type: SimpleSgkType;
+    /** Döküm numarası — boş olamaz (B-NEW-10) */
     documentNo: string;
     /** Firma/Kurum adı */
     companyName: string;

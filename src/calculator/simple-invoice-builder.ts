@@ -21,7 +21,9 @@ import { mapSimpleToInvoiceInput } from './simple-invoice-mapper';
 import { InvoiceBuilder } from '../builders/invoice-builder';
 import type { BuilderOptions } from '../types/builder-options';
 import type { InvoiceInput } from '../types/invoice-input';
+import type { ValidationError } from '../errors/ubl-build-error';
 import { validateManualExemption } from '../validators/manual-exemption-validator';
+import { validateSgkInput } from '../validators/sgk-input-validator';
 import { UblBuildError } from '../errors/ubl-build-error';
 
 export interface SimpleBuilderOptions extends BuilderOptions {
@@ -67,9 +69,12 @@ export class SimpleInvoiceBuilder {
     //    tetiklenir: KDV=0 kalem için kod zorunluluğu, KDV=0+tevkifat çakışması
     //    ve KDV>0+351 yasağı simple-input seviyesinde yakalanır.
     if (this.options.validationLevel !== 'none') {
-      const manualErrors = validateManualExemption(input);
-      if (manualErrors.length > 0) {
-        throw new UblBuildError(manualErrors);
+      const simpleInputErrors: ValidationError[] = [
+        ...validateManualExemption(input),
+        ...validateSgkInput(input),
+      ];
+      if (simpleInputErrors.length > 0) {
+        throw new UblBuildError(simpleInputErrors);
       }
     }
 

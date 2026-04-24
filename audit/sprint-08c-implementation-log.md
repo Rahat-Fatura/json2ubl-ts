@@ -295,3 +295,39 @@ Sprint 8c planlaması sırasında senaryo 26-idis-satis'in `validationLevel: 'ba
 - B-NEW-06 validator özel niteliği: `input.taxTotals` belge seviyesinde IHRAC kodu aranır (tüm satırlar aynı kodu paylaşır genelde; toplama aggregate edilmiş subtotal).
 
 ---
+
+## Sprint 8c.7 — G4 SGK (B-NEW-08, 09, 10)
+
+**Tarih:** 2026-04-24
+**Commit hedefi:** `Sprint 8c.7: G4 SGK (B-NEW-08, 09, 10)`
+
+### Yapılanlar
+
+1. **`SimpleSgkType` literal union** (`simple-types.ts`):
+   - Yeni tip: `'SAGLIK_ECZ' | 'SAGLIK_HAS' | 'SAGLIK_OPT' | 'SAGLIK_MED' | 'ABONELIK' | 'MAL_HIZMET' | 'DIGER'`.
+   - `SimpleSgkInput.type` string → SimpleSgkType (TS compile-time darlatma).
+
+2. **Yeni validator `src/validators/sgk-input-validator.ts`:**
+   - **R1 (B-NEW-08):** `type === 'SGK'` ama `sgk` undefined → `TYPE_REQUIRES_SGK`.
+   - **R2 (B-NEW-09):** `sgk.type` `SGK_TYPE_WHITELIST` dışı → `INVALID_VALUE` (runtime guard; TS bypass olan input'lar için).
+   - **R3 (B-NEW-10):** `sgk.documentNo`, `sgk.companyName`, `sgk.companyCode` boş → `MISSING_FIELD`.
+
+3. **`simple-invoice-builder.ts` pipeline'da register** — `validateSgkInput` `validateManualExemption` ile birlikte `validationLevel !== 'none'` her iki modda tetiklenir.
+
+4. **`__tests__/validators/sgk-input-validator.test.ts` (yeni, 9 test):**
+   - B-NEW-08: type=SGK sgk eksik + SATIS+sgk undefined pas
+   - B-NEW-09: whitelist geçerli/geçersiz type
+   - B-NEW-10: documentNo/companyName/companyCode boş (3 case)
+   - Normal: tam geçerli SGK + SATIS+sgk birlikte geçerli
+
+### Test Durumu
+
+- Başlangıç: 781/781 yeşil
+- Son: **790/790 yeşil** (+9)
+
+### Disiplin Notları
+
+- **Breaking TS tipi (B-NEW-09):** `SimpleSgkInput.type` string → union. Mevcut bilinen SGK tipi kullanıcıları etkilenmez (7 izinli değer), ama string literal'i farklı yazan kullanıcı TS hatası alır. CHANGELOG BREAKING CHANGES.
+- **Validator yerleşim:** SGK için ayrı validator dosyası (SGK kuralları domain-specific; manual-exemption-validator'a karıştırmak sorumluluğu bulanıklaştırır).
+
+---
