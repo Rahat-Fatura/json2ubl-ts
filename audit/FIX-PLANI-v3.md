@@ -78,7 +78,12 @@ Dev bağlamında public API yüzeyi endişesi ve geriye uyumluluk kısıtı **ka
 ### AR-8 `B-50 Outstanding/Oversupply` (Sprint 6, v2'de İPTAL)
 - **v3 yaklaşımı:** Input tipinde `outstandingQuantity`, `oversupplyQuantity`, `outstandingReason` alanları **varsa silinsin**. v2'de "ekleme" diyordu; v3'te "varsa kaldır" — public yüzey temizlensin.
 
-**Toplam agresif refactor kararı:** 8 (AR-1 ... AR-8).
+### AR-9 Reactive InvoiceSession — kullanıcı girişi akış tabanlı validator feedback (Sprint 8c, isim konulma)
+- **Durum:** Sprint 8c'de yalnızca isim konuldu; tasarım notu `audit/reactive-session-design-notes.md` dosyasına yazılacak. **Kod değişikliği v2.1.0 sprintinde** uygulanacak.
+- **Motivasyon:** Kullanıcı TEVKIFAT tipi seçtiğinde withholding alanı aktifleşir; KDV=0 kalem girerse exemption code dropdown açılır; 351 default önerilir; tip/profil seçimi alan aktivasyon/zorunluluk kurallarını canlı değiştirir.
+- **Kapsam:** Mevcut `src/invoice-session.ts` (M10 state snapshot validator) dokunulmaz; reactive katman yeni modül olacak. Event-driven API (InvoiceSession.on('fieldChanged', fn) + sessionMachine state transitions).
+
+**Toplam agresif refactor kararı:** 9 (AR-1 ... AR-9).
 
 ---
 
@@ -110,6 +115,19 @@ M1–M10 tanımları v2'de (satır 359–388) verildi. v3'te hepsi aynen geçerl
 
 - **M1 (PROFILE_TYPE_MATRIX tek truth source):** AR-3 ve AR-4 uyarınca hem `PROFILE_TYPE_MAP` hem `PROFILE_TYPE_MATRIX` **export edilmez**. Yalnızca helper API dışa açık.
 - **M9 (Yuvarlama):** AR-5 uyarınca `B-40 PayableRoundingAmount` **tam iptal** (opsiyonel kalıntı yok).
+
+### M11 Self-Exemption Types — Manuel 351 Politikası (Sprint 8c)
+
+**Karar:** Kendi istisna kodlarını taşıyan fatura tip/profilleri bir whitelist'te toplanır; dışındaki tüm fatura tiplerinde **KDV=0 kalem için kullanıcıdan manuel istisna kodu (varsayılan 351)** zorunludur. Kütüphane 351'i otomatik atamaz.
+
+- **Self-exemption tipleri:** ISTISNA, YTBISTISNA, IHRACKAYITLI, OZELMATRAH
+- **Self-exemption profilleri:** IHRACAT, YOLCUBERABERFATURA, OZELFATURA, YATIRIMTESVIK
+- **Dosya:** `src/config/self-exemption-types.ts` (yeni, Sprint 8c.3)
+- **Validator:** `src/validators/manual-exemption-validator.ts` (yeni, Sprint 8c.1)
+- **Gerekçe:** Önceki davranışta calculator `DEFAULT_EXEMPTIONS.satis = '351'` atıyordu; TEVKIFAT gibi self-exemption olmayan tiplerde `requiresZeroKdvLine: true` kuralıyla false-positive çakışma oluşuyordu (B-NEW-11). Kök çözüm: atama kaldırıldı, kontrol validator'a taşındı.
+- **Ek kurallar:** Aynı kalemde `kdvPercent=0` + `withholdingTaxCode` → `WITHHOLDING_INCOMPATIBLE_WITH_ZERO_KDV`; `kdvPercent>0` + kalem kodu `'351'` → `EXEMPTION_351_FORBIDDEN_FOR_NONZERO_KDV`.
+
+**Toplam mimari karar:** 11 (M1 ... M11).
 
 ---
 
@@ -320,8 +338,8 @@ zaten uygulanmış olduğu için ek commit açılmadı.
 
 > **Not (Sprint 8b.0, 2026-04-23):** Orijinal Sprint 8 üç alt-sprinte ayrıldı:
 > - **Sprint 8a** (tamamlandı, commit `966a049`): Devir bulgu temizliği + cross-cutting + Mimsoft fixture regresyon. Kapsanan: B-92 ✅, B-94 ✅. 641/641 test yeşil.
-> - **Sprint 8b** (devam ediyor, 2026-04-23 başladı): Comprehensive Examples Pack + README Sorumluluk Matrisi + CHANGELOG v2.0.0 + skill doc updates + dead code cleanup. Kapsanan: → B-93, → B-95, → B-96, → B-102, → B-S01..B-S05. Plan: `audit/sprint-08b-plan.md`, Log: `audit/sprint-08b-implementation-log.md`.
-> - **Sprint 8c** (planlı): `package.json` 1.4.2 → 2.0.0 bump + `git tag v2.0.0` + npm publish + GitHub release notes.
+> - **Sprint 8b** (tamamlandı, commit `076946e`): Comprehensive Examples Pack + README Sorumluluk Matrisi + CHANGELOG v2.0.0 + skill doc updates + dead code cleanup. Kapsanan: B-93 ✅, B-95 ✅, B-96 ✅, B-102 ✅, B-S01..B-S05 ✅. 755/755 test yeşil. Keşif: B-NEW-01..12 (`audit/b-new-audit.md`).
+> - **Sprint 8c** (devam ediyor, 2026-04-24 başladı): B-NEW-01..14 hotfix dalgası + M11 (Manuel 351) + AR-9 (Reactive InvoiceSession isim) + 9/9 workaround senaryo strict mode + `package.json` 1.4.2 → 2.0.0 bump + `git tag v2.0.0` + npm publish + GitHub release notes. 14 atomik alt-commit. Plan: `audit/sprint-08c-plan.md`, Log: `audit/sprint-08c-implementation-log.md`. Hedef: 755 → ~884 test. Yeni B-NEW-13 (YOLCU passport) ve B-NEW-14 (IDIS ETIKETNO) sprint 8c'de tanımlanır + düzeltilir.
 
 **Kapsanan Bulgular:** B-92 ✅, B-93 (→ 8b), B-94 ✅, B-95 (→ 8b), B-96 (→ 8b), B-102 (→ 8b), B-S01..B-S05 (→ 8b)
 **İptal:** B-103 (Kategori A)
