@@ -146,3 +146,33 @@ Sprint 8b tamamlandı (commit `076946e`): 38 senaryo + 114 test + README §8 Sor
 - **Validator `ihrackayitli-validator.ts` dokunulmadı** — low-level InvoiceInput üzerinde tetikleniyor; mapper sonrası ağaç doğru kurulduğu için otomatik pass.
 
 ---
+
+## Sprint 8c.3 — M11 + manual-exemption-validator test coverage
+
+**Tarih:** 2026-04-24
+**Commit hedefi:** `Sprint 8c.3: M11 self-exemption-types + manual-exemption-validator testleri`
+
+### Yapılanlar
+
+1. **`__tests__/config/self-exemption-types.test.ts`** (yeni, 10 test):
+   - `SELF_EXEMPTION_INVOICE_TYPES` set içerik + içermezlik
+   - `SELF_EXEMPTION_INVOICE_PROFILES` set içerik + içermezlik
+   - `isSelfExemptionInvoice()`: self-exemption tip → true, profil → true, non-self → false, defensive empty → false
+
+2. **`__tests__/validators/manual-exemption-validator.test.ts`** (yeni, 11 test):
+   - Self-exemption tipleri (ISTISNA, IHRACKAYITLI) + profilleri (YOLCU, YATIRIMTESVIK) → validator pas
+   - R1 KDV=0 + tevkifat kombinasyonu → `WITHHOLDING_INCOMPATIBLE_WITH_ZERO_KDV` (SATIS + TEVKIFAT tipinde)
+   - R2 KDV=0 + kod eksik → `MANUAL_EXEMPTION_REQUIRED_FOR_ZERO_KDV`; belge seviyesi kod, satır seviyesi kod fallback testleri
+   - R3 KDV>0 + satır kodu 351 → `EXEMPTION_351_FORBIDDEN_FOR_NONZERO_KDV`; 555 her oranda geçerli
+   - Normal senaryo doğrulama (hata yok)
+
+### Test Durumu
+
+- Başlangıç: 757/757 yeşil
+- Son: **778/778 yeşil** (+21 yeni test — config 10 + validator 11)
+
+### Plan İçi Disiplin
+
+- 8c.1'de fix ile birleşen config/validator için ek test coverage sağlandı. Plan'ın "test sayısı ~884" hedefi doğrultusunda birikmeli.
+
+---
