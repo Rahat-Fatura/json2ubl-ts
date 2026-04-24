@@ -12,6 +12,11 @@ import type { CalculatedLine, CalculatedTaxSubtotal, CalculatedWithholdingSubtot
 import { calculateAllLines } from './line-calculator';
 import { configManager } from './config-manager';
 import { DEFAULT_CURRENCY_CODE } from './currency-config';
+import { KDV_TAX_CODE } from './tax-config';
+import {
+  isPhantomKdvCombination,
+  PHANTOM_KDV_CALCULATION_SEQUENCE_NUMERIC,
+} from './phantom-kdv-rules';
 
 // ─── Hesaplama Sonuç Tipleri ────────────────────────────────────────────────────
 
@@ -80,13 +85,12 @@ const DEFAULT_EXEMPTIONS = {
 
 /**
  * Tüm belge seviyesi hesaplamalarını yapar:
- * 1. Satır hesaplamaları
- * 2. Monetary toplamlar
- * 3. Vergi subtotal gruplama
- * 4. Tevkifat subtotal gruplama
- * 5. Fatura tipi otomatik tespiti
- * 6. Profil otomatik tespiti
- * 7. İstisna kodu eşleştirme
+ * 1. Satır hesaplamaları (line-calculator)
+ * 2a. typesArray ön geçişi (tip tespitinden önce satır tipleri)
+ * 2b. Fatura tipi + profil tespiti
+ * 2c. M12 phantom KDV post-marking (YATIRIMTESVIK+ISTISNA, EARSIV+YTBISTISNA)
+ * 3. Monetary + vergi/tevkifat subtotal toplama (phantom satırların KDV'si dip'e girmez)
+ * 4. İstisna kodu eşleştirme
  */
 export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument {
   const currencyCode = input.currencyCode ?? DEFAULT_CURRENCY_CODE;
@@ -94,7 +98,32 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
   // 1. Satır hesaplamaları
   const calculatedLines = calculateAllLines(input.lines, currencyCode);
 
-  // 2. Monetary toplamlar
+  // 2a. Ön geçiş — tip tespiti için yalnız typesArray
+  const typesArray: string[] = [];
+  for (const line of calculatedLines) {
+    if (!typesArray.includes(line.type)) typesArray.push(line.type);
+  }
+
+  // 2b. Fatura tipi + profil tespiti (phantom kararı için gerekli)
+  const calculatedType = resolveInvoiceType(input, typesArray);
+  const calculatedProfile = resolveProfile(input, calculatedType);
+
+  // 2c. M12 Phantom KDV post-marking — YATIRIMTESVIK+ISTISNA veya EARSIV+YTBISTISNA ise
+  // tüm satırların KDV subtotal'ına CalculationSequenceNumeric=-1 işareti vur ve
+  // phantomKdv flag'ini set et. Downstream (monetary toplam, mapper) bu flag'i okur.
+  const isPhantomKdv = isPhantomKdvCombination(calculatedProfile, calculatedType);
+  if (isPhantomKdv) {
+    for (const line of calculatedLines) {
+      line.phantomKdv = true;
+      for (const ts of line.taxes.taxSubtotals) {
+        if (ts.code === KDV_TAX_CODE) {
+          ts.calculationSequenceNumeric = PHANTOM_KDV_CALCULATION_SEQUENCE_NUMERIC;
+        }
+      }
+    }
+  }
+
+  // 3. Monetary toplamlar (phantom satırların KDV'si dip'e girmez)
   let lineExtensionAmount = 0;
   let taxExclusiveAmount = 0;
   let taxInclusiveAmount = 0;
@@ -105,20 +134,30 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
 
   const taxSubtotals: CalculatedTaxSubtotal[] = [];
   const withholdingSubtotals: CalculatedWithholdingSubtotal[] = [];
-  const typesArray: string[] = [];
 
   for (const line of calculatedLines) {
-    if (!typesArray.includes(line.type)) typesArray.push(line.type);
-
     lineExtensionAmount += line.lineExtensionAmount;
     taxExclusiveAmount += line.lineExtensionAmount;
-    taxInclusiveAmount += line.taxInclusiveForMonetary;
     allowanceTotalAmount += line.allowanceObject.amount;
-    payableAmount += line.payableAmountForMonetary;
-    taxTotalAmount += line.taxes.taxTotal;
     withholdingTotalAmount += line.withholdingObject.taxTotal;
 
-    // 3. Vergi subtotal gruplama (aynı code + percent → birleştir)
+    if (line.phantomKdv) {
+      // Phantom: KDV parasal toplamlara girmez. taxInclusive = lineExtension,
+      // payable = lineExtension - withholding (tevkifat senaryosu olmaz ama kural gereği düşür).
+      taxInclusiveAmount += line.lineExtensionAmount;
+      payableAmount += line.lineExtensionAmount - line.withholdingObject.taxTotal;
+      // taxTotalAmount ve tax subtotal gruplama bypass edilir — phantom subtotal'lar
+      // XML'de satır seviyesinde taşınır, belge toplamı ayrı (mapper §2.1.4 uyarınca
+      // calc.taxes.taxSubtotals'ı phantom bilgisiyle kullanır).
+    } else {
+      taxInclusiveAmount += line.taxInclusiveForMonetary;
+      payableAmount += line.payableAmountForMonetary;
+      taxTotalAmount += line.taxes.taxTotal;
+    }
+
+    // 3a. Vergi subtotal gruplama (aynı code + percent → birleştir).
+    // Phantom satırlar da dahil edilir — mapper bunları §2.1.4 stili için kullanır,
+    // ama calculationSequenceNumeric=-1 işareti taşırlar.
     for (const tax of line.taxes.taxSubtotals) {
       const existingIndex = taxSubtotals.findIndex(
         t => t.code === tax.code && t.percent === tax.percent,
@@ -131,6 +170,7 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
           percent: tax.percent,
           code: tax.code,
           name: tax.name,
+          calculationSequenceNumeric: tax.calculationSequenceNumeric,
         });
       } else {
         taxSubtotals[existingIndex].amount += tax.amount;
@@ -139,7 +179,7 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
       }
     }
 
-    // 4. Tevkifat subtotal gruplama
+    // 3b. Tevkifat subtotal gruplama
     for (const tax of line.withholdingObject.taxSubtotals) {
       const existingIndex = withholdingSubtotals.findIndex(
         t => t.code === tax.code && t.percent === tax.percent,
@@ -179,14 +219,8 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
     });
   }
 
-  // 5. Fatura tipi otomatik tespiti
-  const calculatedType = resolveInvoiceType(input, typesArray);
-
-  // 6. İstisna kodu eşleştirme
+  // 4. İstisna kodu eşleştirme (tip + profil sabit kaldıktan sonra)
   const taxExemptionReason = resolveExemptionReason(input, calculatedType, typesArray);
-
-  // 7. Profil otomatik tespiti
-  const calculatedProfile = resolveProfile(input, calculatedType);
 
   // Exchange rate
   let exchangeRate: number | null = null;

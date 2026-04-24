@@ -114,3 +114,58 @@ Sprint 8c tamamlandı (commit `2afd1a3`): 800/800 test yeşil, `package.json=2.0
 - **Line-calculator saf:** Satır hesabı phantom bilgisini bilmez (belge tipi tespit edilmeden bilinemez); post-marking dokümente edilmiş tasarım kararı.
 
 ---
+
+## Sprint 8d.2 — document-calculator phantom post-marking + monetary dışlama
+
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8d.2: document-calculator phantom post-marking + monetary dışlama (M12)`
+
+### Yapılanlar
+
+1. **`src/calculator/document-calculator.ts` flow yeniden yapılandırıldı:**
+   - **Ön geçiş:** satırlar hesaplanır, `typesArray` oluşturulur (sadece tip tespiti için)
+   - **Tip + profil tespiti:** `resolveInvoiceType` + `resolveProfile` monetary toplamadan ÖNCE çağrılır
+   - **Phantom post-mark:** `isPhantomKdvCombination(profile, type)` true ise her satırın `phantomKdv=true` + KDV subtotal'larının `calculationSequenceNumeric=-1` işaretlenir
+   - **Ana döngü:** satırların `phantomKdv` flag'ine göre monetary (`taxInclusive`, `payable`) ve belge `taxTotal` phantom satırları dışlar; fakat `taxSubtotals[]` listesi phantom değerleri (amount=300, percent=20, CalcSeqNum=-1) korur — mapper §2.1.4 stili XML için bunları kullanacak.
+   - **İstisna kodu eşleştirme:** tip+profil sabit kaldıktan sonra `resolveExemptionReason` çağrılır.
+   - Docstring güncellendi.
+
+2. **Yeni test dosyası:** `__tests__/calculator/document-calculator-phantom.test.ts` (15 test)
+   - YATIRIMTESVIK+ISTISNA: 7 test (phantom flag, CalcSeqNum=-1, monetary dışlama, belge taxSubtotal değerleri)
+   - EARSIVFATURA+YTBISTISNA: 4 test (aynı özellikler, 339 kod varyantı)
+   - **Regression:** YATIRIMTESVIK+SATIS, YATIRIMTESVIK+IADE, EARSIV+YTBSATIS, TEMELFATURA+ISTISNA → phantom yok, normal davranış korunur.
+
+### Kritik kural: phantom satırın monetary davranışı
+
+```ts
+if (line.phantomKdv) {
+  taxInclusiveAmount += line.lineExtensionAmount;          // KDV hariç
+  payableAmount += line.lineExtensionAmount - withholding;  // KDV hariç
+  // taxTotalAmount dip'e eklenmez
+} else {
+  taxInclusiveAmount += line.taxInclusiveForMonetary;      // KDV dahil
+  payableAmount += line.payableAmountForMonetary;
+  taxTotalAmount += line.taxes.taxTotal;
+}
+```
+
+`taxSubtotals[]` listesi phantom satırları da içerir (§2.1.4 XML için gerekli) — ama her biri `calculationSequenceNumeric=-1` taşıyor ve dış `taxTotalAmount`'a katkı vermiyor.
+
+### Değişiklik İstatistikleri
+
+- `src/calculator/document-calculator.ts` — phantom post-mark + koşullu monetary toplama (~40 satır net artış)
+- `__tests__/calculator/document-calculator-phantom.test.ts` — yeni (~250 satır, 15 test)
+
+### Test Durumu
+
+- Başlangıç: 816/816 yeşil
+- Son: **831/831 yeşil** (+15 document-calculator-phantom)
+- Regression: 38 snapshot test değişmeden geçti (mevcut YATIRIMTESVIK+SATIS senaryo 12, 13, 14 ve tüm diğer ISTISNA senaryoları etkilenmedi)
+- Typecheck: temiz
+
+### Disiplin Notları
+
+- **Flow sırası kritik:** Fatura tipi + profil tespiti phantom kararı için GEREKLİ; önceki flow'da monetary önce toplanıyordu, bu yüzden iki adıma bölündü (ön geçiş tip, sonra ana toplama).
+- **M11 bozulmadı:** `resolveExemptionReason` mantığı değişmedi, YATIRIMTESVIK+ISTISNA için self-exemption fallback hâlâ çalışıyor.
+
+---
