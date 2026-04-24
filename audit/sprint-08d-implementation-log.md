@@ -73,3 +73,44 @@ Sprint 8c tamamlandı (commit `2afd1a3`): 800/800 test yeşil, `package.json=2.0
 - **v2.0.0 publish:** package.json zaten `2.0.0`; 8d tamamlanınca git tag yeniden atma veya ayrı version bump gerekmez (aynı unreleased tag'e Sprint 8d entry'si eklenir).
 
 ---
+
+## Sprint 8d.1 — phantom-kdv-rules helper + tip genişletme
+
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8d.1: phantom-kdv-rules helper + CalculatedTaxSubtotal/CalculatedLine tip genişletme`
+
+### Yapılanlar
+
+1. **`src/calculator/phantom-kdv-rules.ts`** (yeni, ~45 satır) — M12 kombinasyon kuralı tek noktada:
+   - `isPhantomKdvCombination(profile, type)` — YATIRIMTESVIK+ISTISNA veya EARSIVFATURA+YTBISTISNA
+   - `phantomKdvExemptionCodeFor(itemClassificationCode)` — 01 → 308, 02 → 339, diğer → null
+   - `PHANTOM_KDV_CALCULATION_SEQUENCE_NUMERIC = -1` sabit
+   - `PHANTOM_KDV_EXEMPTION_CODES = Set {'308', '339'}`
+   - `PHANTOM_KDV_ALLOWED_ITEM_CLASSIFICATION_CODES = Set {'01', '02'}`
+2. **`src/calculator/line-calculator.ts` tip genişletmeleri:**
+   - `CalculatedTaxSubtotal.calculationSequenceNumeric?: number` eklendi (XSD element adını birebir taşıyor)
+   - `CalculatedLine.phantomKdv: boolean` eklendi; `calculateLine` return'unda default `false`
+   - Phantom logic line-calculator'da *yok* — belge tipi tespit edildikten sonra document-calculator post-mark eder (planda §4.4)
+3. **`__tests__/calculator/phantom-kdv-rules.test.ts`** (yeni, 16 test):
+   - 8 `isPhantomKdvCombination` edge case (YATIRIMTESVIK+ISTISNA/SATIS/IADE, EARSIV+YTBISTISNA/YTBSATIS/YTBIADE, TEMELFATURA/TICARIFATURA+ISTISNA)
+   - 5 `phantomKdvExemptionCodeFor` mapping
+   - 3 sabit kontrol
+
+### Değişiklik İstatistikleri
+
+- `src/calculator/phantom-kdv-rules.ts` — yeni (45 satır)
+- `src/calculator/line-calculator.ts` — `CalculatedTaxSubtotal` + `CalculatedLine` tip genişletme + return default (+5 satır net)
+- `__tests__/calculator/phantom-kdv-rules.test.ts` — yeni (90 satır, 16 test)
+
+### Test Durumu
+
+- Başlangıç: 800/800 yeşil
+- Son: **816/816 yeşil** (+16 phantom-kdv-rules)
+- Typecheck: temiz
+
+### Disiplin Notları
+
+- **Tek kural kaynağı:** Phantom kombinasyon tespiti yalnız `phantom-kdv-rules.ts`'de. Document-calculator, mapper, validator bu helper'ı kullanacak; inline kontrol yasak.
+- **Line-calculator saf:** Satır hesabı phantom bilgisini bilmez (belge tipi tespit edilmeden bilinemez); post-marking dokümente edilmiş tasarım kararı.
+
+---

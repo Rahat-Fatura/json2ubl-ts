@@ -19,6 +19,8 @@ export interface CalculatedTaxSubtotal {
   taxable: number;
   amount: number;
   taxForCalculate: number;
+  /** M12 phantom KDV: YATIRIMTESVIK+ISTISNA / EARSIV+YTBISTISNA'da -1. */
+  calculationSequenceNumeric?: number;
 }
 
 export interface CalculatedWithholdingSubtotal {
@@ -62,6 +64,12 @@ export interface CalculatedLine {
   allowanceObject: CalculatedAllowance;
   withholdingObject: CalculatedLineWithholding;
   taxes: CalculatedLineTaxes;
+  /**
+   * M12 phantom KDV: `true` ise KDV dip toplamlara (LegalMonetaryTotal
+   * taxInclusiveAmount/payableAmount, belge-level TaxTotal/TaxAmount)
+   * dahil edilmez. Document-calculator tarafından post-mark edilir.
+   */
+  phantomKdv: boolean;
 }
 
 // ─── Hesaplama Fonksiyonu ───────────────────────────────────────────────────────
@@ -220,6 +228,7 @@ export function calculateLine(
     allowanceObject,
     withholdingObject,
     taxes,
+    phantomKdv: false,
   };
 }
 
