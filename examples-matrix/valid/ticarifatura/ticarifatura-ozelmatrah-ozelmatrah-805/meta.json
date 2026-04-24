@@ -1,0 +1,33 @@
+{
+  "id": "ticarifatura-ozelmatrah-ozelmatrah-805",
+  "kind": "invoice",
+  "profile": "TICARIFATURA",
+  "type": "OZELMATRAH",
+  "variantSlug": "ozelmatrah-805",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "805"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "ozelMatrah"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:10:47.088Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "TICARIFATURA+OZELMATRAH kod 805 (ikinci el emtia)"
+}

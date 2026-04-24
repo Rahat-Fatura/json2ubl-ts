@@ -1,0 +1,32 @@
+{
+  "id": "kamu-satis-usd-doviz",
+  "kind": "invoice",
+  "profile": "KAMU",
+  "type": "SATIS",
+  "variantSlug": "usd-doviz",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "USD",
+    "exchangeRate": true,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": true,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "buyerCustomer",
+      "iban"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:10:01.552Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "KAMU+SATIS USD döviz (kurumsal ithal)"
+}

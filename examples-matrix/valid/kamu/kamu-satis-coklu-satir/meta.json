@@ -1,0 +1,32 @@
+{
+  "id": "kamu-satis-coklu-satir",
+  "kind": "invoice",
+  "profile": "KAMU",
+  "type": "SATIS",
+  "variantSlug": "coklu-satir",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 3,
+    "paymentMeans": true,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "buyerCustomer",
+      "iban"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:10:01.552Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "KAMU+SATIS 3 satır farklı ürünler"
+}

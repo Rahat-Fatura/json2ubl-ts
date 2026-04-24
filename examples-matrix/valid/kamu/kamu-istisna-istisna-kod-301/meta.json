@@ -1,0 +1,34 @@
+{
+  "id": "kamu-istisna-istisna-kod-301",
+  "kind": "invoice",
+  "profile": "KAMU",
+  "type": "ISTISNA",
+  "variantSlug": "istisna-kod-301",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "301"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": true,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "buyerCustomer",
+      "iban"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:10:01.552Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "KAMU+ISTISNA kod 301 (Türkiye dışı ifa)"
+}

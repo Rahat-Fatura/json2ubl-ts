@@ -1,0 +1,31 @@
+{
+  "id": "ticarifatura-istisna-istisna-kod-201",
+  "kind": "invoice",
+  "profile": "TICARIFATURA",
+  "type": "ISTISNA",
+  "variantSlug": "istisna-kod-201",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "201"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:10:01.551Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "TICARIFATURA+ISTISNA kod 201 (diplomatik temsilci)"
+}
