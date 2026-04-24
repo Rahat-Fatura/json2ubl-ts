@@ -67,5 +67,16 @@ export function validateManualExemption(input: SimpleInvoiceInput): ValidationEr
     }
   }
 
+  // R4 (B-NEW-04, Sprint 8c.6) — Belge seviyesi kdvExemptionCode='351' verilmişse
+  // en az bir satırda KDV=0 olmalı. Tüm satırlar KDV>0 ise 351 kullanımı self-contradiction.
+  if (docExemptionCode === '351' && input.lines.every(l => l.kdvPercent > 0)) {
+    errors.push({
+      code: 'EXEMPTION_351_REQUIRES_ZERO_KDV_LINE',
+      message: `'351' kodu belge seviyesinde verilmişse en az bir satırda KDV=0 olmalı`,
+      path: 'kdvExemptionCode',
+      actual: '351',
+    });
+  }
+
   return errors;
 }

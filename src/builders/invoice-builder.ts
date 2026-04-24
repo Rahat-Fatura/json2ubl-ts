@@ -73,10 +73,13 @@ export class InvoiceBuilder {
     // §1 Ortak validasyon (basic ve strict)
     errors.push(...validateCommon(input));
 
-    if (level === 'strict') {
-      // §4 Çapraz matris kontrolü
-      errors.push(...validateCrossMatrix(input));
+    // §4 Çapraz matris kontrolü (Sprint 8c.6 / B-NEW-05) — artık basic+strict.
+    // Forbidden profile×type ve exemption kod × tip kombinasyonları kullanıcı
+    // hatası tespiti için her modda tetiklenir. İleri tip/profil detay kontrolü
+    // (validateByType + validateByProfile) strict'te kalır.
+    errors.push(...validateCrossMatrix(input));
 
+    if (level === 'strict') {
       // §2 Tip-bazlı validasyon
       errors.push(...validateByType(input));
 

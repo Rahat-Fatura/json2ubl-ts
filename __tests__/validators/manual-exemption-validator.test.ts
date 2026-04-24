@@ -131,6 +131,27 @@ describe('manual-exemption-validator (B-NEW-11 / M11)', () => {
     });
   });
 
+  describe('R4 — Belge seviyesi 351 + tüm satırlar KDV>0 (B-NEW-04, Sprint 8c.6)', () => {
+    it('Belge kdvExemptionCode=351 + tek satır KDV>0 → EXEMPTION_351_REQUIRES_ZERO_KDV_LINE', () => {
+      const errs = validateManualExemption(baseInput({
+        kdvExemptionCode: '351',
+        lines: [{ name: 'Demo', quantity: 1, price: 100, unitCode: 'Adet', kdvPercent: 20 }],
+      }));
+      expect(errs.some(e => e.code === 'EXEMPTION_351_REQUIRES_ZERO_KDV_LINE')).toBe(true);
+    });
+
+    it('Belge kdvExemptionCode=351 + en az bir satır KDV=0 → R4 tetiklenmez', () => {
+      const errs = validateManualExemption(baseInput({
+        kdvExemptionCode: '351',
+        lines: [
+          { name: 'Demo', quantity: 1, price: 100, unitCode: 'Adet', kdvPercent: 0 },
+          { name: 'Demo2', quantity: 1, price: 100, unitCode: 'Adet', kdvPercent: 20 },
+        ],
+      }));
+      expect(errs.filter(e => e.code === 'EXEMPTION_351_REQUIRES_ZERO_KDV_LINE')).toHaveLength(0);
+    });
+  });
+
   describe('Normal senaryo → hata yok', () => {
     it('SATIS + kdvPercent=20 + hiç kod yok → pas', () => {
       const errs = validateManualExemption(baseInput());

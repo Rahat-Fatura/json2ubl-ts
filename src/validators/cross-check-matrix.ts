@@ -197,6 +197,17 @@ function buildMatrix(): Map<string, TaxExemptionRule> {
     allowedInvoiceTypes: CODE_555_ALLOWED_TYPES,
   });
 
+  // 701-704 — IHRACKAYITLI grubu (Sprint 8c.6 / B-NEW-07)
+  // IHRACKAYITLI satırında KDV tutarı 0 olmalı (erteletilmiş KDV semantiği).
+  // buildMatrix üstünde IHRAC_GROUP_ALLOWED_TYPES zaten set edildi; burada
+  // requiresZeroKdvLine bayrağı üzerine yazılır.
+  for (const code of ['701', '702', '703', '704']) {
+    const existing = matrix.get(code);
+    if (existing) {
+      matrix.set(code, { ...existing, requiresZeroKdvLine: true });
+    }
+  }
+
   return matrix;
 }
 

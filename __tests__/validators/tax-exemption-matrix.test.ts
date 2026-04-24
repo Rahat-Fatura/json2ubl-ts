@@ -66,6 +66,13 @@ describe('TAX_EXEMPTION_MATRIX — yapı', () => {
     expect(rule?.allowedInvoiceTypes.has(InvoiceTypeCode.OZELMATRAH)).toBe(false);
   });
 
+  it('701-704 hepsinde requiresZeroKdvLine: true (B-NEW-07, Sprint 8c.6)', () => {
+    for (const code of ['701', '702', '703', '704']) {
+      const rule = TAX_EXEMPTION_MATRIX.get(code);
+      expect(rule?.requiresZeroKdvLine).toBe(true);
+    }
+  });
+
   it('801 OZELMATRAH grubu (OZELMATRAH/IADE/SGK)', () => {
     const rule = TAX_EXEMPTION_MATRIX.get('801');
     expect(rule?.allowedInvoiceTypes.has(InvoiceTypeCode.OZELMATRAH)).toBe(true);

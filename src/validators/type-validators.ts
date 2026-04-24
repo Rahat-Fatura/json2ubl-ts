@@ -207,6 +207,17 @@ function validateIhracKayitli(input: InvoiceInput): ValidationError[] {
   const allSubtotals = input.taxTotals?.flatMap(tt => tt.taxSubtotals || []) || [];
   const kdvSubtotals = allSubtotals.filter(ts => ts.taxTypeCode === '0015');
 
+  // B-NEW-06 (Sprint 8c.6): IHRACKAYITLI faturada 701-704 kodlarından biri zorunlu
+  const hasIhracKod = kdvSubtotals.some(ts =>
+    isNonEmpty(ts.taxExemptionReasonCode) && IHRAC_EXEMPTION_REASON_CODES.has(ts.taxExemptionReasonCode),
+  );
+  if (!hasIhracKod) {
+    errors.push(typeRequirement(InvoiceTypeCode.IHRACKAYITLI,
+      'taxTotals.taxSubtotals.taxExemptionReasonCode',
+      'IHRACKAYITLI faturasında 701-704 istisna kodlarından biri zorunludur'));
+  }
+
+  // Mevcut: kod verilmişse 701-704 whitelist kontrolü
   kdvSubtotals.forEach((ts, i) => {
     if (isNonEmpty(ts.taxExemptionReasonCode) &&
         !IHRAC_EXEMPTION_REASON_CODES.has(ts.taxExemptionReasonCode)) {

@@ -253,3 +253,45 @@ Sprint 8c planlaması sırasında senaryo 26-idis-satis'in `validationLevel: 'ba
 - **`basicModSlugs` set'i** Sprint 8c başlangıcında 8 senaryo içeriyordu (05, 07, 10, 16, 17, 20, 31, 99). 26 zaten strict'teydi; plan "9/9 strict" hedefinde 26 için ek fix gereksizdi — "8/8 basic→strict geçiş" doğru sayım.
 
 ---
+
+## Sprint 8c.6 — G3 Cross-check matrix fix (B-NEW-04, 05, 06, 07)
+
+**Tarih:** 2026-04-24
+**Commit hedefi:** `Sprint 8c.6: G3 cross-check matrix (B-NEW-04, 05, 06, 07)`
+
+### Yapılanlar
+
+1. **B-NEW-07 — 701-704 requiresZeroKdvLine (`cross-check-matrix.ts`):**
+   - `buildMatrix()` sonunda 701-704 kodlarının her biri için `requiresZeroKdvLine: true` override eklendi.
+   - IHRACKAYITLI faturada satır bazı KDV>0 → `EXEMPTION_REQUIRES_ZERO_KDV_LINE` hata.
+
+2. **B-NEW-06 — IHRACKAYITLI exemption zorunlu (`type-validators.ts:validateIhracKayitli`):**
+   - Mevcut "kod whitelist" kontrolüne ek olarak **"en az bir 701-704 kodu zorunlu"** kontrolü eklendi.
+   - Tip IHRACKAYITLI ama hiç exemption kodu yoksa → `TYPE_REQUIREMENT` hata.
+
+3. **B-NEW-05 — `validateCrossMatrix` basic+strict her iki modda (`invoice-builder.ts`):**
+   - Önceki davranış: cross-matrix sadece strict'te tetikleniyordu (forbidden profile×type, exemption kod×tip vb.).
+   - Yeni: basic+strict her iki modda. `validateByType` ve `validateByProfile` yalnız strict'te kalır (ileri detay kontrolü).
+   - Önceden basic'te sessiz geçen `SATIS+702` gibi kombinasyonlar artık FORBIDDEN_EXEMPTION_FOR_TYPE döndürür.
+
+4. **B-NEW-04 — 351 belge seviyesi + tüm satırlar KDV>0 (`manual-exemption-validator.ts:R4`):**
+   - Yeni kural: `docExemptionCode === '351' && input.lines.every(l => l.kdvPercent > 0)` → `EXEMPTION_351_REQUIRES_ZERO_KDV_LINE`.
+   - Senaryo: kullanıcı belge seviyesi 351 veriyor ama hiçbir kalemde KDV=0 yok — self-contradiction yakalanır.
+
+### Yeni testler
+
+- `__tests__/validators/manual-exemption-validator.test.ts` R4 — 2 test (tek-satır KDV>0 hata + en az bir KDV=0 pas).
+- `__tests__/validators/tax-exemption-matrix.test.ts` 701-704 — 1 test (hepsinde `requiresZeroKdvLine: true`).
+
+### Test Durumu
+
+- Başlangıç: 778/778 yeşil
+- Son: **781/781 yeşil** (+3)
+
+### Disiplin Notları
+
+- B-NEW-05 `validateCrossMatrix` basic'e taşınması **BREAKING** potansiyeli: önceden basic'te geçen hatalı `type×exemption` input'ları artık reddedilir. CHANGELOG'da BREAKING CHANGES altında belirtilecek.
+- B-NEW-04 R4 `manual-exemption-validator`'a eklendi (cross-check değil) — çünkü `validateTaxExemptionMatrix` yalnızca XML'e yazılmış `taxExemptionReasonCode`'ları kontrol ediyor; belge seviyesi `input.kdvExemptionCode` XML'e yazılmadan önce (simple-input seviyesinde) yakalanır.
+- B-NEW-06 validator özel niteliği: `input.taxTotals` belge seviyesinde IHRAC kodu aranır (tüm satırlar aynı kodu paylaşır genelde; toplama aggregate edilmiş subtotal).
+
+---
