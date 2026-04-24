@@ -11,6 +11,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { PROFILE_TYPE_MATRIX } from '../../src/config/constants';
+import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 
 const MATRIX_ROOT = path.resolve(__dirname, '..');
 
@@ -116,24 +118,147 @@ function groupInvalidByPrimaryCode(
   return map;
 }
 
+// Sprint 8f.13: Pivot + coverage gap + error/exemption dağılım helpers
+
+function buildPivotTable(valid: Array<{ meta: ValidMeta }>): { rows: string[]; matrixTypes: string[] } {
+  // Tüm tipleri topla (yalnızca invoice senaryolarından; despatch ayrı)
+  const typeSet = new Set<string>();
+  const countMap = new Map<string, Map<string, number>>();
+  for (const { meta } of valid) {
+    if (meta.kind !== 'invoice') continue;
+    typeSet.add(meta.type);
+    if (!countMap.has(meta.profile)) countMap.set(meta.profile, new Map());
+    const typeMap = countMap.get(meta.profile)!;
+    typeMap.set(meta.type, (typeMap.get(meta.type) ?? 0) + 1);
+  }
+  const matrixTypes = Array.from(typeSet).sort();
+  const profiles = Array.from(countMap.keys()).sort();
+
+  const rows: string[] = [];
+  rows.push(`| Profil \\ Tip | ${matrixTypes.join(' | ')} | **Toplam** |`);
+  rows.push(`|---${matrixTypes.map(() => '|---:').join('')}|---:|`);
+  for (const profile of profiles) {
+    const typeMap = countMap.get(profile)!;
+    const cells = matrixTypes.map(t => {
+      const n = typeMap.get(t);
+      return n ? String(n) : '—';
+    });
+    const total = Array.from(typeMap.values()).reduce((a, b) => a + b, 0);
+    rows.push(`| ${profile} | ${cells.join(' | ')} | **${total}** |`);
+  }
+  return { rows, matrixTypes };
+}
+
+function buildCoverageGap(valid: Array<{ meta: ValidMeta }>): string[] {
+  // Mevcut kombinasyonlar set
+  const coveredSet = new Set<string>();
+  for (const { meta } of valid) {
+    if (meta.kind !== 'invoice') continue;
+    coveredSet.add(`${meta.profile}|${meta.type}`);
+  }
+
+  // PROFILE_TYPE_MATRIX tümünü tara
+  const missing: Array<{ profile: string; type: string }> = [];
+  for (const [profileKey, typeSet] of Object.entries(PROFILE_TYPE_MATRIX)) {
+    const profileName = profileKey as InvoiceProfileId;
+    for (const type of typeSet) {
+      const typeName = type as InvoiceTypeCode;
+      if (!coveredSet.has(`${profileName}|${typeName}`)) {
+        missing.push({ profile: profileName, type: typeName });
+      }
+    }
+  }
+
+  const lines: string[] = [];
+  if (missing.length === 0) {
+    lines.push('✅ **Tüm PROFILE_TYPE_MATRIX kombinasyonları kapsamlı.**');
+  } else {
+    lines.push(`⚠️ **${missing.length} kombinasyon kapsamsız** (PROFILE_TYPE_MATRIX'te izinli ama senaryo yok):`);
+    lines.push('');
+    for (const { profile, type } of missing) {
+      lines.push(`- ${profile} × ${type}`);
+    }
+  }
+  return lines;
+}
+
+function buildBarChart(counts: Map<string, number>, title: string): string[] {
+  const lines: string[] = [];
+  lines.push(`### ${title}`);
+  lines.push('');
+  lines.push('```');
+  const sortedEntries = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  if (sortedEntries.length === 0) {
+    lines.push('(veri yok)');
+  } else {
+    const maxCount = Math.max(...sortedEntries.map(([, n]) => n));
+    const maxLabelLen = Math.max(...sortedEntries.map(([k]) => k.length));
+    for (const [label, count] of sortedEntries) {
+      const barLen = Math.round((count / maxCount) * 24);
+      const bar = '█'.repeat(barLen);
+      lines.push(`${label.padEnd(maxLabelLen)}  ${bar} ${count}`);
+    }
+  }
+  lines.push('```');
+  lines.push('');
+  return lines;
+}
+
+function buildErrorCodeChart(
+  invalid: Array<{ meta: InvalidMeta }>,
+): string[] {
+  const counts = new Map<string, number>();
+  for (const { meta } of invalid) {
+    counts.set(meta.primaryCode, (counts.get(meta.primaryCode) ?? 0) + 1);
+  }
+  return buildBarChart(counts, 'Error Code Dağılımı (invalid senaryolarda)');
+}
+
+function buildExemptionCodeChart(
+  valid: Array<{ meta: ValidMeta }>,
+): string[] {
+  const counts = new Map<string, number>();
+  for (const { meta } of valid) {
+    const codes = (meta.dimensions as any)?.exemptionCodes;
+    if (Array.isArray(codes)) {
+      for (const c of codes) {
+        counts.set(String(c), (counts.get(String(c)) ?? 0) + 1);
+      }
+    }
+  }
+  return buildBarChart(counts, 'Exemption Code Dağılımı (valid senaryolarda)');
+}
+
 export function buildReadme(): string {
   const valid = discoverValid();
   const invalid = discoverInvalid();
   const validByProfile = groupValidByProfile(valid);
   const invalidByCode = groupInvalidByPrimaryCode(invalid);
 
+  // Matrix istatistikleri
+  const matrixTotal = Object.values(PROFILE_TYPE_MATRIX).reduce((a, s) => a + s.size, 0);
+  const coveredCombos = new Set<string>();
+  for (const { meta } of valid) {
+    if (meta.kind === 'invoice') coveredCombos.add(`${meta.profile}|${meta.type}`);
+  }
+  const coverageRatio = matrixTotal > 0 ? (coveredCombos.size / matrixTotal) * 100 : 0;
+
   const lines: string[] = [];
   lines.push('# examples-matrix/');
   lines.push('');
-  lines.push('Sprint 8e (Publish Öncesi Kapsam Doğrulama) altında üretilen **script-assisted kapsam kataloğu**. Kütüphanenin desteklediği profil+tip kombinasyonları ve validator error code\'ları için çalıştırılabilir example\'lar.');
+  lines.push('Sprint 8e (Publish Öncesi Kapsam Doğrulama) + Sprint 8f (Bug hotfix + kapsam genişletme) altında üretilen **script-assisted kapsam kataloğu**. Kütüphanenin desteklediği profil+tip kombinasyonları ve validator error code\'ları için çalıştırılabilir example\'lar.');
   lines.push('');
   lines.push('> **Auto-generated** — `examples-matrix/_lib/meta-indexer.ts` tarafından tüm `meta.json` dosyalarından üretilir. Manuel düzenleme yapılmamalı; yerine `npx tsx examples-matrix/_lib/meta-indexer.ts --write` ile yeniden üretilir.');
   lines.push('');
-  lines.push(`## Özet`);
+
+  // Dashboard özet
+  lines.push('## 📊 Özet (Dashboard)');
   lines.push('');
-  lines.push(`- **Valid senaryo:** ${valid.length} (${validByProfile.size} profil)`);
-  lines.push(`- **Invalid senaryo:** ${invalid.length} (${invalidByCode.size} farklı error code)`);
-  lines.push(`- **Toplam:** ${valid.length + invalid.length}`);
+  lines.push(`- **${validByProfile.size} profil** × **${new Set(valid.filter(v => v.meta.kind === 'invoice').map(v => v.meta.type)).size} tip** — PROFILE_TYPE_MATRIX'te **${matrixTotal} kombinasyon** tanımlı`);
+  lines.push(`- **${valid.length} valid senaryo** (${valid.filter(v => v.meta.kind === 'invoice').length} invoice + ${valid.filter(v => v.meta.kind === 'despatch').length} despatch)`);
+  lines.push(`- **${invalid.length} invalid senaryo** — ${invalidByCode.size} farklı error code kapsıyor`);
+  lines.push(`- **Coverage:** ${coveredCombos.size}/${matrixTotal} kombinasyon (%${coverageRatio.toFixed(1)})`);
+  lines.push(`- **Toplam:** ${valid.length + invalid.length} senaryo`);
   lines.push('');
 
   lines.push('## Kullanım');
@@ -148,8 +273,28 @@ export function buildReadme(): string {
   lines.push('# Filtreleyerek gezin:');
   lines.push('npx tsx examples-matrix/find.ts --profile=TEMELFATURA --type=IHRACKAYITLI');
   lines.push('npx tsx examples-matrix/find.ts --error-code=MISSING_FIELD');
+  lines.push('npx tsx examples-matrix/find.ts --has-withholding --currency=USD');
   lines.push('```');
   lines.push('');
+
+  // Pivot tablo
+  lines.push('## Profil × Tip Pivot Tablosu');
+  lines.push('');
+  const { rows: pivotRows } = buildPivotTable(valid);
+  lines.push(...pivotRows);
+  lines.push('');
+
+  // Coverage gap
+  lines.push('## Coverage Gap Report');
+  lines.push('');
+  lines.push(...buildCoverageGap(valid));
+  lines.push('');
+
+  // Error code dağılımı
+  lines.push('## Kod Dağılımları');
+  lines.push('');
+  lines.push(...buildErrorCodeChart(invalid));
+  lines.push(...buildExemptionCodeChart(valid));
 
   // Valid — profil bazında
   lines.push('## Valid Senaryolar (profil bazında)');
@@ -189,10 +334,10 @@ export function buildReadme(): string {
 
   lines.push('## Kapsam Dışı');
   lines.push('');
-  lines.push('Sprint 8e boyunca aşağıdaki dizinler **dokunulmaz**:');
+  lines.push('Sprint 8e (dokunulmaz) + Sprint 8f (sadece bug fix için src/ dokunuldu):');
   lines.push('');
-  lines.push('- `src/**` — Kütüphane kodu. Bulunan bug\'lar yalnızca `audit/sprint-08e-implementation-log.md` → "Bulunan Buglar" section\'ına loglanır; düzeltme Sprint 8f\'te yapılır.');
-  lines.push('- `examples/**` — Mevcut 38 el-yazımı senaryo.');
+  lines.push('- `src/**` — Sprint 8e boyunca tamamen dokunulmadı; 8f\'te sadece Bug #1-3 fix\'leri için minimal değişiklik (WITHHOLDING_ALLOWED_TYPES, validateOzelMatrah, YATIRIMTESVIK_REQUIRES_YTBNO). Yeni feature yok.');
+  lines.push('- `examples/**` — Mevcut 38 el-yazımı senaryo (dokunulmaz).');
   lines.push('');
 
   return lines.join('\n');
