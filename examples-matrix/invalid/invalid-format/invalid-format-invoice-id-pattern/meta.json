@@ -1,0 +1,16 @@
+{
+  "id": "invalid-format-invoice-id-pattern",
+  "kind": "invalid-invoice",
+  "primaryCode": "INVALID_FORMAT",
+  "errorCodes": [
+    "INVALID_FORMAT"
+  ],
+  "description": "Invoice ID pattern dışı (format 3 harf/rakam + 20XX + 9 rakam olmalı)",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T14:22:41.143Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

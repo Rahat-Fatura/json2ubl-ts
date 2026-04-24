@@ -1,0 +1,16 @@
+{
+  "id": "type-requirement-tevkifat-withholding-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "TYPE_REQUIREMENT",
+  "errorCodes": [
+    "TYPE_REQUIREMENT"
+  ],
+  "description": "TEVKIFAT tipinde withholdingTaxTotals eksik",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "TEVKIFAT",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T14:22:41.146Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

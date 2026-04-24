@@ -1,0 +1,16 @@
+{
+  "id": "profile-requirement-hks-kunyeno-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "PROFILE_REQUIREMENT",
+  "errorCodes": [
+    "PROFILE_REQUIREMENT"
+  ],
+  "description": "HKS satırında KUNYENO kimliği eksik",
+  "profileContext": "HKS",
+  "typeContext": "HKSSATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T14:22:41.145Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

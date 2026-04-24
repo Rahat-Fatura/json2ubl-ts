@@ -1,0 +1,14 @@
+{
+  "errors": [
+    {
+      "code": "TYPE_REQUIREMENT",
+      "path": "taxTotals.taxSubtotals[0].taxExemptionReasonCode",
+      "message": "[OZELMATRAH] OZELMATRAH faturalarında TaxExemptionReasonCode zorunludur (801-812 aralığı)"
+    },
+    {
+      "code": "TYPE_REQUIREMENT",
+      "path": "taxTotals.taxSubtotals[1].taxExemptionReasonCode",
+      "message": "[OZELMATRAH] OZELMATRAH faturalarında TaxExemptionReasonCode zorunludur (801-812 aralığı)"
+    }
+  ]
+}

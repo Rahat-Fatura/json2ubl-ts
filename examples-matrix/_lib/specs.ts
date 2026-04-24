@@ -4073,6 +4073,202 @@ export const invalidSpecs: InvalidSpec[] = [
       }],
     },
   },
+
+  // ─── Sprint 8f.11 — Invalid single-error edge cases (+13) ───
+
+  // Sprint 8f.2 (Bug #2) — OZELMATRAH + taxExemptionReasonCode eksik (yeni)
+  {
+    kind: 'invalid-invoice', variantSlug: 'ozelmatrah-kod-eksik',
+    primaryCode: 'TYPE_REQUIREMENT',
+    description: 'OZELMATRAH + taxExemptionReasonCode eksik (Bug #2 fix sonrası)',
+    profileContext: 'TEMELFATURA', typeContext: 'OZELMATRAH',
+    expectedErrors: [{ code: 'TYPE_REQUIREMENT', messageIncludes: '801-812' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000201', 'b1000201-0001-4000-8001-000000000201'),
+      type: 'OZELMATRAH',
+      ozelMatrah: { percent: 18, taxable: 500, amount: 90 },
+      lines: [{ name: 'Özel matrah ürün', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0 }],
+    },
+  },
+
+  // MISSING_FIELD — supplier city boş (farklı alan)
+  {
+    kind: 'invalid-invoice', variantSlug: 'supplier-taxoffice-bos',
+    primaryCode: 'MISSING_FIELD',
+    description: 'IHRACAT profilinde supplier.taxOffice boş (profil için zorunlu)',
+    profileContext: 'IHRACAT', typeContext: 'ISTISNA',
+    expectedErrors: [{ code: 'PROFILE_REQUIREMENT', messageIncludes: 'vergi dairesi' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000202', 'b1000202-0001-4000-8001-000000000202'),
+      profile: 'IHRACAT', type: 'ISTISNA',
+      currencyCode: 'USD', exchangeRate: 32.5, kdvExemptionCode: '301',
+      sender: { ...STANDARD_SENDER, taxOffice: '' },
+      buyerCustomer: { name: 'FB', taxNumber: 'X1', address: 'A', district: 'D', city: 'C', country: 'UK' },
+      lines: [{ name: 'İhr', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0,
+        delivery: { deliveryTermCode: 'FOB', gtipNo: '847330000001',
+          deliveryAddress: { address: 'L', district: 'A', city: 'İ', country: 'Türkiye' } } }],
+    },
+  },
+
+  // MISSING_FIELD — UUID boş
+  {
+    kind: 'invalid-invoice', variantSlug: 'uuid-bos',
+    primaryCode: 'MISSING_FIELD',
+    description: 'UUID boş string',
+    profileContext: 'TEMELFATURA', typeContext: 'SATIS',
+    expectedErrors: [{ code: 'MISSING_FIELD', path: 'uuid' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: { ...baseInvoiceInput('MTX2026000000203', 'b1000203-0001-4000-8001-000000000203'), uuid: '' },
+  },
+
+  // INVALID_FORMAT — Invoice ID pattern hatalı
+  {
+    kind: 'invalid-invoice', variantSlug: 'invoice-id-pattern',
+    primaryCode: 'INVALID_FORMAT',
+    description: 'Invoice ID pattern dışı (format 3 harf/rakam + 20XX + 9 rakam olmalı)',
+    profileContext: 'TEMELFATURA', typeContext: 'SATIS',
+    expectedErrors: [{ code: 'INVALID_FORMAT', path: 'id' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: { ...baseInvoiceInput('invalid-id', 'b1000204-0001-4000-8001-000000000204') },
+  },
+
+  // PROFILE_REQUIREMENT — IHRACAT delivery eksik
+  {
+    kind: 'invalid-invoice', variantSlug: 'ihracat-delivery-eksik',
+    primaryCode: 'PROFILE_REQUIREMENT',
+    description: 'IHRACAT satırında delivery (GTİP + INCOTERMS) eksik',
+    profileContext: 'IHRACAT', typeContext: 'ISTISNA',
+    expectedErrors: [{ code: 'PROFILE_REQUIREMENT', messageIncludes: 'Delivery' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000205', 'b1000205-0001-4000-8001-000000000205'),
+      profile: 'IHRACAT', type: 'ISTISNA',
+      currencyCode: 'USD', exchangeRate: 32.5, kdvExemptionCode: '301',
+      buyerCustomer: { name: 'Foreign Buyer', taxNumber: 'X12345', address: 'A', district: 'D', city: 'C', country: 'UK' },
+      lines: [{ name: 'İhraç ürün', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0 }],
+    },
+  },
+
+  // PROFILE_REQUIREMENT — IDIS SEVKIYATNO eksik
+  {
+    kind: 'invalid-invoice', variantSlug: 'idis-sevkiyatno-eksik',
+    primaryCode: 'PROFILE_REQUIREMENT',
+    description: 'IDIS profilinde supplier SEVKIYATNO kimliği eksik',
+    profileContext: 'IDIS', typeContext: 'SATIS',
+    expectedErrors: [{ code: 'PROFILE_REQUIREMENT', messageIncludes: 'SEVKIYATNO' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000206', 'b1000206-0001-4000-8001-000000000206'),
+      profile: 'IDIS',
+      lines: [{
+        name: 'IDIS ürün', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'ID0000206' }],
+      }],
+    },
+  },
+
+  // PROFILE_REQUIREMENT — HKS KUNYENO eksik
+  {
+    kind: 'invalid-invoice', variantSlug: 'hks-kunyeno-eksik',
+    primaryCode: 'PROFILE_REQUIREMENT',
+    description: 'HKS satırında KUNYENO kimliği eksik',
+    profileContext: 'HKS', typeContext: 'HKSSATIS',
+    expectedErrors: [{ code: 'PROFILE_REQUIREMENT', messageIncludes: 'KUNYENO' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000207', 'b1000207-0001-4000-8001-000000000207'),
+      profile: 'HKS', type: 'HKSSATIS',
+      lines: [{ name: 'HKS ürün', quantity: 1, price: 500, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+
+  // PROFILE_REQUIREMENT — KAMU buyerCustomer VKN eksik
+  {
+    kind: 'invalid-invoice', variantSlug: 'kamu-buyervkn-eksik',
+    primaryCode: 'PROFILE_REQUIREMENT',
+    description: 'KAMU profilinde buyerCustomer.taxNumber (VKN) eksik',
+    profileContext: 'KAMU', typeContext: 'SATIS',
+    expectedErrors: [{ code: 'PROFILE_REQUIREMENT', messageIncludes: 'VKN' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000208', 'b1000208-0001-4000-8001-000000000208'),
+      profile: 'KAMU',
+      customer: { ...STANDARD_CUSTOMER, taxNumber: '1460415308', name: 'T.C. Kamu Kurumu' },
+      buyerCustomer: { ...KAMU_BUYER_CUSTOMER, taxNumber: '' },
+      paymentMeans: { ...KAMU_PAYMENT_MEANS },
+      lines: [{ name: 'Kamu ürün', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+
+  // INVALID_FORMAT — YATIRIMTESVIK ytbNo 5 haneli
+  {
+    kind: 'invalid-invoice', variantSlug: 'ytbno-5-hane',
+    primaryCode: 'INVALID_FORMAT',
+    description: 'YATIRIMTESVIK ytbNo 6 hane değil (5 haneli)',
+    profileContext: 'YATIRIMTESVIK', typeContext: 'SATIS',
+    expectedErrors: [{ code: 'INVALID_FORMAT', path: 'contractReference.id' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000209', 'b1000209-0001-4000-8001-000000000209'),
+      profile: 'YATIRIMTESVIK',
+      ytbNo: '12345', ytbIssueDate: '2026-01-15',
+      lines: [{
+        name: 'Makine', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        itemClassificationCode: '01',
+        productTraceId: 'PT', serialId: 'SN', brand: 'B', model: 'M',
+      }],
+    },
+  },
+
+  // PROFILE_REQUIREMENT — YATIRIMTESVIK satırda itemClassificationCode eksik
+  {
+    kind: 'invalid-invoice', variantSlug: 'ytb-classcode-eksik',
+    primaryCode: 'PROFILE_REQUIREMENT',
+    description: 'YATIRIMTESVIK satırda itemClassificationCode eksik',
+    profileContext: 'YATIRIMTESVIK', typeContext: 'SATIS',
+    expectedErrors: [{ code: 'PROFILE_REQUIREMENT', messageIncludes: 'ItemClassificationCode' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000210', 'b1000210-0001-4000-8001-000000000210'),
+      profile: 'YATIRIMTESVIK',
+      ytbNo: '123456', ytbIssueDate: '2026-01-15',
+      lines: [{ name: 'Teşvikli mal', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+
+  // TYPE_REQUIREMENT — TEVKIFAT tipinde withholdingTaxCode eksik
+  {
+    kind: 'invalid-invoice', variantSlug: 'tevkifat-withholding-eksik',
+    primaryCode: 'TYPE_REQUIREMENT',
+    description: 'TEVKIFAT tipinde withholdingTaxTotals eksik',
+    profileContext: 'TEMELFATURA', typeContext: 'TEVKIFAT',
+    expectedErrors: [{ code: 'TYPE_REQUIREMENT', messageIncludes: 'WithholdingTaxTotal' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000211', 'b1000211-0001-4000-8001-000000000211'),
+      type: 'TEVKIFAT',
+      lines: [{ name: 'Tevkifat hizmet', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+    },
+  },
+
+  // PROFILE_REQUIREMENT — EARSIV+YTB tipinde ytbNo eksik (Bug #3)
+  {
+    kind: 'invalid-invoice', variantSlug: 'earsiv-ytbsatis-ytbno-eksik',
+    primaryCode: 'YATIRIMTESVIK_REQUIRES_YTBNO',
+    description: 'EARSIV+YTBSATIS tipinde ytbNo eksik (Bug #3 EARSIV branch)',
+    profileContext: 'EARSIVFATURA', typeContext: 'YTBSATIS',
+    expectedErrors: [{ code: 'YATIRIMTESVIK_REQUIRES_YTBNO' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000213', 'b1000213-0001-4000-8001-000000000213'),
+      profile: 'EARSIVFATURA', type: 'YTBSATIS',
+      lines: [{ name: 'YTB mal', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+        itemClassificationCode: '01',
+        productTraceId: 'PT', serialId: 'SN', brand: 'B', model: 'M' }],
+    },
+  },
 ];
 
 export const allSpecs: Array<ValidSpec | InvalidSpec> = [

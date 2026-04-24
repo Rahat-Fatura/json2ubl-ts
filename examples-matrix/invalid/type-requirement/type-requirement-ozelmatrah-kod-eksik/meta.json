@@ -1,0 +1,16 @@
+{
+  "id": "type-requirement-ozelmatrah-kod-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "TYPE_REQUIREMENT",
+  "errorCodes": [
+    "TYPE_REQUIREMENT"
+  ],
+  "description": "OZELMATRAH + taxExemptionReasonCode eksik (Bug #2 fix sonrası)",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "OZELMATRAH",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T14:22:41.143Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

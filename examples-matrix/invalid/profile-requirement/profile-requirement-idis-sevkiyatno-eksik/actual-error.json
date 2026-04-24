@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "supplier.additionalIdentifiers.SEVKIYATNO",
+      "message": "[IDIS] IDIS profilinde satıcıda SEVKIYATNO zorunludur"
+    }
+  ]
+}

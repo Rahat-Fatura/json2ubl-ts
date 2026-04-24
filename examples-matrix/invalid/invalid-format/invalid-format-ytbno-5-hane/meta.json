@@ -1,0 +1,16 @@
+{
+  "id": "invalid-format-ytbno-5-hane",
+  "kind": "invalid-invoice",
+  "primaryCode": "INVALID_FORMAT",
+  "errorCodes": [
+    "INVALID_FORMAT"
+  ],
+  "description": "YATIRIMTESVIK ytbNo 6 hane değil (5 haneli)",
+  "profileContext": "YATIRIMTESVIK",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T14:22:41.145Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

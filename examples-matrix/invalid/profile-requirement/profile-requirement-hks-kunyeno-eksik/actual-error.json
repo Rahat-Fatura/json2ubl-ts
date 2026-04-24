@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "lines[0].item.additionalItemIdentifications",
+      "message": "[HKS] HKS profilinde her satırda KUNYENO zorunludur"
+    }
+  ]
+}

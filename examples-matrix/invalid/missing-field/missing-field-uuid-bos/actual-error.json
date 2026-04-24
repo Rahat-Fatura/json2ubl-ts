@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "MISSING_FIELD",
+      "path": "uuid",
+      "message": "UUID (cbc:UUID) zorunludur"
+    }
+  ]
+}

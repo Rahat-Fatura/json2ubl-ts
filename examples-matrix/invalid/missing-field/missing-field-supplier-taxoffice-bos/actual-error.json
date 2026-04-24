@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "supplier.taxOffice",
+      "message": "[IHRACAT] IHRACAT profilinde satıcı vergi dairesi adı zorunludur"
+    }
+  ]
+}

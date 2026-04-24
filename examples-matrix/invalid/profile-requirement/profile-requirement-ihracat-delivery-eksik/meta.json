@@ -1,0 +1,16 @@
+{
+  "id": "profile-requirement-ihracat-delivery-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "PROFILE_REQUIREMENT",
+  "errorCodes": [
+    "PROFILE_REQUIREMENT"
+  ],
+  "description": "IHRACAT satırında delivery (GTİP + INCOTERMS) eksik",
+  "profileContext": "IHRACAT",
+  "typeContext": "ISTISNA",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T14:22:41.144Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

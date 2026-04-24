@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "buyerCustomer.party.vknTckn",
+      "message": "[KAMU] KAMU: Alıcı kurum VKN/TCKN zorunludur"
+    }
+  ]
+}

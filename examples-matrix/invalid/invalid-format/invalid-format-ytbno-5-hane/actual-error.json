@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "INVALID_FORMAT",
+      "path": "contractReference.id",
+      "message": "Geçersiz format: contractReference.id"
+    }
+  ]
+}

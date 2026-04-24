@@ -1,0 +1,16 @@
+{
+  "id": "yatirimtesvik-requires-ytbno-earsiv-ytbsatis-ytbno-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "YATIRIMTESVIK_REQUIRES_YTBNO",
+  "errorCodes": [
+    "YATIRIMTESVIK_REQUIRES_YTBNO"
+  ],
+  "description": "EARSIV+YTBSATIS tipinde ytbNo eksik (Bug #3 EARSIV branch)",
+  "profileContext": "EARSIVFATURA",
+  "typeContext": "YTBSATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T14:24:47.626Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

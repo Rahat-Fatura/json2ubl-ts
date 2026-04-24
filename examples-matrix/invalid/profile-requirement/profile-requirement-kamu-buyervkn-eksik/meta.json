@@ -1,0 +1,16 @@
+{
+  "id": "profile-requirement-kamu-buyervkn-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "PROFILE_REQUIREMENT",
+  "errorCodes": [
+    "PROFILE_REQUIREMENT"
+  ],
+  "description": "KAMU profilinde buyerCustomer.taxNumber (VKN) eksik",
+  "profileContext": "KAMU",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-24T14:24:47.625Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}
