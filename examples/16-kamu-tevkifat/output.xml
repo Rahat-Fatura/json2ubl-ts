@@ -105,8 +105,6 @@
       <cbc:TaxAmount currencyID="TRY">2000.00</cbc:TaxAmount>
       <cbc:Percent>20.00</cbc:Percent>
             <cac:TaxCategory>
-        <cbc:TaxExemptionReasonCode>351</cbc:TaxExemptionReasonCode>
-        <cbc:TaxExemptionReason>KDV İstisna Olmayan Diğer</cbc:TaxExemptionReason>
                 <cac:TaxScheme>
           <cbc:Name>KDV</cbc:Name>
           <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>

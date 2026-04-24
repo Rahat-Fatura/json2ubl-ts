@@ -59,16 +59,18 @@ describe('exemption-config', () => {
     });
   });
 
-  describe('M4 — 555 ayrı set (config\'de yok)', () => {
-    it('555 EXEMPTION_DEFINITIONS\'ta yok', () => {
-      expect(EXEMPTION_MAP.has('555')).toBe(false);
+  describe('M4 + Sprint 8c.1 — 555 EXEMPTION_DEFINITIONS ve DEMIRBAS set', () => {
+    it('555 EXEMPTION_DEFINITIONS\'ta var (Sprint 8c.1 — B-NEW-11)', () => {
+      expect(EXEMPTION_MAP.has('555')).toBe(true);
+      expect(EXEMPTION_MAP.get('555')?.name).toContain('KDV Oran Kontrolüne Tabi Olmayan');
+      expect(EXEMPTION_MAP.get('555')?.documentType).toBe('SATIS');
     });
 
-    it('555 DEMIRBAS_KDV_EXEMPTION_CODES içinde', () => {
+    it('555 DEMIRBAS_KDV_EXEMPTION_CODES içinde (M4 gate için ayrı set korundu)', () => {
       expect(DEMIRBAS_KDV_EXEMPTION_CODES.has('555')).toBe(true);
     });
 
-    it('555 ISTISNA whitelist\'te değil', () => {
+    it('555 ISTISNA whitelist\'te değil (SATIS documentType)', () => {
       expect(ISTISNA_TAX_EXEMPTION_REASON_CODES.has('555')).toBe(false);
     });
   });

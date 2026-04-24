@@ -73,8 +73,8 @@
       <cbc:TaxAmount currencyID="TRY">0.00</cbc:TaxAmount>
       <cbc:Percent>0.00</cbc:Percent>
             <cac:TaxCategory>
-        <cbc:TaxExemptionReasonCode>351</cbc:TaxExemptionReasonCode>
-        <cbc:TaxExemptionReason>KDV İstisna Olmayan Diğer</cbc:TaxExemptionReason>
+        <cbc:TaxExemptionReasonCode>555</cbc:TaxExemptionReasonCode>
+        <cbc:TaxExemptionReason>KDV Oran Kontrolüne Tabi Olmayan Satışlar</cbc:TaxExemptionReason>
                 <cac:TaxScheme>
           <cbc:Name>KDV</cbc:Name>
           <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
@@ -100,8 +100,8 @@
         <cbc:TaxAmount currencyID="TRY">0.00</cbc:TaxAmount>
         <cbc:Percent>0.00</cbc:Percent>
                 <cac:TaxCategory>
-          <cbc:TaxExemptionReasonCode>351</cbc:TaxExemptionReasonCode>
-          <cbc:TaxExemptionReason>KDV İstisna Olmayan Diğer</cbc:TaxExemptionReason>
+          <cbc:TaxExemptionReasonCode>555</cbc:TaxExemptionReasonCode>
+          <cbc:TaxExemptionReason>KDV Oran Kontrolüne Tabi Olmayan Satışlar</cbc:TaxExemptionReason>
                     <cac:TaxScheme>
             <cbc:Name>KDV</cbc:Name>
             <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>

@@ -233,22 +233,33 @@ function buildTaxTotals(
 /**
  * İstisna kodu eklenip eklenmeyeceğini belirler.
  * calculate-service/shared.builder.mixin.js → sharedTaxBuilder mantığı.
+ *
+ * Sprint 8c.1 / B-NEW-11: TEVKIFAT + 351 özel case (B-81) kaldırıldı —
+ * calculator artık 351 otomatik üretmediği için gereksizleşti.
+ *
+ * Sprint 8c.1 / 555: "KDV Oran Kontrolüne Tabi Olmayan Satışlar" kodu KDV>0
+ * kalemde de XML'e yazılır (alıcının yetkisi dışı KDV oranında kesim senaryosu).
  */
 function shouldAddExemption(
   ts: { code: string; amount: number },
   calc: CalculatedDocument,
   simple: SimpleInvoiceInput,
 ): boolean {
+  if (ts.code !== '0015') return false;
   const type = calc.type;
+
+  // IHRACKAYITLI: calculator default 701 her zaman yazılır
+  if (type === 'IHRACKAYITLI') return true;
+  // OZELMATRAH + ozelMatrah: kendi kodu (801-812) yazılır
+  if (type === 'OZELMATRAH' && simple.ozelMatrah) return true;
+  // 555 özel: kullanıcı explicit verdiyse KDV oranından bağımsız yazılır
+  if (calc.taxExemptionReason.kdv === '555') return true;
+
   // Schematron TaxExemptionReasonCheck: KDV amount=0 ise exemption gerekli
   // ANCAK IADE, YTBIADE, IHRACKAYITLI, OZELMATRAH, SGK, KONAKLAMAVERGISI tipleri hariç
   const exemptTypes = ['IADE', 'YTBIADE', 'IHRACKAYITLI', 'OZELMATRAH', 'SGK', 'KONAKLAMAVERGISI'];
-  if (ts.code === '0015' && ts.amount === 0 && !exemptTypes.includes(type)) return true;
-  if (type === 'IHRACKAYITLI') return true;
-  if (type === 'OZELMATRAH' && simple.ozelMatrah) return true;
-  // B-81 minimal fix: TEVKIFAT tipinde calculator 351 üretir, mapper atlamamalı
-  // (M5 full cross-check matrisi Sprint 5'te — bu sadece ön-iş)
-  if (type === 'TEVKIFAT' && ts.code === '0015' && calc.taxExemptionReason.kdv === '351') return true;
+  if (ts.amount === 0 && !exemptTypes.includes(type)) return true;
+
   return false;
 }
 
@@ -310,6 +321,12 @@ function buildSingleLine(
   cl: CalculatedLine,
   calc: CalculatedDocument,
 ): InvoiceLineInput {
+  // Satır bazı istisna kodu belge seviyesine tercih edilir (B-NEW-11 / M11).
+  const lineExemptionCode = line.kdvExemptionCode ?? calc.taxExemptionReason.kdv;
+  const lineExemptionName = line.kdvExemptionCode
+    ? EXEMPTION_MAP.get(line.kdvExemptionCode)?.name
+    : calc.taxExemptionReason.kdvName ?? undefined;
+
   // Satır vergi subtotalleri
   const taxSubtotals: TaxSubtotalInput[] = cl.taxes.taxSubtotals.map(ts => {
     const subtotal: TaxSubtotalInput = {
@@ -320,9 +337,9 @@ function buildSingleLine(
       taxTypeName: ts.name,
     };
 
-    if (ts.amount === 0 && ts.code === '0015' && calc.taxExemptionReason.kdv) {
-      subtotal.taxExemptionReasonCode = calc.taxExemptionReason.kdv;
-      subtotal.taxExemptionReason = calc.taxExemptionReason.kdvName ?? undefined;
+    if (ts.amount === 0 && ts.code === '0015' && lineExemptionCode) {
+      subtotal.taxExemptionReasonCode = lineExemptionCode;
+      subtotal.taxExemptionReason = lineExemptionName;
     }
 
     return subtotal;

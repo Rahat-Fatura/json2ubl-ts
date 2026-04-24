@@ -64,8 +64,14 @@ export interface CalculatedDocument {
 
 // ─── Varsayılan İstisna Kodları ─────────────────────────────────────────────────
 
+/**
+ * Self-exemption tiplerinde (ISTISNA / IHRACKAYITLI / OZELMATRAH) kullanıcı kod
+ * vermediyse kullanılan fallback'ler. Non-self-exemption tipleri (SATIS, TEVKIFAT,
+ * IADE vb.) için kütüphane istisna kodu atamaz — manuel input zorunlu
+ * (B-NEW-11 / M11). `DEFAULT_EXEMPTIONS.satis = '351'` alanı Sprint 8c.1'de
+ * kaldırıldı (TEVKIFAT+351 false-positive çakışmasının kök sebebi).
+ */
 const DEFAULT_EXEMPTIONS = {
-  satis: '351',
   istisna: '350',
   ihracKayitli: '701',
 } as const;
@@ -240,35 +246,35 @@ function resolveInvoiceType(input: SimpleInvoiceInput, typesArray: string[]): st
 }
 
 /**
- * İstisna kodunu ve adını çözümler.
+ * Belge seviyesi istisna kodunu ve adını çözümler (B-NEW-11 / M11).
+ *
+ * Kural: Kütüphane self-exemption olmayan tiplerde (SATIS, TEVKIFAT, IADE vb.)
+ * 351 (veya başka kod) **otomatik atamaz** — kullanıcı `kdvExemptionCode`
+ * vermediyse `result.kdv = null` kalır. Self-exemption tiplerinde (ISTISNA,
+ * IHRACKAYITLI) kullanıcı kodu öncelikli, verilmediyse fallback default kullanılır.
+ *
+ * Validator `manual-exemption-validator` KDV=0 kalem + kod eksik kombinasyonunu
+ * reddeder; bu fonksiyon yalnızca aşağı akışa `calc.taxExemptionReason.kdv`'yi
+ * iletir.
  */
 function resolveExemptionReason(
   input: SimpleInvoiceInput,
   calculatedType: string,
-  typesArray: string[],
+  _typesArray: string[],
 ): TaxExemptionReason {
   const result: TaxExemptionReason = { kdv: null, kdvName: null };
 
   switch (calculatedType) {
-    case 'TEVKIFAT':
-      result.kdv = DEFAULT_EXEMPTIONS.satis;
-      break;
-    case 'IADE':
-      if (typesArray.includes('ISTISNA')) result.kdv = DEFAULT_EXEMPTIONS.satis;
-      break;
     case 'ISTISNA':
       result.kdv = input.kdvExemptionCode ?? DEFAULT_EXEMPTIONS.istisna;
       break;
     case 'IHRACKAYITLI':
       result.kdv = input.kdvExemptionCode ?? DEFAULT_EXEMPTIONS.ihracKayitli;
       break;
-    case 'OZELMATRAH':
-      result.kdv = input.kdvExemptionCode ?? null;
-      break;
-    case 'SATIS':
-      if (typesArray.includes('ISTISNA')) result.kdv = DEFAULT_EXEMPTIONS.satis;
-      break;
     default:
+      // SATIS, TEVKIFAT, IADE, OZELMATRAH, SGK, KOMISYONCU, TEKNOLOJIDESTEK,
+      // KONAKLAMAVERGISI, SARJHIZMETI, HKS*, YTB* — hepsi için yalnızca kullanıcı input'u geçerli.
+      result.kdv = input.kdvExemptionCode ?? null;
       break;
   }
 

@@ -13,12 +13,17 @@
  *   - Allowed: SATIS, TEVKIFAT, KOMISYONCU, HKS*, KONAKLAMAVERGISI, TEKNOLOJIDESTEK,
  *     YTBSATIS, YTBTEVKIFAT, SGK
  *   - Forbidden: ISTISNA, IADE, YTBISTISNA, YTBIADE, TEVKIFATIADE, YTBTEVKIFATIADE, IHRACKAYITLI
+ * - **555** ("KDV Oran Kontrolüne Tabi Olmayan Satışlar"): Alıcının yetkisi dışı KDV
+ *   oranında kesim. KDV oranından bağımsız — KDV=0 VE KDV>0 kalemlerinde de geçerli.
+ *   - Allowed: SATIS, TEVKIFAT, KOMISYONCU
  * - **151** (OTV SATIS): SATIS grubu — `exemption-config` documentType semantiği korunur.
  * - **201-250, 301-350**: İstisna serisi — ISTISNA/IADE/IHRACKAYITLI/SGK/YTBISTISNA/YTBIADE
  * - **701-704**: İhraç kayıtlı — IHRACKAYITLI/IADE
  * - **801-812**: Özel matrah — OZELMATRAH/IADE/SGK
  * - **SGK sembolik** (SAGLIK_*, ABONELIK, MAL_HIZMET, DIGER): SGK grubu
- * - **555**: Demirbaş KDV — M4 flag bypass (matris'te YOK; validator M4 flag ile gate edilir)
+ * - **555**: "KDV Oran Kontrolüne Tabi Olmayan Satışlar" — SATIS/TEVKIFAT/KOMISYONCU.
+ *   KDV oranından bağımsız kullanılabilir (KDV=0 zorunlu değil). M4 `allowReducedKdvRate`
+ *   opt-in flag gate'i `reduced-kdv-detector.ts`'te korunur.
  * - **501**: Schematron özel — `exemption-config`'de tanımlı değil (validator UNKNOWN döner)
  *
  * ## Türetme (M7 pattern)
@@ -85,6 +90,19 @@ const CODE_151_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceType
 ]);
 
 // ============================================================
+// 555 — KDV Oran Kontrolüne Tabi Olmayan Satışlar (M4 + Sprint 8c)
+// Alıcının yetkisi dışı KDV oranında kesim durumunda kullanılır; KDV=0 VE
+// KDV>0 kalemlerinde de verilebilir (B-NEW-11 açıklaması). `requiresZeroKdvLine`
+// yok — 351'den ayrılan temel semantik budur.
+// ============================================================
+
+const CODE_555_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.SATIS,
+  InvoiceTypeCode.TEVKIFAT,
+  InvoiceTypeCode.KOMISYONCU,
+]);
+
+// ============================================================
 // 351 — KDV İstisna Olmayan Diğer (M5 full cross-check)
 // ACIK-SORULAR.md #12 + Soru 2 cevabı
 // ============================================================
@@ -134,7 +152,7 @@ function buildMatrix(): Map<string, TaxExemptionRule> {
   const matrix = new Map<string, TaxExemptionRule>();
 
   for (const def of EXEMPTION_DEFINITIONS) {
-    // SATIS özel durumlar (151, 351) aşağıda manuel override
+    // SATIS özel durumlar (151, 351, 555) aşağıda manuel override
     if (def.documentType === 'SATIS') continue;
 
     let allowed: ReadonlySet<InvoiceTypeCode>;
@@ -170,6 +188,13 @@ function buildMatrix(): Map<string, TaxExemptionRule> {
     allowedInvoiceTypes: CODE_351_ALLOWED_TYPES,
     forbiddenInvoiceTypes: CODE_351_FORBIDDEN_TYPES,
     requiresZeroKdvLine: true,
+  });
+
+  // 555 — KDV Oran Kontrolüne Tabi Olmayan Satışlar (Sprint 8c / B-NEW-11)
+  // KDV oranından bağımsız — `requiresZeroKdvLine` bilinçli olarak ayarlanmadı.
+  matrix.set('555', {
+    code: '555',
+    allowedInvoiceTypes: CODE_555_ALLOWED_TYPES,
   });
 
   return matrix;

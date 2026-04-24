@@ -257,9 +257,16 @@ describe('Bilinmeyen kodlar → UNKNOWN_EXEMPTION_CODE', () => {
   const path = 'test.path';
   const kdv = [{ amount: 0 }];
 
-  it('555 (matris dışı, M4 flag ile ayrı gate) → UNKNOWN_EXEMPTION_CODE', () => {
+  it('555 (Sprint 8c.1: matrise eklendi — SATIS/TEVKIFAT/KOMISYONCU) → SATIS için null (geçerli)', () => {
+    // Sprint 8c.1 / B-NEW-11: 555 artık cross-check matrisinde manuel override.
+    // `requiresZeroKdvLine` yok — KDV oranından bağımsız kullanılabilir.
     const err = validateExemptionCode('555', InvoiceTypeCode.SATIS, kdv, path);
-    expect(err?.code).toBe('UNKNOWN_EXEMPTION_CODE');
+    expect(err).toBeNull();
+  });
+
+  it('555 izinsiz tip → INVALID_EXEMPTION_FOR_TYPE (ör. ISTISNA)', () => {
+    const err = validateExemptionCode('555', InvoiceTypeCode.ISTISNA, kdv, path);
+    expect(err?.code).toBe('INVALID_EXEMPTION_FOR_TYPE');
   });
   it('999 → UNKNOWN_EXEMPTION_CODE', () => {
     const err = validateExemptionCode('999', InvoiceTypeCode.SATIS, kdv, path);

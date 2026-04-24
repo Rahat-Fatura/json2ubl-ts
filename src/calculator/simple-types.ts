@@ -69,6 +69,17 @@ export interface SimpleLineInput {
     unitCode?: string;
     /** KDV oranı (%) — zorunlu */
     kdvPercent: number;
+    /**
+     * Satır bazı KDV istisna sebep kodu (B-NEW-11 / M11).
+     *
+     * KDV=0 kalem için manuel verilmeli (ör. 351). Verilmezse belge seviyesi
+     * `SimpleInvoiceInput.kdvExemptionCode` fallback olarak kullanılır.
+     *
+     * Self-exemption tiplerinde (ISTISNA, IHRACKAYITLI, OZELMATRAH + IHRACAT,
+     * YOLCUBERABERFATURA, OZELFATURA, YATIRIMTESVIK profilleri) zorunlu değil;
+     * dışındaki tiplerde KDV=0 kaleminde zorunlu.
+     */
+    kdvExemptionCode?: string;
     /** İskonto oranı (%) — opsiyonel */
     allowancePercent?: number;
     /** Ek vergiler (ÖTV, Damga V. vb.) — opsiyonel */

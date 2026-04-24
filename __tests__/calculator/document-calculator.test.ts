@@ -342,10 +342,23 @@ describe('document-calculator', () => {
   });
 
   describe('istisna kodu eşleştirme', () => {
-    it('TEVKIFAT tipi için varsayılan istisna 351 olmalı', () => {
+    it('TEVKIFAT tipi için kullanıcı kod vermediyse kdv null (B-NEW-11, Sprint 8c.1)', () => {
+      // Önceki davranış: DEFAULT_EXEMPTIONS.satis = '351' otomatik atanıyordu.
+      // Yeni davranış: kullanıcı input.kdvExemptionCode vermediyse null kalır.
       const result = calculateDocument(makeInput({
         lines: [
           { name: 'Hizmet', quantity: 1, price: 1000, kdvPercent: 20, withholdingTaxCode: '606' },
+        ],
+      }));
+
+      expect(result.taxExemptionReason.kdv).toBeNull();
+    });
+
+    it('TEVKIFAT tipi için kullanıcı kdvExemptionCode verirse kod XML\'e taşınır', () => {
+      const result = calculateDocument(makeInput({
+        kdvExemptionCode: '351',
+        lines: [
+          { name: 'Hizmet', quantity: 1, price: 1000, kdvPercent: 0, withholdingTaxCode: '606' },
         ],
       }));
 

@@ -51,26 +51,26 @@ describe('B-80 — SimpleInvoiceBuilder tek calculateDocument çağrısı', () =
   });
 });
 
-describe('B-81 — mapper TEVKIFAT+351 istisna kodunu korur', () => {
-  it('TEVKIFAT tipinde TaxExemptionReasonCode=351 XML\'e yazılır', () => {
+describe('B-NEW-11 — calculator TEVKIFAT+351 otomatik atamayı kaldırdı', () => {
+  it('TEVKIFAT tipinde kullanıcı kdvExemptionCode vermezse TaxExemptionReasonCode XML\'e yazılmaz', () => {
     const builder = new SimpleInvoiceBuilder({ validationLevel: 'none' });
     const result = builder.build(makeInput({
       lines: [
         { name: 'Hizmet', quantity: 1, price: 1000, kdvPercent: 20, withholdingTaxCode: '602' },
       ],
     }));
-    // 351 = "Gelir Vergisi Stopajı" default istisna kodu (SATIS/TEVKIFAT için)
-    expect(result.xml).toContain('<cbc:TaxExemptionReasonCode>351</cbc:TaxExemptionReasonCode>');
+    // Sprint 8c.1: Calculator DEFAULT_EXEMPTIONS.satis kaldırıldı — 351 yazılmaz
+    expect(result.xml).not.toContain('<cbc:TaxExemptionReasonCode>351</cbc:TaxExemptionReasonCode>');
   });
 
-  it('mapper direkt çıktısı: TEVKIFAT tipinde KDV subtotal\'a istisna kodu eklenmiş', () => {
+  it('mapper direkt çıktısı: TEVKIFAT tipinde kod verilmezse KDV subtotal\'da taxExemptionReasonCode undefined', () => {
     const invoiceInput = mapSimpleToInvoiceInput(makeInput({
       lines: [
         { name: 'Hizmet', quantity: 1, price: 1000, kdvPercent: 20, withholdingTaxCode: '602' },
       ],
     }));
     const kdvSubtotal = invoiceInput.taxTotals?.[0]?.taxSubtotals.find(ts => ts.taxTypeCode === '0015');
-    expect(kdvSubtotal?.taxExemptionReasonCode).toBe('351');
+    expect(kdvSubtotal?.taxExemptionReasonCode).toBeUndefined();
   });
 });
 

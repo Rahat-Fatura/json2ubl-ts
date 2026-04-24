@@ -21,6 +21,8 @@ import { mapSimpleToInvoiceInput } from './simple-invoice-mapper';
 import { InvoiceBuilder } from '../builders/invoice-builder';
 import type { BuilderOptions } from '../types/builder-options';
 import type { InvoiceInput } from '../types/invoice-input';
+import { validateManualExemption } from '../validators/manual-exemption-validator';
+import { UblBuildError } from '../errors/ubl-build-error';
 
 export interface SimpleBuilderOptions extends BuilderOptions {
   /** true ise hesaplama sonuçlarını da döner (debug için) */
@@ -60,6 +62,17 @@ export class SimpleInvoiceBuilder {
    * @throws UblBuildError validasyon hatalarında
    */
   build(input: SimpleInvoiceInput): SimpleBuildResult {
+    // 0. Manuel istisna validator (B-NEW-11 / M11) — basic+strict her iki modda
+    //    çalışır; validationLevel='none' iken atlanır. Calculator'dan önce
+    //    tetiklenir: KDV=0 kalem için kod zorunluluğu, KDV=0+tevkifat çakışması
+    //    ve KDV>0+351 yasağı simple-input seviyesinde yakalanır.
+    if (this.options.validationLevel !== 'none') {
+      const manualErrors = validateManualExemption(input);
+      if (manualErrors.length > 0) {
+        throw new UblBuildError(manualErrors);
+      }
+    }
+
     // 1. Hesapla + map (B-80: tek calculateDocument çağrısı, sonucu mapper'a cache ederek ilet)
     const calculation = calculateDocument(input);
     const invoiceInput = mapSimpleToInvoiceInput(input, calculation);

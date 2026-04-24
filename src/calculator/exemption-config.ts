@@ -100,6 +100,7 @@ export const EXEMPTION_DEFINITIONS: ReadonlyArray<ExemptionDefinition> = [
 
   // KDV Satış — istisna olmayan diğer
   { code: '351', name: 'KDV İstisna Olmayan Diğer', type: 'KDV', documentType: 'SATIS' },
+  { code: '555', name: 'KDV Oran Kontrolüne Tabi Olmayan Satışlar', type: 'KDV', documentType: 'SATIS' },
 
   // ÖTV Satış — istisna olmayan diğer (§4.8.4)
   { code: '151', name: 'ÖTV — İstisna Olmayan Diğer', type: 'OTV', documentType: 'SATIS' },
