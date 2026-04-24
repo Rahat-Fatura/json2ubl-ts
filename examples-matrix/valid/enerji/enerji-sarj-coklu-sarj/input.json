@@ -1,0 +1,47 @@
+{
+  "id": "MTX2026000000985",
+  "uuid": "a1000985-0001-4000-8001-000000000985",
+  "datetime": "2026-04-24T10:00:00",
+  "profile": "ENERJI",
+  "type": "SARJ",
+  "currencyCode": "TRY",
+  "sender": {
+    "taxNumber": "1234567890",
+    "name": "Matrix Şarj Ağı A.Ş.",
+    "taxOffice": "Beşiktaş",
+    "address": "Levent Mah. No:42",
+    "district": "Beşiktaş",
+    "city": "İstanbul"
+  },
+  "customer": {
+    "taxNumber": "9876543210",
+    "name": "Matrix Test Alıcı Ltd.",
+    "taxOffice": "Kadıköy",
+    "address": "Bağdat Cad. No:100",
+    "district": "Kadıköy",
+    "city": "İstanbul"
+  },
+  "lines": [
+    {
+      "name": "İstanbul İSG-001 DC şarj",
+      "quantity": 35,
+      "price": 6,
+      "unitCode": "KWH",
+      "kdvPercent": 20
+    },
+    {
+      "name": "Ankara ANK-012 DC şarj",
+      "quantity": 40,
+      "price": 6,
+      "unitCode": "KWH",
+      "kdvPercent": 20
+    },
+    {
+      "name": "İzmir IZM-005 AC şarj",
+      "quantity": 25,
+      "price": 4.5,
+      "unitCode": "KWH",
+      "kdvPercent": 20
+    }
+  ]
+}

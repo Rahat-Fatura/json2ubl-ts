@@ -1,0 +1,35 @@
+{
+  "id": "ihracat-istisna-coklu-satir",
+  "kind": "invoice",
+  "profile": "IHRACAT",
+  "type": "ISTISNA",
+  "variantSlug": "coklu-satir",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "USD",
+    "exchangeRate": true,
+    "exemptionCodes": [
+      "301"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 2,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "buyerCustomer",
+      "gtip",
+      "incoterms"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:19:37.409Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "IHRACAT+ISTISNA 2 satır (farklı GTİP, USD)"
+}

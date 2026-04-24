@@ -1,0 +1,35 @@
+{
+  "id": "ihracat-istisna-eur-doviz",
+  "kind": "invoice",
+  "profile": "IHRACAT",
+  "type": "ISTISNA",
+  "variantSlug": "eur-doviz",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "EUR",
+    "exchangeRate": true,
+    "exemptionCodes": [
+      "301"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "buyerCustomer",
+      "gtip",
+      "incoterms"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:19:36.966Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "IHRACAT+ISTISNA EUR döviz + Avrupa alıcısı"
+}

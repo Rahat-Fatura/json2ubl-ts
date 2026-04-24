@@ -1,0 +1,56 @@
+import type { SimpleInvoiceInput } from '../../../../src';
+
+export const input: SimpleInvoiceInput = {
+  id: 'MTX2026000000981',
+  uuid: 'a1000981-0001-4000-8001-000000000981',
+  datetime: '2026-04-24T10:00:00',
+  profile: 'IHRACAT',
+  type: 'ISTISNA',
+  currencyCode: 'EUR',
+  exchangeRate: 35.8,
+  kdvExemptionCode: '301',
+  sender: {
+    taxNumber: '1234567890',
+    name: 'Matrix İhracat A.Ş.',
+    taxOffice: 'Beşiktaş',
+    address: 'Levent Mah. No:42',
+    district: 'Beşiktaş',
+    city: 'İstanbul',
+  },
+  customer: {
+    taxNumber: '3333333333',
+    name: 'Euro Partners SARL (France)',
+    address: 'Rue de Rivoli 50',
+    district: 'Paris',
+    city: 'Île-de-France',
+  },
+  buyerCustomer: {
+    name: 'Euro Partners SARL',
+    taxNumber: 'FR12345678901',
+    address: 'Rue de Rivoli 50',
+    district: 'Paris',
+    city: 'Île-de-France',
+    country: 'France',
+  },
+  lines: [
+    {
+      name: 'İhraç makine parçası',
+      quantity: 1,
+      price: 1500,
+      unitCode: 'Adet',
+      kdvPercent: 0,
+      delivery: {
+        deliveryTermCode: 'FOB',
+        gtipNo: '847330000001',
+        deliveryAddress: {
+          address: 'Ambarlı Liman',
+          district: 'Avcılar',
+          city: 'İstanbul',
+          country: 'Türkiye',
+        },
+      },
+    },
+  ],
+};
+
+export default input;

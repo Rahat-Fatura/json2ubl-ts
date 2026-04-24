@@ -1,0 +1,29 @@
+{
+  "id": "enerji-sarj-coklu-sarj",
+  "kind": "invoice",
+  "profile": "ENERJI",
+  "type": "SARJ",
+  "variantSlug": "coklu-sarj",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 3,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:17:54.040Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "ENERJI+SARJ 3 şarj noktası tek faturada"
+}

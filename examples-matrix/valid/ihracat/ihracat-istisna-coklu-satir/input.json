@@ -1,0 +1,69 @@
+{
+  "id": "MTX2026000000982",
+  "uuid": "a1000982-0001-4000-8001-000000000982",
+  "datetime": "2026-04-24T10:00:00",
+  "profile": "IHRACAT",
+  "type": "ISTISNA",
+  "currencyCode": "USD",
+  "exchangeRate": 32.5,
+  "kdvExemptionCode": "301",
+  "sender": {
+    "taxNumber": "1234567890",
+    "name": "Matrix İhracat A.Ş.",
+    "taxOffice": "Beşiktaş",
+    "address": "Levent Mah. No:42",
+    "district": "Beşiktaş",
+    "city": "İstanbul"
+  },
+  "customer": {
+    "taxNumber": "4444444444",
+    "name": "Eastern Trade LLC (USA)",
+    "address": "5th Avenue 100",
+    "district": "Manhattan",
+    "city": "New York"
+  },
+  "buyerCustomer": {
+    "name": "Eastern Trade LLC",
+    "taxNumber": "US99887766",
+    "address": "5th Avenue 100",
+    "district": "Manhattan",
+    "city": "New York",
+    "country": "USA"
+  },
+  "lines": [
+    {
+      "name": "İhraç makine A",
+      "quantity": 1,
+      "price": 1000,
+      "unitCode": "Adet",
+      "kdvPercent": 0,
+      "delivery": {
+        "deliveryTermCode": "FOB",
+        "gtipNo": "847330000001",
+        "deliveryAddress": {
+          "address": "Ambarlı Liman",
+          "district": "Avcılar",
+          "city": "İstanbul",
+          "country": "Türkiye"
+        }
+      }
+    },
+    {
+      "name": "İhraç makine B",
+      "quantity": 2,
+      "price": 500,
+      "unitCode": "Adet",
+      "kdvPercent": 0,
+      "delivery": {
+        "deliveryTermCode": "FOB",
+        "gtipNo": "847330000002",
+        "deliveryAddress": {
+          "address": "Ambarlı Liman",
+          "district": "Avcılar",
+          "city": "İstanbul",
+          "country": "Türkiye"
+        }
+      }
+    }
+  ]
+}

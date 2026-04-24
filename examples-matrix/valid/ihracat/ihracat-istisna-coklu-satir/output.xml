@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+  xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+  xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+  xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
+  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+  xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 UBL-Invoice-2.1.xsd">
+  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+  <cbc:CustomizationID>TR1.2</cbc:CustomizationID>
+  <cbc:ProfileID>IHRACAT</cbc:ProfileID>
+  <cbc:ID>MTX2026000000982</cbc:ID>
+  <cbc:CopyIndicator>false</cbc:CopyIndicator>
+  <cbc:UUID>a1000982-0001-4000-8001-000000000982</cbc:UUID>
+  <cbc:IssueDate>2026-04-24</cbc:IssueDate>
+  <cbc:IssueTime>10:00:00</cbc:IssueTime>
+  <cbc:InvoiceTypeCode>ISTISNA</cbc:InvoiceTypeCode>
+  <cbc:DocumentCurrencyCode>USD</cbc:DocumentCurrencyCode>
+  <cbc:LineCountNumeric>2</cbc:LineCountNumeric>
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">1234567890</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>Matrix İhracat A.Ş.</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Levent Mah. No:42</cbc:StreetName>
+        <cbc:CitySubdivisionName>Beşiktaş</cbc:CitySubdivisionName>
+        <cbc:CityName>İstanbul</cbc:CityName>
+        <cbc:PostalZone>00000</cbc:PostalZone>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cac:TaxScheme>
+          <cbc:Name>Beşiktaş</cbc:Name>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">4444444444</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>Eastern Trade LLC (USA)</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>5th Avenue 100</cbc:StreetName>
+        <cbc:CitySubdivisionName>Manhattan</cbc:CitySubdivisionName>
+        <cbc:CityName>New York</cbc:CityName>
+        <cbc:PostalZone>00000</cbc:PostalZone>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:BuyerCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="PARTYTYPE">EXPORT</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">US99887766</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>Eastern Trade LLC</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>5th Avenue 100</cbc:StreetName>
+        <cbc:CitySubdivisionName>Manhattan</cbc:CitySubdivisionName>
+        <cbc:CityName>New York</cbc:CityName>
+        <cac:Country>
+          <cbc:Name>USA</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>Eastern Trade LLC</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:BuyerCustomerParty>
+  <cac:PricingExchangeRate>
+    <cbc:SourceCurrencyCode>USD</cbc:SourceCurrencyCode>
+    <cbc:TargetCurrencyCode>TRY</cbc:TargetCurrencyCode>
+    <cbc:CalculationRate>32.500000</cbc:CalculationRate>
+  </cac:PricingExchangeRate>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="USD">0.00</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="USD">2000.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="USD">0.00</cbc:TaxAmount>
+      <cbc:Percent>0.00</cbc:Percent>
+            <cac:TaxCategory>
+        <cbc:TaxExemptionReasonCode>301</cbc:TaxExemptionReasonCode>
+        <cbc:TaxExemptionReason>11/1-a Mal İhracatı</cbc:TaxExemptionReason>
+                <cac:TaxScheme>
+          <cbc:Name>KDV</cbc:Name>
+          <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="USD">2000.00</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="USD">2000.00</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="USD">2000.00</cbc:TaxInclusiveAmount>
+    <cbc:AllowanceTotalAmount currencyID="USD">0.00</cbc:AllowanceTotalAmount>
+    <cbc:PayableAmount currencyID="USD">2000.00</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">1.00</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="USD">1000.00</cbc:LineExtensionAmount>
+    <cac:Delivery>
+      <cac:DeliveryAddress>
+        <cbc:StreetName>Ambarlı Liman</cbc:StreetName>
+        <cbc:CitySubdivisionName>Avcılar</cbc:CitySubdivisionName>
+        <cbc:CityName>İstanbul</cbc:CityName>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:DeliveryAddress>
+      <cac:DeliveryTerms>
+        <cbc:ID schemeID="INCOTERMS">FOB</cbc:ID>
+      </cac:DeliveryTerms>
+      <cac:Shipment>
+        <cbc:ID>1</cbc:ID>
+        <cac:GoodsItem>
+          <cbc:RequiredCustomsID>847330000001</cbc:RequiredCustomsID>
+        </cac:GoodsItem>
+      </cac:Shipment>
+    </cac:Delivery>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="USD">0.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="USD">1000.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="USD">0.00</cbc:TaxAmount>
+        <cbc:Percent>0.00</cbc:Percent>
+                <cac:TaxCategory>
+          <cbc:TaxExemptionReasonCode>301</cbc:TaxExemptionReasonCode>
+          <cbc:TaxExemptionReason>11/1-a Mal İhracatı</cbc:TaxExemptionReason>
+                    <cac:TaxScheme>
+            <cbc:Name>KDV</cbc:Name>
+            <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Name>İhraç makine A</cbc:Name>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="USD">1000.00</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>2</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">2.00</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="USD">1000.00</cbc:LineExtensionAmount>
+    <cac:Delivery>
+      <cac:DeliveryAddress>
+        <cbc:StreetName>Ambarlı Liman</cbc:StreetName>
+        <cbc:CitySubdivisionName>Avcılar</cbc:CitySubdivisionName>
+        <cbc:CityName>İstanbul</cbc:CityName>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:DeliveryAddress>
+      <cac:DeliveryTerms>
+        <cbc:ID schemeID="INCOTERMS">FOB</cbc:ID>
+      </cac:DeliveryTerms>
+      <cac:Shipment>
+        <cbc:ID>1</cbc:ID>
+        <cac:GoodsItem>
+          <cbc:RequiredCustomsID>847330000002</cbc:RequiredCustomsID>
+        </cac:GoodsItem>
+      </cac:Shipment>
+    </cac:Delivery>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="USD">0.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="USD">1000.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="USD">0.00</cbc:TaxAmount>
+        <cbc:Percent>0.00</cbc:Percent>
+                <cac:TaxCategory>
+          <cbc:TaxExemptionReasonCode>301</cbc:TaxExemptionReasonCode>
+          <cbc:TaxExemptionReason>11/1-a Mal İhracatı</cbc:TaxExemptionReason>
+                    <cac:TaxScheme>
+            <cbc:Name>KDV</cbc:Name>
+            <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Name>İhraç makine B</cbc:Name>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="USD">500.00</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+</Invoice>

@@ -1,0 +1,35 @@
+{
+  "id": "yolcuberaberfatura-istisna-yabanci-uk",
+  "kind": "invoice",
+  "profile": "YOLCUBERABERFATURA",
+  "type": "ISTISNA",
+  "variantSlug": "yabanci-uk",
+  "dimensions": {
+    "kdvBreakdown": [
+      0
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [
+      "322"
+    ],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "passport",
+      "nationalityId",
+      "taxRepresentative"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:19:37.864Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "YOLCU — İngiliz turist (UK), farklı hediyelik ürün"
+}

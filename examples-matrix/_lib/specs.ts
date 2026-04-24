@@ -2569,6 +2569,167 @@ export const validSpecs: ValidSpec[] = [
     },
   },
 
+  // ─── Sprint 8f.9: Niş profiller genişletme (+5) ───
+  {
+    kind: 'invoice', variantSlug: 'eur-doviz', profile: 'IHRACAT', type: 'ISTISNA',
+    notes: 'IHRACAT+ISTISNA EUR döviz + Avrupa alıcısı',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'EUR', exchangeRate: true, exemptionCodes: ['301'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['buyerCustomer', 'gtip', 'incoterms'],
+    },
+    input: {
+      id: 'MTX2026000000981',
+      uuid: 'a1000981-0001-4000-8001-000000000981',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'IHRACAT', type: 'ISTISNA', currencyCode: 'EUR', exchangeRate: 35.8,
+      kdvExemptionCode: '301',
+      sender: { ...STANDARD_SENDER, name: 'Matrix İhracat A.Ş.' },
+      customer: {
+        taxNumber: '3333333333',
+        name: 'Euro Partners SARL (France)',
+        address: 'Rue de Rivoli 50',
+        district: 'Paris', city: 'Île-de-France',
+      },
+      buyerCustomer: {
+        name: 'Euro Partners SARL',
+        taxNumber: 'FR12345678901',
+        address: 'Rue de Rivoli 50', district: 'Paris', city: 'Île-de-France', country: 'France',
+      },
+      lines: [{
+        name: 'İhraç makine parçası', quantity: 1, price: 1500, unitCode: 'Adet', kdvPercent: 0,
+        delivery: {
+          deliveryTermCode: 'FOB', gtipNo: '847330000001',
+          deliveryAddress: { address: 'Ambarlı Liman', district: 'Avcılar', city: 'İstanbul', country: 'Türkiye' },
+        },
+      }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'coklu-satir', profile: 'IHRACAT', type: 'ISTISNA',
+    notes: 'IHRACAT+ISTISNA 2 satır (farklı GTİP, USD)',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'USD', exchangeRate: true, exemptionCodes: ['301'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 2, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['buyerCustomer', 'gtip', 'incoterms'],
+    },
+    input: {
+      id: 'MTX2026000000982',
+      uuid: 'a1000982-0001-4000-8001-000000000982',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'IHRACAT', type: 'ISTISNA', currencyCode: 'USD', exchangeRate: 32.5,
+      kdvExemptionCode: '301',
+      sender: { ...STANDARD_SENDER, name: 'Matrix İhracat A.Ş.' },
+      customer: {
+        taxNumber: '4444444444',
+        name: 'Eastern Trade LLC (USA)',
+        address: '5th Avenue 100',
+        district: 'Manhattan', city: 'New York',
+      },
+      buyerCustomer: {
+        name: 'Eastern Trade LLC',
+        taxNumber: 'US99887766',
+        address: '5th Avenue 100', district: 'Manhattan', city: 'New York', country: 'USA',
+      },
+      lines: [
+        { name: 'İhraç makine A', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0,
+          delivery: {
+            deliveryTermCode: 'FOB', gtipNo: '847330000001',
+            deliveryAddress: { address: 'Ambarlı Liman', district: 'Avcılar', city: 'İstanbul', country: 'Türkiye' },
+          } },
+        { name: 'İhraç makine B', quantity: 2, price: 500, unitCode: 'Adet', kdvPercent: 0,
+          delivery: {
+            deliveryTermCode: 'FOB', gtipNo: '847330000002',
+            deliveryAddress: { address: 'Ambarlı Liman', district: 'Avcılar', city: 'İstanbul', country: 'Türkiye' },
+          } },
+      ],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'yabanci-uk', profile: 'YOLCUBERABERFATURA', type: 'ISTISNA',
+    notes: 'YOLCU — İngiliz turist (UK), farklı hediyelik ürün',
+    dimensions: {
+      kdvBreakdown: [0], currency: 'TRY', exchangeRate: false, exemptionCodes: ['322'],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['passport', 'nationalityId', 'taxRepresentative'],
+    },
+    input: {
+      id: 'MTX2026000000983',
+      uuid: 'a1000983-0001-4000-8001-000000000983',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'YOLCUBERABERFATURA', type: 'ISTISNA', currencyCode: 'TRY',
+      kdvExemptionCode: '322',
+      sender: {
+        taxNumber: '1460415308', name: 'Matrix Tax-Free Shop',
+        taxOffice: 'Beyoğlu', address: 'İstiklal Cad. No:100',
+        district: 'Beyoğlu', city: 'İstanbul',
+      },
+      customer: { ...STANDARD_CUSTOMER, name: 'Matrix Turizm Aracı A.Ş.' },
+      buyerCustomer: {
+        name: 'John Smith',
+        taxNumber: '88888888888',
+        address: '221B Baker St', district: 'Marylebone', city: 'London', country: 'United Kingdom',
+        nationalityId: 'GB', passportId: 'GB9876543',
+      },
+      taxRepresentativeParty: {
+        vknTckn: '9876543210',
+        label: 'MATRIX_TAXFREE',
+        name: 'Matrix KDV İade Aracı',
+      },
+      lines: [{ name: 'Halı (hediyelik)', quantity: 1, price: 2500, unitCode: 'Adet', kdvPercent: 0 }],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'coklu-kunye', profile: 'HKS', type: 'HKSSATIS',
+    notes: 'HKS — 2 satır farklı KUNYENO',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 2, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['kunyeNo'],
+    },
+    input: {
+      id: 'MTX2026000000984',
+      uuid: 'a1000984-0001-4000-8001-000000000984',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'HKS', type: 'HKSSATIS', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER, name: 'Matrix HKS Tedarikçi' },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        { name: 'HKS ürün A', quantity: 1, price: 500, unitCode: 'Adet', kdvPercent: 20,
+          additionalItemIdentifications: [{ schemeId: 'KUNYENO', value: 'HKS2026A0001AAA0001' }] },
+        { name: 'HKS ürün B', quantity: 1, price: 700, unitCode: 'Adet', kdvPercent: 20,
+          additionalItemIdentifications: [{ schemeId: 'KUNYENO', value: 'HKS2026B0002BBB0001' }] },
+      ],
+    },
+  },
+  {
+    kind: 'invoice', variantSlug: 'coklu-sarj', profile: 'ENERJI', type: 'SARJ',
+    notes: 'ENERJI+SARJ 3 şarj noktası tek faturada',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 3, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: [],
+    },
+    input: {
+      id: 'MTX2026000000985',
+      uuid: 'a1000985-0001-4000-8001-000000000985',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'ENERJI', type: 'SARJ', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER, name: 'Matrix Şarj Ağı A.Ş.' },
+      customer: { ...STANDARD_CUSTOMER },
+      lines: [
+        { name: 'İstanbul İSG-001 DC şarj', quantity: 35, price: 6, unitCode: 'KWH', kdvPercent: 20 },
+        { name: 'Ankara ANK-012 DC şarj', quantity: 40, price: 6, unitCode: 'KWH', kdvPercent: 20 },
+        { name: 'İzmir IZM-005 AC şarj', quantity: 25, price: 4.5, unitCode: 'KWH', kdvPercent: 20 },
+      ],
+    },
+  },
+
   // ═════════════════════════════════════════════════════════════════════
   // ILAC_TIBBICIHAZ — 5 baseline (her satırda ILAC/TIBBICIHAZ/DIGER zorunlu)
   // ═════════════════════════════════════════════════════════════════════
