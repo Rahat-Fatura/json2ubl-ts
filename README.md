@@ -538,16 +538,19 @@ Kütüphane hangi karardan sorumlu, hangisinden değil. Tüketici kodunun bilmes
 | **M8** | **CustomizationID:** Fatura `TR1.2`, e-İrsaliye `TR1.2.1` — kütüphane builder'da sabitler | `src/config/namespaces.ts` |
 | **M9** (B-102) | **Calculator tam float**, yuvarlama yalnızca XML yazım anında `toFixed(2)` XSD-yuvarlamalı alanlarda | `src/calculator/*.ts` · `src/serializers/*.ts` |
 | **M10** (B-102) | **`setLiability()` `isExport=true` iken no-op** (error yerine) | `src/calculator/invoice-rules.ts` |
+| **M11** (Sprint 8c, B-NEW-11) | **Self-exemption tipleri** (ISTISNA, IHRACKAYITLI, OZELMATRAH + IHRACAT, YOLCUBERABERFATURA, OZELFATURA, YATIRIMTESVIK profilleri) kendi istisna kodlarını taşır; dışındaki tiplerde KDV=0 kalem için **kullanıcıdan 351 manuel zorunlu** (calculator otomatik atamaz) | `src/config/self-exemption-types.ts` · `src/validators/manual-exemption-validator.ts` |
 | **AR-1** | `cbcTag` → `cbcRequiredTag` + `cbcOptionalTag` split | `src/utils/xml-helpers.ts` |
 | **AR-2** | `driverPerson` → `driverPersons[]` array (çoklu sürücü desteği) | `src/types/despatch-input.ts` · [examples/34](./examples/34-irsaliye-temel-sevk-coklu-sofor/) |
 | **AR-3..5** | PROFILE_TYPE_MATRIX helper API; map/matrix export edilmez | `src/calculator/invoice-rules.ts` |
 | **AR-6** | Eski dead PaymentMeansCode set kaldırıldı | `src/calculator/payment-means-config.ts` |
 | **AR-7** | Satır-seviyesi `kdvExemptionCode` alanı kaldırıldı (belge seviyesi tek kaynak) | `src/types/invoice-input.ts` |
 | **AR-8** | Outstanding/Oversupply input alanları kaldırıldı | `src/types/*.ts` |
-| **B-07** | IHRACKAYITLI + 702 için **GTİP (12 hane) + AlıcıDİBKod** zorunlu | `src/validators/profile-validators.ts` · [examples/07](./examples/07-temelfatura-ihrackayitli-702/) |
+| **AR-9** (Sprint 8c, isim konuldu) | **Reactive InvoiceSession** — kullanıcı girişi akış tabanlı validator feedback. Mevcut `src/invoice-session.ts` snapshot validator rolü korunur; reaktif katman v2.1.0'da yeni modül olarak eklenecek | `audit/reactive-session-design-notes.md` |
+| **B-07** | IHRACKAYITLI + 702 için **GTİP (12 hane) + AlıcıDİBKod (11 hane)** zorunlu; simple-input'ta `SimpleLineDeliveryInput.alicidibsatirkod` alanı (B-NEW-12 / Sprint 8c) | `src/validators/profile-validators.ts` · [examples/07](./examples/07-temelfatura-ihrackayitli-702/) |
 | **B-08** | YATIRIMTESVIK: `ytbNo` (6 hane) + Kod 01 Makine için `productTraceId+serialId+brand+model`; IADE grubunda muaf | `src/validators/profile-validators.ts` · [examples/12](./examples/12-yatirimtesvik-satis-makina/) |
 | **B-83** | KAMU: `buyerCustomer` + `paymentMeans` + TR IBAN zorunlu; additionalIdentifiers (MUSTERINO) | [examples/15](./examples/15-kamu-satis/) |
 | **B-104** | Despatch `DriverPerson.nationalityId` 11-hane TCKN zorunlu (ISO kodu reddedilir) | `src/validators/despatch-validators.ts` |
+| **B-NEW-13** (Sprint 8c) | YOLCUBERABERFATURA: `SimpleBuyerCustomerInput.nationalityId + passportId` + belge seviyesi `SimpleInvoiceInput.taxRepresentativeParty` zorunlu | `src/calculator/simple-types.ts` · [examples/20](./examples/20-yolcu-beraber-istisna-yabanci/) |
 
 ### Kütüphane SORUMLULUĞUNDA OLMAYAN
 

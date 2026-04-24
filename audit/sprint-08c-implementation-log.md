@@ -370,6 +370,47 @@ Sprint 8c planlaması sırasında senaryo 26-idis-satis'in `validationLevel: 'ba
 
 ---
 
+## Sprint 8c.10 — Doküman güncellemeleri (CHANGELOG + README + reactive notes)
+
+**Tarih:** 2026-04-24
+**Commit hedefi:** `Sprint 8c.10: Doküman güncellemeleri (CHANGELOG + README + AR-9 notes)`
+
+### Yapılanlar
+
+1. **`CHANGELOG.md`** — Sprint 8c hotfix dalgası alt-section eklendi:
+   - BREAKING CHANGES (Sprint 8c): 6 madde
+   - Added (Sprint 8c): M11 config, manual-exemption-validator, sgk-input-validator, simple-line-range-validator, SimpleLineInput.kdvExemptionCode, SimpleLineDeliveryInput.alicidibsatirkod, SimpleBuyerCustomerInput.nationalityId+passportId, SimpleInvoiceInput.taxRepresentativeParty, 555 exemption entry, AR-9 reactive notes
+   - Changed, Removed, Fixed bölümleri
+   - Commit dağılımı (13 atomik) + test sayısı değişimi
+
+2. **`README.md` §8 Sorumluluk Matrisi**:
+   - M11 satırı eklendi (Self-exemption tipleri + manuel 351)
+   - AR-9 satırı eklendi (Reactive InvoiceSession tasarım notu referansı)
+   - B-07 satırı güncellendi (alicidibsatirkod simple-input desteği eklendi)
+   - B-NEW-13 satırı eklendi (YOLCU passport)
+
+3. **`audit/reactive-session-design-notes.md`** (yeni) — AR-9 tasarım notu:
+   - Motivasyon (form-tabanlı UI reaktif feedback)
+   - Mevcut durum (post-hoc validator'lar) + v2.1.0 hedefi
+   - API taslağı (`ReactiveInvoiceSession extends EventEmitter`)
+   - State machine diyagramı (type × exemption flow)
+   - v2.1.0 roadmap girişi
+
+4. **`audit/FIX-PLANI-v3.md`** — 8c.0'da eklenen M11 + AR-9 bölümleri aynen korunur.
+
+### Test Durumu
+
+- Başlangıç: 800/800 yeşil
+- Son: 800/800 yeşil (doküman değişikliği — test etkisi yok)
+
+### Plan İçi Disiplin
+
+- Plan'daki 8c.10 "Snapshot regen" commit'i gereksizleşti (her fix commit'inde zaten regen edildi). 8c.10 numarası "Doküman güncellemeleri"ne yeniden atandı.
+- Plan'daki 8c.11 "Reactive notes + doküman" kapsamı 8c.10'a birleşti.
+- 8c.11 = v2.0.0 release ops (orijinal 8c.12), 8c.12 = log finalize (orijinal 8c.13).
+
+---
+
 ## Sprint 8c.8 — G5 Runtime hijyen (B-NEW-01, 02, 03)
 
 **Tarih:** 2026-04-24

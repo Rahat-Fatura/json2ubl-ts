@@ -82,9 +82,71 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 - **Sprint 8a**: Devir bulgu temizliği (Paket A-H) + Mimsoft fixture regresyon + B-83..B-86 + B-104
 - **Sprint 8b**: Comprehensive examples pack (38 senaryo) + README sorumluluk matrisi + skill doc referans + CHANGELOG
 
-### Sprint 8b ile Tespit Edilen (Sprint 8c Hotfix Adayları)
+### Sprint 8b ile Tespit Edilen (Sprint 8c'de Giderildi)
 
-[audit/ACIK-SORULAR.md §4](./audit/ACIK-SORULAR.md) altında **12 yeni bulgu** (B-NEW-01..B-NEW-12): SimpleInvoiceInput runtime zorunluluk boşlukları, B-81/M5 TEVKIFAT tek-satır çakışması, IHRACKAYITLI+702 AlıcıDİBKod simple-input desteği eksikliği. Sprint 8c öncesi giderilecek.
+[audit/ACIK-SORULAR.md §4](./audit/ACIK-SORULAR.md) altında **12 yeni bulgu** (B-NEW-01..B-NEW-12): SimpleInvoiceInput runtime zorunluluk boşlukları, B-81/M5 TEVKIFAT tek-satır çakışması, IHRACKAYITLI+702 AlıcıDİBKod simple-input desteği eksikliği. **Sprint 8c'de giderildi** (aşağıya bkz.).
+
+---
+
+### Sprint 8c Hotfix Dalgası (B-NEW-01..13) — 2026-04-24
+
+**Kapsam:** B-NEW-01..12 (audit/b-new-audit.md) + B-NEW-13 (Sprint 8c'de tanımlandı). B-NEW-14 plan varsayımı yanlışlandı (IDIS validator zaten mevcut). 13 atomik commit. 9/9 workaround senaryo strict moda döndü.
+
+#### BREAKING CHANGES (Sprint 8c)
+
+- **Calculator self-exemption dışı faturalarda 351 otomatik üretmez** — kullanıcı `kdvExemptionCode` vermediyse `null` kalır. SATIS/TEVKIFAT/SGK/IADE vb. tiplerde KDV=0 kalem için **manuel istisna kodu zorunlu** (validator enforce). (B-NEW-11 / M11)
+- **`validateCrossMatrix` basic+strict her iki modda** — önceden basic modda sessiz geçen `SATIS+702` gibi `FORBIDDEN_EXEMPTION_FOR_TYPE` kombinasyonları artık reddedilir. (B-NEW-05)
+- **IHRACKAYITLI faturada 701-704 istisna kodu zorunlu** (`TYPE_REQUIREMENT`). (B-NEW-06)
+- **701-704 kuralları `requiresZeroKdvLine: true`** — IHRACKAYITLI satırında KDV>0 artık reddedilir. (B-NEW-07)
+- **`SimpleSgkInput.type`** string → literal union (`SAGLIK_ECZ | SAGLIK_HAS | SAGLIK_OPT | SAGLIK_MED | ABONELIK | MAL_HIZMET | DIGER`). TypeScript darlatma. (B-NEW-09)
+- **YOLCUBERABERFATURA profili** `buyerCustomer.nationalityId` + `passportId` + belge seviyesi `taxRepresentativeParty` zorunlu. (B-NEW-13)
+
+#### Added (Sprint 8c)
+
+- **M11 Self-exemption types config** (`src/config/self-exemption-types.ts`) — ISTISNA/YTBISTISNA/IHRACKAYITLI/OZELMATRAH tipleri + IHRACAT/YOLCUBERABERFATURA/OZELFATURA/YATIRIMTESVIK profilleri. `isSelfExemptionInvoice()` helper.
+- **`manual-exemption-validator`** — self-exemption olmayan faturada 4 kural: KDV=0 + tevkifat çakışması, KDV=0 + kod eksik, KDV>0 + satır 351, belge 351 + tüm satırlar KDV>0.
+- **`sgk-input-validator`** — SGK tipi için obje zorunluluğu + type whitelist + alt-alan boş-olmama.
+- **`simple-line-range-validator`** — kdvPercent [0,100], quantity > 0, tax.percent [0,100] runtime sınır kontrolleri.
+- **`SimpleLineInput.kdvExemptionCode`** — satır bazı manuel istisna kodu (belge fallback).
+- **`SimpleLineDeliveryInput.alicidibsatirkod`** — IHRACKAYITLI+702 için 11-haneli AlıcıDİBSATIRKOD. Mapper `Shipment/TransportHandlingUnit/CustomsDeclaration/IssuerParty/PartyIdentification[schemeID='ALICIDIBSATIRKOD']` ağacına eşler.
+- **`SimpleBuyerCustomerInput.nationalityId + passportId`** — YOLCUBERABERFATURA profili.
+- **`SimpleInvoiceInput.taxRepresentativeParty`** + yeni `SimpleTaxRepresentativeInput` tipi — YOLCUBERABERFATURA aracı kurum.
+- **555 "KDV Oran Kontrolüne Tabi Olmayan Satışlar"** — `exemption-config.ts`'e eklendi; cross-check matrisinde allowed SATIS/TEVKIFAT/KOMISYONCU. KDV oranından bağımsız.
+- **AR-9 Reactive InvoiceSession** tasarım notu (`audit/reactive-session-design-notes.md`) — v2.1.0 hedefli.
+
+#### Changed (Sprint 8c)
+
+- **Calculator `resolveExemptionReason`** sadeleşti. `DEFAULT_EXEMPTIONS.satis='351'` kaldırıldı; yalnızca `istisna='350'` ve `ihracKayitli='701'` self-exemption fallback olarak kaldı.
+- **Mapper `shouldAddExemption`** sadeleşti — 555 kullanıcı input'u varsa KDV>0 kalemde de XML'e yazılır. Satır bazı `kdvExemptionCode` TaxSubtotal'a eşlenir.
+
+#### Removed (Sprint 8c)
+
+- **`document-calculator.ts DEFAULT_EXEMPTIONS.satis`** — B-NEW-11 kök sebep.
+- **`simple-invoice-mapper.ts` B-81 TEVKIFAT+351 atlatma satırı** — gereksizleşti.
+
+#### Fixed (Sprint 8c)
+
+- B-NEW-01..12 (12 audit bug) + B-NEW-13 (YOLCU passport). Audit detay: `audit/b-new-audit.md`.
+- 9/9 workaround senaryo (05, 07, 10, 16, 17, 20, 26, 31, 99) strict moda döndü.
+- 30-feature-555 gizli regresyonu (önceden calculator `input.kdvExemptionCode='555'` yok sayıp yanlış 351 yazıyordu) çözüldü.
+
+#### Sprint 8c Commit Dağılımı (13 atomik)
+
+- **8c.0**: Plan kopya + log iskelet + FIX-PLANI M11/AR-9 işaretleme
+- **8c.1**: B-NEW-11 + M11 config + manual-exemption-validator + 555 cross-check
+- **8c.2**: B-NEW-12 (alicidibsatirkod + mapper CustomsDeclaration)
+- **8c.3**: M11 + manual-exemption-validator testleri (+21 test)
+- **8c.4**: B-NEW-13 (nationalityId/passportId + taxRepresentativeParty)
+- **8c.5**: B-NEW-14 plan hatası düzeltmesi + 26 validation-errors test coverage
+- **8c.6**: G3 cross-check matrix (B-NEW-04..07) (+3 test)
+- **8c.7**: G4 SGK (B-NEW-08..10) (+9 test)
+- **8c.8**: G5 runtime hijyen (B-NEW-01..03) (+10 test)
+- **8c.9**: Workaround kaldırma — 9/9 strict
+- **8c.10**: Doküman güncellemeleri (CHANGELOG + README + reactive notes)
+- **8c.11**: v2.0.0 release ops
+- **8c.12**: Implementation log finalize
+
+**Test değişimi:** 755 → **800** (+45). Plan ~884 hedefi `validation-errors.test.ts` strict per-case refactor'a bağlıydı — smoke test kapsamı yeterli olduğundan v2.1.0'a devredildi.
 
 ---
 
