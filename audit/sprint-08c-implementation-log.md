@@ -411,6 +411,55 @@ Sprint 8c planlaması sırasında senaryo 26-idis-satis'in `validationLevel: 'ba
 
 ---
 
+## Sprint 8c.11 — v2.0.0 bump + git tag
+
+**Tarih:** 2026-04-24
+**Commit hedefi:** `Sprint 8c.11: v2.0.0 bump + git tag`
+
+### Yapılanlar
+
+1. **`package.json`** version `1.4.2` → `2.0.0` bump.
+2. **Git tag `v2.0.0`** atılır (commit sonrası, aşağıdaki ops komutuyla).
+
+### Release Ops (Berkay tarafından manuel uygulanacak — 2FA + prod yetki gerektirir)
+
+```bash
+# Tag (8c.11 commit sonrası)
+git tag -a v2.0.0 -m "json2ubl-ts v2.0.0 — Sprint 8a+8b+8c stable"
+git push origin main
+git push origin v2.0.0
+
+# npm publish
+npm publish --dry-run  # smoke check
+npm publish            # 2FA prompt — Berkay elle onaylar
+
+# GitHub release notes (CHANGELOG'dan)
+gh release create v2.0.0 --title "v2.0.0 — UBL-TR stable" \
+  --notes-file CHANGELOG.md --target main
+```
+
+### Pre-publish Verification Checklist
+
+- [x] `bun test` → 800/800 yeşil
+- [x] `bun run build` → TypeScript hatasız (8c sonrası kontrol)
+- [x] 38 senaryo `npx tsx examples/run-all.ts` → 38 başarılı
+- [x] Git working tree temiz (sadece 8c.11 commit'i)
+- [ ] `npm publish --dry-run` smoke (Berkay manuel)
+- [ ] GitHub release v2.0.0 oluştur (Berkay manuel)
+- [ ] Skill repo patch (audit/skill-doc-patches-sprint-8b.md) manuel uygula (Berkay, ayrı repo)
+
+### Test Durumu
+
+- Başlangıç: 800/800 yeşil
+- Son: 800/800 yeşil (package.json bump — test etkisi yok)
+
+### Disiplin Notları
+
+- **Publish otomatize edilmedi:** Production npm publish yetki+2FA gerektirdiğinden Berkay manuel tetikler. Sprint 8c otomasyon tag atmak + commit ile sınırlı.
+- **Skill repo commit manuel:** `audit/skill-doc-patches-sprint-8b.md` içeriği Berkay tarafından ayrı repo'da uygulanır. Path belirsiz — Sprint 8d veya v2.1.0 planında çözülecek.
+
+---
+
 ## Sprint 8c.8 — G5 Runtime hijyen (B-NEW-01, 02, 03)
 
 **Tarih:** 2026-04-24
