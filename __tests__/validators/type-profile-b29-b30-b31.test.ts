@@ -237,3 +237,62 @@ describe('profile-validators — B-29 IHRACAT satır amount zorunluluğu', () =>
     expect(errors.some(e => e.path === 'lines[0].lineExtensionAmount')).toBe(true);
   });
 });
+
+// Sprint 8f.3 (Bug #3): YATIRIMTESVIK profilinde YTBNO eksikse semantik net hata
+describe('profile-validators — YATIRIMTESVIK_REQUIRES_YTBNO (Bug #3 fix)', () => {
+  function createYatirimTesvikBase(): InvoiceInput {
+    return createSatisInput({
+      profileId: InvoiceProfileId.YATIRIMTESVIK,
+      invoiceTypeCode: InvoiceTypeCode.SATIS,
+      contractReference: { id: '123456', schemeId: 'YTBNO' },
+      lines: [{
+        id: '1', invoicedQuantity: 1, unitCode: 'C62', lineExtensionAmount: 100,
+        taxTotal: { taxAmount: 18, taxSubtotals: [{
+          taxableAmount: 100, taxAmount: 18, percent: 18, taxTypeCode: '0015',
+        }] },
+        item: {
+          name: 'X',
+          commodityClassification: { itemClassificationCode: '03' },
+        },
+        price: { priceAmount: 100 },
+      }],
+    });
+  }
+
+  it('Bug #3: YATIRIMTESVIK + contractReference undefined → YATIRIMTESVIK_REQUIRES_YTBNO', () => {
+    const input = createYatirimTesvikBase();
+    delete (input as any).contractReference;
+    const errors = validateByProfile(input);
+    const err = errors.find(e => e.code === 'YATIRIMTESVIK_REQUIRES_YTBNO');
+    expect(err).toBeDefined();
+    expect(err!.path).toBe('contractReference');
+    expect(err!.message).toContain('YTBNO');
+  });
+
+  it('Bug #3: YATIRIMTESVIK + contractReference.id boş → YATIRIMTESVIK_REQUIRES_YTBNO', () => {
+    const input = createYatirimTesvikBase();
+    input.contractReference = { id: '', schemeId: 'YTBNO' };
+    const errors = validateByProfile(input);
+    const err = errors.find(e => e.code === 'YATIRIMTESVIK_REQUIRES_YTBNO');
+    expect(err).toBeDefined();
+    expect(err!.path).toBe('contractReference.id');
+  });
+
+  it('Bug #3: EARSIVFATURA + YTBSATIS + contractReference undefined → YATIRIMTESVIK_REQUIRES_YTBNO (shared path)', () => {
+    const input = createYatirimTesvikBase();
+    input.profileId = InvoiceProfileId.EARSIVFATURA;
+    input.invoiceTypeCode = InvoiceTypeCode.YTBSATIS;
+    delete (input as any).contractReference;
+    const errors = validateByProfile(input);
+    const err = errors.find(e => e.code === 'YATIRIMTESVIK_REQUIRES_YTBNO');
+    expect(err).toBeDefined();
+  });
+
+  it('Bug #3 regresyon: invalidFormat kuralı korunur (5 haneli YTBNO)', () => {
+    const input = createYatirimTesvikBase();
+    input.contractReference = { id: '12345', schemeId: 'YTBNO' };
+    const errors = validateByProfile(input);
+    expect(errors.some(e => e.code === 'INVALID_FORMAT' &&
+      e.path === 'contractReference.id')).toBe(true);
+  });
+});

@@ -6,7 +6,7 @@ import {
   DELIVERY_TERM_CODES, TRANSPORT_MODE_CODES, YTB_ITEM_CLASSIFICATION_CODES,
   YTB_GROUP_TYPES,
 } from '../config/constants';
-import { missingField, profileRequirement, invalidFormat } from './validation-result';
+import { profileRequirement, invalidFormat, yatirimTesvikRequiresYtbNo } from './validation-result';
 import { isNonEmpty, isNumeric, hasLength } from '../utils/formatters';
 
 /**
@@ -244,14 +244,16 @@ export function validateYatirimTesvikRules(input: InvoiceInput, source: string):
   const errors: ValidationError[] = [];
   const isIstisna = input.invoiceTypeCode === 'ISTISNA' || input.invoiceTypeCode === 'YTBISTISNA';
 
-  // ContractDocumentReference zorunlu (YTBNO, 6 haneli numerik)
+  // ContractDocumentReference → YTBNO (6 haneli numerik) zorunlu
+  // Sprint 8f.3 (Bug #3): semantik net hata mesajı için YATIRIMTESVIK_REQUIRES_YTBNO code'u
   if (!input.contractReference) {
-    errors.push(profileRequirement(source, 'contractReference',
-      'Yatırım Teşvik profilinde ContractDocumentReference zorunludur'));
+    errors.push(yatirimTesvikRequiresYtbNo('contractReference',
+      'YATIRIMTESVIK profilinde YTBNO (6 haneli numerik) zorunludur'));
   } else {
     const id = input.contractReference.id;
     if (!isNonEmpty(id)) {
-      errors.push(missingField('contractReference.id', 'YTBNO zorunludur'));
+      errors.push(yatirimTesvikRequiresYtbNo('contractReference.id',
+        'YATIRIMTESVIK profilinde YTBNO zorunludur'));
     } else if (!hasLength(id, 6) || !isNumeric(id)) {
       errors.push(invalidFormat('contractReference.id', '6 haneli numerik YTBNO', id));
     }

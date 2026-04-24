@@ -54,3 +54,13 @@ export function typeRequirement(typeCode: string, path: string, message: string)
     path,
   };
 }
+
+// Sprint 8f.3 (Bug #3): YATIRIMTESVIK profili / EARSIV+YTB tiplerinde YTBNO zorunluluğu
+// Semantik olarak "ContractDocumentReference" değil "YTBNO" kavramı — ayrı error code.
+export function yatirimTesvikRequiresYtbNo(path: string, message: string): ValidationError {
+  return {
+    code: 'YATIRIMTESVIK_REQUIRES_YTBNO',
+    message,
+    path,
+  };
+}
