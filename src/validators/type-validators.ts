@@ -191,8 +191,15 @@ function validateOzelMatrah(input: InvoiceInput): ValidationError[] {
   const kdvSubtotals = allSubtotals.filter(ts => ts.taxTypeCode === '0015');
 
   kdvSubtotals.forEach((ts, i) => {
-    if (isNonEmpty(ts.taxExemptionReasonCode) &&
-        !OZEL_MATRAH_TAX_EXEMPTION_REASON_CODES.has(ts.taxExemptionReasonCode)) {
+    // Sprint 8f.2 (Bug #2): taxExemptionReasonCode varlığı zorunlu (ISTISNA grubu pattern'i eşleniği).
+    // Önceden sadece whitelist kontrolü vardı — kod hiç verilmezse sessiz geçiyordu.
+    if (!isNonEmpty(ts.taxExemptionReasonCode)) {
+      errors.push(typeRequirement(InvoiceTypeCode.OZELMATRAH,
+        `taxTotals.taxSubtotals[${i}].taxExemptionReasonCode`,
+        'OZELMATRAH faturalarında TaxExemptionReasonCode zorunludur (801-812 aralığı)'));
+      return;
+    }
+    if (!OZEL_MATRAH_TAX_EXEMPTION_REASON_CODES.has(ts.taxExemptionReasonCode)) {
       errors.push(invalidValue(`taxTotals.taxSubtotals[${i}].taxExemptionReasonCode`,
         'ozelMatrahTaxExemptionReasonCodeType listesinden (801-812)', ts.taxExemptionReasonCode));
     }

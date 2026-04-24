@@ -152,6 +152,55 @@ describe('type-validators — B-31 IADE DocumentTypeCode zorunluluğu', () => {
   });
 });
 
+// Sprint 8f.2 (Bug #2): OZELMATRAH tipinde taxExemptionReasonCode zorunluluğu.
+describe('type-validators — OZELMATRAH taxExemptionReasonCode zorunluluğu (Bug #2 fix)', () => {
+  it('Bug #2: OZELMATRAH + taxExemptionReasonCode eksik → TYPE_REQUIREMENT atar', () => {
+    const input = createSatisInput({
+      invoiceTypeCode: InvoiceTypeCode.OZELMATRAH,
+      taxTotals: [{ taxAmount: 0, taxSubtotals: [{
+        taxableAmount: 100, taxAmount: 0, percent: 0, taxTypeCode: '0015',
+        // taxExemptionReasonCode yok
+      }] }],
+    });
+    const errors = validateByType(input);
+    const err = errors.find(e => e.code === 'TYPE_REQUIREMENT' &&
+      e.path === 'taxTotals.taxSubtotals[0].taxExemptionReasonCode');
+    expect(err).toBeDefined();
+    expect(err!.message).toContain('OZELMATRAH');
+    expect(err!.message).toContain('801-812');
+  });
+
+  it('Bug #2 regresyon: OZELMATRAH + taxExemptionReasonCode=801 kabul edilir', () => {
+    const input = createSatisInput({
+      invoiceTypeCode: InvoiceTypeCode.OZELMATRAH,
+      taxTotals: [{ taxAmount: 0, taxSubtotals: [{
+        taxableAmount: 100, taxAmount: 0, percent: 0, taxTypeCode: '0015',
+        taxExemptionReasonCode: '801',
+        taxExemptionReason: 'Özel matrah',
+      }] }],
+    });
+    const errors = validateByType(input);
+    expect(errors.filter(e =>
+      e.path === 'taxTotals.taxSubtotals[0].taxExemptionReasonCode')).toHaveLength(0);
+  });
+
+  it('Bug #2 regresyon: OZELMATRAH + taxExemptionReasonCode=999 INVALID_VALUE atar (whitelist)', () => {
+    const input = createSatisInput({
+      invoiceTypeCode: InvoiceTypeCode.OZELMATRAH,
+      taxTotals: [{ taxAmount: 0, taxSubtotals: [{
+        taxableAmount: 100, taxAmount: 0, percent: 0, taxTypeCode: '0015',
+        taxExemptionReasonCode: '999',
+        taxExemptionReason: 'Geçersiz',
+      }] }],
+    });
+    const errors = validateByType(input);
+    const err = errors.find(e => e.code === 'INVALID_VALUE' &&
+      e.path === 'taxTotals.taxSubtotals[0].taxExemptionReasonCode');
+    expect(err).toBeDefined();
+    expect(err!.actual).toBe('999');
+  });
+});
+
 describe('profile-validators — B-29 IHRACAT satır amount zorunluluğu', () => {
   function createIhracatBase(): InvoiceInput {
     return createSatisInput({
