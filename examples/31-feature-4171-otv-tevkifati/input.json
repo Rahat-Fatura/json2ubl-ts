@@ -30,6 +30,7 @@
       "price": 40,
       "unitCode": "Adet",
       "kdvPercent": 20,
+      "withholdingTaxCode": "606",
       "taxes": [
         {
           "code": "4171",

@@ -1,6 +1,6 @@
 import { runScenario } from '../_lib/runScenario';
 import input from './input';
 
-// basic mod — 4171 ÖTV tevkifatı strict'te B-81/M5 + TEVKIFAT zorunluluk
-// çakışması. 8c'de 4171 special-case handle edilecek.
-runScenario(__dirname, input, { validationLevel: 'basic' });
+// Sprint 8c.9: strict — B-NEW-11 fix sonrası 351 çakışması yok; input'a
+// withholdingTaxCode eklendi (TEVKIFAT + 4171 kombinasyonu için WithholdingTaxTotal zorunlu).
+runScenario(__dirname, input);

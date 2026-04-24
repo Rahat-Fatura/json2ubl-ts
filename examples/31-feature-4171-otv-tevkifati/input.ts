@@ -21,10 +21,15 @@ export const input: SimpleInvoiceInput = {
     address: 'Bağdat No:2', district: 'Kadıköy', city: 'İstanbul', zipCode: '34710',
   },
 
+  // 4171 ÖTV Tevkifatı yalnızca TEVKIFAT/IADE/SGK/YTBIADE tiplerinde izinli.
+  // TEVKIFAT tipi XSD gereği WithholdingTaxTotal da gerektirir — bu yüzden
+  // `withholdingTaxCode` (KDV tevkifatı) ile birlikte `taxes[4171]` (ÖTV tevkifatı)
+  // aynı kalemde kullanılır.
   lines: [
     {
       name: 'Motorin 10 L',
       quantity: 10, price: 40, unitCode: 'Adet', kdvPercent: 20,
+      withholdingTaxCode: '606', // KDV Tevkifatı (Petrol ürünleri — örnek combo)
       taxes: [{ code: '4171', percent: 50 }], // Petrol ÖTV Tevkifatı
     },
   ],

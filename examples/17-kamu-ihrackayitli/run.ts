@@ -1,5 +1,5 @@
 import { runScenario } from '../_lib/runScenario';
 import input from './input';
 
-// basic mod — B-NEW-12 (IHRACKAYITLI+702 simple-input AlıcıDİBKod eksiği).
-runScenario(__dirname, input, { validationLevel: 'basic' });
+// Sprint 8c.9: strict — B-NEW-12 fix sonrası alicidibsatirkod desteklendi.
+runScenario(__dirname, input);

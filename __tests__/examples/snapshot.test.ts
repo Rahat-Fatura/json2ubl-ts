@@ -37,17 +37,10 @@ function discoverScenarios(): ScenarioConfig[] {
   return dirs.map(slug => {
     const isDespatch = slug.startsWith('33-') || slug.startsWith('34-') ||
                        slug.startsWith('35-') || slug.startsWith('36-');
-    // basic mod kullanan senaryolar (B-NEW-11, B-NEW-12, niş profiller)
-    const basicModSlugs = new Set([
-      '05-temelfatura-tevkifat',
-      '07-temelfatura-ihrackayitli-702',
-      '10-ticarifatura-tevkifat-650-dinamik',
-      '16-kamu-tevkifat',
-      '17-kamu-ihrackayitli',
-      '20-yolcu-beraber-istisna-yabanci',
-      '31-feature-4171-otv-tevkifati',
-      '99-showcase-everything',
-    ]);
+    // Sprint 8c.9: basicModSlugs boşaltıldı (9/9 senaryo strict'e geçti — B-NEW-11/12/13
+    // fix'leri sonrası workaround gereksizleşti). Future workaround gerekirse buraya
+    // slug eklenebilir.
+    const basicModSlugs = new Set<string>();
     const options: ScenarioConfig['options'] = {};
     if (basicModSlugs.has(slug)) options.validationLevel = 'basic';
     if (slug === '30-feature-555-demirbas-kdv') options.allowReducedKdvRate = true;

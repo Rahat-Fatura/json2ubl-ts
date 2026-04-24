@@ -1,6 +1,6 @@
 import { runScenario } from '../_lib/runScenario';
 import input from './input';
 
-// basic mod — YOLCUBERABERFATURA simple-input TaxRepresentativeParty/nationalityId
-// ağacını eksik destekliyor. 8c'de genişletilecek (B-NEW-13).
-runScenario(__dirname, input, { validationLevel: 'basic' });
+// Sprint 8c.9: strict — B-NEW-13 fix sonrası nationalityId/passportId +
+// taxRepresentativeParty simple-input'ta desteklendi.
+runScenario(__dirname, input);

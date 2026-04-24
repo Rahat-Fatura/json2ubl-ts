@@ -332,6 +332,44 @@ Sprint 8c planlaması sırasında senaryo 26-idis-satis'in `validationLevel: 'ba
 
 ---
 
+## Sprint 8c.9 — Workaround kaldırma (9/9 senaryo strict mod)
+
+**Tarih:** 2026-04-24
+**Commit hedefi:** `Sprint 8c.9: Workaround kaldırma — 9/9 senaryo strict mod`
+
+### Yapılanlar
+
+1. **`__tests__/examples/snapshot.test.ts`** — `basicModSlugs` set boşaltıldı. Tüm senaryolar strict mod'da snapshot karşılaştırılır.
+
+2. **8 senaryo run.ts'inde `validationLevel: 'basic'` override kaldırıldı:**
+   - 05-temelfatura-tevkifat (B-NEW-11 fix)
+   - 07-temelfatura-ihrackayitli-702 (B-NEW-12 fix)
+   - 10-ticarifatura-tevkifat-650-dinamik (B-NEW-11 fix)
+   - 16-kamu-tevkifat (B-NEW-11 fix)
+   - 17-kamu-ihrackayitli (B-NEW-12 fix)
+   - 20-yolcu-beraber-istisna-yabanci (B-NEW-13 fix)
+   - 31-feature-4171-otv-tevkifati (B-NEW-11 fix + input düzeltme)
+   - 99-showcase-everything (B-NEW-11 fix)
+
+3. **`examples/31-feature-4171-otv-tevkifati/input.ts` düzeltildi:**
+   - TEVKIFAT tipinde WithholdingTaxTotal zorunlu olduğu için (XSD), `withholdingTaxCode: '606'` (KDV tevkifatı) eklendi — 4171 ÖTV Tevkifatı `taxes[]` ile birlikte kullanılır.
+   - Tasarım hatası: önceki input sadece `taxes[4171]` veriyordu; TEVKIFAT tip için WithholdingTaxTotal eksikti.
+
+4. **Snapshot regen (31 ve genel cross-check):** 38/38 senaryo başarılı build; output.xml'ler strict mod ile tutarlı.
+
+### Test Durumu
+
+- Başlangıç: 800/800 yeşil
+- Son: **800/800 yeşil** (senaryoların tamamı strict'te çalışır; yeni test eklenmedi)
+
+### Plan Sapması
+
+- **validation-errors.test.ts strict per-case refactor ertelendi:** Plan 8c.9 kapsamında validation-errors.test.ts'in slug-bazlı smoke'dan strict per-case'e çevrilmesi planlanmıştı (hedef ~884 test). Bu refactor uygulanmadı — mevcut smoke test tüm case'leri yakalıyor ve 38 slug-level test yeşil. Per-case refactor v2.1.0 sprintine devredilir (test kapsamı eksikliği yok, organizasyon farkı).
+- **Test hedefi:** Plan ~884 test hedeflemişti; mevcut 800. Fark ~84 test, tamamen validation-errors.test.ts strict per-case'den gelecekti. v2.0.0 release için 800 test yeterli kapsam.
+- **basicModSlugs 9 senaryo varsayımı yanlıştı:** Sprint 8c başında 8 senaryo basic'teydi (26 zaten strict); 8/8 strict geçiş tamamlandı.
+
+---
+
 ## Sprint 8c.8 — G5 Runtime hijyen (B-NEW-01, 02, 03)
 
 **Tarih:** 2026-04-24
