@@ -331,3 +331,30 @@ Sprint 8c planlaması sırasında senaryo 26-idis-satis'in `validationLevel: 'ba
 - **Validator yerleşim:** SGK için ayrı validator dosyası (SGK kuralları domain-specific; manual-exemption-validator'a karıştırmak sorumluluğu bulanıklaştırır).
 
 ---
+
+## Sprint 8c.8 — G5 Runtime hijyen (B-NEW-01, 02, 03)
+
+**Tarih:** 2026-04-24
+**Commit hedefi:** `Sprint 8c.8: G5 runtime hijyen (B-NEW-01, 02, 03)`
+
+### Yapılanlar
+
+1. **Yeni validator `src/validators/simple-line-range-validator.ts`:**
+   - B-NEW-01: `kdvPercent` ∉ [0, 100] → `INVALID_VALUE`
+   - B-NEW-02: `quantity <= 0` → `INVALID_VALUE`
+   - B-NEW-03: `taxes[].percent` ∉ [0, 100] → `INVALID_VALUE`
+
+2. **`simple-invoice-builder.ts` pipeline**'da register — diğer simple-input validator'ları ile birlikte.
+
+3. **`__tests__/validators/simple-line-range-validator.test.ts` (yeni, 10 test):**
+   - B-NEW-01: negatif + >100 + geçerli (0, 20, 100)
+   - B-NEW-02: 0 + negatif + küsürat geçerli
+   - B-NEW-03: >100 + negatif + geçerli
+   - Normal senaryo — hata yok
+
+### Test Durumu
+
+- Başlangıç: 790/790 yeşil
+- Son: **800/800 yeşil** (+10)
+
+---

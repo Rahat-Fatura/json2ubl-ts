@@ -24,6 +24,7 @@ import type { InvoiceInput } from '../types/invoice-input';
 import type { ValidationError } from '../errors/ubl-build-error';
 import { validateManualExemption } from '../validators/manual-exemption-validator';
 import { validateSgkInput } from '../validators/sgk-input-validator';
+import { validateSimpleLineRanges } from '../validators/simple-line-range-validator';
 import { UblBuildError } from '../errors/ubl-build-error';
 
 export interface SimpleBuilderOptions extends BuilderOptions {
@@ -70,6 +71,7 @@ export class SimpleInvoiceBuilder {
     //    ve KDV>0+351 yasağı simple-input seviyesinde yakalanır.
     if (this.options.validationLevel !== 'none') {
       const simpleInputErrors: ValidationError[] = [
+        ...validateSimpleLineRanges(input),
         ...validateManualExemption(input),
         ...validateSgkInput(input),
       ];
