@@ -392,3 +392,82 @@ Kod değişikliği içermeyen saf doğrulama commit'i. Mevcut 38 example senaryo
 - **Test hedefi:** 830-840 hedefiydi, +76 eklendiği için 876'ya ulaşıldı. Ekstra testler özellikle integration ve phantom-kdv-validator R4 eşleşme kuralları için.
 
 ---
+
+## Sprint 8d.8 — Doküman finalize (CHANGELOG + README + FIX-PLANI M12 detay + log kapanışı)
+
+**Tarih:** 2026-04-24
+**Commit hedef başlığı:** `Sprint 8d.8: Doküman finalize (M12 detay + CHANGELOG + log kapanışı)`
+
+### Yapılanlar
+
+1. **`CHANGELOG.md` [2.0.0] Sprint 8d alt-section finalize:**
+   - 8d.0 placeholder kaldırıldı, tam içerik dolduruldu
+   - Added/Changed/Unreleased Architecture Decisions/XML Stili Seçimi/Sprint 8d Commit Dağılımı alt bölümleri
+   - M12 eklendi notu (toplam M1–M12)
+   - Test değişimi 800 → 876
+
+2. **`README.md` §8 Sorumluluk Matrisi:** M12 satırı 8d.0'da placeholder olarak eklenmişti; final içerik zaten güncel — ek değişiklik gerekmedi.
+
+3. **`audit/FIX-PLANI-v3.md` M12 bölümü finalize:**
+   - "Dosyalar" listesi commit referansları ile genişletildi (8d.1 helper, 8d.2 calculator, 8d.3/8d.4 mapper, 8d.5 validator + pipeline)
+   - Test sayısı açıklandı (6 yeni test dosyası, 76 test toplam)
+
+4. **`audit/sprint-08d-implementation-log.md` 8d.8 bölümü** — bu bölüm ve kapanış notları.
+
+### v2.0.0 Publish Durumu
+
+- `package.json` zaten `2.0.0` (Sprint 8c.11'de bump edilmiş, `git tag v2.0.0` atılmamış)
+- Ek version bump veya ayrı commit gerekmez
+- Publish öncesi ek hazırlık: `npm run build` + `npm publish --tag latest` (kullanıcı kararı; CLAUDE-Code otomatik publish yapmayacak)
+- v2.0.0 CHANGELOG entry'si Sprint 8c + Sprint 8d kapsamını birlikte belgeler
+
+### Sprint 8d Final Metrikler
+
+| Ölçüt | Değer |
+|-------|-------|
+| Alt-commit sayısı | 9 (8d.0 → 8d.8) |
+| Yeni dosya | 7: phantom-kdv-rules.ts, phantom-kdv-validator.ts, 4 test dosyası, 2 fixture XML + 1 auto snapshot |
+| Değişen dosya | 5: line-calculator, document-calculator, simple-invoice-mapper, simple-invoice-builder, CHANGELOG + README + FIX-PLANI |
+| Yeni test | +76 (hedef 30-40'tan fazla — integration ve R4 eşleşme kuralları için ekstra) |
+| Test başı → sonu | 800 → 876 (+76, %9.5 artış) |
+| Typecheck | Temiz |
+| Regression | 38 example snapshot değişmedi, YATIRIMTESVIK+SATIS/IADE (senaryo 12, 13, 14) korundu |
+| Yeni mimari karar | M12 Phantom KDV (Vazgeçilen KDV Tutarı) |
+| AskUserQuestion kararları | S1 = B (her yerde §2.1.4), S2 = A (standalone), S3 = 9 commit, S4 = auto+manuel |
+| v2.0.0 publish | Hazır (ek commit gerekmez) |
+
+### Sonraki Sprint Önerileri (Sprint 8e / v2.1.0 başlangıç)
+
+- **Senaryo (example) üretimi:** Yeni 2 kombinasyon için example pack eklemek (kullanıcı Sprint 8d kapsamı dışı tuttu).
+  - `examples/XX-yatirimtesvik-istisna-makina/` — YATIRIMTESVIK+ISTISNA + 308 + ItemClassificationCode=01
+  - `examples/XX-earsiv-ytbistisna-insaat/` — EARSIVFATURA+YTBISTISNA + 339 + ItemClassificationCode=02
+  - Her biri input.ts + input.json + output.xml + run.ts + validation-errors.ts + README.md (mevcut 38 senaryo pattern'i)
+- **308 kodu config anormallisi:** `exemption-config.ts:62` 308 = "13/e Limanlara..." olarak tanımlı, GİB YTB PDF v1.1 §4 308 = "13/d Teşvikli Yatırım Malları" diyor. Kodlar listesi v1.42 vs YTB kılavuzu v1.1 discrepancy — B-NEW bug adayı, ayrı araştırma.
+- **AR-9 Reactive InvoiceSession** implementation (v2.1.0 hedefli) — tasarım notu `audit/reactive-session-design-notes.md`.
+
+### Disiplin Notları
+
+- **Plan disiplini tam uygulandı:** 9 alt-commit, plan §5'teki commit dağılımıyla birebir. Hiçbir commit birleştirilmedi veya atlandı.
+- **Test hedefi aşıldı:** Plan 30-40 yeni test öngörmüştü, 76 üretildi. Ekstralar integration (12) ve phantom-kdv-validator R4 eşleşme (10) kuralları için.
+- **Senaryo eklenmedi** (plan direktifi): "Senaryolara şu anda girme" — uyuldu.
+- **Mevcut senaryolara dokunulmadı**: 12, 13, 14 çıktıları değişmedi.
+- **SimpleInvoiceInput sözleşmesi korundu:** `CalculationSequenceNumeric` kullanıcıdan alınmadı — kütüphane otomatik `-1` set etti.
+
+---
+
+## Sprint 8d — KAPANIŞ
+
+Sprint 8d tamamlandı. M12 mimari kararı eklendi. 876/876 test yeşil. v2.0.0 publish için hazır (ek commit gerekmez).
+
+**Kapanış imzaları:**
+- Plan kopya: ✅ `audit/sprint-08d-plan.md` (8d.0)
+- Implementation log: ✅ bu dosya
+- Mimari karar: ✅ M12 FIX-PLANI-v3.md + README §8 + CHANGELOG
+- Test durumu: ✅ 876/876 yeşil, typecheck temiz, regression yok
+- Disiplin: ✅ 9 atomik commit, senaryo dokunulmadı, M11 ortogonal
+
+**v2.1.0'a devredilenler:**
+- Senaryo pack (Sprint 8e veya v2.1.0)
+- 308 kodu config discrepancy (ayrı B-NEW)
+- AR-9 Reactive InvoiceSession
+

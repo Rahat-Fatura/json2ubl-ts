@@ -152,11 +152,52 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 
 ### Sprint 8d — M12 Phantom KDV (Vazgeçilen KDV Tutarı) — 2026-04-24
 
-> **Not:** Bu alt-section Sprint 8d ilerledikçe doldurulacak (8d.8 finalize commit'inde). Şu an placeholder.
+**Kapsam:** YATIRIMTESVIK+ISTISNA ve EARSIVFATURA+YTBISTISNA kombinasyonlarında GİB "Yatırım Teşvik Kapsamında Yapılan Teslimlere İlişkin Fatura Teknik Kılavuzu v1.1" (Aralık 2025) uyumu. Satır KDV matematiği (kdvPercent × lineExtension) TaxSubtotal içinde XML'e yazılır fakat LegalMonetaryTotal + parent TaxTotal/TaxAmount'a dahil edilmez; `CalculationSequenceNumeric=-1` otomatik.
 
-**Kapsam:** YATIRIMTESVIK+ISTISNA ve EARSIVFATURA+YTBISTISNA için GİB "Yatırım Teşvik Kapsamında Yapılan Teslimlere İlişkin Fatura Teknik Kılavuzu v1.1" (Aralık 2025) uyumu. 9 atomik alt-commit (8d.0 → 8d.8). v2.0.0 publish 8d sonrası.
+#### Added (Sprint 8d)
 
-Detay: `audit/sprint-08d-plan.md`, `audit/sprint-08d-implementation-log.md`.
+- **M12 Phantom KDV helper** (`src/calculator/phantom-kdv-rules.ts`): `isPhantomKdvCombination(profile, type)`, `phantomKdvExemptionCodeFor(itemCls)`, `PHANTOM_KDV_EXEMPTION_CODES` (308, 339), `PHANTOM_KDV_ALLOWED_ITEM_CLASSIFICATION_CODES` (01, 02), `PHANTOM_KDV_CALCULATION_SEQUENCE_NUMERIC=-1`.
+- **`CalculatedTaxSubtotal.calculationSequenceNumeric?: number`** + **`CalculatedLine.phantomKdv: boolean`** tip alanları (line-calculator).
+- **`phantom-kdv-validator`** — 4 yeni validator kuralı:
+  - `YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT` — phantom'da `0 < kdvPercent ≤ 100` zorunlu
+  - `YTB_ISTISNA_REQUIRES_EXEMPTION_CODE` — 308 veya 339 zorunlu (whitelist)
+  - `YTB_ISTISNA_FORBIDDEN_ITEM_CLASSIFICATION` — ItemClassificationCode 03/04 yasak (PDF §4)
+  - `YTB_ISTISNA_EXEMPTION_CODE_MISMATCH` — 01↔308, 02↔339 eşleşme zorunlu
+  - `SimpleInvoiceBuilder` pipeline'a eklendi (4. simple-input validator).
+- **GİB §2.1.4 fixture fragmanları** (`__tests__/fixtures/phantom-kdv/`): `taxsubtotal-phantom-308.xml`, `taxsubtotal-phantom-339.xml`.
+- **Integration test** (`__tests__/integration/phantom-kdv.test.ts`): full pipeline XML üretimi + fixture fragman eşleşme + auto snapshot regression (12 test).
+
+#### Changed (Sprint 8d)
+
+- **`document-calculator.ts` akış sırası yeniden yapılandırıldı:** Önce satır hesaplama + tip/profil tespiti, sonra phantom post-marking (isPhantomKdvCombination true ise tüm satırların KDV subtotal'ına CalcSeqNum=-1 + phantomKdv=true), en son monetary + subtotal toplama (phantom satırların KDV'si taxInclusiveAmount/payableAmount/belge taxTotal'a girmez).
+- **`simple-invoice-mapper.ts buildTaxTotals`:** `calculationSequenceNumeric` belge-level TaxSubtotal'a propagate; phantom subtotal'da exemption code koşulsuz yazılır (§2.1.4 iç TaxSubtotal taxAmount=300 + Percent=20 + kod).
+- **`simple-invoice-mapper.ts buildSingleLine`:** satır-level TaxSubtotal'a `calculationSequenceNumeric` propagate; phantom satırda dış TaxTotal/TaxAmount=0; exemption code koşulu genişletildi (`cl.phantomKdv=true` durumunda amount>0 olsa da yazılır).
+
+#### Unreleased Architecture Decisions
+
+- **M12** eklendi (toplam M1–M12). Detay: `audit/FIX-PLANI-v3.md` M12 bölümü ve README §8 Sorumluluk Matrisi.
+
+#### XML Stili Seçimi
+
+Hem satır (`InvoiceLine/cac:TaxTotal`) hem belge (`Invoice/cac:TaxTotal`) seviyesinde §2.1.4 stili uygulanır: `TaxableAmount` dolu, `TaxAmount` gerçek phantom değer (ör. 300), `CalculationSequenceNumeric=-1`, `Percent` gerçek oran (ör. 20), `TaxCategory/TaxExemptionReasonCode` dolu. Dış parent `TaxAmount=0`. PDF §2.1.5 satır-level varyantı (Percent=0/TaxAmount=0) uygulanmadı — tek kod yolu + semantik tutarlılık tercih edildi (detay FIX-PLANI-v3 M12).
+
+#### Sprint 8d Commit Dağılımı (9 atomik)
+
+- **8d.0:** Plan kopyası + log iskelet + FIX-PLANI M12 işaretleme
+- **8d.1:** phantom-kdv-rules helper + tip genişletme (+16 test)
+- **8d.2:** document-calculator phantom post-marking + monetary dışlama (+15 test)
+- **8d.3:** Mapper satır-level §2.1.4 (+8 test)
+- **8d.4:** Mapper belge-level §2.1.4 (+9 test)
+- **8d.5:** phantom-kdv-validator + pipeline entegrasyonu (+16 test)
+- **8d.6:** Integration test + GİB §2.1.4 fixture eşleme (+12 test)
+- **8d.7:** Regression doğrulama (kod değişikliği yok)
+- **8d.8:** Doküman güncellemeleri (CHANGELOG + README + FIX-PLANI M12 detay + log finalize)
+
+**Test değişimi:** 800 → **876** (+76). Hedef 830-840'ı aştı (integration + R4 whitelist eşleme kuralları için ekstra).
+
+**v2.0.0 publish:** 8d sonrası; `package.json` zaten `2.0.0`, ek version bump gerekmez.
+
+Detay: `audit/sprint-08d-plan.md`, `audit/sprint-08d-implementation-log.md`, `audit/FIX-PLANI-v3.md` M12 bölümü.
 
 ---
 

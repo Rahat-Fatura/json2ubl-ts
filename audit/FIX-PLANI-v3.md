@@ -135,8 +135,15 @@ M1–M10 tanımları v2'de (satır 359–388) verildi. v3'te hepsi aynen geçerl
 - **Kaynak:** GİB "Yatırım Teşvik Kapsamında Yapılan Teslimlere İlişkin Fatura Teknik Kılavuzu v1.1" (Aralık 2025), §2.1.4 + §2.1.5.
 - **Giriş zorunluluğu:** Her satırda `0 < kdvPercent ≤ 100`. `kdvPercent=0` validation error (`YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT`). Her satırda exemption code — 308 (ItemClassificationCode=01 Makine/Teçhizat) veya 339 (ItemClassificationCode=02 İnşaat). 03/04 kategorilerinde ISTISNA yasak (PDF §4).
 - **XML stili (seçilen):** Hem satır hem belge seviyesinde §2.1.4 stili (TaxSubtotal: TaxAmount=300, Percent=20, CalcSeqNum=-1, exemption code dolu; parent TaxAmount=0). PDF §2.1.5 satır-level varyantı (Percent=0/TaxAmount=0) uygulanmaz — tek kod yolu tercih edildi; gerekçe: semantik tutarlılık + §2.1.5'in PDF'te açık gerekçesi yok (kılavuz TODO'su).
-- **Dosyalar:** `src/calculator/phantom-kdv-rules.ts` (yeni), `src/calculator/document-calculator.ts`, `src/calculator/line-calculator.ts` (tip), `src/calculator/simple-invoice-mapper.ts`, `src/validators/phantom-kdv-validator.ts` (yeni).
+- **Dosyalar:**
+  - `src/calculator/phantom-kdv-rules.ts` (yeni, 8d.1) — tek kural kaynağı
+  - `src/calculator/line-calculator.ts` (tip genişletme, 8d.1) — `CalculatedTaxSubtotal.calculationSequenceNumeric?`, `CalculatedLine.phantomKdv`
+  - `src/calculator/document-calculator.ts` (8d.2) — phantom post-marking + monetary dışlama
+  - `src/calculator/simple-invoice-mapper.ts` (8d.3, 8d.4) — satır + belge level §2.1.4 stili
+  - `src/validators/phantom-kdv-validator.ts` (yeni, 8d.5) — 4 kural (R1 nonzero kdvPercent, R2 exemption code whitelist, R3 ItemClassificationCode 03/04 yasak, R4 01↔308/02↔339 eşleşme)
+  - `src/calculator/simple-invoice-builder.ts` (8d.5) — pipeline entegrasyonu
 - **M11 ile ilişki:** Ortogonal. M11 "manuel 351 muafiyeti" (self-exemption), M12 "vazgeçilen KDV gösterim kuralı". M11 YATIRIMTESVIK'i zaten self-exemption olarak işaretliyor; M12 onun üstüne phantom gösterim disiplinini ekler.
+- **Testler:** 76 yeni test (phantom-kdv-rules 16, document-calculator-phantom 15, mapper-phantom-line 8, mapper-phantom-document 9, phantom-kdv-validator 16, integration phantom-kdv 12). Test toplamı 800 → 876.
 
 **Toplam mimari karar:** 12 (M1 ... M12).
 
