@@ -341,6 +341,47 @@ const { session, uiState } = useInvoiceSession();
 {uiState.lineFields[0]?.showCommodityClassification && <GtipInput />}
 ```
 
+### 2.X SuggestionEngine — Advisory Öneriler (AR-10 Faz 2, v2.2.0+)
+
+Faz 2 ile birlikte session, validator-error'lardan ayrı bir **advisory** kanal sunar. Validator "bu olmadan XML üretilmez" derken, suggestion "bu varsayılanı seçmek istemez misin?" der. Aynı path için ikisi paralel emit edilebilir; UI iki mesajı yan yana gösterir (kırmızı hata + mavi öneri).
+
+**`suggestion` event:**
+
+```typescript
+session.on('suggestion', (suggestions) => {
+  // suggestions: Suggestion[] — yeni veya değişmiş öneriler (batch payload)
+  for (const s of suggestions) {
+    showAdvisoryHint({
+      path: s.path,                    // 'lines[0].kdvExemptionCode'
+      value: s.value,                  // '351'
+      reason: s.reason,                // Türkçe tooltip
+      severity: s.severity,            // 'recommended' | 'optional'
+      ruleId: s.ruleId,                // 'kdv/zero-suggest-351'
+      label: s.displayLabel,           // '351 — KDV İstisna' (opsiyonel)
+    });
+  }
+});
+```
+
+**Diff semantics:** Boş diff (added=0 && changed=0) → emit YOK. Aynı state ardışık `validate()` çağrıları suggestion event'i tekrarlamaz. Primary key `${ruleId}::${path}` — value/reason/severity değişimi changed olarak emit edilir.
+
+**Kural kapsamı (v2.2.0):** 23 kural — KDV (7), Tevkifat (5), IHRACKAYITLI (3), YATIRIMTESVIK (4), Delivery (3), Misc (2). Domain bazlı `src/calculator/suggestion-rules/` altında.
+
+**Apply pattern:**
+
+```typescript
+session.on('suggestion', (suggestions) => {
+  // Kullanıcı "Apply" tıklarsa
+  for (const s of suggestions) {
+    if (userApproved(s)) {
+      session.update(s.path as any, s.value);
+    }
+  }
+});
+```
+
+**Performance:** 100 satır × 23 kural senaryosunda suggestion engine ~0.01ms (15ms threshold × 1000 altı). Toplam pipeline ~0.14ms. Detay: `audit/sprint-08i-implementation-log.md`.
+
 ---
 
 ## 3. ConfigManager — Dinamik Konfigürasyon

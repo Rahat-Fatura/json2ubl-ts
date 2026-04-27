@@ -497,3 +497,28 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - master plan §3.4 +150 test öngörüsü AŞILDI (Sprint 8i toplam +287 test, plan +150)
 
 ---
+
+## Sprint 8i.12 — README §2.X Suggestion API rehberi
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.12: README §2.X SuggestionEngine API rehberi (AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `README.md` §2 sonuna `§2.X SuggestionEngine — Advisory Öneriler (AR-10 Faz 2, v2.2.0+)` alt-bölüm eklendi:
+   - `suggestion` event API
+   - Diff semantics (boş diff → emit yok, primary key `${ruleId}::${path}`)
+   - Kural kapsamı (23 kural domain bazlı)
+   - Apply pattern örneği
+   - Performance metrikleri (0.01ms / 15ms threshold)
+
+### Test
+
+- 1694/1694 yeşil (sadece docs değişikliği, kod değişmedi)
+
+### Disiplin
+
+- README §2 mevcut numara korundu (§3 ConfigManager renumber edilmedi)
+- §2.X format Sprint 8h.10 §2.X "v2.1.0+" pattern'iyle uyumlu
+
+---
