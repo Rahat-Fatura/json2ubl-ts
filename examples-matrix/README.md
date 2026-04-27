@@ -6,11 +6,11 @@ Sprint 8e (Publish Öncesi Kapsam Doğrulama) + Sprint 8f (Bug hotfix + kapsam g
 
 ## 📊 Özet (Dashboard)
 
-- **15 profil** × **19 tip** — PROFILE_TYPE_MATRIX'te **68 kombinasyon** tanımlı
-- **122 valid senaryo** (115 invoice + 7 despatch)
-- **40 invalid senaryo** — 15 farklı error code kapsıyor
-- **Coverage:** 67/68 kombinasyon (%98.5)
-- **Toplam:** 162 senaryo
+- **15 profil** × **20 tip** — PROFILE_TYPE_MATRIX'te **68 kombinasyon** tanımlı
+- **123 valid senaryo** (116 invoice + 7 despatch)
+- **41 invalid senaryo** — 15 farklı error code kapsıyor
+- **Coverage:** 68/68 kombinasyon (%100.0)
+- **Toplam:** 164 senaryo
 
 ## Kullanım
 
@@ -29,26 +29,24 @@ npx tsx examples-matrix/find.ts --has-withholding --currency=USD
 
 ## Profil × Tip Pivot Tablosu
 
-| Profil \ Tip | HKSKOMISYONCU | HKSSATIS | IADE | IHRACKAYITLI | ISTISNA | KOMISYONCU | KONAKLAMAVERGISI | OZELMATRAH | SARJ | SARJANLIK | SATIS | SGK | TEVKIFAT | TEVKIFATIADE | YTBIADE | YTBISTISNA | YTBSATIS | YTBTEVKIFAT | YTBTEVKIFATIADE | **Toplam** |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| EARSIVFATURA | — | — | 2 | 1 | 2 | 1 | 1 | 1 | — | — | 3 | 1 | 2 | 1 | 1 | 2 | 2 | 1 | 2 | **23** |
-| ENERJI | — | — | — | — | — | — | — | — | 2 | 1 | — | — | — | — | — | — | — | — | — | **3** |
-| HKS | 1 | 2 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | **3** |
-| IDIS | — | — | 1 | 2 | 1 | — | — | — | — | — | 2 | — | 1 | 1 | — | — | — | — | — | **8** |
-| IHRACAT | — | — | — | — | 3 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | **3** |
-| ILAC_TIBBICIHAZ | — | — | 1 | 1 | 1 | — | — | — | — | — | 3 | — | 1 | 1 | — | — | — | — | — | **8** |
-| KAMU | — | — | — | 1 | 2 | 1 | 1 | 1 | — | — | 3 | 1 | 2 | 1 | — | — | — | — | — | **13** |
-| OZELFATURA | — | — | — | — | 1 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | **1** |
-| TEMELFATURA | — | — | 2 | 2 | 4 | 1 | 1 | 1 | — | — | 9 | 2 | 3 | 2 | — | — | — | — | — | **27** |
-| TICARIFATURA | — | — | — | 1 | 2 | 1 | 1 | 2 | — | — | 3 | 1 | 2 | 1 | — | — | — | — | — | **14** |
-| YATIRIMTESVIK | — | — | 2 | — | 2 | — | — | — | — | — | 3 | — | 2 | 1 | — | — | — | — | — | **10** |
-| YOLCUBERABERFATURA | — | — | — | — | 2 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | **2** |
+| Profil \ Tip | HKSKOMISYONCU | HKSSATIS | IADE | IHRACKAYITLI | ISTISNA | KOMISYONCU | KONAKLAMAVERGISI | OZELMATRAH | SARJ | SARJANLIK | SATIS | SGK | TEKNOLOJIDESTEK | TEVKIFAT | TEVKIFATIADE | YTBIADE | YTBISTISNA | YTBSATIS | YTBTEVKIFAT | YTBTEVKIFATIADE | **Toplam** |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| EARSIVFATURA | — | — | 2 | 1 | 2 | 1 | 1 | 1 | — | — | 3 | 1 | 1 | 2 | 1 | 1 | 2 | 2 | 1 | 2 | **24** |
+| ENERJI | — | — | — | — | — | — | — | — | 2 | 1 | — | — | — | — | — | — | — | — | — | — | **3** |
+| HKS | 1 | 2 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | **3** |
+| IDIS | — | — | 1 | 2 | 1 | — | — | — | — | — | 2 | — | — | 1 | 1 | — | — | — | — | — | **8** |
+| IHRACAT | — | — | — | — | 3 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | **3** |
+| ILAC_TIBBICIHAZ | — | — | 1 | 1 | 1 | — | — | — | — | — | 3 | — | — | 1 | 1 | — | — | — | — | — | **8** |
+| KAMU | — | — | — | 1 | 2 | 1 | 1 | 1 | — | — | 3 | 1 | — | 2 | 1 | — | — | — | — | — | **13** |
+| OZELFATURA | — | — | — | — | 1 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | **1** |
+| TEMELFATURA | — | — | 2 | 2 | 4 | 1 | 1 | 1 | — | — | 9 | 2 | — | 3 | 2 | — | — | — | — | — | **27** |
+| TICARIFATURA | — | — | — | 1 | 2 | 1 | 1 | 2 | — | — | 3 | 1 | — | 2 | 1 | — | — | — | — | — | **14** |
+| YATIRIMTESVIK | — | — | 2 | — | 2 | — | — | — | — | — | 3 | — | — | 2 | 1 | — | — | — | — | — | **10** |
+| YOLCUBERABERFATURA | — | — | — | — | 2 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | **2** |
 
 ## Coverage Gap Report
 
-⚠️ **1 kombinasyon kapsamsız** (PROFILE_TYPE_MATRIX'te izinli ama senaryo yok):
-
-- EARSIVFATURA × TEKNOLOJIDESTEK
+✅ **Tüm PROFILE_TYPE_MATRIX kombinasyonları kapsamlı.**
 
 ## Kod Dağılımları
 
@@ -58,8 +56,8 @@ npx tsx examples-matrix/find.ts --has-withholding --currency=USD
 PROFILE_REQUIREMENT                       ████████████████████████ 9
 MISSING_FIELD                             ███████████████████ 7
 INVALID_FORMAT                            █████████████ 5
+INVALID_VALUE                             ███████████ 4
 TYPE_REQUIREMENT                          ███████████ 4
-INVALID_VALUE                             ████████ 3
 YATIRIMTESVIK_REQUIRES_YTBNO              ████████ 3
 CROSS_MATRIX                              ███ 1
 EXEMPTION_351_FORBIDDEN_FOR_NONZERO_KDV   ███ 1
@@ -90,7 +88,7 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 
 ## Valid Senaryolar (profil bazında)
 
-### EARSIVFATURA (23)
+### EARSIVFATURA (24)
 
 | ID | Tip | Slug | KDV | Döviz | Özellikler | Notlar |
 |---|---|---|---|---|---|---|
@@ -106,6 +104,7 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 | [earsivfatura-satis-coklu-kdv](valid/earsivfatura/earsivfatura-satis-coklu-kdv/) | SATIS | coklu-kdv | 10,20 | TRY | — | EARSIVFATURA+SATIS çoklu KDV (10 + 20) |
 | [earsivfatura-satis-not-siparis](valid/earsivfatura/earsivfatura-satis-not-siparis/) | SATIS | not-siparis | 20 | TRY | orderReference | EARSIVFATURA+SATIS notes + orderReference |
 | [earsivfatura-sgk-baseline](valid/earsivfatura/earsivfatura-sgk-baseline/) | SGK | baseline | 20 | TRY | sgk | Baseline — EARSIVFATURA+SGK, MAL_HIZMET |
+| [earsivfatura-teknolojidestek-baseline](valid/earsivfatura/earsivfatura-teknolojidestek-baseline/) | TEKNOLOJIDESTEK | baseline | 20 | TRY | tckn, telefon-imei | EARSIVFATURA+TEKNOLOJIDESTEK baseline — TCKN müşteri + IMEI (TELEFON scheme) |
 | [earsivfatura-tevkifat-baseline](valid/earsivfatura/earsivfatura-tevkifat-baseline/) | TEVKIFAT | baseline | 20 | TRY | — | Baseline — EARSIVFATURA+TEVKIFAT |
 | [earsivfatura-tevkifat-dinamik-650](valid/earsivfatura/earsivfatura-tevkifat-dinamik-650/) | TEVKIFAT | dinamik-650 | 20 | TRY | — | EARSIVFATURA+TEVKIFAT 650 dinamik %30 |
 | [earsivfatura-tevkifatiade-baseline](valid/earsivfatura/earsivfatura-tevkifatiade-baseline/) | TEVKIFATIADE | baseline | 20 | TRY | — | Baseline — EARSIVFATURA+TEVKIFATIADE, kod 603 %70 |
@@ -323,13 +322,14 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 |---|---|---|---|---|
 | [invalid-profile-profile-bilinmeyen](invalid/invalid-profile/invalid-profile-profile-bilinmeyen/) | ? | SATIS | No | profile whitelist dışında (BILINMEYEN) |
 
-### INVALID_VALUE (3)
+### INVALID_VALUE (4)
 
 | ID | Profil bağlamı | Tip bağlamı | Multi-error | Açıklama |
 |---|---|---|---|---|
 | [invalid-value-currency-gecersiz](invalid/invalid-value/invalid-value-currency-gecersiz/) | TEMELFATURA | SATIS | Yes | currencyCode whitelist dışında ("XYZ") |
 | [invalid-value-kdv-negatif](invalid/invalid-value/invalid-value-kdv-negatif/) | TEMELFATURA | SATIS | No | kdvPercent negatif (-5) |
 | [invalid-value-quantity-sifir](invalid/invalid-value/invalid-value-quantity-sifir/) | TEMELFATURA | SATIS | No | quantity 0 |
+| [invalid-value-tax-4171-yasak-tip](invalid/invalid-value/invalid-value-tax-4171-yasak-tip/) | TEMELFATURA | SATIS | No | 4171 ÖTV Tevkifatı kodu SATIS tipinde kullanılamaz (sadece TEVKIFAT/IADE/SGK/YTBIADE) |
 
 ### MISSING_FIELD (7)
 
