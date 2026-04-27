@@ -217,3 +217,30 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - Severity dağılımı: 4 recommended + 1 optional
 
 ---
+
+## Sprint 8i.4 — IHRACKAYITLI grubu (3 kural)
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.4: IHRACKAYITLI grubu suggestion kuralları (3 kural, AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `src/calculator/suggestion-rules/ihrackayitli-suggestions.ts` (yeni, ~85 satır):
+   1. `ihrackayitli/702-default-suggestion` (recommended) — boş kdvExemptionCode → 702
+   2. `ihrackayitli/702-gtip-required` (recommended) — 702 + gtipNo boş → uyarı
+   3. `ihrackayitli/702-alicidib-required` (recommended) — 702 + alicidibsatirkod boş → uyarı
+
+2. `src/calculator/suggestion-rules/index.ts` modifikasyonu — IHRACKAYITLI_SUGGESTIONS spread.
+
+3. `__tests__/calculator/suggestion-rules/ihrackayitli-suggestions.test.ts` (yeni, 9 test):
+   - Her kural için 3 test
+
+### Test
+
+- Başlangıç: 1472/1472 yeşil
+- Son: **1481/1481 yeşil** (+9 test, hedef +9)
+
+### Disiplin
+- Plan'dan sapma yok. Severity tamamı recommended (3/3).
+
+---

@@ -1,6 +1,7 @@
 import type { SuggestionRule } from '../suggestion-types';
 import { KDV_SUGGESTIONS } from './kdv-suggestions';
 import { WITHHOLDING_SUGGESTIONS } from './withholding-suggestions';
+import { IHRACKAYITLI_SUGGESTIONS } from './ihrackayitli-suggestions';
 
 /**
  * Sprint 8i / AR-10 Faz 2 — SUGGESTION_RULES manifest.
@@ -19,4 +20,5 @@ import { WITHHOLDING_SUGGESTIONS } from './withholding-suggestions';
 export const SUGGESTION_RULES: readonly SuggestionRule[] = [
   ...KDV_SUGGESTIONS,
   ...WITHHOLDING_SUGGESTIONS,
+  ...IHRACKAYITLI_SUGGESTIONS,
 ];
