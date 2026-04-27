@@ -465,3 +465,35 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - Sprint 8h hijyen düzeltme dahil — InvoiceSession 555 KDV opt-in artık çalışıyor
 
 ---
+
+## Sprint 8i.11 — Examples-matrix tam session parity (123 → 116 invoice senaryo)
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.11: Examples-matrix tam session parity (116 invoice senaryo, AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `__tests__/examples-matrix/full-session-parity.test.ts` (yeni, 117 test):
+   - examples-matrix/valid/ tüm dizinler taranıyor
+   - 3 irsaliye dizini (hksirsaliye, idisirsaliye, temelirsaliye) skip — DespatchBuilder
+   - 116 invoice senaryo + 1 sayım test = 117 test
+   - InvoiceSession.buildXml() === output.xml parity (Sprint 8h.9 pattern genişletme)
+
+### Test
+
+- Başlangıç: 1577/1577 yeşil
+- Son: **1694/1694 yeşil** (+117 test, plan +162 — gerçek senaryo 123, irsaliye skip 6)
+
+### Sapmalar
+
+1. **123 senaryo → 116 invoice senaryo:** Plan §6.1'de "162 examples-matrix valid" tahmini idi, gerçek sayı 123. 3 irsaliye dizini × ortalama 2 senaryo = 7 senaryo skip → 116 invoice. Plan'a göre bu küçük bir tahmin sapması.
+
+2. **Toplam regression hedefi:** 200 senaryo → 150 senaryo (34 examples + 116 examples-matrix = 150). İrsaliye skip total -10. Plan §5.1 "+200 converter test" yerine **+152 test** (35 + 117).
+
+### Disiplin
+
+- Tüm 116 invoice senaryo session XML mevcut output.xml ile parity ✅
+- Sprint 8h.9 sample 10 + Sprint 8i.10 examples 34 + Sprint 8i.11 examples-matrix 116 = **160 toplam regression senaryo**
+- master plan §3.4 +150 test öngörüsü AŞILDI (Sprint 8i toplam +287 test, plan +150)
+
+---
