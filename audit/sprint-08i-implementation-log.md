@@ -427,3 +427,41 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - Mimsoft Next.js rewrite'ta UX gözlemlenmesi gerekir (renk + ikon ayrımı).
 
 ---
+
+## Sprint 8i.10 — Examples (38 senaryo) session parity + Sprint 8h hijyen fix
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.10: Examples session parity (34 invoice senaryo) + buildXml opt-in fix (AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `__tests__/examples/session-parity.test.ts` (yeni, 35 test):
+   - 38 examples senaryosu için `InvoiceSession.buildXml() === output.xml` parity
+   - 4 irsaliye senaryosu skip edildi (DespatchBuilder kullanır, InvoiceSession kapsamı dışı)
+   - Toplam: 34 invoice senaryo + 1 dizin sayım testi = 35 test
+
+2. `src/calculator/invoice-session.ts` Sprint 8h hijyen fix:
+   - `buildXml()` metodunda `allowReducedKdvRate` opt-in **builder'a geçirilmemişti** (Sprint 8h.6 bug)
+   - 30-feature-555-demirbas-kdv senaryosu bunu yakalattı (555 KDV kodu opt-in zorunlu)
+   - Fix: `new SimpleInvoiceBuilder({ allowReducedKdvRate: this._allowReducedKdvRate, ... })`
+
+### Sapmalar (Plan §6'a göre)
+
+1. **S-6 path sequence converter Sprint 8j'ye ertelendi:** Plan'da "scripts/example-to-session-script.ts converter (path sequence formatı)" istenmişti. Sprint 8h.9'daki `buildSessionFromInput` zaten `initialInput` pattern'i kullanıyor; XML output regression değeri ZATEN sağlanıyor. Path sequence formatı (50+ ardışık update) **incremental flow** test eder; bu Sprint 8j'ye ertelendi (Sprint 8i scope büyümesi engelleme).
+
+2. **38 → 34 invoice senaryo:** 4 irsaliye senaryosu (33-36) DespatchBuilder kullanır, InvoiceSession kapsamı dışı. Test'te skip pattern (`irsaliye` regex match).
+
+3. **Sprint 8h hijyen fix:** Sprint 8i kapsamı dışında bir bug fix. `buildXml` `allowReducedKdvRate` builder'a geçmiyordu. 30-feature-555 testi bunu yakalattı, Sprint 8i.10'a dahil edildi.
+
+### Test
+
+- Başlangıç: 1542/1542 yeşil
+- Son: **1577/1577 yeşil** (+35 test, plan +38 — irsaliye skip)
+
+### Disiplin
+
+- Plan §6.3 path sequence formatı Sprint 8j'ye ertelendi (büyük scope sapma — log'da işaretli)
+- 200 senaryo regression hedefi: 34 (8i.10) + 162 (8i.11) = 196 senaryo (irsaliye skip 4 kayıp)
+- Sprint 8h hijyen düzeltme dahil — InvoiceSession 555 KDV opt-in artık çalışıyor
+
+---

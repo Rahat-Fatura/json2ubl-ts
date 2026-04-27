@@ -781,6 +781,7 @@ export class InvoiceSession extends EventEmitter {
   buildXml(options?: { validationLevel?: 'none' | 'basic' | 'strict' }): string {
     const builder = new SimpleInvoiceBuilder({
       validationLevel: options?.validationLevel ?? 'none',
+      allowReducedKdvRate: this._allowReducedKdvRate,
     });
     return builder.build(this._input).xml;
   }
