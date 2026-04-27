@@ -164,8 +164,15 @@ export interface InvoiceUIState {
   allowedProfiles: string[];
   /** Mevcut profil için izin verilen tipler */
   allowedTypes: string[];
-  /** Mevcut seçimlere göre alan görünürlükleri */
+  /** Mevcut seçimlere göre alan görünürlükleri (doc-level) */
   fields: FieldVisibility;
+  /**
+   * Line-level alan görünürlükleri (Sprint 8h.5 / AR-10).
+   * Her satır için ayrı `LineFieldVisibility` map'i; addLine/removeLine/setLines/update
+   * sırasında session tarafından senkron tutulur. Doc-level değişimde (type/profile/liability)
+   * tüm `lineFields` re-derive edilir.
+   */
+  lineFields: import('./line-field-visibility').LineFieldVisibility[];
   /** Kullanılabilir tevkifat kodları */
   availableWithholdingTaxes: WithholdingTaxDefinition[];
   /** Kullanılabilir istisna kodları (tip bazında filtrelenmiş) */
@@ -498,6 +505,7 @@ export function deriveUIState(
     allowedProfiles: getAllowedProfilesForType(type, liability, isExport),
     allowedTypes: getAllowedTypesForProfile(profile, liability),
     fields: deriveFieldVisibility(type, profile, currencyCode),
+    lineFields: [],     // Session line CRUD/update sonrası doldurulur (Sprint 8h.5)
     availableWithholdingTaxes: [...configManager.withholdingTaxes],
     availableExemptions: getAvailableExemptions(type),
     availableBillingDocumentTypeCodes: getAvailableBillingDocumentTypeCodes(type),

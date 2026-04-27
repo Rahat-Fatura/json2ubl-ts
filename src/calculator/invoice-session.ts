@@ -40,6 +40,7 @@ import { SimpleInvoiceBuilder } from './simple-invoice-builder';
 import type { SessionPathMap } from './session-paths.generated';
 import { KNOWN_PATH_TEMPLATES, READ_ONLY_PATHS } from './session-paths.generated';
 import { parsePath, applyPathUpdate, readPath, deepEqual, tokensToTemplate, PathParseError } from './session-path-utils';
+import { deriveLineFieldVisibility } from './line-field-visibility';
 
 // ─── Session Event Tipleri ───────────────────────────────────────────────────
 
@@ -231,6 +232,11 @@ export class InvoiceSession extends EventEmitter {
       this._liability,
       this._isExport,
     );
+
+    // Sprint 8h.5: Initial lineFields senkron
+    this._uiState.lineFields = this._input.lines.map((line, idx) =>
+      deriveLineFieldVisibility(line, this._input, idx)
+    );
   }
 
   // ─── Getter'lar ─────────────────────────────────────────────────────────
@@ -390,6 +396,7 @@ export class InvoiceSession extends EventEmitter {
     });
 
     // Sprint 8h.4: line-level path için lineFieldChanged ek emit.
+    // Sprint 8h.5: lineFields[i] re-derive (line content değişimi visibility'i etkileyebilir).
     if (path.startsWith('lines[')) {
       const lineIdxMatch = path.match(/^lines\[(\d+)\]\.(.+)$/);
       if (lineIdxMatch) {
@@ -402,6 +409,14 @@ export class InvoiceSession extends EventEmitter {
           value,
           previousValue,
         });
+        // 8h.5: re-derive lineFields[lineIndex]
+        const newLineFields = [...this._uiState.lineFields];
+        newLineFields[lineIndex] = deriveLineFieldVisibility(
+          this._input.lines[lineIndex],
+          this._input,
+          lineIndex,
+        );
+        this._uiState.lineFields = newLineFields;
       }
     }
 
@@ -617,7 +632,13 @@ export class InvoiceSession extends EventEmitter {
   addLine(line: SimpleLineInput): void {
     const lines = [...this._input.lines, line];
     this._input = { ...this._input, lines };
-    this.emit('line-added', { index: lines.length - 1, line });
+    // Sprint 8h.5: lineFields senkron — yeni satır için derive
+    const newIdx = lines.length - 1;
+    this._uiState.lineFields = [
+      ...this._uiState.lineFields,
+      deriveLineFieldVisibility(line, this._input, newIdx),
+    ];
+    this.emit('line-added', { index: newIdx, line });
     this.onChanged();
   }
 
@@ -628,6 +649,10 @@ export class InvoiceSession extends EventEmitter {
     const lines = [...this._input.lines];
     lines[index] = { ...lines[index], ...updates };
     this._input = { ...this._input, lines };
+    // Sprint 8h.5: lineFields[i] re-derive
+    const newLineFields = [...this._uiState.lineFields];
+    newLineFields[index] = deriveLineFieldVisibility(lines[index], this._input, index);
+    this._uiState.lineFields = newLineFields;
     this.emit('line-updated', { index, line: lines[index] });
     this.onChanged();
   }
@@ -638,6 +663,8 @@ export class InvoiceSession extends EventEmitter {
 
     const lines = this._input.lines.filter((_, i) => i !== index);
     this._input = { ...this._input, lines };
+    // Sprint 8h.5: lineFields aynı index'te splice
+    this._uiState.lineFields = this._uiState.lineFields.filter((_, i) => i !== index);
     this.emit('line-removed', { index });
     this.onChanged();
   }
@@ -645,6 +672,10 @@ export class InvoiceSession extends EventEmitter {
   /** Tüm satırları değiştirir */
   setLines(lines: SimpleLineInput[]): void {
     this._input = { ...this._input, lines };
+    // Sprint 8h.5: lineFields tamamen yeniden derive
+    this._uiState.lineFields = lines.map((line, idx) =>
+      deriveLineFieldVisibility(line, this._input, idx)
+    );
     this.onChanged();
   }
 
@@ -758,6 +789,11 @@ export class InvoiceSession extends EventEmitter {
     const profile = this._input.profile ?? this._calculation?.profile ?? 'TICARIFATURA';
     const previousFields = this._uiState.fields;
     const newUIState = deriveUIState(type, profile, this._input.currencyCode, this._liability, this._isExport);
+
+    // Sprint 8h.5: doc-level değişim → tüm lineFields re-derive
+    newUIState.lineFields = this._input.lines.map((line, idx) =>
+      deriveLineFieldVisibility(line, this._input, idx)
+    );
 
     // Sprint 8h.4: doc-level FieldVisibility diff → field-activated/field-deactivated
     this._emitFieldVisibilityDiff(previousFields, newUIState.fields);
