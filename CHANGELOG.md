@@ -328,6 +328,45 @@ npm run build      # dist/ 234 KB CJS + 230 KB ESM + 76 KB DTS
 
 Detay: `audit/sprint-08f-plan.md`, `audit/sprint-08f-implementation-log.md`, `audit/v2.0.0-publish-checklist.md`.
 
+### Sprint 8g — B-NEW-v2 Mini Hotfix (silent-accept temizliği) — 2026-04-27
+
+**8 atomik alt-commit** (8g.0 → 8g.7). `audit/b-new-v2-audit.md` 7 senaryo Berkay kararıyla işlendi: 2 fix + 2 example + 3 false positive dokümante.
+
+**Added (src/):**
+- `validateSimpleLineRanges` — B-NEW-v2-04 withholding kod/oran tutarlılığı kontrolleri eklendi (bilinmeyen kod, 650 dinamik percent eksik/range, sabit kod + percent verilmiş). Hatalar artık `ValidationError` formatında dönüyor (önceki `Error` raw throw kaldırıldı, AR-1 mimari karar tutarlılığı sağlandı).
+
+**Added (examples-matrix/):**
+- `EARSIVFATURA × TEKNOLOJIDESTEK` baseline (B-NEW-v2-07 — 8e/8f'den beri kapsamsız tek kombinasyon). PROFILE_TYPE_MATRIX coverage **67/68 (%98.5) → 68/68 (%100)** ✅.
+- `tax-4171-yasak-tip` invalid senaryo re-add (B-NEW-v2-03 — 8f.11'de yanlış API ile yazılmıştı, doğru `taxes:[{code, percent}]` ile reaktive edildi).
+
+**Changed:**
+- `simple-invoice-mapper.ts` `buildBillingReference` — B-NEW-v2-05 fix: IADE grubu için silent override kaldırıldı. Kullanıcı `documentTypeCode` verdiyse mapper olduğu gibi taşır (validator B-31 yakalar). Vermediyse silent default `'IADE'` korunur (162 mevcut senaryo etkilenmez).
+
+**Fixed:**
+- **B-NEW-v2-04:** Withholding kod/oran tutarsızlıklarında raw `Error` (calculator/line-calculator.ts:172,179,182,187) yerine `ValidationError` formatında `UblBuildError` fırlatılır.
+- **B-NEW-v2-05:** IADE/TEVKIFATIADE/YTBIADE/YTBTEVKIFATIADE tiplerinde `documentTypeCode='DIGER'` veya yanlış kod verilirse artık `TYPE_REQUIREMENT` hatası atılır (B-31 kuralı simple API yolu üzerinden de tetiklenir).
+
+**False positive (yapılmadı, audit'te dokümante):**
+- B-NEW-v2-01: kdvPercent whitelist (Berkay: "0 <= kdv <= 100 yeterli, ek doğrulama yok")
+- B-NEW-v2-02: TR IBAN mod-97 checksum (Berkay: "Format kontrolü yeterli, checksum tüketicinin sorumluluğu")
+- B-NEW-v2-06: OZELMATRAH satır seviyesi exemption code (TS tip ile zaten erişilebilir değil)
+
+**Test delta:** 1176 → **1189 yeşil** (+13: 7 unit test + 3 mapper E2E + 1 invalid-parity + 2 valid snapshot/json-parity).
+**Matrix:** 162 → 164 senaryo (123 valid + 41 invalid).
+**Coverage:** %98.5 → **%100** (PROFILE_TYPE_MATRIX 68/68).
+
+**Doğrulama:**
+```bash
+npm test           # 1189/1189 yeşil
+npm run matrix:run # 164/164 başarılı (123 valid + 41 invalid)
+npm run examples   # 38/38 (regresyon)
+npm run typecheck  # 0 error
+```
+
+Detay: `audit/b-new-v2-audit.md` (7 senaryo + Berkay kararları + Sprint 8g sonuç notları), `audit/sprint-08g-implementation-log.md`.
+
+**Sprint 8h:** Reactive InvoiceSession (AR-9) — temiz başlangıç, mini hotfix tamamlanmış durumda.
+
 ---
 
 ## [1.4.2] — 2026-02-XX
