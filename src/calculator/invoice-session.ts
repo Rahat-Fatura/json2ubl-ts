@@ -68,6 +68,42 @@ export interface PathErrorPayload {
   requestedValue?: unknown;
 }
 
+/**
+ * Field-level event payload'ları (Sprint 8h.4 / AR-10).
+ *
+ * `fieldChanged` D-12 force davranışı: isExport=true session'da update(type, 'SATIS')
+ * çağrısında applied value 'ISTISNA' olur (force). requestedValue='SATIS' + forcedReason='isExport=true'
+ * payload'a eklenir; UI "kullanıcı seçimi engellendi" mesajı gösterebilir.
+ */
+export interface FieldChangedPayload {
+  path: string;
+  /** Applied value (auto-resolve / force sonrası gerçek değer) */
+  value: unknown;
+  previousValue: unknown;
+  /** Kullanıcının istediği değer (D-12: force durumunda value'dan farklı olabilir) */
+  requestedValue?: unknown;
+  /** Auto-force sebebi (örn. 'isExport=true', 'liability auto-resolve') */
+  forcedReason?: string;
+}
+
+export interface FieldActivatedPayload {
+  path: string;
+  reason: string;
+}
+
+export interface FieldDeactivatedPayload {
+  path: string;
+  reason: string;
+}
+
+export interface LineFieldChangedPayload {
+  lineIndex: number;
+  path: string;
+  field: string;
+  value: unknown;
+  previousValue: unknown;
+}
+
 export interface SessionEvents {
   /** Her hesaplama sonrasında tetiklenir */
   'calculated': CalculatedDocument;
@@ -100,6 +136,27 @@ export interface SessionEvents {
    * update() çağrısı no-op döner; state mutate edilmez.
    */
   'path-error': PathErrorPayload;
+  /**
+   * Granüler field değişikliği (Sprint 8h.4 / AR-10).
+   * Her başarılı update() sonrası ilk emit edilen event (sıra adımı 5).
+   * D-12 force durumunda da emit edilir (state değişmemiş olsa bile, requestedValue/forcedReason ile).
+   */
+  'field-changed': FieldChangedPayload;
+  /**
+   * UI visibility flag false → true geçişi (Sprint 8h.4 / AR-10).
+   * deriveFieldVisibility diff sonucunda emit edilir.
+   */
+  'field-activated': FieldActivatedPayload;
+  /**
+   * UI visibility flag true → false geçişi (Sprint 8h.4 / AR-10).
+   */
+  'field-deactivated': FieldDeactivatedPayload;
+  /**
+   * Line-level field değişikliği (Sprint 8h.4 / AR-10).
+   * lines[i].X path'lerinde emit edilir; doc-level update'lerde emit edilmez.
+   * NOT: addLine/removeLine değil — sadece update(SessionPaths.lineX(i), …) ve updateLine.
+   */
+  'line-field-changed': LineFieldChangedPayload;
 }
 
 export type SessionEventName = keyof SessionEvents;
@@ -325,6 +382,29 @@ export class InvoiceSession extends EventEmitter {
     // Standart input mutation (path-targeted clone)
     this._input = applyPathUpdate(this._input, tokens, value);
 
+    // Sprint 8h.4: field-level event emit (sıra: granüler önce).
+    this.emit('field-changed', {
+      path,
+      value,
+      previousValue,
+    });
+
+    // Sprint 8h.4: line-level path için lineFieldChanged ek emit.
+    if (path.startsWith('lines[')) {
+      const lineIdxMatch = path.match(/^lines\[(\d+)\]\.(.+)$/);
+      if (lineIdxMatch) {
+        const lineIndex = parseInt(lineIdxMatch[1], 10);
+        const fieldName = lineIdxMatch[2];
+        this.emit('line-field-changed', {
+          lineIndex,
+          path,
+          field: fieldName,
+          value,
+          previousValue,
+        });
+      }
+    }
+
     // currencyCode değişiminde uiState tazele (snapshot event için).
     // Geniş kapsam (her update sonrası uiState) Sprint 8h.8'de.
     if (path === 'currencyCode') {
@@ -356,6 +436,12 @@ export class InvoiceSession extends EventEmitter {
       this._input = { ...this._input, profile: newProfile, type: newType };
     }
 
+    // Sprint 8h.4: granüler fieldChanged + snapshot
+    this.emit('field-changed', {
+      path: 'liability',
+      value: liability,
+      previousValue: previousLiability,
+    });
     this.updateUIState();
     this.emit('liability-changed', { liability, previousLiability });
     this.onChanged();
@@ -370,18 +456,41 @@ export class InvoiceSession extends EventEmitter {
   private _updateType(type: string, previousType: string | undefined): void {
     const previousProfile = this._input.profile ?? 'TICARIFATURA';
 
-    // isExport=true → type force ISTISNA (M10 identity)
+    // isExport=true → type force ISTISNA (M10 identity, D-12)
     const effectiveType = this._isExport ? 'ISTISNA' : type;
+    const isForced = effectiveType !== type;
 
-    // D-12 force: applied === previous ise no-op (state değişmedi).
-    // 8h.4'te field-level fieldChanged + forcedReason ile force bilgisi taşınacak.
-    if (effectiveType === (previousType ?? 'SATIS')) return;
+    // D-12: state değişmedi (force ya da identity) → snapshot event YOK.
+    // Force durumunda fieldChanged emit (forcedReason ile, UI bildirim için).
+    if (effectiveType === (previousType ?? 'SATIS')) {
+      if (isForced) {
+        this.emit('field-changed', {
+          path: 'type',
+          value: effectiveType,
+          previousValue: previousType,
+          requestedValue: type,
+          forcedReason: 'isExport=true (M10 identity: type forced to ISTISNA)',
+        });
+      }
+      return;
+    }
 
     const newProfile = this._isExport
       ? 'IHRACAT'
       : resolveProfileForType(this._input.profile, effectiveType, this._liability, false);
 
     this._input = { ...this._input, type: effectiveType, profile: newProfile };
+
+    // Sprint 8h.4: granüler fieldChanged (force durumunda forcedReason ile)
+    this.emit('field-changed', {
+      path: 'type',
+      value: effectiveType,
+      previousValue: previousType,
+      ...(isForced && {
+        requestedValue: type,
+        forcedReason: 'isExport=true (M10 identity: type forced to ISTISNA)',
+      }),
+    });
 
     this.updateUIState();
     this.emit('type-changed', {
@@ -402,6 +511,13 @@ export class InvoiceSession extends EventEmitter {
     const previousType = this._input.type ?? 'SATIS';
     const newType = resolveTypeForProfile(this._input.type, profile, this._liability);
     this._input = { ...this._input, profile, type: newType };
+
+    // Sprint 8h.4: granüler fieldChanged + snapshot
+    this.emit('field-changed', {
+      path: 'profile',
+      value: profile,
+      previousValue: previousProfile,
+    });
 
     this.updateUIState();
     this.emit('profile-changed', {
@@ -640,8 +756,34 @@ export class InvoiceSession extends EventEmitter {
   private updateUIState(): void {
     const type = this._input.type ?? this._calculation?.type ?? 'SATIS';
     const profile = this._input.profile ?? this._calculation?.profile ?? 'TICARIFATURA';
-    this._uiState = deriveUIState(type, profile, this._input.currencyCode, this._liability, this._isExport);
+    const previousFields = this._uiState.fields;
+    const newUIState = deriveUIState(type, profile, this._input.currencyCode, this._liability, this._isExport);
+
+    // Sprint 8h.4: doc-level FieldVisibility diff → field-activated/field-deactivated
+    this._emitFieldVisibilityDiff(previousFields, newUIState.fields);
+
+    this._uiState = newUIState;
     this.emit('ui-state-changed', this._uiState);
+  }
+
+  /** Doc-level FieldVisibility diff emit (field-activated / field-deactivated). */
+  private _emitFieldVisibilityDiff(prev: FieldVisibility, next: FieldVisibility): void {
+    const keys = Object.keys(next) as (keyof FieldVisibility)[];
+    for (const key of keys) {
+      const wasVisible = prev[key];
+      const isVisible = next[key];
+      if (!wasVisible && isVisible) {
+        this.emit('field-activated', {
+          path: `fields.${key}`,
+          reason: `derived from type=${this._input.type}, profile=${this._input.profile}`,
+        });
+      } else if (wasVisible && !isVisible) {
+        this.emit('field-deactivated', {
+          path: `fields.${key}`,
+          reason: `derived from type=${this._input.type}, profile=${this._input.profile}`,
+        });
+      }
+    }
   }
 
   private onChanged(): void {
