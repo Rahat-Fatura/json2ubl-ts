@@ -133,3 +133,54 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - Diff algoritması primary key bazlı, value/reason/severity farkı changed tetikler (R3 mitigation testlerle enforce)
 
 ---
+
+## Sprint 8i.2 — KDV grubu (7 kural)
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.2: KDV grubu suggestion kuralları (7 kural, AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `src/calculator/suggestion-rules/kdv-suggestions.ts` (yeni, ~210 satır):
+   - 7 KDV kuralı (Plan'daki Kural 4 transition state için Sprint 8j'ye ertelendi):
+     1. `kdv/zero-suggest-351` — KDV=0 + self-exemption DEĞİL → 351 (recommended)
+     2. `kdv/ytb-istisna-suggest-308` — YTB+ISTISNA + kdv=0 + itemClass=01 → 308 (recommended)
+     3. `kdv/ytb-istisna-suggest-339` — YTB+ISTISNA + kdv=0 + itemClass=02 → 339 (recommended)
+     4. `kdv/exemption-mismatch-tax-type` — TEVKIFAT/YTBTEVKIFAT + withholding+exemption aynı satır → kaldır (recommended)
+     5. `kdv/manual-exemption-suggest-line-distribution` — kdv>0 + kod=351 paradoksu → kdv=0 (optional)
+     6. `kdv/reduced-rate-suggest-1` — kdv=1 reduced rate → opt-in flag hatırlatma (optional)
+     7. `kdv/reduced-rate-suggest-8-10` — kdv=8/10 → 20 (kanun değişikliği, optional)
+   - Reuse: `isSelfExemptionInvoice` from `config/self-exemption-types`
+   - Adaptasyon: Kural 6'da `allowReducedKdvRate` flag engine'e geçmediği için (T-2 pure)
+     kuralı yumuşattım — her kdv=1 senaryosunda optional öneri (validator dublike etmez).
+
+2. `src/calculator/suggestion-rules/index.ts` modifikasyonu:
+   - `SUGGESTION_RULES` manifest'ine `KDV_SUGGESTIONS` spread edildi.
+
+3. `__tests__/calculator/suggestion-rules/kdv-suggestions.test.ts` (yeni, 21 test):
+   - Her kural için ortalama 3 test (applies pozitif + applies negatif + produce çıktı)
+   - Helper: `makeLine`, `makeInput`, `findRule`
+
+4. `__tests__/calculator/suggestion-engine.test.ts` 1 fix:
+   - "boş manifest + 100 satır" → "100 satır + hiçbir kural tetiklenmez" (kdv=18 yap)
+   - Sebep: SUGGESTION_RULES artık dolu, kdv=0 senaryolarında KDV/zero-suggest-351 tetikleniyor.
+
+5. `__tests__/integration/__snapshots__/phantom-kdv.test.ts.snap` (Sprint 8h hijyen):
+   - Sprint 8h.7 validator pipeline değişimi sonrası regenerate olmuş ama commit'lenmemiş 2 snapshot.
+   - Sprint 8i kapsamına dahil değil; bu commit'te Sprint 8h hijyeni olarak include edildi
+     (KDV grubu commit'i + bu hijyen bir arada — phantom-kdv = M12 YATIRIMTESVIK = KDV bağlamlı).
+
+### Test
+
+- Başlangıç: 1434/1434 yeşil
+- Son: **1456/1456 yeşil** (+22 test)
+- Benchmark: 0.08ms / 15ms threshold (KDV kuralları 100 satır + 7 kural minimal etki)
+
+### Disiplin
+
+- Plan dokümanından sapma yok (Kural 4 ertelenmesi 8i.1'de zaten plan log'a alınmıştı)
+- Kural 6 yumuşatması tasarım dokümanı T-2 prensibiyle uyumlu (engine pure)
+- 7 kural her satır için ayrı suggestion üretebilir (path lines[i] formatı)
+- Severity dağılımı: 4 recommended + 3 optional (T-1 2-seviye konvansiyonu)
+
+---

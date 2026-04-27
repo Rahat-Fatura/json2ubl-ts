@@ -41,9 +41,10 @@ describe('runSuggestionEngine — skeleton (8i.1, manifest boş)', () => {
     expect(runSuggestionEngine(input, ui)).toEqual([]);
   });
 
-  it('boş manifest + 100 satır input → boş array döner (kural yok)', () => {
+  it('100 satır input + hiçbir kural tetiklenmez senaryosu → boş array', () => {
+    // kdv=18 (genel oran), kod dolu → KDV kurallarının hiçbiri tetiklenmez
     const input = makeInput({
-      lines: Array.from({ length: 100 }, () => ({ name: 'X', quantity: 1, price: 10, kdvPercent: 0 })),
+      lines: Array.from({ length: 100 }, () => ({ name: 'X', quantity: 1, price: 10, kdvPercent: 18 })),
     });
     const ui = deriveUIState(input.type, input.profile);
     expect(runSuggestionEngine(input, ui)).toEqual([]);
