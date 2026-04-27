@@ -325,3 +325,43 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - Severity dağılımı: 17 recommended + 6 optional (T-1 2-seviye).
 
 ---
+
+## Sprint 8i.7 — Event sıralaması + Integration test
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.7: Event sıralaması + suggestion integration test (AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `__tests__/calculator/invoice-session-events.test.ts` modifikasyonları:
+   - "warnings emits LAST" → "warnings AFTER changed" (sıralama güncellendi, suggestion son adım)
+   - **Yeni test:** "suggestion emits AFTER warnings" — Sprint 8i.7 / Faz 2 sıralama §4.2 enforcement (TEVKIFAT senaryosu)
+
+2. `__tests__/calculator/invoice-session-suggestion-integration.test.ts` (yeni, 19 test):
+   - Domain integration (8): KDV (3) + Tevkifat (2) + IHRACKAYITLI (1) + YTB (2) + Delivery+Misc (2)
+   - Diff session-level (4): idempotent, kural state değişimi, added emit, çoklu satır path
+   - Multi-rule paralel (1): TEVKIFAT + withholding+exemption → 2 paralel kural emit (kdv/exemption-mismatch + withholding/exemption-conflict)
+   - Boş diff kontratı (2): emit yok senaryolar
+   - Severity ve payload kontratı (2): T-1 2-seviye + T-3 batch payload
+
+3. `__tests__/calculator/invoice-session-suggestion.test.ts` 1 fix (8i.6'da yapılmıştı, devamı):
+   - Listener kayıt sırası (addLine'dan ÖNCE) — testler integrationda aynı problem.
+
+### Test
+
+- Başlangıç: 1512/1512 yeşil
+- Son: **1532/1532 yeşil** (+20 test)
+- Plan §5.1'de +35 öngörülmüştü; diff testlerinin önemli kısmı 8i.1'de yazılmıştı, 8i.7'de overlap minimize edildi.
+
+### Disiplin Sapmaları
+
+1. **autoCalculate=false test'lerde:** 650-percent-required senaryosunda line-calculator `withholdingTaxPercent zorunlu` throw atıyordu (suggestion emit'inden ÖNCE calculate exception). Test setup `autoCalculate: false` ile düzeltildi — validate yine çalışır, suggestion pipeline aktif.
+2. **Listener kayıt sırası:** İlk yazımda listener `addLine`'dan sonra ekleniyordu, ilk emit kaçırılıyordu. Tüm integration test'lerde listener constructor'dan sonra ilk satırda ekleniyor şimdi.
+
+### Disiplin
+
+- Event sıralaması §4.2 kilitli: 16. warnings → 19. suggestion (test enforce)
+- Diff algoritması session-level enforce: aynı state 2x → 2. emit yok
+- Multi-rule paralel kontratı: `kdv/exemption-mismatch-tax-type` + `withholding/exemption-conflict` aynı satırda 2 ayrı suggestion (path farklı)
+
+---

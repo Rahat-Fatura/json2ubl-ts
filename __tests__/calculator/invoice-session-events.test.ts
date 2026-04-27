@@ -295,14 +295,29 @@ describe('Event sıralaması (§3.1 enforcement, Sprint 8h.4)', () => {
     }
   });
 
-  it('warnings emits LAST (validate pipeline en son)', () => {
+  it('warnings emits AFTER changed (validate pipeline)', () => {
     const session = new InvoiceSession({ initialInput: { type: 'SATIS' } });
     const order: string[] = [];
     session.on('field-changed', () => order.push('field-changed'));
     session.on('changed', () => order.push('changed'));
     session.on('warnings', () => order.push('warnings'));
     session.update(SessionPaths.type, 'TEVKIFAT');
-    expect(order[order.length - 1]).toBe('warnings');
+    const changedIdx = order.indexOf('changed');
+    const warningsIdx = order.indexOf('warnings');
+    expect(changedIdx).toBeLessThan(warningsIdx);
+  });
+
+  it('suggestion emits AFTER warnings (Sprint 8i.7 / Faz 2 — event sıralaması §4.2)', () => {
+    // TEVKIFAT + line withholdingTaxCode boş → withholding/tevkifat-default-codes tetiklenir
+    const session = new InvoiceSession({ initialInput: { type: 'TEVKIFAT', profile: 'TICARIFATURA' } });
+    const order: string[] = [];
+    session.on('warnings', () => order.push('warnings'));
+    session.on('suggestion', () => order.push('suggestion'));
+    session.addLine({ name: 'X', quantity: 1, price: 100, kdvPercent: 18 });
+    const warningsIdx = order.lastIndexOf('warnings');
+    const suggestionIdx = order.lastIndexOf('suggestion');
+    expect(suggestionIdx).toBeGreaterThan(-1);
+    expect(suggestionIdx).toBeGreaterThan(warningsIdx);
   });
 });
 
