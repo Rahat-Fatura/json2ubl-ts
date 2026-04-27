@@ -47,6 +47,8 @@ import { validateManualExemption } from '../validators/manual-exemption-validato
 import { validatePhantomKdv } from '../validators/phantom-kdv-validator';
 import { validateSgkInput } from '../validators/sgk-input-validator';
 import { validateCrossMatrix } from '../validators/cross-validators';
+import type { Suggestion } from './suggestion-types';
+import { runSuggestionEngine, diffSuggestions } from './suggestion-engine';
 
 // ─── Session Event Tipleri ───────────────────────────────────────────────────
 
@@ -172,6 +174,22 @@ export interface SessionEvents {
    * NOT: addLine/removeLine değil — sadece update(SessionPaths.lineX(i), …) ve updateLine.
    */
   'line-field-changed': LineFieldChangedPayload;
+  /**
+   * Suggestion advisory önerileri (Sprint 8i / AR-10 Faz 2).
+   *
+   * Payload: yeni veya değişmiş suggestion'ların batch listesi (T-3 batch payload).
+   * Boş array EMIT EDİLMEZ — sadece değişiklik varsa emit.
+   *
+   * Diff primary key: `${ruleId}::${path}` (T-2). Aynı kural+path için
+   * value/reason/severity değişimi de emit'i tetikler.
+   *
+   * Suggestion vs Validator: validator-error blocking, suggestion advisory.
+   * Aynı path için ikisi paralel emit edilebilir; UI iki kanalı yan yana sunar (master §3.3).
+   *
+   * Karar: T-2 (engine pure, diff session-stateful), T-3 (batch payload),
+   * T-4 (suggestionResolved event yok — sonraki tick'te yokluğu UI fark eder).
+   */
+  'suggestion': Suggestion[];
 }
 
 export type SessionEventName = keyof SessionEvents;
@@ -215,6 +233,8 @@ export class InvoiceSession extends EventEmitter {
   private readonly _allowReducedKdvRate: boolean;
   /** Sprint 8h.7 / D-3: toInvoiceInput() reference equality cache. */
   private _invoiceInputCache?: { input: SimpleInvoiceInput; result: InvoiceInput };
+  /** Sprint 8i.1 / T-2: Önceki tick'in suggestion listesi (diff için). */
+  private _lastSuggestions: Suggestion[] = [];
 
   constructor(options?: InvoiceSessionOptions) {
     super();
@@ -859,7 +879,27 @@ export class InvoiceSession extends EventEmitter {
 
     this.emit('validation-error', errors);
     this.emit('warnings', all);
+    this._runSuggestionPipeline();
     return all;
+  }
+
+  /**
+   * Sprint 8i / AR-10 Faz 2: Suggestion pipeline.
+   *
+   * validate() sonunda çağrılır (event sıralaması §4.2):
+   *   ... → 15. validation-error → 16. warnings → 17. runSuggestionEngine
+   *   → 18. diff → 19. suggestion (emit, sadece added/changed varsa)
+   *
+   * Boş diff (added=0 && changed=0) → emit etmez (T-4 ile uyumlu).
+   * removed array hesaplanır ama emit edilmez (T-4: suggestionResolved YOK).
+   */
+  private _runSuggestionPipeline(): void {
+    const next = runSuggestionEngine(this._input, this._uiState);
+    const { added, changed } = diffSuggestions(this._lastSuggestions, next);
+    this._lastSuggestions = next;
+    if (added.length > 0 || changed.length > 0) {
+      this.emit('suggestion', [...added, ...changed]);
+    }
   }
 
   /**

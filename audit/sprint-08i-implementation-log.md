@@ -78,3 +78,58 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - 15 atomik commit listesi yukarıda. Her commit sonu test yeşil olmalı.
 
 ---
+
+## Sprint 8i.1 — Suggestion tip + engine skeleton + diff + suggestion event
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.1: Suggestion tip + engine skeleton + diff + suggestion event (AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `src/calculator/suggestion-types.ts` (60 satır):
+   - `Suggestion` interface — path/value/reason/severity/ruleId + opsiyonel displayLabel/displayValue
+   - `SuggestionRule` interface — id/applies/produce (T-6 deklaratif)
+   - JSDoc: T-1 (severity 2-seviye), T-3 (ruleId namespace), T-5 (display* opsiyonel)
+
+2. `src/calculator/suggestion-engine.ts` (90 satır):
+   - `runSuggestionEngine(input, ui): Suggestion[]` — pure function (T-2, T-7)
+   - `diffSuggestions(prev, next): {added, changed, removed}` — primary key `${ruleId}::${path}` (T-2)
+   - Internal helpers `suggestionKey`, `suggestionsEqual` (object reference compare YOK — R3 mitigation)
+
+3. `src/calculator/suggestion-rules/index.ts` (15 satır):
+   - `SUGGESTION_RULES: readonly SuggestionRule[] = []` — boş manifest skeleton
+   - 8i.2-8i.6 commit'lerinde 24 kural eklenecek (T-6 domain bazlı)
+
+4. `src/calculator/invoice-session.ts` modifikasyonları:
+   - Import: `Suggestion` + `runSuggestionEngine` + `diffSuggestions`
+   - `SessionEvents.suggestion: Suggestion[]` event tipi (line-field-changed sonrası)
+   - `private _lastSuggestions: Suggestion[] = []` field (T-2 diff state)
+   - `private _runSuggestionPipeline()` metodu — validate() sonunda çağrılır
+   - validate() içine `this._runSuggestionPipeline()` eklendi (event sıralaması §4.2: 16. warnings → 17. engine → 18. diff → 19. suggestion)
+
+5. `__tests__/calculator/suggestion-engine.test.ts` (16 test):
+   - runSuggestionEngine boş manifest (3): boş input, 100 satır, side-effect yok
+   - diffSuggestions (13): boş diff, added/changed/removed, value/reason/severity diff, çoklu key, ref compare YOK, primary key bracket notation
+
+6. `__tests__/calculator/invoice-session-suggestion.test.ts` (10 test):
+   - on/emit kontrat (4): handler register, initial yok, validate sonra emit yok, addLine sonra emit yok
+   - Sıralama (1): warnings → suggestion (manifest boş için warnings only)
+   - Tip kontratı (3): SessionEvents.suggestion, batch payload, manuel emit
+   - Idempotent (2): art arda 3 validate emit yok, update chain emit yok
+
+### Test
+
+- Başlangıç: 1407/1407 yeşil
+- Son: **1434/1434 yeşil** (+27 test)
+- Benchmark: 0.09ms / 15ms threshold (etkisiz — pipeline bypass on empty manifest)
+- Typecheck: 0 error
+
+### Disiplin
+
+- T-1..T-7 plan kararları kod yorumlarında belgelendi
+- 8i.2'den itibaren SUGGESTION_RULES dolarken bu skeleton'ın değişmesi gerekmez (extend-only)
+- Pipeline validate() sonunda — event sıralaması §4.2 kilitli (Sprint 8h'in 19 adımı + Faz 2 ek 3 adım)
+- Manifest boş olduğu sürece suggestion event hiçbir koşulda emit edilmez (T-4 ile uyumlu)
+- Diff algoritması primary key bazlı, value/reason/severity farkı changed tetikler (R3 mitigation testlerle enforce)
+
+---
