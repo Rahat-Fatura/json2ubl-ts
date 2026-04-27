@@ -29,7 +29,7 @@
  */
 
 import { EventEmitter } from 'events';
-import type { SimpleInvoiceInput, SimplePartyInput, SimpleLineInput, SimpleBillingReferenceInput, SimplePaymentMeansInput, SimpleOzelMatrahInput, SimpleSgkInput, SimpleBuyerCustomerInput, SimplePeriodInput } from './simple-types';
+import type { SimpleInvoiceInput, SimpleLineInput } from './simple-types';
 import type { CalculatedDocument } from './document-calculator';
 import { calculateDocument } from './document-calculator';
 import type { InvoiceUIState, ValidationWarning, FieldVisibility, CustomerLiability } from './invoice-rules';
@@ -213,40 +213,6 @@ export class InvoiceSession extends EventEmitter {
     return this._isExport;
   }
 
-  /**
-   * Alıcı mükellefiyet durumunu değiştirir.
-   * Profil/tip uyumsuzsa otomatik olarak uyumlu değere geçer.
-   *
-   * Örn: liability='earchive' yapılırsa ve mevcut profil TICARIFATURA ise
-   * → profil otomatik EARSIVFATURA olur.
-   */
-  setLiability(liability: CustomerLiability | undefined): void {
-    // M10: isExport=true session'larında liability değişmez, profil IHRACAT kalır.
-    if (this._isExport) return;
-
-    const previousLiability = this._liability;
-    this._liability = liability;
-
-    if (previousLiability === liability) return;
-
-    const currentProfile = this._input.profile ?? 'TICARIFATURA';
-    const currentType = this._input.type ?? 'SATIS';
-
-    // Mevcut profil yeni liability ile uyumlu mu kontrol et
-    const allowedProfiles = getAllowedProfilesForType(currentType, liability, this._isExport);
-
-    if (!allowedProfiles.includes(currentProfile)) {
-      // Uyumsuz — uyumlu profile geç
-      const newProfile = resolveProfileForType(undefined, currentType, liability, this._isExport);
-      const newType = resolveTypeForProfile(currentType, newProfile, liability);
-      this._input = { ...this._input, profile: newProfile, type: newType };
-    }
-
-    this.updateUIState();
-    this.emit('liability-changed', { liability, previousLiability });
-    this.onChanged();
-  }
-
   // ─── Path-Based Update API (Sprint 8h.2 / AR-10) ──────────────────────
 
   /**
@@ -332,34 +298,155 @@ export class InvoiceSession extends EventEmitter {
       return;
     }
 
+    // Constraint: profile path (PROFILE_EXPORT_MISMATCH, PROFILE_LIABILITY_MISMATCH)
+    if (path === 'profile') {
+      const profileErr = this._checkProfileConstraint(value as string);
+      if (profileErr) {
+        this.emit('path-error', { ...profileErr, requestedValue: value });
+        return;
+      }
+    }
+
     // Diff detection — değişiklik yoksa no-op
     const previousValue = this._readSessionValue(tokens, path);
     if (deepEqual(previousValue, value)) return;
 
-    // Liability özel-durum: SimpleInvoiceInput dışı, _liability private field
+    // Auto-resolve özel-durumlar (eski setLiability/setType/setProfile mantığı taşınır):
     if (path === 'liability') {
-      this._liability = value as CustomerLiability | undefined;
-      // Profile auto-resolve eski setLiability mantığında, 8h.3'te update()'e taşınacak.
-      // 8h.2'de minimum: liability değiştirildi, snapshot event emit + onChanged.
-      this.emit('liability-changed', {
-        liability: value as CustomerLiability | undefined,
-        previousLiability: previousValue as CustomerLiability | undefined,
-      });
-      this.updateUIState();
-      this.onChanged();
-      return;
+      return this._updateLiability(value as CustomerLiability | undefined, previousValue as CustomerLiability | undefined);
+    }
+    if (path === 'type') {
+      return this._updateType(value as string, previousValue as string | undefined);
+    }
+    if (path === 'profile') {
+      return this._updateProfile(value as string, previousValue as string | undefined);
     }
 
     // Standart input mutation (path-targeted clone)
     this._input = applyPathUpdate(this._input, tokens, value);
 
-    // Type/profile/currency değişiminde uiState tazele (snapshot event'leri için).
+    // currencyCode değişiminde uiState tazele (snapshot event için).
     // Geniş kapsam (her update sonrası uiState) Sprint 8h.8'de.
-    if (path === 'type' || path === 'profile' || path === 'currencyCode') {
+    if (path === 'currencyCode') {
       this.updateUIState();
     }
 
     this.onChanged();
+  }
+
+  // ─── Auto-resolve helper'ları (Sprint 8h.3) ─────────────────────────────
+
+  /**
+   * Liability auto-resolve. Eski setLiability mantığı (satır 223-248) update()'e taşındı.
+   * Profil mevcut liability ile uyumsuzsa otomatik uyumlu profile geçer.
+   */
+  private _updateLiability(
+    liability: CustomerLiability | undefined,
+    previousLiability: CustomerLiability | undefined,
+  ): void {
+    this._liability = liability;
+
+    const currentProfile = this._input.profile ?? 'TICARIFATURA';
+    const currentType = this._input.type ?? 'SATIS';
+
+    const allowedProfiles = getAllowedProfilesForType(currentType, liability, this._isExport);
+    if (!allowedProfiles.includes(currentProfile)) {
+      const newProfile = resolveProfileForType(undefined, currentType, liability, this._isExport);
+      const newType = resolveTypeForProfile(currentType, newProfile, liability);
+      this._input = { ...this._input, profile: newProfile, type: newType };
+    }
+
+    this.updateUIState();
+    this.emit('liability-changed', { liability, previousLiability });
+    this.onChanged();
+  }
+
+  /**
+   * Type auto-resolve. Eski setType mantığı (satır 438-458) update()'e taşındı.
+   * isExport=true ise type otomatik ISTISNA'ya force (M10 / D-12 basic).
+   * Profile uyumsuzsa otomatik uyumlu profile geçer.
+   * NOT: D-12 forcedReason field-level event payload Sprint 8h.4'te eklenir.
+   */
+  private _updateType(type: string, previousType: string | undefined): void {
+    const previousProfile = this._input.profile ?? 'TICARIFATURA';
+
+    // isExport=true → type force ISTISNA (M10 identity)
+    const effectiveType = this._isExport ? 'ISTISNA' : type;
+
+    // D-12 force: applied === previous ise no-op (state değişmedi).
+    // 8h.4'te field-level fieldChanged + forcedReason ile force bilgisi taşınacak.
+    if (effectiveType === (previousType ?? 'SATIS')) return;
+
+    const newProfile = this._isExport
+      ? 'IHRACAT'
+      : resolveProfileForType(this._input.profile, effectiveType, this._liability, false);
+
+    this._input = { ...this._input, type: effectiveType, profile: newProfile };
+
+    this.updateUIState();
+    this.emit('type-changed', {
+      type: effectiveType,
+      profile: newProfile,
+      previousType: previousType ?? 'SATIS',
+      previousProfile,
+    });
+    this.onChanged();
+  }
+
+  /**
+   * Profile auto-resolve. Eski setProfile mantığı (satır 464-503) update()'e taşındı.
+   * Constraint check (PROFILE_*_MISMATCH) update() içinde Katman 4 sonrası yapılır.
+   * Tip uyumsuzsa otomatik uyumlu tipe geçer.
+   */
+  private _updateProfile(profile: string, previousProfile: string | undefined): void {
+    const previousType = this._input.type ?? 'SATIS';
+    const newType = resolveTypeForProfile(this._input.type, profile, this._liability);
+    this._input = { ...this._input, profile, type: newType };
+
+    this.updateUIState();
+    this.emit('profile-changed', {
+      profile,
+      type: newType,
+      previousProfile: previousProfile ?? 'TICARIFATURA',
+      previousType,
+    });
+    this.onChanged();
+  }
+
+  /**
+   * Profile constraint check. PROFILE_EXPORT_MISMATCH ve PROFILE_LIABILITY_MISMATCH.
+   * update() içinde Katman 4 sonrası, diff öncesi çağrılır.
+   */
+  private _checkProfileConstraint(profile: string): Omit<PathErrorPayload, 'requestedValue'> | null {
+    if (this._isExport) {
+      return {
+        code: 'PROFILE_EXPORT_MISMATCH',
+        path: 'profile',
+        reason: 'isExport=true session profile is locked to IHRACAT',
+      };
+    }
+    if (profile === 'IHRACAT') {
+      return {
+        code: 'PROFILE_EXPORT_MISMATCH',
+        path: 'profile',
+        reason: 'IHRACAT profile cannot be set via update(); use new InvoiceSession({ isExport: true })',
+      };
+    }
+    if (this._liability === 'earchive' && profile !== 'EARSIVFATURA') {
+      return {
+        code: 'PROFILE_LIABILITY_MISMATCH',
+        path: 'profile',
+        reason: `liability='earchive' requires profile='EARSIVFATURA' (got '${profile}')`,
+      };
+    }
+    if (this._liability === 'einvoice' && profile === 'EARSIVFATURA') {
+      return {
+        code: 'PROFILE_LIABILITY_MISMATCH',
+        path: 'profile',
+        reason: "liability='einvoice' forbids profile='EARSIVFATURA'",
+      };
+    }
+    return null;
   }
 
   /**
@@ -408,100 +495,6 @@ export class InvoiceSession extends EventEmitter {
     return readPath(this._input, tokens);
   }
 
-  // ─── Taraf Yönetimi ─────────────────────────────────────────────────────
-
-  /** Gönderici bilgisini günceller */
-  setSender(sender: SimplePartyInput): void {
-    this._input = { ...this._input, sender };
-    this.onChanged();
-  }
-
-  /** Alıcı bilgisini günceller */
-  setCustomer(customer: SimplePartyInput): void {
-    this._input = { ...this._input, customer };
-    this.onChanged();
-  }
-
-  /** Alıcı kurum bilgisini günceller (IHRACAT / KAMU / YOLCUBERABERFATURA) */
-  setBuyerCustomer(buyer: SimpleBuyerCustomerInput | undefined): void {
-    this._input = { ...this._input, buyerCustomer: buyer };
-    this.onChanged();
-  }
-
-  // ─── Tip ve Profil Yönetimi ─────────────────────────────────────────────
-
-  /**
-   * Fatura tipini değiştirir.
-   * Profil uyumsuzsa otomatik olarak uyumlu profile geçer.
-   * Örnek: Ticari → IADE seçilirse → profil otomatik TEMELFATURA olur.
-   */
-  setType(type: string): void {
-    const previousType = this._input.type ?? 'SATIS';
-    const previousProfile = this._input.profile ?? 'TICARIFATURA';
-
-    // İhracat session'ında profil değişmez, tip IHRACAT profiline uyumlu olmalı
-    const newProfile = this._isExport
-      ? 'IHRACAT'
-      : resolveProfileForType(this._input.profile, type, this._liability, false);
-    this._input = { ...this._input, type, profile: newProfile };
-
-    this.updateUIState();
-
-    this.emit('type-changed', {
-      type,
-      profile: newProfile,
-      previousType,
-      previousProfile,
-    });
-
-    this.onChanged();
-  }
-
-  /**
-   * Fatura profilini değiştirir.
-   * Tip uyumsuzsa otomatik olarak uyumlu tipe geçer.
-   */
-  setProfile(profile: string): void {
-    // İhracat session'ında profil değiştirilemez
-    if (this._isExport) {
-      this.emit('error', new Error('İhracat session\'larında profil değiştirilemez. Profil IHRACAT olarak sabitlenmiştir.'));
-      return;
-    }
-
-    // IHRACAT profiline geçiş session üzerinden yapılamaz
-    if (profile === 'IHRACAT') {
-      this.emit('error', new Error('IHRACAT profiline geçiş yapmak için yeni bir InvoiceSession({ isExport: true }) oluşturun.'));
-      return;
-    }
-
-    // Liability kısıtı: earchive sadece EARSIVFATURA, einvoice EARSIVFATURA hariç
-    if (this._liability === 'earchive' && profile !== 'EARSIVFATURA') {
-      this.emit('error', new Error('e-Arşiv mükelleflerinde sadece EARSIVFATURA profili kullanılabilir.'));
-      return;
-    }
-    if (this._liability === 'einvoice' && profile === 'EARSIVFATURA') {
-      this.emit('error', new Error('e-Fatura mükelleflerinde EARSIVFATURA profili kullanılamaz.'));
-      return;
-    }
-
-    const previousProfile = this._input.profile ?? 'TICARIFATURA';
-    const previousType = this._input.type ?? 'SATIS';
-
-    const newType = resolveTypeForProfile(this._input.type, profile, this._liability);
-    this._input = { ...this._input, profile, type: newType };
-
-    this.updateUIState();
-
-    this.emit('profile-changed', {
-      profile,
-      type: newType,
-      previousProfile,
-      previousType,
-    });
-
-    this.onChanged();
-  }
-
   // ─── Satır Yönetimi ─────────────────────────────────────────────────────
 
   /** Yeni satır ekler */
@@ -536,94 +529,6 @@ export class InvoiceSession extends EventEmitter {
   /** Tüm satırları değiştirir */
   setLines(lines: SimpleLineInput[]): void {
     this._input = { ...this._input, lines };
-    this.onChanged();
-  }
-
-  // ─── Para Birimi ────────────────────────────────────────────────────────
-
-  /** Para birimini değiştirir */
-  setCurrency(code: string, exchangeRate?: number): void {
-    this._input = { ...this._input, currencyCode: code, exchangeRate };
-    this.updateUIState();
-    this.onChanged();
-  }
-
-  // ─── Referanslar ────────────────────────────────────────────────────────
-
-  /** İade fatura referansını ayarlar */
-  setBillingReference(ref: SimpleBillingReferenceInput | undefined): void {
-    this._input = { ...this._input, billingReference: ref };
-    this.onChanged();
-  }
-
-  /** Ödeme bilgisini ayarlar */
-  setPaymentMeans(pm: SimplePaymentMeansInput | undefined): void {
-    this._input = { ...this._input, paymentMeans: pm };
-    this.onChanged();
-  }
-
-  // ─── Özel Alanlar ──────────────────────────────────────────────────────
-
-  /** KDV istisna kodunu ayarlar */
-  setKdvExemptionCode(code: string | undefined): void {
-    this._input = { ...this._input, kdvExemptionCode: code };
-    this.onChanged();
-  }
-
-  /** Özel matrah bilgisini ayarlar */
-  setOzelMatrah(om: SimpleOzelMatrahInput | undefined): void {
-    this._input = { ...this._input, ozelMatrah: om };
-    this.onChanged();
-  }
-
-  /** SGK bilgisini ayarlar */
-  setSgkInfo(sgk: SimpleSgkInput | undefined): void {
-    this._input = { ...this._input, sgk };
-    this.onChanged();
-  }
-
-  /** Fatura dönemini ayarlar */
-  setInvoicePeriod(period: SimplePeriodInput | undefined): void {
-    this._input = { ...this._input, invoicePeriod: period };
-    this.onChanged();
-  }
-
-  /** Notları ayarlar */
-  setNotes(notes: string[]): void {
-    this._input = { ...this._input, notes };
-    this.onChanged();
-  }
-
-  /** Fatura numarasını ayarlar */
-  setId(id: string): void {
-    this._input = { ...this._input, id };
-  }
-
-  /** Tarih/saati ayarlar */
-  setDatetime(datetime: string): void {
-    this._input = { ...this._input, datetime };
-  }
-
-  // ─── Toplu Güncelleme ──────────────────────────────────────────────────
-
-  /**
-   * Input'un tamamını değiştirir.
-   * Import/restore senaryoları için.
-   */
-  setInput(input: SimpleInvoiceInput): void {
-    this._input = { ...input };
-    this.updateUIState();
-    this.onChanged();
-  }
-
-  /**
-   * Input'un kısmi alanlarını günceller.
-   */
-  patchInput(patch: Partial<SimpleInvoiceInput>): void {
-    this._input = { ...this._input, ...patch };
-    if (patch.type || patch.profile || patch.currencyCode) {
-      this.updateUIState();
-    }
     this.onChanged();
   }
 
