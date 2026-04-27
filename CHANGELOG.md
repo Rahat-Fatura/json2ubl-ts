@@ -2,6 +2,77 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [2.1.0] — 2026-04-27
+
+**Reactive InvoiceSession (AR-10) — Faz 1 / Çekirdek.** Mimsoft Next.js entegrasyonu için path-based update API + field-level events + line-level FieldVisibility + validator pipeline + B-78 köprü. Sprint 8h (14 atomik commit).
+
+### BREAKING CHANGES
+
+- **18 setter kaldırıldı.** Tek mutate gateway: `update(path, value)`.
+  - Kaldırılanlar: `setSender`, `setCustomer`, `setBuyerCustomer`, `setType`, `setProfile`, `setLiability`, `setCurrency`, `setBillingReference`, `setPaymentMeans`, `setKdvExemptionCode`, `setOzelMatrah`, `setSgkInfo`, `setInvoicePeriod`, `setNotes`, `setId`, `setDatetime`, `setInput`, `patchInput`.
+  - Korunan: `addLine`, `updateLine`, `removeLine`, `setLines` (array operations path-based değil).
+  - Migration örneği: `setType('TEVKIFAT')` → `update(SessionPaths.type, 'TEVKIFAT')`.
+- **`error` event semantik daraltıldı.** Sadece runtime exception için (calculate throw). Path-related rejection (`READ_ONLY_PATH`, `PROFILE_LIABILITY_MISMATCH` vb.) yeni `path-error` event'inde. (D-Seçenek B)
+- **`update('isExport', x)`** read-only — `path-error` (`READ_ONLY_PATH`) emit + no-op. `isExport` constructor-only readonly. (D-10, M10)
+- **`update('liability', x)`** isExport=true session'da → `path-error` (`LIABILITY_LOCKED_BY_EXPORT`). (M10 kontratı, mevcut setLiability no-op davranışı korunur — D-9)
+- **D-12 type force**: isExport=true session'da `update('type', 'SATIS')` → `field-changed` payload `{ value: 'ISTISNA', requestedValue: 'SATIS', forcedReason: 'isExport=true' }`.
+
+### Added
+
+- **`SessionPaths` path map** (AR-10): `simple-types.ts` AST tarayan otomatik generator (`scripts/generate-session-paths.ts`, TS Compiler API). 117 path entry, JSDoc'lu, `SessionPathMap` generic tip. `npm run verify:paths` CI drift check (D-1).
+- **`update<P extends keyof SessionPathMap>(path, value)`** generic API (D-8): compile-time tip kontrolü + IDE autocomplete.
+- **4 katman path validation + constraint check** (S-2): INVALID_PATH / READ_ONLY_PATH / UNKNOWN_PATH / INDEX_OUT_OF_BOUNDS / PROFILE_EXPORT_MISMATCH / PROFILE_LIABILITY_MISMATCH / LIABILITY_LOCKED_BY_EXPORT. Tüm reddedilenler `path-error` event'i + no-op.
+- **In-house bracket notation parser** (`session-path-utils.ts`, D-1): `lines[0].taxes[1].code` → token sequence. ts-morph / lodash dependency YOK.
+- **Field-level events**: `field-changed`, `field-activated`, `field-deactivated`, `line-field-changed`. 18 adımlı sıralama (§3.1) test ile enforce. (D-4)
+- **D-12 forcedReason payload**: `field-changed.requestedValue` + `field-changed.forcedReason` (auto-force durumunda).
+- **`LineFieldVisibility`** (10 alan, AR-10): line-level UI kontrolü. `_uiState.lineFields[]` array senkron.
+- **`deriveTypeProfileFlags()` helper** (`line-field-visibility.ts`): doc-level + line-level paylaşılır → kural duplikasyonu yok.
+- **B-78 parametre köprüsü** (`deriveB78Params()`): 7 B-78 paraleli kural parametresi otomatik türetilir (önceden session pipeline'ında pasifti).
+- **Validator pipeline entegrasyonu** (D-3): 5 validator (`validateSimpleLineRanges`, `validateManualExemption`, `validatePhantomKdv`, `validateSgkInput`, `validateCrossMatrix`) deterministic. `_invoiceInputCache` reference equality.
+- **`ValidationError` ↔ `ValidationWarning` köprü**: `ValidationWarning.code?: string` eklendi.
+- **`validation-error` event**: raw `ValidationError[]` stream.
+- **`InvoiceSessionOptions.allowReducedKdvRate`** opt-in (M4 / B-78.1).
+- **Performance benchmark** (D-7 ZORUNLU): 100-line update avg 0.16ms / threshold 15ms. MR-1 efektif yok hükmünde. Detay: `audit/sprint-08h-benchmark.md`.
+
+### Changed
+
+- **`InvoiceSession` constructor**: yeni `allowReducedKdvRate` option; `isExport` artık readonly private field.
+- **`updateUIState()` her başarılı update sonrası emit** (8h.8): mevcut dar kapsam tüm path'lere genişletildi.
+- **`toInvoiceInput()` cache'li** (D-3): reference equality, sıfır maliyetli hit.
+- **`ValidationWarning` interface**: `code?: string` eklendi.
+- **README §2** v2.1.0 / AR-10 rewrite (path-based update + 3 event hierarchy + LineFieldVisibility + Liability/isExport + React hook).
+
+### Fixed
+
+- **S-5**: `setId`/`setDatetime` `onChanged` çağırmama tutarsızlığı. 8h.3'te eski setter'lar kaldırıldığı için doğal olarak çözüldü; `update(SessionPaths.id, x)` artık `validate()` tetikler.
+
+### Removed
+
+- 18 doc-level setter (yukarıda BREAKING CHANGES'da listelendi).
+
+### Migration Guide (v2.0.0 → v2.1.0)
+
+```typescript
+// Önce (v2.0.0)
+session.setSender({ taxNumber: '...', name: '...' });
+session.setType('TEVKIFAT');
+session.setLiability('earchive');
+session.on('error', (e: Error) => log(e.message));
+
+// Sonra (v2.1.0)
+import { SessionPaths } from 'json2ubl-ts';
+session.update(SessionPaths.senderTaxNumber, '...');
+session.update(SessionPaths.senderName, '...');
+session.update(SessionPaths.type, 'TEVKIFAT');
+session.update(SessionPaths.liability, 'earchive');
+session.on('error', (e: Error) => log('runtime:', e.message));
+session.on('path-error', ({ code, path, reason }) => log('reddi:', code, path, reason));
+```
+
+Detay: `README.md` §2, `audit/sprint-08h-plan.md`.
+
+---
+
 ## [2.0.0] — 2026-04-23
 
 **İlk feature-complete public sürüm.** `1.4.2`'den `2.0.0`'a atlamanın sebebi: çok sayıda breaking change, validator suite revizyonu, mimari kararlar (M1-M10, AR-1..AR-8). Konsolidasyon: Sprint 1-8b implementation log'ları.
