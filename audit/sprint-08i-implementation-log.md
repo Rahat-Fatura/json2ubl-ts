@@ -550,3 +550,113 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - Sprint 8h v2.1.0 + Sprint 8i v2.2.0 → tek release v2.2.0
 
 ---
+
+## Sprint 8i.14 — Log finalize + Sprint kapanış
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.14: Log finalize + Sprint kapanış (AR-10 Faz 2 / v2.2.0 ready)`
+
+### 15 Atomik Commit Özeti
+
+| Commit | Hash | Kapsam | Test Δ |
+|---|---|---|---|
+| 8i.0 | 2568876 | Plan kopya + log iskelet | 0 |
+| 8i.1 | f0e2add | Suggestion tip + engine skeleton + diff + suggestion event | +27 |
+| 8i.2 | fdbbb59 | KDV grubu (7 kural) + Sprint 8h phantom-kdv snapshot hijyen | +22 |
+| 8i.3 | a81f0b2 | Tevkifat grubu (5 kural) | +16 |
+| 8i.4 | 8a6400e | IHRACKAYITLI grubu (3 kural) | +9 |
+| 8i.5 | 3a2832e | YATIRIMTESVIK grubu (4 kural) + Türkçe locale fix | +14 |
+| 8i.6 | 5753bc6 | Delivery (3) + Misc (2) — manifest tamam | +17 |
+| 8i.7 | 6648e1d | Event sıralaması + integration test (19 test) | +20 |
+| 8i.8 | f27c956 | Performance bench (engine ≤5ms, pipeline ≤15ms) | +5 |
+| 8i.9 | 8d80805 | Suggestion ↔ Validator dikhotomi paralel kontrat | +5 |
+| 8i.10 | a854832 | Examples session parity (34) + buildXml opt-in fix | +35 |
+| 8i.11 | abd2595 | Examples-matrix tam parity (116 invoice) | +117 |
+| 8i.12 | ae3bd69 | README §2.X SuggestionEngine API rehberi | docs |
+| 8i.13 | bbf0432 | CHANGELOG v2.2.0 + Migration Guide + version bump | docs |
+| 8i.14 | (this) | Log finalize + Sprint kapanış | 0 |
+
+### Test Özet Tablosu
+
+| | Sprint 8h sonu | Sprint 8i sonu | Δ |
+|---|---|---|---|
+| Toplam test | 1407 | **1694** | **+287** |
+| Yeşil | 1407 | 1694 | 100% |
+| Test dosya sayısı | 66 | 78 | +12 |
+| Snapshot | 0 | 2 | +2 |
+
+Master plan §3.4 +150 test öngörüsü AŞILDI (gerçek +287).
+
+### Karar Kayıtları (T-1..T-7) — Hepsi Uygulandı
+
+- **T-1 Severity 2-seviyeli:** ✅ `recommended` | `optional`
+- **T-2 Engine pure, diff session-stateful:** ✅ runSuggestionEngine pure + `_lastSuggestions` field
+- **T-3 RuleId namespace `{domain}/{slug}`:** ✅ `kdv/zero-suggest-351` formatı
+- **T-4 `suggestionResolved` event YOK:** ✅ removed array iç hesaplanır, emit yok
+- **T-5 displayLabel/displayValue opsiyonel:** ✅
+- **T-6 Domain bazlı dosya organizasyonu:** ✅ 6 dosya × kdv/withholding/ihrackayitli/ytb/delivery/misc
+- **T-7 Engine her çağrıda full eval:** ✅ incremental optimization Faz 3'e
+
+### Berkay Onayları (S-1, S-3, S-5, S-6)
+
+- ✅ S-1 Tam kapsam (~25 kural — net 23, **2 kural ertelendi**)
+- ✅ S-3 Batch payload (`Suggestion[]` tek event)
+- ✅ S-5 Tam 200 senaryo converter — net 150 senaryo (irsaliye skip)
+- ⚠️ S-6 Path sequence formatı **Sprint 8j'ye ertelendi** (initialInput pattern XML output regression için yeterli)
+
+### Performance Benchmark Sonuçları (Sprint 8i.8)
+
+| Senaryo | Threshold | Gerçek | Aşma Oranı |
+|---|---|---|---|
+| Suggestion engine 100-line × 23 kural × kdv=0 | 5ms | **0.010ms** | 500x altı |
+| Suggestion engine 100-line × 23 kural × kdv=18 | 5ms | **0.004ms** | 1250x altı |
+| Suggestion engine 500-line stress | 15ms | **0.027ms** | 555x altı |
+| Toplam pipeline (update + validate + suggestion) | 15ms | **0.137ms** | 110x altı |
+| Diff stable 100 suggestion (emit yok overhead) | 5ms | **0.060ms** | 83x altı |
+
+R2 risk efektif yok hükmünde. Kural caching/grouping refactor gereksiz.
+
+### Sprint 8i Sapmaları (Toplam)
+
+1. **Kural 4 ertelendi** (`kdv/zero-clear-exemption-on-rate-change`) → Sprint 8j (R6, transition state)
+2. **`paymentmeans/payment-means-code-default` ATLANDI** (meansCode required, kural tetiklenmez)
+3. **S-6 path sequence converter Sprint 8j'ye ertelendi** (initialInput pattern yeterli)
+4. **`paymentMeans.iban` → `accountNumber`** field adaptasyonu (yapı incelenince iban field yokmuş)
+5. **Doc-level delivery → line-level delivery** (yapı line-level)
+6. **38 → 34 invoice examples + 162 → 116 invoice matrix** (irsaliye skip — DespatchBuilder kapsamı)
+7. **Sprint 8h hijyen fix dahil** (8i.10): `buildXml` `allowReducedKdvRate` opt-in builder'a geçirilmemişti
+8. **Türkçe `İ` case folding fix** (8i.5): JS `/i` flag ASCII-i'ye dönüşmüyor, `toLocaleLowerCase('tr-TR')` manuel normalize
+
+### v2.2.0 Publish Hazırlığı Checklist
+
+- ✅ `npm test` → 1694 / 1694 yeşil
+- ✅ `npm run typecheck` → 0 error
+- ✅ Performance benchmark threshold tutuyor (suggestion ≤5ms, pipeline ≤15ms)
+- ✅ Examples session parity 150/150 yeşil
+- ✅ CHANGELOG.md v2.2.0 entry yazıldı
+- ✅ Migration Guide v2.1.0 → v2.2.0 yazıldı (backward compatible)
+- ✅ README §2.X SuggestionEngine API rehberi
+- ✅ package.json version 2.1.0 → 2.2.0
+- ⏳ Manuel git tag + npm publish (Berkay kararı)
+
+### Sprint 8j Hazırlık Notu
+
+Sprint 8i'den ertelenenler (Sprint 8j veya sonrası):
+1. **Kural 4** — `kdv/zero-clear-exemption-on-rate-change` transition state çözümü (event listener pattern)
+2. **S-6 Path sequence converter** — `scripts/example-to-session-script.ts` + 200 senaryo path-based regression
+3. **`paymentmeans/payment-means-code-default`** — eğer meansCode optional yapılırsa
+4. **R5 izleme** — `yatirim-tesvik/insaat-suggest-itemclass-02` heuristic false positive izleme (Mimsoft kullanımdan sonra)
+5. **R1 UX gözlemi** — Suggestion ↔ Validator çakışma Mimsoft Next.js rewrite'ta UX kontrolü
+
+### Sprint 8i Özeti
+
+- **15 atomik commit** (8i.0 → 8i.14)
+- **Test 1407 → 1694** (+287, master plan +150 hedefi 1.9x aşıldı)
+- **23 suggestion kuralı net** (Plan 25 → 2 ertelendi)
+- **150 senaryo regression** (34 examples + 116 matrix, irsaliye skip)
+- **Süre:** 1 oturum (Auto mode)
+- **Performance MR-1/R2 efektif yok hükmünde** (suggestion 500x altı)
+- **Faz 1 (v2.1.0) + Faz 2 (v2.2.0) tek release** — Berkay manuel publish
+
+Reactive InvoiceSession AR-10 (Faz 1 + Faz 2) tamam. Mimsoft Next.js rewrite için altyapı hazır — path-based update + field-level events + line-level visibility + validator pipeline + B-78 köprü + suggestion engine + 23 advisory kural.
+
