@@ -109,4 +109,77 @@ describe('simple-line-range-validator (B-NEW-01, 02, 03)', () => {
       expect(errs).toHaveLength(0);
     });
   });
+
+  // Sprint 8g.1 — B-NEW-v2-04 withholding kod/oran tutarlılığı
+  describe('B-NEW-v2-04 — withholding kod/oran ValidationError (Sprint 8g.1)', () => {
+    it('Bilinmeyen withholding kod (999) → INVALID_VALUE', () => {
+      const errs = validateSimpleLineRanges(baseInput({
+        lines: [{ name: 'X', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+          withholdingTaxCode: '999' }],
+      }));
+      const err = errs.find(e => e.path === 'lines[0].withholdingTaxCode');
+      expect(err?.code).toBe('INVALID_VALUE');
+      expect(err?.actual).toBe('999');
+    });
+
+    it('650 dinamik kod + percent eksik → MISSING_FIELD', () => {
+      const errs = validateSimpleLineRanges(baseInput({
+        lines: [{ name: 'X', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+          withholdingTaxCode: '650' /* withholdingTaxPercent yok */ }],
+      }));
+      const err = errs.find(e => e.path === 'lines[0].withholdingTaxPercent');
+      expect(err?.code).toBe('MISSING_FIELD');
+      expect(err?.message).toContain('650');
+    });
+
+    it('650 dinamik + percent=150 → INVALID_VALUE (range)', () => {
+      const errs = validateSimpleLineRanges(baseInput({
+        lines: [{ name: 'X', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+          withholdingTaxCode: '650', withholdingTaxPercent: 150 }],
+      }));
+      const err = errs.find(e => e.path === 'lines[0].withholdingTaxPercent');
+      expect(err?.code).toBe('INVALID_VALUE');
+      expect(err?.actual).toBe('150');
+    });
+
+    it('603 sabit kod + percent verilmiş → INVALID_VALUE (sadece 650 için)', () => {
+      const errs = validateSimpleLineRanges(baseInput({
+        lines: [{ name: 'X', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+          withholdingTaxCode: '603', withholdingTaxPercent: 99 }],
+      }));
+      const err = errs.find(e => e.path === 'lines[0].withholdingTaxPercent');
+      expect(err?.code).toBe('INVALID_VALUE');
+      expect(err?.message).toContain('sabit oranlıdır');
+    });
+
+    it('603 sabit + percent yok → pas (mevcut davranış korundu)', () => {
+      const errs = validateSimpleLineRanges(baseInput({
+        lines: [{ name: 'X', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+          withholdingTaxCode: '603' }],
+      }));
+      expect(errs.filter(e => e.path?.includes('withholding'))).toHaveLength(0);
+    });
+
+    it('650 + percent=50 → pas (geçerli dinamik)', () => {
+      const errs = validateSimpleLineRanges(baseInput({
+        lines: [{ name: 'X', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+          withholdingTaxCode: '650', withholdingTaxPercent: 50 }],
+      }));
+      expect(errs.filter(e => e.path?.includes('withholding'))).toHaveLength(0);
+    });
+  });
+
+  // Sprint 8g.1 — UblBuildError instance kontrolü (E2E builder)
+  describe('B-NEW-v2-04 — SimpleInvoiceBuilder UblBuildError instance (Sprint 8g.1)', () => {
+    it('999 kod build() çağrısı UblBuildError fırlatır (raw Error değil)', async () => {
+      const { SimpleInvoiceBuilder } = await import('../../src/calculator/simple-invoice-builder');
+      const { UblBuildError } = await import('../../src/errors/ubl-build-error');
+      const builder = new SimpleInvoiceBuilder({ validationLevel: 'strict' });
+      const input = baseInput({
+        lines: [{ name: 'X', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
+          withholdingTaxCode: '999' }],
+      });
+      expect(() => builder.build(input)).toThrow(UblBuildError);
+    });
+  });
 });
