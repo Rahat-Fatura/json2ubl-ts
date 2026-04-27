@@ -444,11 +444,12 @@ export class InvoiceSession extends EventEmitter {
       }
     }
 
-    // currencyCode değişiminde uiState tazele (snapshot event için).
-    // Geniş kapsam (her update sonrası uiState) Sprint 8h.8'de.
-    if (path === 'currencyCode') {
-      this.updateUIState();
-    }
+    // Sprint 8h.8: updateUIState her başarılı update sonrası tetiklenir.
+    // Doc-level FieldVisibility (type/profile/currency/liability) değişmemiş olsa
+    // bile UI state snapshot (warnings güncel) tüketici tarafından consume edilebilmeli.
+    // _updateType/_updateProfile/_updateLiability zaten kendi içinde çağırıyor;
+    // bu branch genel mutation için (sender/customer/paymentMeans/lines vb.).
+    this.updateUIState();
 
     this.onChanged();
   }

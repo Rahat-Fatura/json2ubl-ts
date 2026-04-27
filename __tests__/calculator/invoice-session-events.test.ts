@@ -306,6 +306,50 @@ describe('Event sıralaması (§3.1 enforcement, Sprint 8h.4)', () => {
   });
 });
 
+describe('Sprint 8h.8 — updateUIState() her başarılı update sonrası emit', () => {
+  it('sender path update sonrası ui-state-changed emit (mevcut: sadece type/profile)', () => {
+    const session = new InvoiceSession();
+    let count = 0;
+    session.on('ui-state-changed', () => count++);
+    session.update(SessionPaths.senderName, 'Acme');
+    expect(count).toBeGreaterThan(0);
+  });
+
+  it('customer path update sonrası ui-state-changed emit', () => {
+    const session = new InvoiceSession();
+    let count = 0;
+    session.on('ui-state-changed', () => count++);
+    session.update(SessionPaths.customerName, 'X');
+    expect(count).toBeGreaterThan(0);
+  });
+
+  it('line-level update sonrası ui-state-changed emit', () => {
+    const session = new InvoiceSession();
+    session.addLine({ name: 'L1', quantity: 1, price: 100, kdvPercent: 18 });
+    let count = 0;
+    session.on('ui-state-changed', () => count++);
+    session.update(SessionPaths.lineKdvPercent(0), 8);
+    expect(count).toBeGreaterThan(0);
+  });
+
+  it('paymentMeans sub-object update sonrası ui-state-changed emit', () => {
+    const session = new InvoiceSession();
+    let count = 0;
+    session.on('ui-state-changed', () => count++);
+    session.update(SessionPaths.paymentMeansMeansCode, '1');
+    expect(count).toBeGreaterThan(0);
+  });
+
+  it('no-op update sonrası ui-state-changed emit YOK (diff false)', () => {
+    const session = new InvoiceSession();
+    session.update(SessionPaths.senderName, 'Acme');
+    let count = 0;
+    session.on('ui-state-changed', () => count++);
+    session.update(SessionPaths.senderName, 'Acme');     // same value
+    expect(count).toBe(0);
+  });
+});
+
 describe('Auto-resolve fieldChanged (helpers)', () => {
   it('liability auto-resolve emits field-changed for liability path', () => {
     const session = new InvoiceSession({ initialInput: { profile: 'TICARIFATURA', type: 'SATIS' } });
