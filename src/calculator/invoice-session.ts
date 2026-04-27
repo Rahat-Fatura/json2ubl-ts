@@ -183,6 +183,12 @@ export interface InvoiceSessionOptions {
    * Runtime'da setProfile('IHRACAT') ile geçiş yapILAMAZ.
    */
   isExport?: boolean;
+  /**
+   * 555 Demirbaş KDV oranı kullanımına izin (M4 / B-78.1).
+   * `BuilderOptions.allowReducedKdvRate` ile aynı semantik — Mimsoft form opt-in.
+   * False (varsayılan) ise validateInvoiceState 555 kdvExemptionCode'u reddeder.
+   */
+  allowReducedKdvRate?: boolean;
 }
 
 export class InvoiceSession extends EventEmitter {
@@ -192,12 +198,14 @@ export class InvoiceSession extends EventEmitter {
   private _autoCalculate: boolean;
   private _liability?: CustomerLiability;
   private readonly _isExport: boolean;
+  private readonly _allowReducedKdvRate: boolean;
 
   constructor(options?: InvoiceSessionOptions) {
     super();
     this._autoCalculate = options?.autoCalculate ?? true;
     this._liability = options?.liability;
     this._isExport = options?.isExport ?? false;
+    this._allowReducedKdvRate = options?.allowReducedKdvRate ?? false;
 
     // M10: İhracat session'ı ise profil IHRACAT + tip ISTISNA zorlanır (M2 identity)
     const initialProfile = this._isExport
@@ -759,8 +767,12 @@ export class InvoiceSession extends EventEmitter {
 
   /**
    * Validasyon uyarılarını güncel state'e göre hesaplar.
+   * Sprint 8h.6: B-78 parametreleri (allowReducedKdvRate, ytbAllKdvPositive, hasGtip,
+   * hasAliciDibKod, has4171Code, ihracatPartyComplete, yolcuBuyerComplete) artık
+   * deriveB78Params() üzerinden otomatik geçiriliyor (önceden eksikti).
    */
   validate(): ValidationWarning[] {
+    const b78Params = this.deriveB78Params();
     const warnings = validateInvoiceState({
       type: this._input.type ?? this._calculation?.type ?? 'SATIS',
       profile: this._input.profile ?? this._calculation?.profile ?? 'TICARIFATURA',
@@ -775,11 +787,57 @@ export class InvoiceSession extends EventEmitter {
       hasBuyerCustomer: !!this._input.buyerCustomer,
       ytbNo: this._input.ytbNo,
       hasSevkiyatNo: !!this._input.sender?.identifications?.some(id => id.schemeId === 'SEVKIYATNO'),
+      ...b78Params,
     });
 
     this._uiState = { ...this._uiState, warnings };
     this.emit('warnings', warnings);
     return warnings;
+  }
+
+  /**
+   * B-78 paraleli kural parametre türetimi (Sprint 8h.6 / AR-10).
+   *
+   * Mevcut session 8h öncesi bu parametreleri geçirmiyordu (validateInvoiceState
+   * §2.5 envanterinde belirlendi). Şimdi otomatik türetilir:
+   *  - allowReducedKdvRate: opt-in flag (constructor option, M4 / B-78.1)
+   *  - ytbAllKdvPositive: YATIRIMTESVIK + tüm satırlarda KDV>0 (B-78.2)
+   *  - hasGtip / hasAliciDibKod: tüm satırlarda delivery alanları (B-78.3)
+   *  - has4171Code: en az bir satırda taxes[].code='4171' (B-78.4)
+   *  - ihracatPartyComplete: sender.name + taxOffice (B-78.5)
+   *  - yolcuBuyerComplete: buyerCustomer.nationalityId + passportId (B-78.5)
+   */
+  private deriveB78Params(): {
+    allowReducedKdvRate: boolean;
+    ytbAllKdvPositive: boolean;
+    hasGtip: boolean;
+    hasAliciDibKod: boolean;
+    has4171Code: boolean;
+    ihracatPartyComplete: boolean;
+    yolcuBuyerComplete: boolean;
+  } {
+    const lines = this._input.lines;
+    const linesPresent = lines.length > 0;
+
+    return {
+      allowReducedKdvRate: this._allowReducedKdvRate,
+
+      ytbAllKdvPositive: this._input.profile === 'YATIRIMTESVIK'
+        ? (linesPresent && lines.every(l => l.kdvPercent > 0))
+        : true,   // diğer profillerde irrelevant, true → rule trigger olmasın
+
+      hasGtip: linesPresent && lines.every(l => !!l.delivery?.gtipNo),
+
+      hasAliciDibKod: linesPresent && lines.every(l => !!l.delivery?.alicidibsatirkod),
+
+      has4171Code: lines.some(l => l.taxes?.some(t => t.code === '4171') ?? false),
+
+      ihracatPartyComplete: !!this._input.sender?.name?.trim()
+        && !!this._input.sender?.taxOffice?.trim(),
+
+      yolcuBuyerComplete: !!this._input.buyerCustomer?.nationalityId?.trim()
+        && !!this._input.buyerCustomer?.passportId?.trim(),
+    };
   }
 
   // ─── Private ───────────────────────────────────────────────────────────
