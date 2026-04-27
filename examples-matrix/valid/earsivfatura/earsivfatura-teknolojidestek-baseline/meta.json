@@ -1,0 +1,32 @@
+{
+  "id": "earsivfatura-teknolojidestek-baseline",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "TEKNOLOJIDESTEK",
+  "variantSlug": "baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "tckn",
+      "telefon-imei"
+    ]
+  },
+  "generatedAt": "2026-04-27T08:32:38.445Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "EARSIVFATURA+TEKNOLOJIDESTEK baseline — TCKN müşteri + IMEI (TELEFON scheme)"
+}

@@ -2081,6 +2081,36 @@ export const validSpecs: ValidSpec[] = [
       lines: [{ name: 'Konaklama — e-arşiv', quantity: 2, price: 500, unitCode: 'Gece', kdvPercent: 20 }],
     },
   },
+  // Sprint 8g.4 — EARSIVFATURA × TEKNOLOJIDESTEK baseline (B-NEW-v2-07)
+  // Coverage gap kapatıldı: 67/68 (%98.5) → 68/68 (%100)
+  // Şart: customer TCKN + her satırda TELEFON veya TABLET_PC AdditionalItemIdentification
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'TEKNOLOJIDESTEK',
+    notes: 'EARSIVFATURA+TEKNOLOJIDESTEK baseline — TCKN müşteri + IMEI (TELEFON scheme)',
+    dimensions: {
+      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['tckn', 'telefon-imei'],
+    },
+    input: {
+      id: 'MTX2026000000951',
+      uuid: 'a1000951-0001-4000-8001-000000000951',
+      datetime: '2026-04-27T10:00:00',
+      profile: 'EARSIVFATURA', type: 'TEKNOLOJIDESTEK', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER, name: 'Matrix Teknoloji A.Ş.' },
+      customer: {
+        taxNumber: '12345678901', taxIdType: 'TCKN', name: 'Test Hasta',
+        firstName: 'Test', familyName: 'Kişi',
+        address: 'Bağdat Cad. No:100',
+        district: 'Kadıköy', city: 'İstanbul',
+      },
+      lines: [{
+        name: 'Akıllı telefon', quantity: 1, price: 5000, unitCode: 'Adet', kdvPercent: 20,
+        additionalItemIdentifications: [{ schemeId: 'TELEFON', value: 'IMEI123456789012345' }],
+      }],
+    },
+  },
 
   // ─── Sprint 8f.7: EARSIVFATURA genişletme (+7, reaktivasyonla birleşerek 22) ───
   {
