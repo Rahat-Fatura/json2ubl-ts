@@ -400,3 +400,30 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - "Aşılırsa dur ve sor" kapısı açık (bench fail → CI gate).
 
 ---
+
+## Sprint 8i.9 — Suggestion ↔ Validator dikhotomi paralel kontrat
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.9: Suggestion ↔ Validator dikhotomi paralel kontrat (AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `__tests__/calculator/invoice-session-dichotomy.test.ts` (yeni, 5 test):
+   - TEVKIFAT senaryosu: validator warning + suggestion paralel emit (master §3.3)
+   - Severity ayrımı: validator error/warning vs suggestion recommended/optional (T-1)
+   - Aynı path iki kanal: çakışma yok, ayrı event kanalı
+   - Idempotent emit: warnings + suggestion aynı tick (sıralama 8i.7'de enforce edilmişti)
+   - Validator pipeline davranışı korunur (Sprint 8h.7 davranışı)
+
+### Test
+
+- Başlangıç: 1537/1537 yeşil
+- Son: **1542/1542 yeşil** (+5 test, hedef +5)
+
+### Disiplin
+
+- R1 mitigation kontrat: aynı path'te iki kanal **paralel** emit edilebilir, UI iki mesajı yan yana sunar.
+- Suggestion validator'ı baskılamaz, validator suggestion'ı baskılamaz.
+- Mimsoft Next.js rewrite'ta UX gözlemlenmesi gerekir (renk + ikon ayrımı).
+
+---
