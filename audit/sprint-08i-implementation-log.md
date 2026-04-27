@@ -184,3 +184,36 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - Severity dağılımı: 4 recommended + 3 optional (T-1 2-seviye konvansiyonu)
 
 ---
+
+## Sprint 8i.3 — Tevkifat grubu (5 kural)
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.3: Tevkifat grubu suggestion kuralları (5 kural, AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `src/calculator/suggestion-rules/withholding-suggestions.ts` (yeni, ~140 satır):
+   1. `withholding/tevkifat-default-codes` — TEVKIFAT/YTBTEVKIFAT + line.withholdingTaxCode boş → 602 (recommended)
+   2. `withholding/650-percent-required` — code=650 + percent boş → uyarı (recommended)
+   3. `withholding/profile-tevkifat-suggests-ticarifatura` — TEVKIFAT+TEMELFATURA → TICARIFATURA (optional)
+   4. `withholding/exemption-conflict` — withholding+exemption aynı satır → withholding kaldır (recommended, paralel KDV/exemption-mismatch)
+   5. `withholding/ytb-tevkifat-itemclass-required` — YTBTEVKIFAT + itemClass boş → 01 (recommended)
+
+2. `src/calculator/suggestion-rules/index.ts` modifikasyonu:
+   - WITHHOLDING_SUGGESTIONS spread edildi (KDV sonrası).
+
+3. `__tests__/calculator/suggestion-rules/withholding-suggestions.test.ts` (yeni, 16 test):
+   - Her kural için 3-4 test (applies pozitif/negatif + produce)
+
+### Test
+
+- Başlangıç: 1456/1456 yeşil
+- Son: **1472/1472 yeşil** (+16 test, hedef +15)
+- Benchmark stabil (0.05-0.08ms / 15ms threshold)
+
+### Disiplin
+
+- Plan'dan sapma yok. Kural 4 (`withholding/exemption-conflict`) ile KDV grubu Kural 4 (`kdv/exemption-mismatch-tax-type`) farklı path'te (witholdingTaxCode vs kdvExemptionCode) → kullanıcı UI'da seçer hangisini kaldıracağını
+- Severity dağılımı: 4 recommended + 1 optional
+
+---
