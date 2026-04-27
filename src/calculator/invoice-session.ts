@@ -41,6 +41,12 @@ import type { SessionPathMap } from './session-paths.generated';
 import { KNOWN_PATH_TEMPLATES, READ_ONLY_PATHS } from './session-paths.generated';
 import { parsePath, applyPathUpdate, readPath, deepEqual, tokensToTemplate, PathParseError } from './session-path-utils';
 import { deriveLineFieldVisibility } from './line-field-visibility';
+import type { ValidationError } from '../errors/ubl-build-error';
+import { validateSimpleLineRanges } from '../validators/simple-line-range-validator';
+import { validateManualExemption } from '../validators/manual-exemption-validator';
+import { validatePhantomKdv } from '../validators/phantom-kdv-validator';
+import { validateSgkInput } from '../validators/sgk-input-validator';
+import { validateCrossMatrix } from '../validators/cross-validators';
 
 // ─── Session Event Tipleri ───────────────────────────────────────────────────
 
@@ -138,6 +144,14 @@ export interface SessionEvents {
    */
   'path-error': PathErrorPayload;
   /**
+   * Validator pipeline raw stream (Sprint 8h.7 / AR-10).
+   * 5 validator (line-range, manual-exemption, phantom-kdv, sgk-input, cross-matrix)
+   * her validate() çağrısında deterministik çalışır; sonuç ValidationError[] formatında emit.
+   * 'warnings' event birleşik (rules + bridged) ValidationWarning[] yayar; 'validation-error'
+   * raw path+code stream sağlar (UI'da detaylı debug için).
+   */
+  'validation-error': ValidationError[];
+  /**
    * Granüler field değişikliği (Sprint 8h.4 / AR-10).
    * Her başarılı update() sonrası ilk emit edilen event (sıra adımı 5).
    * D-12 force durumunda da emit edilir (state değişmemiş olsa bile, requestedValue/forcedReason ile).
@@ -199,6 +213,8 @@ export class InvoiceSession extends EventEmitter {
   private _liability?: CustomerLiability;
   private readonly _isExport: boolean;
   private readonly _allowReducedKdvRate: boolean;
+  /** Sprint 8h.7 / D-3: toInvoiceInput() reference equality cache. */
+  private _invoiceInputCache?: { input: SimpleInvoiceInput; result: InvoiceInput };
 
   constructor(options?: InvoiceSessionOptions) {
     super();
@@ -718,9 +734,24 @@ export class InvoiceSession extends EventEmitter {
 
   /**
    * Tam InvoiceInput'a dönüştürür (XML üretmek için).
+   * Sprint 8h.7 / D-3: reference equality cache. _input değişmediği sürece mapper atlanır.
    */
   toInvoiceInput(): InvoiceInput {
-    return mapSimpleToInvoiceInput(this._input);
+    return this._getCachedInvoiceInput();
+  }
+
+  /**
+   * Cache'li InvoiceInput erişimi (D-3 deterministic + reference equality).
+   * Cache invalidation otomatik: _input her başarılı update sonrası yeni reference.
+   * Diff check (§1.3) no-op'ta cache invalide olmaz.
+   */
+  private _getCachedInvoiceInput(): InvoiceInput {
+    if (this._invoiceInputCache?.input === this._input) {
+      return this._invoiceInputCache.result;
+    }
+    const result = mapSimpleToInvoiceInput(this._input);
+    this._invoiceInputCache = { input: this._input, result };
+    return result;
   }
 
   /**
@@ -773,6 +804,8 @@ export class InvoiceSession extends EventEmitter {
    */
   validate(): ValidationWarning[] {
     const b78Params = this.deriveB78Params();
+
+    // Rules-based check (mevcut + B-78 parametreleri ile, Sprint 8h.6)
     const warnings = validateInvoiceState({
       type: this._input.type ?? this._calculation?.type ?? 'SATIS',
       profile: this._input.profile ?? this._calculation?.profile ?? 'TICARIFATURA',
@@ -790,9 +823,42 @@ export class InvoiceSession extends EventEmitter {
       ...b78Params,
     });
 
-    this._uiState = { ...this._uiState, warnings };
-    this.emit('warnings', warnings);
-    return warnings;
+    // Sprint 8h.7: 5 validator pipeline (D-3 deterministic)
+    const errors: ValidationError[] = [];
+
+    // 4 simple-input validator (pure, throw atmaz)
+    errors.push(...validateSimpleLineRanges(this._input));
+    errors.push(...validateManualExemption(this._input));
+    errors.push(...validatePhantomKdv(this._input));
+    errors.push(...validateSgkInput(this._input));
+
+    // validateCrossMatrix InvoiceInput ister; cache'li mapper (D-3).
+    // Mapper içinde calculator throw edebilir (örn. 650 percent eksik) — bunu
+    // validation hatası olarak ele al (error event uncaught olmasın).
+    try {
+      errors.push(...validateCrossMatrix(this._getCachedInvoiceInput()));
+    } catch (err) {
+      errors.push({
+        code: 'CALCULATION_ERROR',
+        message: err instanceof Error ? err.message : String(err),
+        path: 'lines',
+      });
+    }
+
+    // Sprint 8h.7: ValidationError → ValidationWarning köprü
+    const bridged: ValidationWarning[] = errors.map(e => ({
+      field: e.path ?? 'unknown',
+      message: e.message,
+      severity: 'error' as const,
+      code: e.code,
+    }));
+
+    const all = [...warnings, ...bridged];
+    this._uiState = { ...this._uiState, warnings: all };
+
+    this.emit('validation-error', errors);
+    this.emit('warnings', all);
+    return all;
   }
 
   /**

@@ -155,6 +155,8 @@ export interface ValidationWarning {
   field: string;
   message: string;
   severity: 'error' | 'warning' | 'info';
+  /** Validator pipeline'dan köprülenen ValidationError.code (Sprint 8h.7 / AR-10) */
+  code?: string;
 }
 
 // ─── UI State ────────────────────────────────────────────────────────────────
