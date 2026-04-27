@@ -4368,6 +4368,25 @@ export const invalidSpecs: InvalidSpec[] = [
           deliveryAddress: { address: 'L', district: 'A', city: 'İ', country: 'Türkiye' } } }],
     },
   },
+
+  // ─── Sprint 8g.3 — 4171 invalid spec re-add (B-NEW-v2-03 doğru API ile) ───
+  // 8f.11'de `manualTaxTotals` (yanlış field name) ile yazılmıştı, validator
+  // tetiklemedi → silindi. Doğru API: `taxes: [{ code, percent }]`.
+  {
+    kind: 'invalid-invoice', variantSlug: 'tax-4171-yasak-tip',
+    primaryCode: 'INVALID_VALUE',
+    description: '4171 ÖTV Tevkifatı kodu SATIS tipinde kullanılamaz (sadece TEVKIFAT/IADE/SGK/YTBIADE)',
+    profileContext: 'TEMELFATURA', typeContext: 'SATIS',
+    expectedErrors: [{ code: 'INVALID_VALUE', path: 'taxTotals.taxSubtotals[0].taxTypeCode' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000311', 'b1000311-0001-4000-8001-000000000311'),
+      lines: [{
+        name: 'Akaryakıt', quantity: 100, price: 50, unitCode: 'Litre', kdvPercent: 20,
+        taxes: [{ code: '4171', percent: 10 }],
+      }],
+    },
+  },
 ];
 
 export const allSpecs: Array<ValidSpec | InvalidSpec> = [

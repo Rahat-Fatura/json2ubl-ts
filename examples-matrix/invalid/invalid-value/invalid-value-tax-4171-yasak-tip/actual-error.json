@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "INVALID_VALUE",
+      "path": "taxTotals.taxSubtotals[0].taxTypeCode",
+      "message": "Geçersiz değer: taxTotals.taxSubtotals[0].taxTypeCode"
+    }
+  ]
+}

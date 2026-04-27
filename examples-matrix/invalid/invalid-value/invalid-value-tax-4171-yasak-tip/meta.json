@@ -1,0 +1,16 @@
+{
+  "id": "invalid-value-tax-4171-yasak-tip",
+  "kind": "invalid-invoice",
+  "primaryCode": "INVALID_VALUE",
+  "errorCodes": [
+    "INVALID_VALUE"
+  ],
+  "description": "4171 ÖTV Tevkifatı kodu SATIS tipinde kullanılamaz (sadece TEVKIFAT/IADE/SGK/YTBIADE)",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-04-27T08:31:43.379Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

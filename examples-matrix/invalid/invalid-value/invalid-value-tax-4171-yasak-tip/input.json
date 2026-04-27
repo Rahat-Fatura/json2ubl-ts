@@ -1,0 +1,39 @@
+{
+  "id": "MTX2026000000311",
+  "uuid": "b1000311-0001-4000-8001-000000000311",
+  "datetime": "2026-04-24T10:00:00",
+  "profile": "TEMELFATURA",
+  "type": "SATIS",
+  "currencyCode": "TRY",
+  "sender": {
+    "taxNumber": "1234567890",
+    "name": "Matrix Test Satıcı A.Ş.",
+    "taxOffice": "Beşiktaş",
+    "address": "Levent Mah. No:42",
+    "district": "Beşiktaş",
+    "city": "İstanbul"
+  },
+  "customer": {
+    "taxNumber": "9876543210",
+    "name": "Matrix Test Alıcı Ltd.",
+    "taxOffice": "Kadıköy",
+    "address": "Bağdat Cad. No:100",
+    "district": "Kadıköy",
+    "city": "İstanbul"
+  },
+  "lines": [
+    {
+      "name": "Akaryakıt",
+      "quantity": 100,
+      "price": 50,
+      "unitCode": "Litre",
+      "kdvPercent": 20,
+      "taxes": [
+        {
+          "code": "4171",
+          "percent": 10
+        }
+      ]
+    }
+  ]
+}
