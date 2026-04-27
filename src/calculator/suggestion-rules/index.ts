@@ -3,6 +3,8 @@ import { KDV_SUGGESTIONS } from './kdv-suggestions';
 import { WITHHOLDING_SUGGESTIONS } from './withholding-suggestions';
 import { IHRACKAYITLI_SUGGESTIONS } from './ihrackayitli-suggestions';
 import { YATIRIM_TESVIK_SUGGESTIONS } from './yatirim-tesvik-suggestions';
+import { DELIVERY_SUGGESTIONS } from './delivery-suggestions';
+import { MISC_SUGGESTIONS } from './misc-suggestions';
 
 /**
  * Sprint 8i / AR-10 Faz 2 — SUGGESTION_RULES manifest.
@@ -23,4 +25,6 @@ export const SUGGESTION_RULES: readonly SuggestionRule[] = [
   ...WITHHOLDING_SUGGESTIONS,
   ...IHRACKAYITLI_SUGGESTIONS,
   ...YATIRIM_TESVIK_SUGGESTIONS,
+  ...DELIVERY_SUGGESTIONS,
+  ...MISC_SUGGESTIONS,
 ];

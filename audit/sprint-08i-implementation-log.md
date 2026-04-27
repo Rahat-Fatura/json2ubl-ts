@@ -280,3 +280,48 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - R5 mitigation: Kural 4 false positive izleme — heuristic optional, validator dublike değil
 
 ---
+
+## Sprint 8i.6 — Delivery + Misc grubu (5 kural — sapma: 6→5)
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.6: Delivery + Misc suggestion kuralları (5 kural, AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `src/calculator/suggestion-rules/delivery-suggestions.ts` (yeni, ~95 satır):
+   1. `delivery/ihracat-incoterms-required` (recommended) — IHRACAT + line.delivery.deliveryTermCode boş → CIF
+   2. `delivery/gtip-format-12-digit` (recommended) — gtipNo 12 hane değil → fix
+   3. `delivery/transport-mode-suggest-ihracat` (optional) — IHRACAT + line.delivery.transportModeCode boş → 4
+
+2. `src/calculator/suggestion-rules/misc-suggestions.ts` (yeni, ~55 satır):
+   1. `currency/exchange-rate-required` (recommended) — TRY dışı + exchangeRate boş
+   2. `paymentmeans/iban-format-tr` (recommended) — accountNumber TR/26-hane uymuyorsa
+
+3. `src/calculator/suggestion-rules/index.ts` — DELIVERY + MISC spread, manifest tamamlandı.
+
+4. `__tests__/calculator/suggestion-rules/delivery-misc-suggestions.test.ts` (yeni, 17 test):
+   - 5 kural × 3-4 test (delivery line-level edge, IBAN format çeşitleri)
+
+5. `__tests__/calculator/invoice-session-suggestion.test.ts` 1 fix:
+   - "update chain + boş manifest" → "kural tetiklenmez (TRY currency)" — manifest dolu olduğu için USD currency rule tetikliyordu, TRY'ye çevrildi.
+
+### Test
+
+- Başlangıç: 1495/1495 yeşil
+- Son: **1512/1512 yeşil** (+17 test)
+
+### Sapmalar (plan §3.5-3.6'ya göre)
+
+1. **Doc-level delivery YOK:** Plan tasarımı doc-level delivery varsayıyordu. SimpleInvoiceInput'ta delivery sadece line-level (`lines[i].delivery`). Üç delivery kuralı line-level olarak adapte edildi (path: `lines[i].delivery.X`).
+
+2. **`paymentmeans/payment-means-code-default` ATLANDI:** Plan'da bu kural "paymentMeans var + meansCode boş → '1'" idi. SimplePaymentMeansInput.meansCode **required string** — boş olamaz, kural tetiklenmez. Atlandı.
+
+3. **Toplam Faz 2 kural sayısı: 24 → 23.** Plan'da Kural 4 (8j'ye ertelenen) sonrası 24 önerilmişti; payment-means-code-default kaldırılınca 23 net. Master plan §3.4 +150 test öngörüsü içinde kalır.
+
+### Disiplin
+
+- 23 kural net (8 KDV ertelenen Kural 4 hariç + 5 tevkifat + 3 IHRACKAYITLI + 4 YATIRIMTESVIK + 5 delivery/misc).
+- SUGGESTION_RULES manifest tamam — 8i.7'den itibaren integration testler çalıştırılır.
+- Severity dağılımı: 17 recommended + 6 optional (T-1 2-seviye).
+
+---

@@ -37,7 +37,7 @@ describe('InvoiceSession.suggestion event — skeleton (8i.1, manifest boş)', (
     expect(captured).toHaveLength(0);
   });
 
-  it('update() chain (autoCalculate=true) + boş manifest → suggestion emit yok', () => {
+  it('update() chain + hiçbir kural tetiklenmez (TRY currency, line yok) → suggestion emit yok', () => {
     const captured: Suggestion[][] = [];
     const session = new InvoiceSession({
       initialInput: { type: 'SATIS', profile: 'TEMELFATURA' },
@@ -45,7 +45,7 @@ describe('InvoiceSession.suggestion event — skeleton (8i.1, manifest boş)', (
     });
     session.on('suggestion', (p) => captured.push(p));
     session.update(SessionPaths.profile, 'TICARIFATURA');
-    session.update(SessionPaths.currencyCode, 'USD');
+    session.update(SessionPaths.currencyCode, 'TRY'); // USD currency-rate kuralı tetikler
     expect(captured).toHaveLength(0);
   });
 
