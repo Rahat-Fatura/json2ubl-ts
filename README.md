@@ -145,142 +145,200 @@ builder.build({
 
 ---
 
-## 2. InvoiceSession — Reaktif Frontend Entegrasyonu
+## 2. InvoiceSession — Reaktif Frontend Entegrasyonu (AR-10, v2.1.0+)
 
-Frontend'de canlı veri girişi sırasında **her değişiklikte** otomatik hesaplama, tip/profil geçişi ve UI state derivation sağlar:
+Frontend'de canlı veri girişi sırasında **path-based update + field-level events + line-level FieldVisibility + validator pipeline** sağlar:
 
 ```typescript
-import { InvoiceSession } from 'json2ubl-ts';
+import { InvoiceSession, SessionPaths } from 'json2ubl-ts';
 
 const session = new InvoiceSession();
 
-// ── Event Dinleme (React/Vue/Svelte state güncellemeleri) ──
+// ── Path-based update (TEK MUTATE GATEWAY, AR-10) ──
 
-session.on('calculated', (calc) => {
-  // calc.monetary.payableAmount — ödenecek tutar
-  // calc.taxes.taxTotal — toplam vergi
-  // calc.type / calc.profile — otomatik tespit edilen tip/profil
-  updateTotals(calc);
-});
-
-session.on('type-changed', ({ type, profile, previousType, previousProfile }) => {
-  // Tip değişti → UI güncelle
-  // Örn: TICARIFATURA → IADE seçildi → profil otomatik TEMELFATURA olur
-  updateTypeSelector(type, profile);
-});
-
-session.on('ui-state-changed', (state) => {
-  // state.fields.showBillingReference → İade ref. alanı göster/gizle
-  // state.fields.showWithholdingTaxSelector → Tevkifat seçici göster/gizle
-  // state.fields.showOzelMatrah → Özel matrah alanları göster/gizle
-  // state.allowedProfiles → Profil dropdown seçenekleri
-  // state.allowedTypes → Tip dropdown seçenekleri
-  updateFormLayout(state);
-});
-
-session.on('warnings', (warnings) => {
-  // [{field: 'billingReference', message: '...', severity: 'error'}]
-  showValidationMessages(warnings);
-});
-
-// ── Veri Güncelleme ──
-
-session.setSender({ taxNumber: '1234567890', name: 'Firma', taxOffice: 'VD', address: 'Adres', district: 'İlçe', city: 'İl' });
-session.setCustomer({ taxNumber: '9876543210', name: 'Müşteri', taxOffice: 'VD', address: 'Adres', district: 'İlçe', city: 'İl' });
+session.update(SessionPaths.senderTaxNumber, '1234567890');
+session.update(SessionPaths.senderName, 'Firma A.Ş.');
+session.update(SessionPaths.customerTaxNumber, '9876543210');
 
 session.addLine({ name: 'Ürün A', quantity: 10, price: 100, kdvPercent: 20 });
-session.addLine({ name: 'Ürün B', quantity: 5, price: 200, kdvPercent: 10 });
+session.update(SessionPaths.lineKdvPercent(0), 18);             // tek alan, line-level
 
-// Satır güncelleme (tevkifat ekle → tip otomatik TEVKIFAT olur)
-session.updateLine(0, { withholdingTaxCode: '601' });
+// Tip değiştir → profil auto-resolve (IADE → TEMELFATURA otomatik)
+session.update(SessionPaths.type, 'IADE');
 
-// Tip değiştir (IADE → profil otomatik TEMELFATURA)
-session.setType('IADE');
-session.setBillingReference({ id: 'ABC2025000000001', issueDate: '2025-01-15' });
+// Liability değiştir → profil auto-resolve (earchive → EARSIVFATURA otomatik)
+session.update(SessionPaths.liability, 'earchive');
 
-// Profil değiştir (IHRACAT → buyerCustomer alanı aktif olur)
-session.setProfile('IHRACAT');
-
-// Para birimi değiştir
-session.setCurrency('USD', 32.50);
+// Çift indeks (line.taxes[ti])
+session.update(SessionPaths.lineTaxCode(0, 0), '0071');
+session.update(SessionPaths.lineTaxPercent(0, 0), 25);
 
 // XML üret
 const xml = session.buildXml();
 ```
 
-### Session API Referansı
+### Event Dinleme (React/Vue/Svelte state güncellemeleri)
+
+```typescript
+// 1. Field-level events (granüler, ilk emit)
+session.on('field-changed', ({ path, value, previousValue, requestedValue, forcedReason }) => {
+  // path: 'sender.taxNumber' | 'lines[0].kdvPercent' vb.
+  // requestedValue + forcedReason: D-12 force durumunda dolar (örn. isExport=true tip ISTISNA force)
+});
+
+session.on('field-activated', ({ path, reason }) => {
+  // path: 'fields.showWithholdingTaxSelector' (visibility false → true)
+  ui.show(path);
+});
+
+session.on('field-deactivated', ({ path, reason }) => ui.hide(path));
+
+session.on('line-field-changed', ({ lineIndex, path, field, value }) => {
+  // line-level update'ler için ek granüler event
+});
+
+// 2. Path validation reddi (D-Seçenek B)
+session.on('path-error', ({ code, path, reason, requestedValue }) => {
+  // code: 'INVALID_PATH' | 'READ_ONLY_PATH' | 'UNKNOWN_PATH' | 'INDEX_OUT_OF_BOUNDS'
+  //     | 'PROFILE_EXPORT_MISMATCH' | 'PROFILE_LIABILITY_MISMATCH' | 'LIABILITY_LOCKED_BY_EXPORT'
+  showError(code, reason);
+});
+
+// 3. UI state snapshot
+session.on('ui-state-changed', (state) => {
+  // state.fields: doc-level FieldVisibility (18 boolean)
+  // state.lineFields[i]: line-level LineFieldVisibility (10 boolean per line)
+  // state.allowedProfiles, state.allowedTypes, state.availableExemptions
+  setUIState(state);
+});
+
+// 4. Validation
+session.on('warnings', (warnings: ValidationWarning[]) => showWarnings(warnings));
+session.on('validation-error', (errors: ValidationError[]) => debugLog(errors));   // raw stream
+
+// 5. Snapshot events (geriye uyumlu)
+session.on('type-changed', ({ type, profile }) => {});
+session.on('profile-changed', ({ profile, type }) => {});
+session.on('liability-changed', ({ liability }) => {});
+session.on('calculated', (calc) => {});
+session.on('changed', (input) => {});
+
+// 6. Runtime exception (calculate throw vb.) — path-related için 'path-error' kullan
+session.on('error', (err: Error) => {});
+```
+
+### Session API Referansı (v2.1.0)
 
 ```typescript
 class InvoiceSession extends EventEmitter {
+  // Constructor
+  constructor(options?: {
+    initialInput?: Partial<SimpleInvoiceInput>;
+    isExport?: boolean;                         // readonly, M10 kontratı
+    liability?: 'einvoice' | 'earchive';
+    autoCalculate?: boolean;
+    allowReducedKdvRate?: boolean;              // M4 / B-78.1 opt-in
+  });
+
   // Getter'lar
   get input(): SimpleInvoiceInput;
   get calculation(): CalculatedDocument | null;
-  get uiState(): InvoiceUIState;
+  get uiState(): InvoiceUIState;                // .fields + .lineFields[]
   get fields(): FieldVisibility;
   get warnings(): ValidationWarning[];
+  get liability(): CustomerLiability | undefined;
+  get isExport(): boolean;
 
-  // Taraf yönetimi
-  setSender(sender: SimplePartyInput): void;
-  setCustomer(customer: SimplePartyInput): void;
-  setBuyerCustomer(buyer: SimpleBuyerCustomerInput | undefined): void;
+  // ✨ TEK MUTATE GATEWAY (AR-10) ✨
+  update<P extends keyof SessionPathMap>(path: P, value: SessionPathMap[P]): void;
 
-  // Tip/Profil (otomatik uyumluluk)
-  setType(type: string): void;
-  setProfile(profile: string): void;
-
-  // Satır yönetimi
+  // Line CRUD (path-based değil — array operations)
   addLine(line: SimpleLineInput): void;
   updateLine(index: number, updates: Partial<SimpleLineInput>): void;
   removeLine(index: number): void;
   setLines(lines: SimpleLineInput[]): void;
 
-  // Özel alanlar
-  setCurrency(code: string, exchangeRate?: number): void;
-  setBillingReference(ref: SimpleBillingReferenceInput | undefined): void;
-  setPaymentMeans(pm: SimplePaymentMeansInput | undefined): void;
-  setKdvExemptionCode(code: string | undefined): void;
-  setOzelMatrah(om: SimpleOzelMatrahInput | undefined): void;
-  setSgkInfo(sgk: SimpleSgkInput | undefined): void;
-
-  // Toplu güncelleme
-  setInput(input: SimpleInvoiceInput): void;
-  patchInput(patch: Partial<SimpleInvoiceInput>): void;
-
-  // Sorgulama
+  // Sorgulama (Mimsoft form dropdown'ları için kritik)
   getAllowedProfiles(type?: string): string[];
   getAllowedTypes(profile?: string): string[];
   getAvailableExemptions(): ExemptionDefinition[];
-  validate(): ValidationWarning[];
+  getAvailableBillingDocumentTypeCodes(): { code: string; label: string; forced: boolean }[];
 
   // Çıktı
   calculate(): CalculatedDocument | null;
-  toInvoiceInput(): InvoiceInput;
+  validate(): ValidationWarning[];
+  toInvoiceInput(): InvoiceInput;               // D-3 reference equality cache
   buildXml(options?: { validationLevel?: 'none' | 'basic' | 'strict' }): string;
 }
 ```
 
-### FieldVisibility — UI Alan Kontrolü
+### Path-based Update — Geçiş (v2.0.0 → v2.1.0)
+
+| v2.0.0 (kaldırıldı) | v2.1.0 (yeni) |
+|---|---|
+| `setSender(party)` | `update(SessionPaths.senderTaxNumber, x)` + ... |
+| `setType('TEVKIFAT')` | `update(SessionPaths.type, 'TEVKIFAT')` |
+| `setProfile('IHRACAT')` | constructor `{ isExport: true }` + `getAllowedProfiles()` |
+| `setLiability('earchive')` | `update(SessionPaths.liability, 'earchive')` |
+| `setCurrency('USD', 32)` | `update(SessionPaths.currencyCode, 'USD')` + `update(SessionPaths.exchangeRate, 32)` |
+| `setKdvExemptionCode('351')` | `update(SessionPaths.kdvExemptionCode, '351')` |
+| `setBillingReference(ref)` | `update(SessionPaths.billingReferenceId, ref.id)` + ... |
+| `setPaymentMeans(pm)` | `update(SessionPaths.paymentMeansMeansCode, '1')` + ... |
+| `setInput(full)` / `patchInput(patch)` | constructor `{ initialInput }` veya path-based update sequence |
+
+Migration disiplini: Mimsoft form akışı tek mutate noktasından (`update`) geçer; `SessionPaths` map TypeScript autocomplete + compile-time tip kontrolü sağlar.
+
+### LineFieldVisibility (Line-level UI, AR-10)
 
 ```typescript
-interface FieldVisibility {
-  showBillingReference: boolean;         // İade fatura ref. alanı
-  showWithholdingTaxSelector: boolean;   // Tevkifat kodu seçici
-  showExemptionCodeSelector: boolean;    // İstisna kodu seçici
-  showOzelMatrah: boolean;               // Özel matrah alanları
-  showSgkInfo: boolean;                  // SGK bilgi alanları
-  showBuyerCustomer: boolean;            // İhracat alıcı bilgisi
-  showLineDelivery: boolean;             // Satır teslimat bilgileri
-  showPaymentMeans: boolean;             // Ödeme bilgisi
-  requireIban: boolean;                  // IBAN zorunlu mu
-  showExchangeRate: boolean;             // Döviz kuru alanı
-  showEArchiveInfo: boolean;             // e-Arşiv gönderim bilgisi
-  showOnlineSale: boolean;               // Online satış bilgisi
-  showInvoicePeriod: boolean;            // Fatura dönemi
-  showYatirimTesvikNo: boolean;          // YTB numarası
-  showAdditionalItemIdentifications: boolean; // IMEI vb.
-  showCommodityClassification: boolean;  // Yatırım teşvik sınıflandırma
-  showTaxRepresentativeParty: boolean;   // Yolcu beraberi VD temsilcisi
+interface LineFieldVisibility {
+  showKdvExemptionCodeSelector: boolean;        // line.kdvPercent === 0 + non-self-exemption
+  showWithholdingTaxSelector: boolean;          // type=TEVKIFAT|TEVKIFATIADE
+  showWithholdingPercentInput: boolean;         // withholdingTaxCode === '650' (dinamik)
+  showLineDelivery: boolean;                    // IHRACAT veya IHRACKAYITLI
+  showCommodityClassification: boolean;         // IHRACKAYITLI + line.kdvExemptionCode === '702'
+  showAlicidibsatirkod: boolean;                // IHRACKAYITLI + 702
+  showAdditionalItemIdentifications: boolean;   // TEKNOLOJIDESTEK / ILACTIBBI / IDIS
+  showItemClassificationCode: boolean;          // YATIRIMTESVIK harcama tipi
+  showProductTraceId: boolean;                  // YATIRIMTESVIK + itemClassificationCode === '01'
+  showSerialId: boolean;                        // YATIRIMTESVIK Kod 01 makine
 }
+
+// Erişim:
+session.uiState.lineFields[lineIndex].showCommodityClassification  // boolean
+```
+
+### Liability ve isExport Davranışı (M10 kontratı)
+
+- **`isExport`**: constructor-only, readonly. `update('isExport', x)` → `path-error` (`READ_ONLY_PATH`).
+- **`isExport=true`** session'da:
+  - profil otomatik `IHRACAT`, tip otomatik `ISTISNA` (M2 identity).
+  - `update('type', 'SATIS')` → `field-changed` payload `{ value: 'ISTISNA', requestedValue: 'SATIS', forcedReason: 'isExport=true' }` (D-12).
+  - `update('liability', x)` → `path-error` (`LIABILITY_LOCKED_BY_EXPORT`), state değişmez.
+- **`liability`** path-based: `update(SessionPaths.liability, 'einvoice' | 'earchive' | undefined)`. Profile auto-resolve (örn. `earchive` + `TICARIFATURA` → `EARSIVFATURA`).
+- **Profile constraint**: `update('profile', 'TICARIFATURA')` `liability='earchive'` ise → `path-error` (`PROFILE_LIABILITY_MISMATCH`).
+
+### React Hook Örneği (Mimsoft)
+
+```typescript
+function useInvoiceSession(initialInput?: Partial<SimpleInvoiceInput>) {
+  const session = useMemo(() => new InvoiceSession({ initialInput }), []);
+  const [uiState, setUIState] = useState(session.uiState);
+
+  useEffect(() => {
+    session.on('ui-state-changed', setUIState);
+    return () => session.off('ui-state-changed', setUIState);
+  }, [session]);
+
+  return { session, uiState };
+}
+
+// Form bileşeni
+const { session, uiState } = useInvoiceSession();
+
+<input onChange={e => session.update(SessionPaths.senderTaxNumber, e.target.value)} />
+{uiState.fields.showWithholdingTaxSelector && <WithholdingDropdown />}
+{uiState.lineFields[0]?.showCommodityClassification && <GtipInput />}
 ```
 
 ---
