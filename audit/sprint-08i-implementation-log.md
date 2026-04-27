@@ -522,3 +522,31 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - §2.X format Sprint 8h.10 §2.X "v2.1.0+" pattern'iyle uyumlu
 
 ---
+
+## Sprint 8i.13 — CHANGELOG v2.2.0 + Migration Guide + version bump
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.13: CHANGELOG v2.2.0 + Migration Guide v2.1.0→v2.2.0 + version bump (AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `CHANGELOG.md` v2.2.0 entry eklendi:
+   - Header: SuggestionEngine (AR-10 Faz 2) summary
+   - Added: Suggestion tip + engine + 23 kural + dikhotomi kontrat + benchmark + parity regression
+   - Changed: buildXml allowReducedKdvRate opt-in fix + SessionEvents.suggestion + event sıralaması 19→20
+   - Sapmalar: Plan §3'te 25 → 23 (Kural 4 ertelendi + paymentmeans-code-default atlandı + S-6 ertelendi)
+   - Migration Guide v2.1.0 → v2.2.0: backward compatible, sadece suggestion event listener ekleme
+
+2. `package.json` version bump: **2.1.0 → 2.2.0**
+
+### Test
+
+- 1694/1694 yeşil (sadece docs + version bump, kod değişmedi)
+
+### Disiplin
+
+- Faz 2 fully backward compatible (BREAKING CHANGES yok, additive)
+- v2.2.0 publish hazırlığı tamam (Berkay manuel publish)
+- Sprint 8h v2.1.0 + Sprint 8i v2.2.0 → tek release v2.2.0
+
+---

@@ -2,6 +2,73 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [2.2.0] — 2026-04-27
+
+**SuggestionEngine (AR-10 Faz 2).** Reactive InvoiceSession Faz 2: validator-error'lardan ayrı **advisory** kanal — "bu varsayılanı seçmek istemez misin?" tarzı UI önerileri. 23 kural, batch event payload, primary key bazlı diff. Sprint 8i (15 atomik commit, 1407→1694 test, +287). Faz 1 + Faz 2 birlikte tek release.
+
+### Added
+
+- **`Suggestion` tip** + **`SuggestionRule` interface** (T-6 deklaratif): `path`, `value`, `reason`, `severity` (recommended|optional), `ruleId` (namespace `{domain}/{slug}`), opsiyonel `displayLabel`/`displayValue`.
+- **`runSuggestionEngine(input, ui)`** (`src/calculator/suggestion-engine.ts`): pure function, full liste döner (T-2, T-7).
+- **`diffSuggestions(prev, next)`** primary key bazlı diff (T-2): `${ruleId}::${path}` key, value/reason/severity değişimi changed tetikler. Object reference karşılaştırma yapılmaz (R3 mitigation).
+- **`suggestion` event** (T-3 batch payload): `Suggestion[]` — yeni veya değişmiş öneriler. Boş diff (added=0 && changed=0) → emit YOK. `removed` array hesaplanır ama emit edilmez (T-4 — `suggestionResolved` event yok, sonraki tick'te yokluğu UI fark eder).
+- **`InvoiceSession._lastSuggestions`** private field — diff state. Engine pure, session diff stateful (T-2 ile uyumlu).
+- **`InvoiceSession._runSuggestionPipeline()`** — `validate()` sonunda otomatik çağrılır. Event sıralaması §4.2: 16. `warnings` → 17. engine → 18. diff → 19. `suggestion`.
+- **23 suggestion kuralı** domain bazlı (T-6, `src/calculator/suggestion-rules/`):
+  - **KDV (7):** `kdv/zero-suggest-351`, `kdv/ytb-istisna-suggest-308`, `kdv/ytb-istisna-suggest-339`, `kdv/exemption-mismatch-tax-type`, `kdv/manual-exemption-suggest-line-distribution`, `kdv/reduced-rate-suggest-1`, `kdv/reduced-rate-suggest-8-10`
+  - **Tevkifat (5):** `withholding/tevkifat-default-codes`, `withholding/650-percent-required`, `withholding/profile-tevkifat-suggests-ticarifatura`, `withholding/exemption-conflict`, `withholding/ytb-tevkifat-itemclass-required`
+  - **IHRACKAYITLI (3):** `ihrackayitli/702-default-suggestion`, `ihrackayitli/702-gtip-required`, `ihrackayitli/702-alicidib-required`
+  - **YATIRIMTESVIK (4):** `yatirim-tesvik/itemclass-default`, `yatirim-tesvik/makine-traceid-required`, `yatirim-tesvik/makine-serialid-required`, `yatirim-tesvik/insaat-suggest-itemclass-02` (heuristic, R5 izleme)
+  - **Delivery (3):** `delivery/ihracat-incoterms-required`, `delivery/gtip-format-12-digit`, `delivery/transport-mode-suggest-ihracat`
+  - **Misc (2):** `currency/exchange-rate-required`, `paymentmeans/iban-format-tr`
+- **Suggestion ↔ Validator dikhotomi paralel kontratı** (master plan §3.3): aynı path için iki kanal paralel emit edilebilir; UI iki mesajı yan yana sunar (kırmızı hata + mavi öneri). Test enforcement: `__tests__/calculator/invoice-session-dichotomy.test.ts`.
+- **Performance benchmark** (R2 mitigation): suggestion engine ≤5ms (gerçek 0.010-0.027ms — 500x altı), toplam pipeline ≤15ms (gerçek 0.137ms — 100x altı). `__tests__/benchmarks/suggestion-engine.bench.test.ts`.
+- **Examples session parity regression**: 34 invoice senaryo (`__tests__/examples/session-parity.test.ts`) + 116 invoice examples-matrix (`__tests__/examples-matrix/full-session-parity.test.ts`) = **150 senaryo regression**. İrsaliye senaryoları skip (DespatchBuilder, kapsam dışı).
+- **README §2.X**: SuggestionEngine API rehberi (Faz 2, v2.2.0+).
+
+### Changed
+
+- **`InvoiceSession.buildXml()`** `allowReducedKdvRate` opt-in **artık builder'a geçiriliyor** (Sprint 8h hijyen fix — 30-feature-555 senaryosu yakaladı).
+- **`SessionEvents` interface**: `suggestion: Suggestion[]` event tipi eklendi.
+- **Event sıralaması**: 19 event'ten 20 event'e (suggestion son adım, sıralama §4.2 kilitli).
+
+### Sapmalar (Plan'a Göre)
+
+Plan §3'de 25 kural önerilmişti, **23 kural net**:
+1. **Kural 4 ertelendi** (`kdv/zero-clear-exemption-on-rate-change`): transition state gerektiriyor (engine pure prensibi — T-2 ile çakışıyor). Sprint 8j'ye ertelendi (R6).
+2. **`paymentmeans/payment-means-code-default` ATLANDI**: `SimplePaymentMeansInput.meansCode` required (boş olamaz, kural tetiklenmez).
+3. **S-6 path sequence converter Sprint 8j'ye ertelendi**: Sprint 8h.9'daki `buildSessionFromInput` `initialInput` pattern'i zaten XML output regression değerini sağlıyor. Path sequence formatı (50+ ardışık update) **incremental flow** test eder; bu Sprint 8j'ye ertelendi.
+
+### Migration Guide (v2.1.0 → v2.2.0)
+
+Faz 2 **fully backward compatible** — mevcut kod değişmeden çalışır. Sadece yeni `suggestion` event listener eklenir:
+
+```typescript
+// v2.2.0: yeni suggestion event listener
+import { InvoiceSession } from 'json2ubl-ts';
+import type { Suggestion } from 'json2ubl-ts/calculator/suggestion-types';
+
+const session = new InvoiceSession({ /* ... */ });
+
+session.on('suggestion', (suggestions: Suggestion[]) => {
+  for (const s of suggestions) {
+    showAdvisoryHint({
+      path: s.path,            // 'lines[0].kdvExemptionCode'
+      value: s.value,          // '351'
+      reason: s.reason,        // Türkçe tooltip
+      severity: s.severity,    // 'recommended' | 'optional'
+    });
+  }
+});
+
+// User accepts → session.update kullanılır
+session.update(suggestion.path as any, suggestion.value);
+```
+
+Detay: `README.md` §2.X, `audit/sprint-08i-tasarim.md`.
+
+---
+
 ## [2.1.0] — 2026-04-27
 
 **Reactive InvoiceSession (AR-10) — Faz 1 / Çekirdek.** Mimsoft Next.js entegrasyonu için path-based update API + field-level events + line-level FieldVisibility + validator pipeline + B-78 köprü. Sprint 8h (14 atomik commit).
