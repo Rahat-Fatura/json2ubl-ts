@@ -244,3 +244,39 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - Plan'dan sapma yok. Severity tamamı recommended (3/3).
 
 ---
+
+## Sprint 8i.5 — YATIRIMTESVIK grubu (4 kural)
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.5: YATIRIMTESVIK grubu suggestion kuralları (4 kural, AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `src/calculator/suggestion-rules/yatirim-tesvik-suggestions.ts` (yeni, ~140 satır):
+   1. `yatirim-tesvik/itemclass-default` (recommended) — boş itemClass + insaat hint YOK → 01
+   2. `yatirim-tesvik/makine-traceid-required` (recommended) — itemClass=01 + traceId boş
+   3. `yatirim-tesvik/makine-serialid-required` (recommended) — itemClass=01 + serialId boş
+   4. `yatirim-tesvik/insaat-suggest-itemclass-02` (optional, R5 heuristic) — name/description "inşaat" → 02
+
+   - Kural 1 ↔ Kural 4 mutually exclusive (Kural 1 applies'ı `!hasInsaatHint(line)`)
+   - INSAAT_PATTERN: `/(inşaat|insaat|yapı|yapi|construction)/`
+   - Türkçe locale lower-case (`toLocaleLowerCase('tr-TR')`) — JS `/i` flag Türkçe İ↔i case folding standart yapmaz, manuel normalize gerekiyor
+
+2. `src/calculator/suggestion-rules/index.ts` modifikasyonu — YATIRIM_TESVIK_SUGGESTIONS spread.
+
+3. `__tests__/calculator/suggestion-rules/yatirim-tesvik-suggestions.test.ts` (yeni, 14 test):
+   - 4 kural × 3-4 test (heuristic için ek edge: name vs description, Türkçe karakter normalize)
+
+### Test
+
+- Başlangıç: 1481/1481 yeşil
+- Son: **1495/1495 yeşil** (+14 test, hedef +13)
+- İlk run'da 2 fail: Türkçe `İ` harfinin JS `/i` flag ile ASCII `i`'ye case fold edilmemesi. Çözüm: `toLocaleLowerCase('tr-TR')` ile normalize.
+
+### Disiplin
+
+- Plan'dan tasarım sapması yok. Türkçe karakter normalizasyon küçük bir keşif (fix uygulandı).
+- Severity dağılımı: 3 recommended + 1 optional (T-1 Kural 4 heuristic = optional)
+- R5 mitigation: Kural 4 false positive izleme — heuristic optional, validator dublike değil
+
+---
