@@ -501,11 +501,16 @@ function buildSingleLine(
 function buildBillingReference(simple: SimpleInvoiceInput, calc: CalculatedDocument): BillingReferenceInput {
   const isIadeGroup = ['IADE', 'TEVKIFATIADE', 'YTBIADE', 'YTBTEVKIFATIADE'].includes(calc.type);
 
-  // Schematron IADEInvioceCheck: IADE grubu tiplerinde DocumentTypeCode='IADE' zorunlu
-  // Diğer tiplerde kullanıcının seçtiği değer geçerli
-  const documentTypeCode = isIadeGroup
-    ? 'IADE'
-    : simple.billingReference!.documentTypeCode;
+  // Schematron IADEInvioceCheck: IADE grubu tiplerinde DocumentTypeCode='IADE' zorunlu.
+  //
+  // Sprint 8g.2 (B-NEW-v2-05): Önceki davranış — kullanıcı yanlış kod verirse de
+  // mapper zorla 'IADE' atıyordu (silent override). Berkay kararıyla değiştirildi:
+  // - Kullanıcı değer verdiyse, MAPPER OLDUĞU GİBİ TAŞIR (validator B-31 yakalar).
+  // - Kullanıcı vermediyse + IADE grubu, default 'IADE' (mevcut compat davranış).
+  const userValue = simple.billingReference!.documentTypeCode;
+  const documentTypeCode = userValue !== undefined
+    ? userValue
+    : (isIadeGroup ? 'IADE' : undefined);
 
   return {
     invoiceDocumentReference: {

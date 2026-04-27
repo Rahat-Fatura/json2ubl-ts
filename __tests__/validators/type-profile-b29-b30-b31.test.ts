@@ -150,6 +150,62 @@ describe('type-validators — B-31 IADE DocumentTypeCode zorunluluğu', () => {
     const errors = validateByType(input);
     expect(errors.filter(e => e.path?.endsWith('documentTypeCode'))).toHaveLength(0);
   });
+
+  // Sprint 8g.2 (B-NEW-v2-05) — SimpleInvoiceBuilder mapper davranış testleri.
+  // Önceki davranış: mapper IADE grubu için 'IADE' literal'ını silent override
+  // ediyor; kullanıcı 'DIGER' verse de 'IADE' yazılıyordu. Yeni davranış:
+  // kullanıcı verdiği değer korunur, validator B-31 yakalar.
+  describe('Sprint 8g.2 — SimpleInvoiceBuilder mapper IADE doctype passthrough', () => {
+    function simpleInput(billingDoctype?: string): any {
+      return {
+        id: 'AUD2026000000005',
+        uuid: 'a1d2026a-0005-4000-8001-000000000005',
+        datetime: '2026-04-27T10:00:00',
+        profile: 'TEMELFATURA', type: 'IADE', currencyCode: 'TRY',
+        billingReference: {
+          id: 'AUD2026000000001',
+          issueDate: '2026-04-24',
+          ...(billingDoctype !== undefined ? { documentTypeCode: billingDoctype } : {}),
+        },
+        sender: { taxNumber: '1234567890', name: 'X', taxOffice: 'Y',
+          address: 'A', district: 'B', city: 'C' },
+        customer: { taxNumber: '9876543210', name: 'X', taxOffice: 'Y',
+          address: 'A', district: 'B', city: 'C' },
+        lines: [{ name: 'İade', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+      };
+    }
+
+    it('IADE + kullanıcı documentTypeCode="DIGER" → TYPE_REQUIREMENT (artık silent override yok)', async () => {
+      const { SimpleInvoiceBuilder } = await import('../../src/calculator/simple-invoice-builder');
+      const { UblBuildError } = await import('../../src/errors/ubl-build-error');
+      const builder = new SimpleInvoiceBuilder({ validationLevel: 'strict' });
+      try {
+        builder.build(simpleInput('DIGER'));
+        throw new Error('Beklenmedik success — DIGER kabul edildi');
+      } catch (e) {
+        expect(e).toBeInstanceOf(UblBuildError);
+        const errs = (e as InstanceType<typeof UblBuildError>).errors;
+        const err = errs.find(x => x.path?.endsWith('documentTypeCode'));
+        expect(err?.code).toBe('TYPE_REQUIREMENT');
+        expect(err?.message).toContain('IADE');
+      }
+    });
+
+    it('IADE + kullanıcı documentTypeCode="IADE" → pas', async () => {
+      const { SimpleInvoiceBuilder } = await import('../../src/calculator/simple-invoice-builder');
+      const builder = new SimpleInvoiceBuilder({ validationLevel: 'strict' });
+      const result = builder.build(simpleInput('IADE'));
+      expect(result.xml).toContain('<cbc:DocumentTypeCode>IADE</cbc:DocumentTypeCode>');
+    });
+
+    it('IADE + documentTypeCode hiç verilmezse → silent default "IADE" (mevcut compat)', async () => {
+      const { SimpleInvoiceBuilder } = await import('../../src/calculator/simple-invoice-builder');
+      const builder = new SimpleInvoiceBuilder({ validationLevel: 'strict' });
+      const result = builder.build(simpleInput(undefined));
+      // Backward compat: kullanıcı vermezse mapper IADE atar
+      expect(result.xml).toContain('<cbc:DocumentTypeCode>IADE</cbc:DocumentTypeCode>');
+    });
+  });
 });
 
 // Sprint 8f.2 (Bug #2): OZELMATRAH tipinde taxExemptionReasonCode zorunluluğu.
