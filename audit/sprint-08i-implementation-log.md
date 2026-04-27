@@ -365,3 +365,38 @@ mimari_karar: AR-10 Faz 2 (Sprint 8i, v2.2.0) — SuggestionEngine + diff event 
 - Multi-rule paralel kontratı: `kdv/exemption-mismatch-tax-type` + `withholding/exemption-conflict` aynı satırda 2 ayrı suggestion (path farklı)
 
 ---
+
+## Sprint 8i.8 — Performance bench (R2 mitigation)
+
+**Tarih:** 2026-04-27
+**Commit hedef başlığı:** `Sprint 8i.8: Performance bench — suggestion engine ≤5ms + toplam pipeline ≤15ms (AR-10 Faz 2)`
+
+### Yapılanlar
+
+1. `__tests__/benchmarks/suggestion-engine.bench.test.ts` (yeni, 5 test):
+   - **Suggestion alt-bütçe (≤5ms):**
+     - 100 satır × 23 kural × kdv=0 (max trigger) → **0.010ms**
+     - 100 satır × 23 kural × kdv=18 (min trigger, early exit) → **0.004ms**
+     - 500 satır stress kdv=0 → **0.027ms** (15ms threshold içi)
+     - Diff stable 100 suggestion (emit yok overhead) → **0.060ms**
+   - **Toplam pipeline (≤15ms):**
+     - update + validate + suggestion 100 satır → **0.137ms**
+
+### Test
+
+- Başlangıç: 1532/1532 yeşil
+- Son: **1537/1537 yeşil** (+5 test, plan +5)
+
+### Performance Kararı (R2)
+
+- **Suggestion bütçesi:** 5ms hedef vs 0.010-0.060ms gerçek → **500x altı**, R2 risk efektif yok hükmünde.
+- **Toplam pipeline threshold:** 15ms vs 0.137ms gerçek → **100x altı**, master plan §3.4 OK.
+- Kural caching/grouping refactor gereksiz — Faz 3'e ertelenebilir (T-7 ile uyumlu).
+- Sprint 8h.7.1 baseline (0.16ms) + suggestion (0.010ms) = 0.17ms — neredeyse fark yok.
+
+### Disiplin
+
+- Performance threshold enforce edildi (D-7 / 8h.7.1 pattern paralel).
+- "Aşılırsa dur ve sor" kapısı açık (bench fail → CI gate).
+
+---
