@@ -37,8 +37,36 @@ import { deriveUIState, resolveProfileForType, resolveTypeForProfile, validateIn
 import type { InvoiceInput } from '../types/invoice-input';
 import { mapSimpleToInvoiceInput } from './simple-invoice-mapper';
 import { SimpleInvoiceBuilder } from './simple-invoice-builder';
+import type { SessionPathMap } from './session-paths.generated';
+import { KNOWN_PATH_TEMPLATES, READ_ONLY_PATHS } from './session-paths.generated';
+import { parsePath, applyPathUpdate, readPath, deepEqual, tokensToTemplate, PathParseError } from './session-path-utils';
 
 // ─── Session Event Tipleri ───────────────────────────────────────────────────
+
+/**
+ * Path-based update reddedildiğinde emit edilen structured hata kodu (D-Seçenek B).
+ *
+ * 3 katmanlı hata hierarchy:
+ *   - 'error': Unexpected runtime exception (calculate throw, vb.)
+ *   - 'path-error': update() çağrısı reddedildi (path validation + constraint)
+ *   - 'validation-error': Business validation (validator pipeline raw stream, 8h.7)
+ */
+export type PathErrorCode =
+  | 'INVALID_PATH'                  // §1.4 Katman 1: parser syntax error
+  | 'READ_ONLY_PATH'                // §1.4 Katman 2: 'isExport' constructor-locked
+  | 'UNKNOWN_PATH'                  // §1.4 Katman 3: SessionPaths map'inde yok
+  | 'INDEX_OUT_OF_BOUNDS'           // §1.4 Katman 4: lines[5] but length=3
+  | 'PROFILE_EXPORT_MISMATCH'       // 8h.3: isExport=true ile çakışan profile (constraint)
+  | 'PROFILE_LIABILITY_MISMATCH'    // 8h.3: liability ile çakışan profile (constraint)
+  | 'LIABILITY_LOCKED_BY_EXPORT';   // M10: isExport=true session'da liability değiştirme
+
+export interface PathErrorPayload {
+  code: PathErrorCode;
+  path: string;
+  reason: string;
+  /** İhlal eden value (constraint check'te dolar) */
+  requestedValue?: unknown;
+}
 
 export interface SessionEvents {
   /** Her hesaplama sonrasında tetiklenir */
@@ -61,8 +89,17 @@ export interface SessionEvents {
   'changed': SimpleInvoiceInput;
   /** Liability değiştiğinde */
   'liability-changed': { liability: CustomerLiability | undefined; previousLiability: CustomerLiability | undefined };
-  /** Hata oluştuğunda */
+  /**
+   * Beklenmeyen runtime exception (calculate throw, vb.).
+   * NOT: Path-related rejection (READ_ONLY_PATH vb.) için 'path-error' event'i kullan.
+   */
   'error': Error;
+  /**
+   * Path-based update reddedildi (D-Seçenek B / Sprint 8h.2).
+   * 4 katmanlı path validation + constraint check sonrası emit edilir.
+   * update() çağrısı no-op döner; state mutate edilmez.
+   */
+  'path-error': PathErrorPayload;
 }
 
 export type SessionEventName = keyof SessionEvents;
@@ -208,6 +245,167 @@ export class InvoiceSession extends EventEmitter {
     this.updateUIState();
     this.emit('liability-changed', { liability, previousLiability });
     this.onChanged();
+  }
+
+  // ─── Path-Based Update API (Sprint 8h.2 / AR-10) ──────────────────────
+
+  /**
+   * Path-based reactive update (AR-10 ana giriş noktası).
+   *
+   * Generic tip türetimi (D-7 / D-8) ile compile-time tip kontrolü:
+   * ```ts
+   * session.update(SessionPaths.type, 'TEVKIFAT');               // string OK
+   * session.update(SessionPaths.lineKdvPercent(0), 18);          // number OK
+   * session.update(SessionPaths.lineKdvPercent(0), 'foo');       // ❌ compile-time error
+   * ```
+   *
+   * Path validation 4 katman + constraint check (§1.4):
+   *   1. Syntax  → `path-error` { code: 'INVALID_PATH' }
+   *   2. Read-only (isExport) → `path-error` { code: 'READ_ONLY_PATH' }
+   *   3. Unknown path (SessionPaths map'inde yok) → `path-error` { code: 'UNKNOWN_PATH' }
+   *   4. Index bounds (lines[5] ama length=3) → `path-error` { code: 'INDEX_OUT_OF_BOUNDS' }
+   *   constraint: liability isExport=true ise → `path-error` { code: 'LIABILITY_LOCKED_BY_EXPORT' }
+   *   (PROFILE_*_MISMATCH constraint'i Sprint 8h.3'te eklenir, eski setter mantığı taşınırken.)
+   *
+   * Diff detection: previousValue === newValue (deep) ise event yayılmaz, no-op.
+   *
+   * Field-level events (`fieldChanged`/`fieldActivated`/`fieldDeactivated`/`lineFieldChanged`)
+   * Sprint 8h.4'te eklenir. Bu commit'te update() mevcut `onChanged` zincirini tetikler:
+   * `changed` → `calculate` (autoCalculate) → `validate` → `warnings`.
+   */
+  update<P extends keyof SessionPathMap>(path: P, value: SessionPathMap[P]): void {
+    // Katman 1: Syntax parsing
+    let tokens;
+    try {
+      tokens = parsePath(path);
+    } catch (err) {
+      if (err instanceof PathParseError) {
+        this.emit('path-error', {
+          code: 'INVALID_PATH',
+          path,
+          reason: err.message,
+          requestedValue: value,
+        });
+        return;
+      }
+      throw err;
+    }
+
+    // Katman 2: Read-only path
+    if (READ_ONLY_PATHS.has(path)) {
+      this.emit('path-error', {
+        code: 'READ_ONLY_PATH',
+        path,
+        reason: `'${path}' is constructor-only and immutable`,
+        requestedValue: value,
+      });
+      return;
+    }
+
+    // Katman 3: SessionPaths map'inde mi?
+    const template = tokensToTemplate(tokens);
+    if (!KNOWN_PATH_TEMPLATES.has(template)) {
+      this.emit('path-error', {
+        code: 'UNKNOWN_PATH',
+        path,
+        reason: `path not in SessionPaths map (template: ${template})`,
+        requestedValue: value,
+      });
+      return;
+    }
+
+    // Katman 4: Index bounds (lines[i] ama length<i+1)
+    const indexErr = this._checkIndexBounds(tokens, path);
+    if (indexErr) {
+      this.emit('path-error', indexErr);
+      return;
+    }
+
+    // Constraint: liability path + isExport=true (M10 kontratı)
+    if (path === 'liability' && this._isExport) {
+      this.emit('path-error', {
+        code: 'LIABILITY_LOCKED_BY_EXPORT',
+        path,
+        reason: 'isExport=true session ignores liability changes',
+        requestedValue: value,
+      });
+      return;
+    }
+
+    // Diff detection — değişiklik yoksa no-op
+    const previousValue = this._readSessionValue(tokens, path);
+    if (deepEqual(previousValue, value)) return;
+
+    // Liability özel-durum: SimpleInvoiceInput dışı, _liability private field
+    if (path === 'liability') {
+      this._liability = value as CustomerLiability | undefined;
+      // Profile auto-resolve eski setLiability mantığında, 8h.3'te update()'e taşınacak.
+      // 8h.2'de minimum: liability değiştirildi, snapshot event emit + onChanged.
+      this.emit('liability-changed', {
+        liability: value as CustomerLiability | undefined,
+        previousLiability: previousValue as CustomerLiability | undefined,
+      });
+      this.updateUIState();
+      this.onChanged();
+      return;
+    }
+
+    // Standart input mutation (path-targeted clone)
+    this._input = applyPathUpdate(this._input, tokens, value);
+
+    // Type/profile/currency değişiminde uiState tazele (snapshot event'leri için).
+    // Geniş kapsam (her update sonrası uiState) Sprint 8h.8'de.
+    if (path === 'type' || path === 'profile' || path === 'currencyCode') {
+      this.updateUIState();
+    }
+
+    this.onChanged();
+  }
+
+  /**
+   * Path validation Katman 4: index bounds.
+   *
+   * Array CRUD (addLine/updateLine/setLines) path-based değil; index ile yeni
+   * element create EDİLMEZ. `taxes[0]` ile sparse array oluşturma engellenir:
+   * parent array undefined ise implicit length=0 → INDEX_OUT_OF_BOUNDS.
+   */
+  private _checkIndexBounds(
+    tokens: ReturnType<typeof parsePath>,
+    path: string,
+  ): PathErrorPayload | null {
+    let current: any = this._input;
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      if (token.kind === 'index') {
+        // Parent array undefined/null → length=0 implicit, index 0+ reddedilir
+        if (current === undefined || current === null) {
+          return {
+            code: 'INDEX_OUT_OF_BOUNDS',
+            path,
+            reason: `parent array is undefined (implicit length=0), cannot access index ${token.value}`,
+          };
+        }
+        if (!Array.isArray(current)) return null;   // type mismatch, Katman 3 atmalıydı
+        if (token.value >= current.length) {
+          return {
+            code: 'INDEX_OUT_OF_BOUNDS',
+            path,
+            reason: `index ${token.value} but length=${current.length}`,
+          };
+        }
+      }
+      current = token.kind === 'index' ? current[token.value] : (current ?? {})[token.value];
+    }
+    return null;
+  }
+
+  /** SessionPaths value oku (liability özel-durum: _liability private field). */
+  private _readSessionValue(
+    tokens: ReturnType<typeof parsePath>,
+    path: string,
+  ): unknown {
+    if (path === 'liability') return this._liability;
+    return readPath(this._input, tokens);
   }
 
   // ─── Taraf Yönetimi ─────────────────────────────────────────────────────
