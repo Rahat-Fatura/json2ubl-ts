@@ -175,12 +175,36 @@ export function applyPathUpdate<T>(input: T, tokens: PathToken[], value: unknown
 
 /**
  * Deep equality kontrolü (diff detection için).
- * Primitive: === ; Object/Array: structural compare.
+ * Primitive: Object.is (NaN === NaN, +0 ≠ -0) ; Object/Array: structural compare.
  *
- * Implementation: node:util isDeepStrictEqual (zero dep, Node 16+).
+ * Browser-safe inline implementation. v2.2.1'de `node:util.isDeepStrictEqual`
+ * kullanılıyordu; Next.js Turbopack `compiled/util` polyfill'inde export
+ * edilmediği için runtime'da `isDeepStrictEqual is not a function` atıyordu
+ * (Mimsoft form crash). v2.2.2'den itibaren Node ve browser ortamlarında
+ * deterministik çalışır.
+ *
+ * Kapsam: primitive, plain object, array. Date/RegExp/Map/Set yok — Mimsoft
+ * input modeli (SimpleInvoiceInput) bu tipleri kullanmıyor.
  */
-import { isDeepStrictEqual } from 'node:util';
-
 export function deepEqual(a: unknown, b: unknown): boolean {
-  return isDeepStrictEqual(a, b);
+  if (Object.is(a, b)) return true;
+  if (a == null || b == null) return false;
+  if (typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) {
+    const arrB = b as unknown[];
+    if (a.length !== arrB.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!deepEqual(a[i], arrB[i])) return false;
+    }
+    return true;
+  }
+  const objA = a as Record<string, unknown>;
+  const objB = b as Record<string, unknown>;
+  const keysA = Object.keys(objA);
+  if (keysA.length !== Object.keys(objB).length) return false;
+  for (const k of keysA) {
+    if (!deepEqual(objA[k], objB[k])) return false;
+  }
+  return true;
 }

@@ -2,6 +2,20 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [2.2.2] — 2026-04-28
+
+**Browser/Next.js uyumluluğu — `deepEqual` browser-safe inline.** Mimsoft Next.js Turbopack ortamında v2.2.1'in `InvoiceSession.update()` her path çağrısında runtime hata atması düzeltildi.
+
+### Fixed
+
+- **`deepEqual` browser-safe inline implementation** (`src/calculator/session-path-utils.ts`). v2.2.1 `import { isDeepStrictEqual } from 'node:util'` kullanıyordu; Next.js Turbopack `next/dist/compiled/util/util.js` polyfill'inde `isDeepStrictEqual` export edilmemesi nedeniyle browser'da `TypeError: ... is not a function` atıyordu. Hata `InvoiceSession.update(path, value)` her diff-detection çağrısında tetikleniyordu, dolayısıyla form ilk render'da crash ediyordu. Şimdi `Object.is` + structural compare ile inline yazıldı; Node ve browser ortamlarında deterministik çalışır. Davranış uyumu korundu: NaN === NaN (Object.is), +0 ≠ -0, plain object / array structural eşitlik. Date/RegExp/Map/Set kapsam dışı (Mimsoft input modelinde yok).
+
+### Migration Guide (v2.2.1 → v2.2.2)
+
+API değişikliği yok, sadece bug fix. Mimsoft ve diğer browser tüketicileri için `yarn upgrade json2ubl-ts@2.2.2` yeterli; herhangi bir kod değişikliği gerekmez.
+
+---
+
 ## [2.2.1] — 2026-04-28
 
 **Migration Hotfix.** Mimsoft monorepo migration (v1.4.2 → v2.2.0) için 3 kritik blocker fix'i. Tüm değişiklikler additive, breaking change yok. Sprint 8j (7 atomik commit, 1694→1724 test, +30).
