@@ -2,6 +2,60 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [2.2.1] — 2026-04-28
+
+**Migration Hotfix.** Mimsoft monorepo migration (v1.4.2 → v2.2.0) için 3 kritik blocker fix'i. Tüm değişiklikler additive, breaking change yok. Sprint 8j (7 atomik commit, 1694→1724 test, +30).
+
+### Added
+
+- **`SessionPaths` runtime export** (Bulgu 1): generated dosyada (`src/calculator/session-paths.generated.ts`) `SessionPaths` constant mevcuttu fakat ana paket entry'sinden re-export edilmiyordu. README'deki `import { SessionPaths } from '@rahat-fatura/json2ubl-ts'` örnekleri artık runtime'da çalışır. `SessionPathMap` tipi de re-export edildi.
+- **Party identifications path entries** (Bulgu 2 — 6 yeni entry):
+  - `senderIdentificationSchemeId(i)` / `senderIdentificationValue(i)` — `sender.identifications[i].schemeId/value`
+  - `customerIdentificationSchemeId(i)` / `customerIdentificationValue(i)` — `customer.identifications[i].schemeId/value`
+  - `buyerCustomerIdentificationSchemeId(i)` / `buyerCustomerIdentificationValue(i)` — `buyerCustomer.identifications[i].schemeId/value`
+  - Mimsoft kritik senaryolar: IDIS profili → SEVKIYATNO, KAMU profili → MUSTERINO (B-83), HKS profili → KUNYENO, çoklu schemeId (yolcu profilleri).
+  - **NOT:** Plan'da `taxRepresentativeParty.additionalIdentifiers` belirtilmişti fakat `SimpleTaxRepresentativeInput` tip kontratında bu alan yok (sadece `vknTckn`/`label`/`name`) — kapsamdan çıkarıldı.
+- **`InvoiceSession.unset(scope)`** (Bulgu 3): v1.x'in `setBillingReference(undefined)` semantiğinin path-based API karşılığı. `update('billingReference.id', undefined)` tip uyumsuz, empty string ise XML'de boş alan üretir; `unset(scope)` composite'i tamamen kaldırır.
+  - **`UnsetScope`** union tipi: `'billingReference' | 'paymentMeans' | 'ozelMatrah' | 'sgk' | 'invoicePeriod' | 'buyerCustomer' | 'taxRepresentativeParty' | 'eArchiveInfo' | 'onlineSale' | 'orderReference' | 'liability'`.
+  - Davranış: önceki value undefined ise no-op (idempotent); composite scope `_input[scope]` delete + `field-changed` event; liability scope `_liability = undefined` + `field-changed` + `liability-changed` event; `isExport=true` + scope==='liability' → `path-error` LIABILITY_LOCKED_BY_EXPORT (M10 simetrisi).
+  - `updateUIState()` + `onChanged()` tetiklenir.
+  - Sub-field path ile remount: D-6 sub-object create devam eder — `unset` sonrası `update('billingReference.id', 'X')` composite'i yeniden oluşturur.
+
+### Changed
+
+- **`InvoiceSession.update()` index bound check** (Sprint 8j.2): party identifications çoklu append için kritik.
+  - Parent array `undefined` + `index===0` → kabul (D-6 sub-object create ile boş array oluşturulur).
+  - `index === current.length` artık kabul (next-append, yeni element).
+  - `index > current.length` reddedilir (sparse skip korunur).
+  - Mevcut bound check testleri korunuyor (`lines[5]` length=0, `taxes[1]` undefined hâlâ INDEX_OUT_OF_BOUNDS).
+- **Generator script** (`scripts/generate-session-paths.ts`): inline literal array desteği — `Array<{...}>` ve `{...}[]` form'ları AST'den parse edip synthetic interface'e indirger; `addSubObjectEntries` sub-object array dalı eklendi.
+
+### Fixed
+
+- `SessionPaths` runtime'da yoktu (Sprint 8h.1 export hatası).
+- Party-level identifications array'leri SessionPathMap'ten eksikti.
+
+### Test
+
+- 1694 → 1724 (+30):
+  - SessionPaths public export (8j.1): +6 test (`__tests__/integration/session-paths-export.test.ts`)
+  - Party identifications (8j.2): +7 test (`__tests__/calculator/session-paths-party-identifications.test.ts`) + 1 generator regression test güncellemesi
+  - `unset(scope)` (8j.3): +16 test (`__tests__/calculator/invoice-session-unset.test.ts`)
+- 162 examples-matrix regression: hiçbir senaryo bozulmadı (tüm değişiklikler additive).
+
+### Migration v2.2.0 → v2.2.1
+
+Geri uyumlu — `npm install @rahat-fatura/json2ubl-ts@2.2.1` ile yeterli.
+
+```typescript
+// v2.2.0'da çalışmıyordu, v2.2.1'de çalışır:
+import { SessionPaths, InvoiceSession } from '@rahat-fatura/json2ubl-ts';
+
+const session = new InvoiceSession();
+session.update(SessionPaths.senderIdentificationSchemeId(0), 'MERSISNO');
+session.unset('billingReference');
+```
+
 ## [2.2.0] — 2026-04-27
 
 **SuggestionEngine (AR-10 Faz 2).** Reactive InvoiceSession Faz 2: validator-error'lardan ayrı **advisory** kanal — "bu varsayılanı seçmek istemez misin?" tarzı UI önerileri. 23 kural, batch event payload, primary key bazlı diff. Sprint 8i (15 atomik commit, 1407→1694 test, +287). Faz 1 + Faz 2 birlikte tek release.
