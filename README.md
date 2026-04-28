@@ -173,6 +173,17 @@ session.update(SessionPaths.liability, 'earchive');
 session.update(SessionPaths.lineTaxCode(0, 0), '0071');
 session.update(SessionPaths.lineTaxPercent(0, 0), 25);
 
+// Party identifications (v2.2.1+) — IDIS / KAMU / HKS profilleri için kritik
+session.update(SessionPaths.senderIdentificationSchemeId(0), 'MERSISNO');
+session.update(SessionPaths.senderIdentificationValue(0), '0123456789012345');
+session.update(SessionPaths.buyerCustomerIdentificationSchemeId(0), 'MUSTERINO');  // KAMU B-83
+session.update(SessionPaths.buyerCustomerIdentificationValue(0), 'MUS-9876');
+
+// Composite alanı temizleme (v2.2.1+) — v1.x setX(undefined) karşılığı
+session.unset('billingReference');         // tüm composite kaldırılır
+session.unset('paymentMeans');
+session.unset('liability');                // session-level state temizlenir
+
 // XML üret
 const xml = session.buildXml();
 ```
@@ -252,6 +263,12 @@ class InvoiceSession extends EventEmitter {
   // ✨ TEK MUTATE GATEWAY (AR-10) ✨
   update<P extends keyof SessionPathMap>(path: P, value: SessionPathMap[P]): void;
 
+  // Composite/scope reset (v2.2.1+) — v1.x setX(undefined) semantik karşılığı
+  unset(scope: UnsetScope): void;
+  // UnsetScope = 'billingReference' | 'paymentMeans' | 'ozelMatrah' | 'sgk'
+  //            | 'invoicePeriod' | 'buyerCustomer' | 'taxRepresentativeParty'
+  //            | 'eArchiveInfo' | 'onlineSale' | 'orderReference' | 'liability'
+
   // Line CRUD (path-based değil — array operations)
   addLine(line: SimpleLineInput): void;
   updateLine(index: number, updates: Partial<SimpleLineInput>): void;
@@ -283,10 +300,12 @@ class InvoiceSession extends EventEmitter {
 | `setCurrency('USD', 32)` | `update(SessionPaths.currencyCode, 'USD')` + `update(SessionPaths.exchangeRate, 32)` |
 | `setKdvExemptionCode('351')` | `update(SessionPaths.kdvExemptionCode, '351')` |
 | `setBillingReference(ref)` | `update(SessionPaths.billingReferenceId, ref.id)` + ... |
+| `setBillingReference(undefined)` | `unset('billingReference')` (v2.2.1+) |
 | `setPaymentMeans(pm)` | `update(SessionPaths.paymentMeansMeansCode, '1')` + ... |
+| `setPaymentMeans(undefined)` | `unset('paymentMeans')` (v2.2.1+) |
 | `setInput(full)` / `patchInput(patch)` | constructor `{ initialInput }` veya path-based update sequence |
 
-Migration disiplini: Mimsoft form akışı tek mutate noktasından (`update`) geçer; `SessionPaths` map TypeScript autocomplete + compile-time tip kontrolü sağlar.
+Migration disiplini: Mimsoft form akışı tek mutate noktasından (`update`) geçer; `SessionPaths` map TypeScript autocomplete + compile-time tip kontrolü sağlar. Composite alanları temizlemek için `unset(scope)` (v2.2.1+).
 
 ### LineFieldVisibility (Line-level UI, AR-10)
 
