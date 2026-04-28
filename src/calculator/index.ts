@@ -71,6 +71,7 @@ export type {
     SessionEventName,
     InvoiceSessionOptions,
     UnsetScope,
+    IdentificationParty,
 } from "./invoice-session";
 
 // SessionPaths runtime export (AR-10) — path-based update API için tip-güvenli sabit map.

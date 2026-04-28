@@ -29,7 +29,7 @@
  */
 
 import { EventEmitter } from 'events';
-import type { SimpleInvoiceInput, SimpleLineInput } from './simple-types';
+import type { SimpleInvoiceInput, SimpleLineInput, SimplePartyIdentification } from './simple-types';
 import type { CalculatedDocument } from './document-calculator';
 import { calculateDocument } from './document-calculator';
 import type { InvoiceUIState, ValidationWarning, FieldVisibility, CustomerLiability } from './invoice-rules';
@@ -222,6 +222,13 @@ export type UnsetScope =
   // ile array'i yeniden oluşturabilir.
   | 'despatchReferences'
   | 'additionalDocuments';
+
+/**
+ * `removeIdentification` / `setIdentifications` API'lerinde party tarafı
+ * (Sprint 8k.4 / Library Öneri #4 — v2.2.3). Buyer-customer kendi
+ * identifications'ı için "buyerCustomer" key'i kullanılır.
+ */
+export type IdentificationParty = 'sender' | 'customer' | 'buyerCustomer';
 
 // ─── Session Sınıfı ─────────────────────────────────────────────────────────
 
@@ -820,6 +827,76 @@ export class InvoiceSession extends EventEmitter {
     this.emit('field-changed', {
       path: scope,
       value: undefined,
+      previousValue,
+    });
+    this.updateUIState();
+    this.onChanged();
+  }
+
+  // ─── Identifications array splice/replace API (Sprint 8k.4 / v2.2.3) ───
+
+  /**
+   * Identifications array'inde belirli index'i siler (Library Öneri #4).
+   *
+   * Path-based `update()` API'si dizide index kaydırma yapamadığı için
+   * KAMU MUSTERINO / IDIS SEVKIYATNO ekle-sil akışında kritik. Schematron
+   * `<cbc:ID schemeID=""/>` tipi ihlalini önler.
+   *
+   * Davranış:
+   *   - Party objesi yok veya identifications undefined → no-op
+   *   - Index out of bounds → no-op
+   *   - Array tek elemanlı + son eleman silinirse → identifications field'ı
+   *     undefined yapılır (XML'de hiç görünmez)
+   *   - Diğer durumlarda filtered array yazılır, sonraki index'ler kaydırılır
+   *   - `field-changed` event emit (path: `${party}.identifications`)
+   */
+  removeIdentification(party: IdentificationParty, index: number): void {
+    const arr = this._input[party]?.identifications;
+    if (!arr || index < 0 || index >= arr.length) return;
+    const next = arr.length === 1 ? undefined : arr.filter((_, i) => i !== index);
+    this._setIdentificationsInternal(party, next);
+  }
+
+  /**
+   * Identifications array'ini tamamen değiştirir (Library Öneri #4).
+   *
+   * - undefined veya empty array → identifications field'ı undefined
+   * - Aksi halde array yeni reference ile atanır
+   * - deepEqual no-op (aynı içerik → emit yok)
+   * - Party objesi henüz mount edilmemişse no-op (önce party alanlarını
+   *   `update(SessionPaths.X, ...)` ile mount et)
+   */
+  setIdentifications(
+    party: IdentificationParty,
+    identifications: SimplePartyIdentification[] | undefined,
+  ): void {
+    const next = (!identifications || identifications.length === 0)
+      ? undefined
+      : identifications;
+    this._setIdentificationsInternal(party, next);
+  }
+
+  private _setIdentificationsInternal(
+    party: IdentificationParty,
+    next: SimplePartyIdentification[] | undefined,
+  ): void {
+    const partyObj = this._input[party];
+    if (!partyObj) return;   // party mount edilmemiş → caller önce party alanlarını set etmeli
+
+    const previousValue = partyObj.identifications;
+    if (deepEqual(previousValue, next)) return;
+
+    const updatedParty: Record<string, unknown> = { ...partyObj };
+    if (next === undefined) {
+      delete updatedParty.identifications;
+    } else {
+      updatedParty.identifications = next;
+    }
+    this._input = { ...this._input, [party]: updatedParty } as SimpleInvoiceInput;
+
+    this.emit('field-changed', {
+      path: `${party}.identifications`,
+      value: next,
       previousValue,
     });
     this.updateUIState();
