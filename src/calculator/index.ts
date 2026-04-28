@@ -71,6 +71,11 @@ export type {
     InvoiceSessionOptions,
 } from "./invoice-session";
 
+// SessionPaths runtime export (AR-10) — path-based update API için tip-güvenli sabit map.
+// Generator: scripts/generate-session-paths.ts (input: SimpleInvoiceInput).
+export { SessionPaths } from "./session-paths.generated";
+export type { SessionPathMap } from "./session-paths.generated";
+
 // Kurallar motoru ve UI state
 export {
     getAllowedProfilesForType,
