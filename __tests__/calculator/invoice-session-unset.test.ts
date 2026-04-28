@@ -172,6 +172,76 @@ describe('InvoiceSession.unset(scope) — composite removal (Sprint 8j.3)', () =
   });
 });
 
+describe('InvoiceSession.unset(scope) — array composite (Sprint 8k.3 / v2.2.3)', () => {
+  it('despatchReferences scope: set → unset clears array', () => {
+    const session = makeFilledSession();
+    session.update('despatchReferences[0].id', 'IRS-001');
+    session.update('despatchReferences[0].issueDate', '2026-04-28');
+    session.update('despatchReferences[1].id', 'IRS-002');
+    session.update('despatchReferences[1].issueDate', '2026-04-28');
+    expect(session.input.despatchReferences).toHaveLength(2);
+
+    session.unset('despatchReferences');
+    expect(session.input.despatchReferences).toBeUndefined();
+  });
+
+  it('despatchReferences: idempotent — second unset emits no event', () => {
+    const session = makeFilledSession();
+    session.update('despatchReferences[0].id', 'IRS-001');
+    session.update('despatchReferences[0].issueDate', '2026-04-28');
+    session.unset('despatchReferences');
+
+    const events: FieldChangedPayload[] = [];
+    session.on('field-changed', (e) => events.push(e));
+    session.unset('despatchReferences');
+
+    expect(events).toHaveLength(0);
+  });
+
+  it('despatchReferences: remount via update[0] after unset (D-6)', () => {
+    const session = makeFilledSession();
+    session.update('despatchReferences[0].id', 'IRS-001');
+    session.update('despatchReferences[0].issueDate', '2026-04-28');
+    session.unset('despatchReferences');
+
+    session.update('despatchReferences[0].id', 'IRS-NEW');
+    session.update('despatchReferences[0].issueDate', '2026-04-29');
+    expect(session.input.despatchReferences).toHaveLength(1);
+    expect(session.input.despatchReferences?.[0]?.id).toBe('IRS-NEW');
+  });
+
+  it('additionalDocuments scope: set → unset clears array', () => {
+    const session = makeFilledSession();
+    session.update('additionalDocuments[0].id', 'DOC-001');
+    expect(session.input.additionalDocuments).toHaveLength(1);
+
+    session.unset('additionalDocuments');
+    expect(session.input.additionalDocuments).toBeUndefined();
+  });
+
+  it('additionalDocuments: idempotent', () => {
+    const session = makeFilledSession();
+    session.update('additionalDocuments[0].id', 'DOC-001');
+    session.unset('additionalDocuments');
+
+    const events: FieldChangedPayload[] = [];
+    session.on('field-changed', (e) => events.push(e));
+    session.unset('additionalDocuments');
+
+    expect(events).toHaveLength(0);
+  });
+
+  it('additionalDocuments: remount via update[0] after unset', () => {
+    const session = makeFilledSession();
+    session.update('additionalDocuments[0].id', 'DOC-001');
+    session.unset('additionalDocuments');
+
+    session.update('additionalDocuments[0].id', 'DOC-NEW');
+    expect(session.input.additionalDocuments).toHaveLength(1);
+    expect(session.input.additionalDocuments?.[0]?.id).toBe('DOC-NEW');
+  });
+});
+
 describe('InvoiceSession.unset("liability") — session-level state (Sprint 8j.3)', () => {
   it('clears liability + emits field-changed + liability-changed', () => {
     const session = new InvoiceSession({ liability: 'einvoice' });

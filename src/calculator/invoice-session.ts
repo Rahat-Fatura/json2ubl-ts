@@ -215,7 +215,13 @@ export type UnsetScope =
   | 'eArchiveInfo'
   | 'onlineSale'
   | 'orderReference'
-  | 'liability';
+  | 'liability'
+  // Sprint 8k.3 / Library Öneri #3: array composite reset (v2.2.3).
+  // `unset()` generic delete pattern bu scope'lara da uygulanır;
+  // `update('despatchReferences[0].id', 'X')` D-6 sub-object create
+  // ile array'i yeniden oluşturabilir.
+  | 'despatchReferences'
+  | 'additionalDocuments';
 
 // ─── Session Sınıfı ─────────────────────────────────────────────────────────
 
