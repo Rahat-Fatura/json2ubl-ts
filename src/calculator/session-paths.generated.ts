@@ -88,13 +88,13 @@ export const SessionPaths = {
    * Tanımlama şema tipi (ör: "MERSISNO", "TICARETSICILNO", "HIZMETNO", "MUSTERINO", "TESISATNO")
    * Expected type: string
    */
-  senderIdentificationSchemeId: (i: number) => `sender.identifications[${i}].schemeId`,
+  senderIdentificationSchemeId: (i: number) => `sender.identifications[${i}].schemeId` as `sender.identifications[${number}].schemeId`,
 
   /**
    * Tanımlama değeri
    * Expected type: string
    */
-  senderIdentificationValue: (i: number) => `sender.identifications[${i}].value`,
+  senderIdentificationValue: (i: number) => `sender.identifications[${i}].value` as `sender.identifications[${number}].value`,
 
   /**
    * e-Fatura/e-Arşiv posta kutusu etiketi (ör: "urn:mail:defaultpk@...")
@@ -172,13 +172,13 @@ export const SessionPaths = {
    * Tanımlama şema tipi (ör: "MERSISNO", "TICARETSICILNO", "HIZMETNO", "MUSTERINO", "TESISATNO")
    * Expected type: string
    */
-  customerIdentificationSchemeId: (i: number) => `customer.identifications[${i}].schemeId`,
+  customerIdentificationSchemeId: (i: number) => `customer.identifications[${i}].schemeId` as `customer.identifications[${number}].schemeId`,
 
   /**
    * Tanımlama değeri
    * Expected type: string
    */
-  customerIdentificationValue: (i: number) => `customer.identifications[${i}].value`,
+  customerIdentificationValue: (i: number) => `customer.identifications[${i}].value` as `customer.identifications[${number}].value`,
 
   /**
    * e-Fatura/e-Arşiv posta kutusu etiketi (ör: "urn:mail:defaultpk@...")
@@ -190,187 +190,187 @@ export const SessionPaths = {
    * Ürün/hizmet adı — zorunlu
    * Expected type: string
    */
-  lineName: (i: number) => `lines[${i}].name`,
+  lineName: (i: number) => `lines[${i}].name` as `lines[${number}].name`,
 
   /**
    * Miktar — zorunlu
    * Expected type: number
    */
-  lineQuantity: (i: number) => `lines[${i}].quantity`,
+  lineQuantity: (i: number) => `lines[${i}].quantity` as `lines[${number}].quantity`,
 
   /**
    * Birim fiyat (KDV hariç) — zorunlu
    * Expected type: number
    */
-  linePrice: (i: number) => `lines[${i}].price`,
+  linePrice: (i: number) => `lines[${i}].price` as `lines[${number}].price`,
 
   /**
    * Birim kodu (Türkçe isim veya UBL kodu: "Adet" veya "C62") — varsayılan: "Adet"
    * Expected type: string | undefined
    */
-  lineUnitCode: (i: number) => `lines[${i}].unitCode`,
+  lineUnitCode: (i: number) => `lines[${i}].unitCode` as `lines[${number}].unitCode`,
 
   /**
    * KDV oranı (%) — zorunlu
    * Expected type: number
    */
-  lineKdvPercent: (i: number) => `lines[${i}].kdvPercent`,
+  lineKdvPercent: (i: number) => `lines[${i}].kdvPercent` as `lines[${number}].kdvPercent`,
 
   /**
    * Satır bazı KDV istisna sebep kodu (B-NEW-11 / M11). KDV=0 kalem için manuel verilmeli (ör. 351). Verilmezse belge seviyesi `SimpleInvoiceInput.kdvExemptionCode` fallback olarak kullanılır. Self-exemption tiplerinde (ISTISNA, IHRACKAYITLI, OZELMATRAH + IHRACAT, YOLCUBERABERFATURA, OZELFATURA, YATIRIMTESVIK profilleri) zorunlu değil; dışındaki tiplerde KDV=0 kaleminde zorunlu.
    * Expected type: string | undefined
    */
-  lineKdvExemptionCode: (i: number) => `lines[${i}].kdvExemptionCode`,
+  lineKdvExemptionCode: (i: number) => `lines[${i}].kdvExemptionCode` as `lines[${number}].kdvExemptionCode`,
 
   /**
    * İskonto oranı (%) — opsiyonel
    * Expected type: number | undefined
    */
-  lineAllowancePercent: (i: number) => `lines[${i}].allowancePercent`,
+  lineAllowancePercent: (i: number) => `lines[${i}].allowancePercent` as `lines[${number}].allowancePercent`,
 
   /**
    * Vergi kodu (ör: "0071" ÖTV 1. Liste, "1047" Damga V.) — zorunlu
    * Expected type: string
    */
-  lineTaxCode: (i: number, ti: number) => `lines[${i}].taxes[${ti}].code`,
+  lineTaxCode: (i: number, ti: number) => `lines[${i}].taxes[${ti}].code` as `lines[${number}].taxes[${number}].code`,
 
   /**
    * Vergi oranı (%) — zorunlu
    * Expected type: number
    */
-  lineTaxPercent: (i: number, ti: number) => `lines[${i}].taxes[${ti}].percent`,
+  lineTaxPercent: (i: number, ti: number) => `lines[${i}].taxes[${ti}].percent` as `lines[${number}].taxes[${number}].percent`,
 
   /**
    * KDV tevkifat kodu (ör: "602") — opsiyonel, verilirse fatura tipi TEVKIFAT olur
    * Expected type: string | undefined
    */
-  lineWithholdingTaxCode: (i: number) => `lines[${i}].withholdingTaxCode`,
+  lineWithholdingTaxCode: (i: number) => `lines[${i}].withholdingTaxCode` as `lines[${number}].withholdingTaxCode`,
 
   /**
    * Tevkifat 650 (Diğer) kodu için dinamik yüzde (0-100). Sadece 650 kodu ile kullanılır; diğer tevkifat kodlarında oran config'den gelir.
    * Expected type: number | undefined
    */
-  lineWithholdingTaxPercent: (i: number) => `lines[${i}].withholdingTaxPercent`,
+  lineWithholdingTaxPercent: (i: number) => `lines[${i}].withholdingTaxPercent` as `lines[${number}].withholdingTaxPercent`,
 
   /**
    * Ürün açıklaması
    * Expected type: string | undefined
    */
-  lineDescription: (i: number) => `lines[${i}].description`,
+  lineDescription: (i: number) => `lines[${i}].description` as `lines[${number}].description`,
 
   /**
    * Marka
    * Expected type: string | undefined
    */
-  lineBrand: (i: number) => `lines[${i}].brand`,
+  lineBrand: (i: number) => `lines[${i}].brand` as `lines[${number}].brand`,
 
   /**
    * Model
    * Expected type: string | undefined
    */
-  lineModel: (i: number) => `lines[${i}].model`,
+  lineModel: (i: number) => `lines[${i}].model` as `lines[${number}].model`,
 
   /**
    * Alıcı ürün kodu
    * Expected type: string | undefined
    */
-  lineBuyerCode: (i: number) => `lines[${i}].buyerCode`,
+  lineBuyerCode: (i: number) => `lines[${i}].buyerCode` as `lines[${number}].buyerCode`,
 
   /**
    * Satıcı ürün kodu
    * Expected type: string | undefined
    */
-  lineSellerCode: (i: number) => `lines[${i}].sellerCode`,
+  lineSellerCode: (i: number) => `lines[${i}].sellerCode` as `lines[${number}].sellerCode`,
 
   /**
    * Üretici ürün kodu
    * Expected type: string | undefined
    */
-  lineManufacturerCode: (i: number) => `lines[${i}].manufacturerCode`,
+  lineManufacturerCode: (i: number) => `lines[${i}].manufacturerCode` as `lines[${number}].manufacturerCode`,
 
   /**
    * Menşe ülke
    * Expected type: string | undefined
    */
-  lineOrigin: (i: number) => `lines[${i}].origin`,
+  lineOrigin: (i: number) => `lines[${i}].origin` as `lines[${number}].origin`,
 
   /**
    * Satır notu
    * Expected type: string | undefined
    */
-  lineNote: (i: number) => `lines[${i}].note`,
+  lineNote: (i: number) => `lines[${i}].note` as `lines[${number}].note`,
 
   /**
    * Teslimat şartı kodu (INCOTERMS: "EXW", "FOB", "CIF" vb.)
    * Expected type: string | undefined
    */
-  lineDeliveryDeliveryTermCode: (i: number) => `lines[${i}].delivery.deliveryTermCode`,
+  lineDeliveryDeliveryTermCode: (i: number) => `lines[${i}].delivery.deliveryTermCode` as `lines[${number}].delivery.deliveryTermCode`,
 
   /**
    * GTİP numarası (12 hane, IHRACKAYITLI+702 için zorunlu)
    * Expected type: string | undefined
    */
-  lineDeliveryGtipNo: (i: number) => `lines[${i}].delivery.gtipNo`,
+  lineDeliveryGtipNo: (i: number) => `lines[${i}].delivery.gtipNo` as `lines[${number}].delivery.gtipNo`,
 
   /**
    * Alıcı DİB Satır Kodu (11 hane, IHRACKAYITLI+702 için zorunlu — B-07). Mapper bu alanı Shipment/TransportHandlingUnit/CustomsDeclaration/ IssuerParty/PartyIdentification[schemeID='ALICIDIBSATIRKOD'] UBL ağacına eşler. Sprint 8c.2 / B-NEW-12 ile eklendi.
    * Expected type: string | undefined
    */
-  lineDeliveryAlicidibsatirkod: (i: number) => `lines[${i}].delivery.alicidibsatirkod`,
+  lineDeliveryAlicidibsatirkod: (i: number) => `lines[${i}].delivery.alicidibsatirkod` as `lines[${number}].delivery.alicidibsatirkod`,
 
   /**
    * Taşıma modu kodu (ör: "1" Deniz, "3" Karayolu, "4" Havayolu)
    * Expected type: string | undefined
    */
-  lineDeliveryTransportModeCode: (i: number) => `lines[${i}].delivery.transportModeCode`,
+  lineDeliveryTransportModeCode: (i: number) => `lines[${i}].delivery.transportModeCode` as `lines[${number}].delivery.transportModeCode`,
 
   /**
    * Paket ID
    * Expected type: string | undefined
    */
-  lineDeliveryPackageId: (i: number) => `lines[${i}].delivery.packageId`,
+  lineDeliveryPackageId: (i: number) => `lines[${i}].delivery.packageId` as `lines[${number}].delivery.packageId`,
 
   /**
    * Paket miktarı
    * Expected type: number | undefined
    */
-  lineDeliveryPackageQuantity: (i: number) => `lines[${i}].delivery.packageQuantity`,
+  lineDeliveryPackageQuantity: (i: number) => `lines[${i}].delivery.packageQuantity` as `lines[${number}].delivery.packageQuantity`,
 
   /**
    * Paket tipi kodu
    * Expected type: string | undefined
    */
-  lineDeliveryPackageTypeCode: (i: number) => `lines[${i}].delivery.packageTypeCode`,
+  lineDeliveryPackageTypeCode: (i: number) => `lines[${i}].delivery.packageTypeCode` as `lines[${number}].delivery.packageTypeCode`,
 
   /**
    * Harcama tipi kodu — YATIRIMTESVIK: 01=Makine/Teçhizat, 02=Yazılım, 03=Bina İnşaat, 04=Diğer
    * Expected type: string | undefined
    */
-  lineItemClassificationCode: (i: number) => `lines[${i}].itemClassificationCode`,
+  lineItemClassificationCode: (i: number) => `lines[${i}].itemClassificationCode` as `lines[${number}].itemClassificationCode`,
 
   /**
    * Makine Teçhizat sıra no — YATIRIMTESVIK Kod 01 için zorunlu
    * Expected type: string | undefined
    */
-  lineProductTraceId: (i: number) => `lines[${i}].productTraceId`,
+  lineProductTraceId: (i: number) => `lines[${i}].productTraceId` as `lines[${number}].productTraceId`,
 
   /**
    * Makine ID — YATIRIMTESVIK Kod 01 için zorunlu
    * Expected type: string | undefined
    */
-  lineSerialId: (i: number) => `lines[${i}].serialId`,
+  lineSerialId: (i: number) => `lines[${i}].serialId` as `lines[${number}].serialId`,
 
   /**
    * Tanımlama şema tipi (ör: "TELEFON", "TABLET_PC")
    * Expected type: string
    */
-  lineAdditionalItemIdentificationSchemeId: (i: number, ti: number) => `lines[${i}].additionalItemIdentifications[${ti}].schemeId`,
+  lineAdditionalItemIdentificationSchemeId: (i: number, ti: number) => `lines[${i}].additionalItemIdentifications[${ti}].schemeId` as `lines[${number}].additionalItemIdentifications[${number}].schemeId`,
 
   /**
    * Tanımlama değeri
    * Expected type: string
    */
-  lineAdditionalItemIdentificationValue: (i: number, ti: number) => `lines[${i}].additionalItemIdentifications[${ti}].value`,
+  lineAdditionalItemIdentificationValue: (i: number, ti: number) => `lines[${i}].additionalItemIdentifications[${ti}].value` as `lines[${number}].additionalItemIdentifications[${number}].value`,
 
   /**
    * Fatura numarası (ör: "ABC2025000000001") — opsiyonel, seri/numara sistemi için
@@ -472,43 +472,43 @@ export const SessionPaths = {
    * İrsaliye numarası
    * Expected type: string
    */
-  despatchReferenceId: (i: number) => `despatchReferences[${i}].id`,
+  despatchReferenceId: (i: number) => `despatchReferences[${i}].id` as `despatchReferences[${number}].id`,
 
   /**
    * İrsaliye tarihi
    * Expected type: string
    */
-  despatchReferenceIssueDate: (i: number) => `despatchReferences[${i}].issueDate`,
+  despatchReferenceIssueDate: (i: number) => `despatchReferences[${i}].issueDate` as `despatchReferences[${number}].issueDate`,
 
   /**
    * Belge ID
    * Expected type: string
    */
-  additionalDocumentId: (i: number) => `additionalDocuments[${i}].id`,
+  additionalDocumentId: (i: number) => `additionalDocuments[${i}].id` as `additionalDocuments[${number}].id`,
 
   /**
    * Belge tarihi
    * Expected type: string | undefined
    */
-  additionalDocumentIssueDate: (i: number) => `additionalDocuments[${i}].issueDate`,
+  additionalDocumentIssueDate: (i: number) => `additionalDocuments[${i}].issueDate` as `additionalDocuments[${number}].issueDate`,
 
   /**
    * Belge tipi kodu
    * Expected type: string | undefined
    */
-  additionalDocumentDocumentTypeCode: (i: number) => `additionalDocuments[${i}].documentTypeCode`,
+  additionalDocumentDocumentTypeCode: (i: number) => `additionalDocuments[${i}].documentTypeCode` as `additionalDocuments[${number}].documentTypeCode`,
 
   /**
    * Belge tipi
    * Expected type: string | undefined
    */
-  additionalDocumentDocumentType: (i: number) => `additionalDocuments[${i}].documentType`,
+  additionalDocumentDocumentType: (i: number) => `additionalDocuments[${i}].documentType` as `additionalDocuments[${number}].documentType`,
 
   /**
    * Belge açıklaması
    * Expected type: string | undefined
    */
-  additionalDocumentDocumentDescription: (i: number) => `additionalDocuments[${i}].documentDescription`,
+  additionalDocumentDocumentDescription: (i: number) => `additionalDocuments[${i}].documentDescription` as `additionalDocuments[${number}].documentDescription`,
 
   /**
    * Ödeme yöntemi kodu (ör: "1" Nakit, "42" Banka, "48" Kredi Kartı, "ZZZ" Diğer)
@@ -601,10 +601,10 @@ export const SessionPaths = {
   buyerCustomerEmail: 'buyerCustomer.email',
 
   /** Expected type: string */
-  buyerCustomerIdentificationSchemeId: (i: number) => `buyerCustomer.identifications[${i}].schemeId`,
+  buyerCustomerIdentificationSchemeId: (i: number) => `buyerCustomer.identifications[${i}].schemeId` as `buyerCustomer.identifications[${number}].schemeId`,
 
   /** Expected type: string */
-  buyerCustomerIdentificationValue: (i: number) => `buyerCustomer.identifications[${i}].value`,
+  buyerCustomerIdentificationValue: (i: number) => `buyerCustomer.identifications[${i}].value` as `buyerCustomer.identifications[${number}].value`,
 
   /**
    * Uyruk (ISO 3166-1 alpha-2 ülke kodu, ör. 'DE', 'US') — YOLCUBERABERFATURA profili için zorunlu (B-NEW-13 / Sprint 8c.4).

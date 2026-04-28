@@ -449,9 +449,16 @@ function renderEntry(entry: PathEntry): string {
     ? `  /**\n   * ${entry.jsdoc.split('\n').join('\n   * ')}\n   * Expected type: ${entry.valueType}\n   */\n`
     : `  /** Expected type: ${entry.valueType} */\n`;
 
+  // Sprint 8k.2 / Library Öneri #2: fonksiyon path return değeri
+  // SessionPathMap key'iyle aynı template literal'a `as ...` ile narrow
+  // edilir; `update<P extends keyof SessionPathMap>(...)` generic'ine
+  // cast'siz assign edilebilmesi için kritik.
+  const fnPath = entry.pathTemplate.replace(/\[i\]/g, '[${i}]').replace(/\[ti\]/g, '[${ti}]');
+  const mapKey = entry.pathTemplate.replace(/\[i\]/g, '[${number}]').replace(/\[ti\]/g, '[${number}]');
+
   const value = entry.fnParams.length === 0
     ? `'${entry.pathTemplate}'`
-    : `(${entry.fnParams.map(p => `${p}: number`).join(', ')}) => \`${entry.pathTemplate.replace(/\[i\]/g, '[${i}]').replace(/\[ti\]/g, '[${ti}]')}\``;
+    : `(${entry.fnParams.map(p => `${p}: number`).join(', ')}) => \`${fnPath}\` as \`${mapKey}\``;
 
   return `${jsdocBlock}  ${entry.key}: ${value},`;
 }
