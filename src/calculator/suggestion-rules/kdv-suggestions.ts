@@ -1,5 +1,4 @@
 import type { SuggestionRule, Suggestion } from '../suggestion-types';
-import type { SimpleInvoiceInput } from '../simple-types';
 import { isSelfExemptionInvoice } from '../../config/self-exemption-types';
 
 /**

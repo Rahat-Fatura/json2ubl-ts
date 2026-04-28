@@ -1,4 +1,4 @@
-import type { SuggestionRule, Suggestion } from '../suggestion-types';
+import type { SuggestionRule } from '../suggestion-types';
 
 /**
  * Sprint 8i.6 / AR-10 Faz 2 — Misc grubu suggestion kuralları (2 kural).
