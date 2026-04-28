@@ -194,6 +194,29 @@ export interface SessionEvents {
 
 export type SessionEventName = keyof SessionEvents;
 
+/**
+ * `InvoiceSession.unset(scope)` ile temizlenebilir composite/scope alanları
+ * (Sprint 8j.3 / v2.2.1). v1.x setX(undefined) semantiğinin path-based API karşılığı.
+ *
+ * Yalnızca opsiyonel composite ve session-level state (`liability`) kapsanır.
+ * `type`, `profile`, `sender`, `customer`, `lines` zorunlu — `unset()` kabul etmez.
+ *
+ * Liability + isExport=true durumunda `path-error` LIABILITY_LOCKED_BY_EXPORT
+ * emit edilir; mevcut `update()` davranışıyla simetrik (M10 kontratı).
+ */
+export type UnsetScope =
+  | 'billingReference'
+  | 'paymentMeans'
+  | 'ozelMatrah'
+  | 'sgk'
+  | 'invoicePeriod'
+  | 'buyerCustomer'
+  | 'taxRepresentativeParty'
+  | 'eArchiveInfo'
+  | 'onlineSale'
+  | 'orderReference'
+  | 'liability';
+
 // ─── Session Sınıfı ─────────────────────────────────────────────────────────
 
 /** InvoiceSession oluşturma seçenekleri */
@@ -732,6 +755,68 @@ export class InvoiceSession extends EventEmitter {
     this._uiState.lineFields = lines.map((line, idx) =>
       deriveLineFieldVisibility(line, this._input, idx)
     );
+    this.onChanged();
+  }
+
+  // ─── Composite scope reset (Sprint 8j.3 / v2.2.1) ───────────────────────
+
+  /**
+   * Composite/scope alanı tamamen temizler — `_input[scope] = undefined`
+   * (liability hariç, o `_liability = undefined`). v1.x'in
+   * `setBillingReference(undefined)` semantiğinin path-based API karşılığı.
+   *
+   * `update('billingReference.id', '')` empty-string clear ile karıştırılmamalıdır:
+   *   - empty string → XML'de boş element / tip ihlali olabilir
+   *   - unset(scope) → composite tamamen kaldırılır (XML'de hiç görünmez)
+   *
+   * Davranış:
+   *   - Önceki value undefined ise no-op (event emit yok)
+   *   - liability + isExport=true → path-error LIABILITY_LOCKED_BY_EXPORT, no-op
+   *   - field-changed event: { path: scope, value: undefined, previousValue }
+   *   - updateUIState() + onChanged() tetiklenir
+   *
+   * Sub-field path ile yeniden mount: unset sonrası
+   * `update('billingReference.id', 'X')` D-6 sub-object create ile composite'i
+   * yeniden oluşturur (kullanıcı için açık ve geri-kazanılabilir API).
+   */
+  unset(scope: UnsetScope): void {
+    if (scope === 'liability') {
+      if (this._isExport) {
+        this.emit('path-error', {
+          code: 'LIABILITY_LOCKED_BY_EXPORT',
+          path: 'liability',
+          reason: 'isExport=true session ignores liability changes',
+          requestedValue: undefined,
+        });
+        return;
+      }
+      const previousLiability = this._liability;
+      if (previousLiability === undefined) return;
+      this._liability = undefined;
+      this.emit('field-changed', {
+        path: 'liability',
+        value: undefined,
+        previousValue: previousLiability,
+      });
+      this.updateUIState();
+      this.emit('liability-changed', { liability: undefined, previousLiability });
+      this.onChanged();
+      return;
+    }
+
+    const previousValue = this._input[scope];
+    if (previousValue === undefined) return;
+
+    const next = { ...this._input };
+    delete (next as Record<string, unknown>)[scope];
+    this._input = next;
+
+    this.emit('field-changed', {
+      path: scope,
+      value: undefined,
+      previousValue,
+    });
+    this.updateUIState();
     this.onChanged();
   }
 
