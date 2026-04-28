@@ -122,9 +122,18 @@ describe('generate-session-paths (Sprint 8h.1)', () => {
     expect(out).not.toContain('deliveryAddress.city');
   });
 
-  it('skips inline object literal arrays (sender.identifications, attachment, SKIP Faz 1)', () => {
+  it('includes party identifications array entries (Sprint 8j.2: interface + inline literal arrays)', () => {
     const out = generateSessionPaths();
-    expect(out).not.toMatch(/senderIdentificationSchemeId/);
+    // sender/customer: SimplePartyIdentification[] (interface ref)
+    expect(out).toMatch(/senderIdentificationSchemeId:\s*\(i:\s*number\)\s*=>\s*`sender\.identifications\[\$\{i\}\]\.schemeId`/);
+    expect(out).toMatch(/customerIdentificationValue:\s*\(i:\s*number\)\s*=>\s*`customer\.identifications\[\$\{i\}\]\.value`/);
+    // buyerCustomer: Array<{ schemeId; value }> (inline literal array — synthetic interface)
+    expect(out).toMatch(/buyerCustomerIdentificationSchemeId:\s*\(i:\s*number\)\s*=>\s*`buyerCustomer\.identifications\[\$\{i\}\]\.schemeId`/);
+  });
+
+  it('still skips single inline object literals (attachment.filename — non-array inline)', () => {
+    const out = generateSessionPaths();
+    // additionalDocuments[i].attachment: { filename; mimeCode; ... } — array değil, skip
     expect(out).not.toContain('attachment.filename');
   });
 

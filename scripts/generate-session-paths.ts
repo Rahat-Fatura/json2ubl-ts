@@ -86,7 +86,9 @@ function stripUndefined(type: string): string {
 }
 
 function isArrayOfInterface(type: string): boolean {
-  return /^[A-Z]\w*\[\]$/.test(type);
+  // Sprint 8j.2: synthetic inline literal array element'leri `__Inline_*` ile
+  // başladığı için underscore prefix de kabul edilir.
+  return /^[A-Z_]\w*\[\]$/.test(type);
 }
 
 function getArrayElementType(type: string): string {
@@ -135,8 +137,21 @@ function parseInterfaces(): Map<string, InterfaceField[]> {
       if (!member.name || !ts.isIdentifier(member.name)) continue;
 
       const name = member.name.text;
-      const type = member.type ? member.type.getText(sourceFile).trim() : 'unknown';
       const optional = !!member.questionToken;
+      let type = member.type ? member.type.getText(sourceFile).trim() : 'unknown';
+
+      // Inline anon literal array (örn. `Array<{ schemeId: string; value: string; }>`
+      // veya `{ schemeId: string; value: string }[]`) → synthetic interface'e indirge.
+      // Bu sayede addSubObjectEntries içindeki array-of-interface dalı normal şekilde
+      // çalışır (8j.2: party identifications için kritik).
+      if (member.type) {
+        const inlineFields = extractInlineLiteralArrayFields(member.type, sourceFile);
+        if (inlineFields) {
+          const syntheticName = `__Inline_${stmt.name.text}_${name}_Element`;
+          interfaces.set(syntheticName, inlineFields);
+          type = `${syntheticName}[]`;
+        }
+      }
 
       // JSDoc çıkarımı (basit): leading comment range
       const fullText = sourceFile.getFullText();
@@ -151,6 +166,48 @@ function parseInterfaces(): Map<string, InterfaceField[]> {
   }
 
   return interfaces;
+}
+
+/**
+ * Type node'u inline literal array (`Array<{...}>` veya `{...}[]`) ise inner
+ * type literal alanlarını döndürür, değilse undefined.
+ *
+ * Sprint 8j.2 — `SimpleBuyerCustomerInput.identifications: Array<{ schemeId; value }>`
+ * gibi anon literal array'lere path entry üretebilmek için.
+ */
+function extractInlineLiteralArrayFields(
+  typeNode: ts.TypeNode,
+  sourceFile: ts.SourceFile,
+): InterfaceField[] | undefined {
+  let elementTypeNode: ts.TypeNode | undefined;
+
+  // `{ ... }[]` formu (TypeOperator/ArrayType)
+  if (ts.isArrayTypeNode(typeNode) && ts.isTypeLiteralNode(typeNode.elementType)) {
+    elementTypeNode = typeNode.elementType;
+  }
+  // `Array<{ ... }>` formu (TypeReference + typeArguments)
+  if (
+    ts.isTypeReferenceNode(typeNode) &&
+    ts.isIdentifier(typeNode.typeName) &&
+    typeNode.typeName.text === 'Array' &&
+    typeNode.typeArguments?.length === 1 &&
+    ts.isTypeLiteralNode(typeNode.typeArguments[0])
+  ) {
+    elementTypeNode = typeNode.typeArguments[0];
+  }
+
+  if (!elementTypeNode || !ts.isTypeLiteralNode(elementTypeNode)) return undefined;
+
+  const fields: InterfaceField[] = [];
+  for (const member of elementTypeNode.members) {
+    if (!ts.isPropertySignature(member)) continue;
+    if (!member.name || !ts.isIdentifier(member.name)) continue;
+    const subName = member.name.text;
+    const subType = member.type ? member.type.getText(sourceFile).trim() : 'unknown';
+    const subOptional = !!member.questionToken;
+    fields.push({ name: subName, type: subType, optional: subOptional });
+  }
+  return fields.length > 0 ? fields : undefined;
 }
 
 function extractJSDoc(raw: string): string | undefined {
@@ -270,9 +327,32 @@ function addSubObjectEntries(
       jsdoc: field.jsdoc,
       fnParams: [],
     });
+    return;
   }
-  // Sub-object'in kendi sub-object'i (örn. paymentMeans.attachment) → Faz 1 SKIP
-  // Sub-object array (örn. sender.identifications) → Faz 1 SKIP (object literal array)
+
+  // Sub-object array (örn. sender.identifications: SimplePartyIdentification[],
+  // buyerCustomer.identifications: __Inline_*[] synthetic). Sprint 8j.2.
+  if (isArrayOfInterface(baseType)) {
+    const elementType = getArrayElementType(baseType);
+    const elementFields = interfaces.get(elementType);
+    if (!elementFields) return;
+    const itemKey = singularize(field.name);
+    for (const subField of elementFields) {
+      const subBase = stripUndefined(subField.type);
+      const subResolved = resolveAlias(subBase);
+      if (!isPrimitive(subResolved)) continue;
+      entries.push({
+        key: buildKey([parentName, itemKey, subField.name]),
+        pathTemplate: `${parentName}.${field.name}[i].${subField.name}`,
+        valueType: subField.optional ? `${subResolved} | undefined` : subResolved,
+        jsdoc: subField.jsdoc,
+        fnParams: ['i'],
+      });
+    }
+    return;
+  }
+
+  // Sub-object'in kendi sub-object'i (örn. paymentMeans.attachment) → SKIP
 }
 
 /**

@@ -640,8 +640,16 @@ export class InvoiceSession extends EventEmitter {
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i];
       if (token.kind === 'index') {
-        // Parent array undefined/null → length=0 implicit, index 0+ reddedilir
+        // Parent array undefined/null:
+        //   - index===0: D-6 sub-object create kapsamı → uygulayıcı (applyPathUpdate)
+        //     otomatik `[]` oluşturur, ilk eleman set edilir. Reject etme.
+        //   - index>0: implicit length=0, INDEX_OUT_OF_BOUNDS.
+        // Sprint 8j.2: party identifications (sender/customer/buyerCustomer)
+        // gibi opsiyonel array path'lerin runtime'da kullanılabilmesi için.
         if (current === undefined || current === null) {
+          if (token.value === 0) {
+            return null;
+          }
           return {
             code: 'INDEX_OUT_OF_BOUNDS',
             path,
@@ -649,7 +657,10 @@ export class InvoiceSession extends EventEmitter {
           };
         }
         if (!Array.isArray(current)) return null;   // type mismatch, Katman 3 atmalıydı
-        if (token.value >= current.length) {
+        // Sprint 8j.2: `token.value === current.length` next-append olarak izinli
+        // (party identifications çoklu giriş, taxes append vs.). Sadece `> length`
+        // sparse skip ihtimali olduğu için reddedilir.
+        if (token.value > current.length) {
           return {
             code: 'INDEX_OUT_OF_BOUNDS',
             path,

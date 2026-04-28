@@ -85,6 +85,18 @@ export const SessionPaths = {
   senderWebsite: 'sender.website',
 
   /**
+   * Tanımlama şema tipi (ör: "MERSISNO", "TICARETSICILNO", "HIZMETNO", "MUSTERINO", "TESISATNO")
+   * Expected type: string
+   */
+  senderIdentificationSchemeId: (i: number) => `sender.identifications[${i}].schemeId`,
+
+  /**
+   * Tanımlama değeri
+   * Expected type: string
+   */
+  senderIdentificationValue: (i: number) => `sender.identifications[${i}].value`,
+
+  /**
    * e-Fatura/e-Arşiv posta kutusu etiketi (ör: "urn:mail:defaultpk@...")
    * Expected type: string | undefined
    */
@@ -155,6 +167,18 @@ export const SessionPaths = {
    * Expected type: string | undefined
    */
   customerWebsite: 'customer.website',
+
+  /**
+   * Tanımlama şema tipi (ör: "MERSISNO", "TICARETSICILNO", "HIZMETNO", "MUSTERINO", "TESISATNO")
+   * Expected type: string
+   */
+  customerIdentificationSchemeId: (i: number) => `customer.identifications[${i}].schemeId`,
+
+  /**
+   * Tanımlama değeri
+   * Expected type: string
+   */
+  customerIdentificationValue: (i: number) => `customer.identifications[${i}].value`,
 
   /**
    * e-Fatura/e-Arşiv posta kutusu etiketi (ör: "urn:mail:defaultpk@...")
@@ -576,6 +600,12 @@ export const SessionPaths = {
    */
   buyerCustomerEmail: 'buyerCustomer.email',
 
+  /** Expected type: string */
+  buyerCustomerIdentificationSchemeId: (i: number) => `buyerCustomer.identifications[${i}].schemeId`,
+
+  /** Expected type: string */
+  buyerCustomerIdentificationValue: (i: number) => `buyerCustomer.identifications[${i}].value`,
+
   /**
    * Uyruk (ISO 3166-1 alpha-2 ülke kodu, ör. 'DE', 'US') — YOLCUBERABERFATURA profili için zorunlu (B-NEW-13 / Sprint 8c.4).
    * Expected type: string | undefined
@@ -727,6 +757,8 @@ export interface SessionPathMap {
   'sender.phone': string | undefined;
   'sender.email': string | undefined;
   'sender.website': string | undefined;
+  'sender.identifications[${number}].schemeId': string;
+  'sender.identifications[${number}].value': string;
   'sender.alias': string | undefined;
   'customer.taxNumber': string;
   'customer.name': string;
@@ -739,6 +771,8 @@ export interface SessionPathMap {
   'customer.phone': string | undefined;
   'customer.email': string | undefined;
   'customer.website': string | undefined;
+  'customer.identifications[${number}].schemeId': string;
+  'customer.identifications[${number}].value': string;
   'customer.alias': string | undefined;
   'lines[${number}].name': string;
   'lines[${number}].quantity': number;
@@ -809,6 +843,8 @@ export interface SessionPathMap {
   'buyerCustomer.zipCode': string | undefined;
   'buyerCustomer.phone': string | undefined;
   'buyerCustomer.email': string | undefined;
+  'buyerCustomer.identifications[${number}].schemeId': string;
+  'buyerCustomer.identifications[${number}].value': string;
   'buyerCustomer.nationalityId': string | undefined;
   'buyerCustomer.passportId': string | undefined;
   'taxRepresentativeParty.vknTckn': string;
@@ -848,6 +884,8 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'buyerCustomer.country',
   'buyerCustomer.district',
   'buyerCustomer.email',
+  'buyerCustomer.identifications[*].schemeId',
+  'buyerCustomer.identifications[*].value',
   'buyerCustomer.name',
   'buyerCustomer.nationalityId',
   'buyerCustomer.passportId',
@@ -861,6 +899,8 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'customer.country',
   'customer.district',
   'customer.email',
+  'customer.identifications[*].schemeId',
+  'customer.identifications[*].value',
   'customer.name',
   'customer.phone',
   'customer.taxNumber',
@@ -933,6 +973,8 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'sender.country',
   'sender.district',
   'sender.email',
+  'sender.identifications[*].schemeId',
+  'sender.identifications[*].value',
   'sender.name',
   'sender.phone',
   'sender.taxNumber',
