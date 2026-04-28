@@ -2,6 +2,63 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [2.2.3] — 2026-04-28
+
+**Library Suggestions Patch (Mimsoft greenfield prerekuizitleri).** Mimsoft monorepo greenfield refactor (`audit/greenfield/99-library-suggestions.md`) için 4 öneri uygulandı. Tüm değişiklikler additive, breaking change yok. Sprint 8k (8 atomik commit, 1724→1750 test, +26).
+
+### Added
+
+- **`SimpleSgkType` literal union public re-export'u** (Library Öneri #1, Sprint 8k.1) — `simple-types.ts`'te tanımlı olan tip ana paket entry'sinden public olarak erişilebilir hale geldi:
+  ```typescript
+  import type { SimpleSgkType } from '@rahat-fatura/json2ubl-ts';
+  const t: SimpleSgkType = 'SAGLIK_ECZ';
+  ```
+- **`InvoiceSession.removeIdentification(party, index)`** API (Library Öneri #4, Sprint 8k.4) — sender/customer/buyerCustomer identifications array'inde belirli index'i siler. Path-based `update()` API'si index kaydırma yapamadığı için KAMU MUSTERINO / IDIS SEVKIYATNO ekle-sil akışında kritik. Tek elemanlı array sonrası undefined yapılır (XML'de `<cbc:ID schemeID=""/>` üretiminden kaçınır).
+- **`InvoiceSession.setIdentifications(party, ids)`** API — identifications array'ini tamamen değiştirir; `undefined` veya `[]` geçildiğinde field undefined yapılır. `deepEqual` no-op (aynı içerik → emit yok).
+- **`IdentificationParty`** tip union public export — `'sender' | 'customer' | 'buyerCustomer'`.
+
+### Changed
+
+- **`UnsetScope`** literal union'a `'despatchReferences'` ve `'additionalDocuments'` eklendi (Library Öneri #3, Sprint 8k.3). Array composite reset için tip-güvenli API. Implementation kodu değişmedi — Sprint 8j.3'teki generic `delete` pattern bu scope'lara doğal şekilde uygulanır.
+- **Generator script** (`scripts/generate-session-paths.ts`) `renderEntry()` fonksiyon path return değerlerine narrow `as` template literal cast eklendi (Library Öneri #2, Sprint 8k.2). Önceki:
+  ```typescript
+  senderIdentificationSchemeId: (i: number) => `sender.identifications[${i}].schemeId`,
+  ```
+  Sonra:
+  ```typescript
+  senderIdentificationSchemeId: (i: number) =>
+    `sender.identifications[${i}].schemeId` as `sender.identifications[${number}].schemeId`,
+  ```
+  → `update<P extends keyof SessionPathMap>(...)` generic'iyle cast'siz assign edilebilir (compile-time tip güvenliği). Tüm fonksiyon path'leri için defensive uygulandı (sadece identifications değil — tutarlılık).
+
+### Test
+
+- 1724 → 1750 (+26):
+  - `__tests__/integration/exports.test.ts` (+4) — `SimpleSgkType` public export smoke test
+  - `__tests__/calculator/session-paths-narrow-type.test.ts` (+4) — narrow literal `keyof SessionPathMap` assignability + cast'siz `update()` integration
+  - `__tests__/calculator/invoice-session-unset.test.ts` (+6) — `unset('despatchReferences')` + `unset('additionalDocuments')` set/unset/idempotent/remount
+  - `__tests__/calculator/invoice-session-identifications.test.ts` (+12) — `removeIdentification` (5 senaryo + event) ve `setIdentifications` (replace/empty/undefined/event/no-op/no-mount)
+- 162 examples-matrix regression: hiçbir senaryo bozulmadı (tüm değişiklikler additive).
+
+### Migration v2.2.2 → v2.2.3
+
+API değişikliği yok, additive — `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.3` yeterli.
+
+```typescript
+// v2.2.2'de cast/workaround gerekiyordu, v2.2.3'te cast'siz çalışır:
+import {
+  InvoiceSession,
+  SessionPaths,
+  type SimpleSgkType,
+  type IdentificationParty,
+} from '@rahat-fatura/json2ubl-ts';
+
+const session = new InvoiceSession();
+session.update(SessionPaths.senderIdentificationSchemeId(0), 'MERSISNO');  // narrow type
+session.removeIdentification('customer', 0);                                // splice API
+session.unset('despatchReferences');                                         // array reset
+```
+
 ## [2.2.2] — 2026-04-28
 
 **Browser/Next.js uyumluluğu — `deepEqual` browser-safe inline.** Mimsoft Next.js Turbopack ortamında v2.2.1'in `InvoiceSession.update()` her path çağrısında runtime hata atması düzeltildi.
