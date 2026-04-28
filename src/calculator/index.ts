@@ -45,6 +45,7 @@ export type {
     SimplePaymentMeansInput,
     SimpleOzelMatrahInput,
     SimpleSgkInput,
+    SimpleSgkType,
     SimpleOnlineSaleInput,
     SimpleEArchiveInput,
     SimpleBuyerCustomerInput,
