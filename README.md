@@ -183,6 +183,17 @@ session.update(SessionPaths.buyerCustomerIdentificationValue(0), 'MUS-9876');
 session.unset('billingReference');         // tüm composite kaldırılır
 session.unset('paymentMeans');
 session.unset('liability');                // session-level state temizlenir
+session.unset('despatchReferences');       // array composite (v2.2.3+)
+session.unset('additionalDocuments');      // array composite (v2.2.3+)
+
+// Identifications splice/replace API (v2.2.3+) — KAMU MUSTERINO / IDIS SEVKIYATNO
+// gibi ekle-sil akışında index kaydırma için kritik (path-based update yapamaz).
+session.setIdentifications('sender', [
+  { schemeId: 'MERSISNO', value: '0123456789012345' },
+  { schemeId: 'KUNYENO', value: 'K-001' },
+]);
+session.removeIdentification('customer', 0);    // index 0'ı sil, sonrakileri kaydır
+session.setIdentifications('sender', undefined); // tüm dizi silinir
 
 // XML üret
 const xml = session.buildXml();
@@ -268,6 +279,13 @@ class InvoiceSession extends EventEmitter {
   // UnsetScope = 'billingReference' | 'paymentMeans' | 'ozelMatrah' | 'sgk'
   //            | 'invoicePeriod' | 'buyerCustomer' | 'taxRepresentativeParty'
   //            | 'eArchiveInfo' | 'onlineSale' | 'orderReference' | 'liability'
+  //            | 'despatchReferences' | 'additionalDocuments'                  // v2.2.3+
+
+  // Identifications splice/replace API (v2.2.3+) — Library Öneri #4
+  removeIdentification(party: IdentificationParty, index: number): void;
+  setIdentifications(party: IdentificationParty,
+                     identifications: SimplePartyIdentification[] | undefined): void;
+  // IdentificationParty = 'sender' | 'customer' | 'buyerCustomer'
 
   // Line CRUD (path-based değil — array operations)
   addLine(line: SimpleLineInput): void;
@@ -303,6 +321,10 @@ class InvoiceSession extends EventEmitter {
 | `setBillingReference(undefined)` | `unset('billingReference')` (v2.2.1+) |
 | `setPaymentMeans(pm)` | `update(SessionPaths.paymentMeansMeansCode, '1')` + ... |
 | `setPaymentMeans(undefined)` | `unset('paymentMeans')` (v2.2.1+) |
+| `setDespatchReferences(undefined)` | `unset('despatchReferences')` (v2.2.3+) |
+| `setAdditionalDocuments(undefined)` | `unset('additionalDocuments')` (v2.2.3+) |
+| `setSenderIdentifications(ids)` | `setIdentifications('sender', ids)` (v2.2.3+) |
+| `removeSenderIdentification(i)` | `removeIdentification('sender', i)` (v2.2.3+) |
 | `setInput(full)` / `patchInput(patch)` | constructor `{ initialInput }` veya path-based update sequence |
 
 Migration disiplini: Mimsoft form akışı tek mutate noktasından (`update`) geçer; `SessionPaths` map TypeScript autocomplete + compile-time tip kontrolü sağlar. Composite alanları temizlemek için `unset(scope)` (v2.2.1+).
