@@ -488,6 +488,69 @@ function renderReadOnlyPaths(): string {
   return `export const READ_ONLY_PATHS: ReadonlySet<string> = new Set([\n${READ_ONLY_PATHS.map(p => `  '${p}',`).join('\n')}\n]);`;
 }
 
+/**
+ * Sprint 8l.2 / v2.2.4 / Library Öneri #6 — TS 5.7+ template literal inference fix.
+ *
+ * TypeScript 5.4–5.7 arasında `${number}` placeholder'lı template literal type'ı
+ * `keyof X` distributive union'ında match etmeme davranışı ortaya çıktı. Sonuç:
+ * fonksiyonel `SessionPaths.X(i)` path'leri `update<P extends keyof SessionPathMap>(...)`
+ * generic'iyle TS2345 alıyor.
+ *
+ * Çözüm: Her fonksiyonel path için spesifik template literal overload üret.
+ * `InvoiceSessionUpdateOverloads` interface'i `invoice-session.ts`'te declaration
+ * merging (interface InvoiceSession extends ...) ile InvoiceSession class'ına enjekte
+ * edilir.
+ *
+ * Tek-indeks (i): `update<I extends number>(path: \`...[${'$'}{I}]...\`, value: T): void;`
+ * Çift-indeks (i, ti): `update<I extends number, TI extends number>(path: \`...[${'$'}{I}]...[${'$'}{TI}]...\`, value: T): void;`
+ */
+function renderUpdateOverloads(entries: PathEntry[]): string {
+  if (entries.length === 0) return '';
+
+  // Sprint 8l.2 / v2.2.4 — Tüm path entry'leri için update() overload üretir.
+  //
+  // Niçin TÜM entry'ler (fonksiyonel + non-fonksiyonel)?
+  // TS 5.7'de `keyof SessionPathMap` template literal key'leri (örn.
+  // `'sender.identifications[${number}].schemeId'`) distributive union'a tam
+  // açamıyor. Class'taki `update<P extends keyof SessionPathMap>(...)` generic
+  // catch-all'ı kullanmıyoruz (declaration merging incompatibility); bunun
+  // yerine **TÜM path'ler için spesifik literal overload** üretip interface'te
+  // tutarız. Doc-level path'ler (`sender.taxNumber`) için literal string overload,
+  // fonksiyonel path'ler için `${number}` placeholder'lı template literal.
+  //
+  // Class'ta sadece implementation imzası `update(path: string, value: unknown)`
+  // bulunur; caller'lar interface'teki overload'ları kullanır.
+  const lines = entries.map(entry => {
+    if (entry.fnParams.length === 0) {
+      // Doc-level: sabit literal path
+      return `  update(path: '${entry.pathTemplate}', value: ${entry.valueType}): void;`;
+    }
+    // Fonksiyonel path: `${number}` placeholder'lı template literal
+    const pathTpl = entry.pathTemplate
+      .replace(/\[i\]/g, '[${number}]')
+      .replace(/\[ti\]/g, '[${number}]');
+    return `  update(path: \`${pathTpl}\`, value: ${entry.valueType}): void;`;
+  });
+
+  const header = [
+    '/**',
+    ' * Sprint 8l.2 / v2.2.4 — Tüm path overload\'larının deklaratif kaynağı.',
+    ' *',
+    ' * TS 5.7+ template literal type inference uyumsuzluğunu çözer (Library Öneri #6).',
+    ' * `invoice-session.ts` declaration merging ile `InvoiceSession` class\'ına enjekte eder:',
+    ' *',
+    ' *   export interface InvoiceSession extends InvoiceSessionUpdateOverloads {}',
+    ' *',
+    ' * TÜM path\'ler için spesifik overload üretilir (doc-level literal + fonksiyonel',
+    ' * `${number}` placeholder); class\'ta `<P extends keyof SessionPathMap>` generic',
+    ' * yok — TS 5.7+ keyof distributive union template literal key\'leri açamıyor.',
+    ' * Generator regenerate sonrası overload listesi otomatik güncellenir.',
+    ' */',
+  ].join('\n');
+
+  return `${header}\nexport interface InvoiceSessionUpdateOverloads {\n${lines.join('\n')}\n}`;
+}
+
 function generateOutputContent(entries: PathEntry[]): string {
   const header = `// =====================================================================
 // @generated
@@ -516,6 +579,7 @@ function generateOutputContent(entries: PathEntry[]): string {
     renderPathMapType(entries),
     renderKnownPathTemplates(entries),
     renderReadOnlyPaths(),
+    renderUpdateOverloads(entries),
     '',
   ].join('\n\n');
 }

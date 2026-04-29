@@ -74,12 +74,12 @@ describe('Public type re-exports (Sprint 8l.1 / v2.2.4 — Library Öneri #5)', 
 
   it('SuggestionRule importable (T-6 deklaratif kural tipi)', () => {
     const rule: SuggestionRule = {
-      ruleId: 'test/example',
+      id: 'test/example',
       applies: () => true,
       produce: () => [],
     };
-    expect(rule.ruleId).toBe('test/example');
-    expect(rule.applies({} as never)).toBe(true);
+    expect(rule.id).toBe('test/example');
+    expect(rule.applies({} as never, {} as never)).toBe(true);
   });
 
   it('PathErrorPayload + PathErrorCode importable', () => {

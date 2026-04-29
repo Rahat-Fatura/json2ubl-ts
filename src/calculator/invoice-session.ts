@@ -37,7 +37,7 @@ import { deriveUIState, resolveProfileForType, resolveTypeForProfile, validateIn
 import type { InvoiceInput } from '../types/invoice-input';
 import { mapSimpleToInvoiceInput } from './simple-invoice-mapper';
 import { SimpleInvoiceBuilder } from './simple-invoice-builder';
-import type { SessionPathMap } from './session-paths.generated';
+import type { InvoiceSessionUpdateOverloads } from './session-paths.generated';
 import { KNOWN_PATH_TEMPLATES, READ_ONLY_PATHS } from './session-paths.generated';
 import { parsePath, applyPathUpdate, readPath, deepEqual, tokensToTemplate, PathParseError } from './session-path-utils';
 import { deriveLineFieldVisibility } from './line-field-visibility';
@@ -259,6 +259,15 @@ export interface InvoiceSessionOptions {
   allowReducedKdvRate?: boolean;
 }
 
+/**
+ * Sprint 8l.2 / v2.2.4 / Library Öneri #6 — TS 5.7+ template literal inference fix.
+ * Generator tarafından üretilen fonksiyonel path overload'larını class'a enjekte
+ * eder (declaration merging). `update<I extends number>(path: \`...[${'$'}{I}]...\`)`
+ * imzaları otomatik gelir; yeni fonksiyonel path eklendiğinde generator regenerate
+ * edilir, bu interface yenilenir, hiçbir manuel müdahale gerekmez.
+ */
+export interface InvoiceSession extends InvoiceSessionUpdateOverloads {}
+
 export class InvoiceSession extends EventEmitter {
   private _input: SimpleInvoiceInput;
   private _calculation: CalculatedDocument | null = null;
@@ -381,8 +390,24 @@ export class InvoiceSession extends EventEmitter {
    * Field-level events (`fieldChanged`/`fieldActivated`/`fieldDeactivated`/`lineFieldChanged`)
    * Sprint 8h.4'te eklenir. Bu commit'te update() mevcut `onChanged` zincirini tetikler:
    * `changed` → `calculate` (autoCalculate) → `validate` → `warnings`.
+   *
+   * Sprint 8l.2 / Library Öneri #6 — TS 5.7+ template literal inference fix.
+   * Tüm public overload'lar `InvoiceSessionUpdateOverloads` interface'inde
+   * (generator output, declaration merging ile) tutulur. Burada sadece
+   * implementation imzası var — TS overload resolution caller-tarafında
+   * interface'teki overload'ları kullanır, runtime'a `path: string, value: unknown`
+   * olarak ulaşır (path validation 4 katman içeriden çalışır).
+   *
+   * **Niçin generic `<P extends keyof SessionPathMap>` overload class'ta YOK:**
+   * TS 5.7+'da `keyof SessionPathMap` template literal key'lerini (örn.
+   * `'sender.identifications[${number}].schemeId'`) distributive union'a tam
+   * açamıyor; class'a generic overload eklenirse declaration merging
+   * "incorrectly extends" hatası verir (generic catch-all spesifik overload'larla
+   * uyumsuz). Çözüm: tüm tip kontratını `InvoiceSessionUpdateOverloads`
+   * interface'inde tutmak — hem fonksiyonel path overload'ları hem doc-level
+   * literal key overload'ları orada üretilir.
    */
-  update<P extends keyof SessionPathMap>(path: P, value: SessionPathMap[P]): void {
+  update(path: string, value: unknown): void {
     // Katman 1: Syntax parsing
     let tokens;
     try {

@@ -999,3 +999,141 @@ export const READ_ONLY_PATHS: ReadonlySet<string> = new Set([
   'isExport',
 ]);
 
+/**
+ * Sprint 8l.2 / v2.2.4 — Tüm path overload'larının deklaratif kaynağı.
+ *
+ * TS 5.7+ template literal type inference uyumsuzluğunu çözer (Library Öneri #6).
+ * `invoice-session.ts` declaration merging ile `InvoiceSession` class'ına enjekte eder:
+ *
+ *   export interface InvoiceSession extends InvoiceSessionUpdateOverloads {}
+ *
+ * TÜM path'ler için spesifik overload üretilir (doc-level literal + fonksiyonel
+ * `${number}` placeholder); class'ta `<P extends keyof SessionPathMap>` generic
+ * yok — TS 5.7+ keyof distributive union template literal key'leri açamıyor.
+ * Generator regenerate sonrası overload listesi otomatik güncellenir.
+ */
+export interface InvoiceSessionUpdateOverloads {
+  update(path: 'sender.taxNumber', value: string): void;
+  update(path: 'sender.name', value: string): void;
+  update(path: 'sender.taxOffice', value: string | undefined): void;
+  update(path: 'sender.address', value: string): void;
+  update(path: 'sender.district', value: string): void;
+  update(path: 'sender.city', value: string): void;
+  update(path: 'sender.country', value: string | undefined): void;
+  update(path: 'sender.zipCode', value: string | undefined): void;
+  update(path: 'sender.phone', value: string | undefined): void;
+  update(path: 'sender.email', value: string | undefined): void;
+  update(path: 'sender.website', value: string | undefined): void;
+  update(path: `sender.identifications[${number}].schemeId`, value: string): void;
+  update(path: `sender.identifications[${number}].value`, value: string): void;
+  update(path: 'sender.alias', value: string | undefined): void;
+  update(path: 'customer.taxNumber', value: string): void;
+  update(path: 'customer.name', value: string): void;
+  update(path: 'customer.taxOffice', value: string | undefined): void;
+  update(path: 'customer.address', value: string): void;
+  update(path: 'customer.district', value: string): void;
+  update(path: 'customer.city', value: string): void;
+  update(path: 'customer.country', value: string | undefined): void;
+  update(path: 'customer.zipCode', value: string | undefined): void;
+  update(path: 'customer.phone', value: string | undefined): void;
+  update(path: 'customer.email', value: string | undefined): void;
+  update(path: 'customer.website', value: string | undefined): void;
+  update(path: `customer.identifications[${number}].schemeId`, value: string): void;
+  update(path: `customer.identifications[${number}].value`, value: string): void;
+  update(path: 'customer.alias', value: string | undefined): void;
+  update(path: `lines[${number}].name`, value: string): void;
+  update(path: `lines[${number}].quantity`, value: number): void;
+  update(path: `lines[${number}].price`, value: number): void;
+  update(path: `lines[${number}].unitCode`, value: string | undefined): void;
+  update(path: `lines[${number}].kdvPercent`, value: number): void;
+  update(path: `lines[${number}].kdvExemptionCode`, value: string | undefined): void;
+  update(path: `lines[${number}].allowancePercent`, value: number | undefined): void;
+  update(path: `lines[${number}].taxes[${number}].code`, value: string): void;
+  update(path: `lines[${number}].taxes[${number}].percent`, value: number): void;
+  update(path: `lines[${number}].withholdingTaxCode`, value: string | undefined): void;
+  update(path: `lines[${number}].withholdingTaxPercent`, value: number | undefined): void;
+  update(path: `lines[${number}].description`, value: string | undefined): void;
+  update(path: `lines[${number}].brand`, value: string | undefined): void;
+  update(path: `lines[${number}].model`, value: string | undefined): void;
+  update(path: `lines[${number}].buyerCode`, value: string | undefined): void;
+  update(path: `lines[${number}].sellerCode`, value: string | undefined): void;
+  update(path: `lines[${number}].manufacturerCode`, value: string | undefined): void;
+  update(path: `lines[${number}].origin`, value: string | undefined): void;
+  update(path: `lines[${number}].note`, value: string | undefined): void;
+  update(path: `lines[${number}].delivery.deliveryTermCode`, value: string | undefined): void;
+  update(path: `lines[${number}].delivery.gtipNo`, value: string | undefined): void;
+  update(path: `lines[${number}].delivery.alicidibsatirkod`, value: string | undefined): void;
+  update(path: `lines[${number}].delivery.transportModeCode`, value: string | undefined): void;
+  update(path: `lines[${number}].delivery.packageId`, value: string | undefined): void;
+  update(path: `lines[${number}].delivery.packageQuantity`, value: number | undefined): void;
+  update(path: `lines[${number}].delivery.packageTypeCode`, value: string | undefined): void;
+  update(path: `lines[${number}].itemClassificationCode`, value: string | undefined): void;
+  update(path: `lines[${number}].productTraceId`, value: string | undefined): void;
+  update(path: `lines[${number}].serialId`, value: string | undefined): void;
+  update(path: `lines[${number}].additionalItemIdentifications[${number}].schemeId`, value: string): void;
+  update(path: `lines[${number}].additionalItemIdentifications[${number}].value`, value: string): void;
+  update(path: 'id', value: string | undefined): void;
+  update(path: 'uuid', value: string | undefined): void;
+  update(path: 'datetime', value: string | undefined): void;
+  update(path: 'type', value: string | undefined): void;
+  update(path: 'profile', value: string | undefined): void;
+  update(path: 'currencyCode', value: string | undefined): void;
+  update(path: 'exchangeRate', value: number | undefined): void;
+  update(path: 'kdvExemptionCode', value: string | undefined): void;
+  update(path: 'ozelMatrah.percent', value: number): void;
+  update(path: 'ozelMatrah.taxable', value: number): void;
+  update(path: 'ozelMatrah.amount', value: number): void;
+  update(path: 'orderReference.id', value: string): void;
+  update(path: 'orderReference.issueDate', value: string): void;
+  update(path: 'billingReference.id', value: string): void;
+  update(path: 'billingReference.issueDate', value: string): void;
+  update(path: 'billingReference.documentTypeCode', value: string | undefined): void;
+  update(path: `despatchReferences[${number}].id`, value: string): void;
+  update(path: `despatchReferences[${number}].issueDate`, value: string): void;
+  update(path: `additionalDocuments[${number}].id`, value: string): void;
+  update(path: `additionalDocuments[${number}].issueDate`, value: string | undefined): void;
+  update(path: `additionalDocuments[${number}].documentTypeCode`, value: string | undefined): void;
+  update(path: `additionalDocuments[${number}].documentType`, value: string | undefined): void;
+  update(path: `additionalDocuments[${number}].documentDescription`, value: string | undefined): void;
+  update(path: 'paymentMeans.meansCode', value: string): void;
+  update(path: 'paymentMeans.dueDate', value: string | undefined): void;
+  update(path: 'paymentMeans.channelCode', value: string | undefined): void;
+  update(path: 'paymentMeans.accountNumber', value: string | undefined): void;
+  update(path: 'paymentMeans.paymentNote', value: string | undefined): void;
+  update(path: 'notes', value: string[] | undefined): void;
+  update(path: 'buyerCustomer.name', value: string): void;
+  update(path: 'buyerCustomer.taxNumber', value: string): void;
+  update(path: 'buyerCustomer.address', value: string): void;
+  update(path: 'buyerCustomer.city', value: string): void;
+  update(path: 'buyerCustomer.district', value: string): void;
+  update(path: 'buyerCustomer.country', value: string): void;
+  update(path: 'buyerCustomer.zipCode', value: string | undefined): void;
+  update(path: 'buyerCustomer.phone', value: string | undefined): void;
+  update(path: 'buyerCustomer.email', value: string | undefined): void;
+  update(path: `buyerCustomer.identifications[${number}].schemeId`, value: string): void;
+  update(path: `buyerCustomer.identifications[${number}].value`, value: string): void;
+  update(path: 'buyerCustomer.nationalityId', value: string | undefined): void;
+  update(path: 'buyerCustomer.passportId', value: string | undefined): void;
+  update(path: 'taxRepresentativeParty.vknTckn', value: string): void;
+  update(path: 'taxRepresentativeParty.label', value: string): void;
+  update(path: 'taxRepresentativeParty.name', value: string | undefined): void;
+  update(path: 'sgk.type', value: 'SAGLIK_ECZ' | 'SAGLIK_HAS' | 'SAGLIK_OPT' | 'SAGLIK_MED' | 'ABONELIK' | 'MAL_HIZMET' | 'DIGER'): void;
+  update(path: 'sgk.documentNo', value: string): void;
+  update(path: 'sgk.companyName', value: string): void;
+  update(path: 'sgk.companyCode', value: string): void;
+  update(path: 'onlineSale.isOnlineSale', value: boolean): void;
+  update(path: 'onlineSale.storeUrl', value: string): void;
+  update(path: 'onlineSale.paymentMethod', value: string): void;
+  update(path: 'onlineSale.paymentDate', value: string): void;
+  update(path: 'onlineSale.carrierTaxNumber', value: string | undefined): void;
+  update(path: 'onlineSale.carrierName', value: string | undefined): void;
+  update(path: 'onlineSale.deliveryDate', value: string | undefined): void;
+  update(path: 'eArchiveInfo.sendType', value: "ELEKTRONIK" | "KAGIT"): void;
+  update(path: 'invoicePeriod.startDate', value: string): void;
+  update(path: 'invoicePeriod.endDate', value: string): void;
+  update(path: 'ytbNo', value: string | undefined): void;
+  update(path: 'ytbIssueDate', value: string | undefined): void;
+  update(path: 'xsltTemplate', value: string | undefined): void;
+  update(path: 'liability', value: 'einvoice' | 'earchive' | undefined): void;
+}
+
