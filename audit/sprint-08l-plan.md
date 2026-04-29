@@ -276,7 +276,7 @@ Bu script Sprint 8l.2 commit'inde eklenir, **package.json `scripts`'ine `check:t
     type PathErrorPayload,     // v2.2.4+
     type PathErrorCode,        // v2.2.4+
     type LineFieldVisibility,  // v2.2.4+
-  } from '@rahat-fatura/json2ubl-ts';
+  } from 'json2ubl-ts';
   ```
 - Event listener tip referans örneği güncellemesi:
   ```typescript
@@ -296,7 +296,7 @@ Bu script Sprint 8l.2 commit'inde eklenir, **package.json `scripts`'ine `check:t
   - `Suggestion`, `SuggestionRule`, `SuggestionSeverity` (`suggestion-types.ts`)
   - `PathErrorPayload`, `PathErrorCode` (`invoice-session.ts`)
   - `LineFieldVisibility` (`line-field-visibility.ts`)
-  - Önceden inferred type (`SessionEvents['suggestion'][number]`) ile erişiliyordu; v2.2.4 ile cast'siz `import type { Suggestion } from '@rahat-fatura/json2ubl-ts'` mümkün.
+  - Önceden inferred type (`SessionEvents['suggestion'][number]`) ile erişiliyordu; v2.2.4 ile cast'siz `import type { Suggestion } from 'json2ubl-ts'` mümkün.
 - **TS 5.7 simülasyon script'i** (`scripts/check-ts57-strict.sh` + `npm run check:ts57`) — Mimsoft tsconfig'iyle yapay typecheck doğrulaması.
 
 ### Fixed
@@ -305,7 +305,7 @@ Bu script Sprint 8l.2 commit'inde eklenir, **package.json `scripts`'ine `check:t
   - Çözüm: `InvoiceSession.update()` method'una **13 spesifik template literal overload** eklendi (sender × 2, customer × 2, buyerCustomer × 2, despatchReferences × 2, additionalDocuments × 5).
   - Mevcut generic `update<P extends keyof SessionPathMap>(path: P, value: SessionPathMap[P])` catch-all olarak korundu (line path'leri inline çağrılarda hâlâ generic'ten yakalanır).
   - Runtime davranış değişmedi — sadece method signature genişledi, implementation gövdesi aynı.
-  - Mimsoft'taki **15 cast satırı + `LIBRARY-SUGGESTION-#6 PENDING` etiketleri** `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.4` sonrası silinebilir.
+  - Mimsoft'taki **15 cast satırı + `LIBRARY-SUGGESTION-#6 PENDING` etiketleri** `yarn upgrade json2ubl-ts@2.2.4` sonrası silinebilir.
 
 ### Test
 - `update()` overload bloğu + action helper smoke (Öneri #6, +5-6)
@@ -329,7 +329,7 @@ Bu script Sprint 8l.2 commit'inde eklenir, **package.json `scripts`'ine `check:t
 
 Öneri #6:
 - Status: `pending` → `applied`
-- **Önemli düzeltme (2026-04-29):** "Sprint 8k.2 commit `8c2e914` cast'i TS 5.3.3'te yeterliydi fakat TS 5.7+ Mimsoft ortamında yetersiz kaldı (kütüphane içi reproduction TS 5.7.3 simülasyonuyla 6 TS2345 üretti). v2.2.4 (Sprint 8l.2) `update()` method'una 13 spesifik template literal overload ekleyerek fix'ledi. Mimsoft `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.4` sonrası 15 cast satırı + `LIBRARY-SUGGESTION-#6 PENDING` etiketleri silinebilir, `tsc --noEmit` 0 hata vermeli."
+- **Önemli düzeltme (2026-04-29):** "Sprint 8k.2 commit `8c2e914` cast'i TS 5.3.3'te yeterliydi fakat TS 5.7+ Mimsoft ortamında yetersiz kaldı (kütüphane içi reproduction TS 5.7.3 simülasyonuyla 6 TS2345 üretti). v2.2.4 (Sprint 8l.2) `update()` method'una 13 spesifik template literal overload ekleyerek fix'ledi. Mimsoft `yarn upgrade json2ubl-ts@2.2.4` sonrası 15 cast satırı + `LIBRARY-SUGGESTION-#6 PENDING` etiketleri silinebilir, `tsc --noEmit` 0 hata vermeli."
 - Refactor uygulama bölümünde: ne yapılacağı net (cast satırları silinir, import type SessionPathMap kullanımı sadece cast amaçlıysa silinir)
 
 Özet tablo Status sütunları + Sprint commit kolonu güncellenir.
@@ -355,7 +355,7 @@ Bu script Sprint 8l.2 commit'inde eklenir, **package.json `scripts`'ine `check:t
 4. Action helper smoke test geçer (Öneri #6 overload davranışı + runtime correctness)
 5. **`npm run check:ts57` (yeni script) → 0 hata** — TS 5.7.3 simülasyonu kütüphane içinde Mimsoft tsconfig'iyle çalıştırılır, action helper pattern hatasız compile etmeli
 6. Cross-repo: Mimsoft `99-library-suggestions.md`'da Öneri #5 + #6 `Status: applied`
-7. **Mimsoft tüketici tarafı doğrulaması (Öneri #6 kapanış kriteri)** — Sprint 8l publish + Mimsoft `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.4` sonrası:
+7. **Mimsoft tüketici tarafı doğrulaması (Öneri #6 kapanış kriteri)** — Sprint 8l publish + Mimsoft `yarn upgrade json2ubl-ts@2.2.4` sonrası:
    - Mimsoft `packages/web/src/components/document-create/v2/actions/` altındaki **15 cast satırı** + `// LIBRARY-SUGGESTION-#6 PENDING` etiketleri (5 helper × 1-5 path: `set-sender`, `set-customer`, `set-buyer-customer`, `set-despatch-references`, `set-additional-documents`) **silinir**
    - `yarn workspace @sisteminiz/web exec tsc --noEmit` → **0 hata** (TypeScript 5.x, Mimsoft tsconfig)
    - **Eğer hâlâ TS2345 alınırsa Sprint 8l yetersizdir** → ek overload'lar (yeni fonksiyonel path eklendiyse) veya `SessionPathMap` mapped type alternatifi içeren v2.2.5 patch'i hazırlanır
@@ -370,7 +370,7 @@ Bu script Sprint 8l.2 commit'inde eklenir, **package.json `scripts`'ine `check:t
 - **Implementation imzası genişlemesi:** `update(path: string, value: unknown)` runtime davranışını değiştirmez — path validation 4 katman zaten içeriden çalışıyor. Mevcut 1750 test bozulmamalı.
 - **TS 5.7 simülasyon script `noUnusedLocals`:** Test dosyasındaki bazı argümanlar local scope'ta unused olabilir — script tsconfig'inde `noUnusedLocals: false` olmalı (kütüphane main tsconfig'i etkilenmesin).
 - **162 examples-matrix regression:** En az 1 senaryo bozulursa **dur** — atomic commit tek tek geri alınır.
-- **Berkay'ın `npm publish` adımı manuel:** Plan tamamlanır, fakat Mimsoft `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.4` sonrası Öneri #6 cast'lerini silmek için ek bir Mimsoft commit gerekir (bu sprint kapsamı dışı, Mimsoft F1 toplu commit'inde).
+- **Berkay'ın `npm publish` adımı manuel:** Plan tamamlanır, fakat Mimsoft `yarn upgrade json2ubl-ts@2.2.4` sonrası Öneri #6 cast'lerini silmek için ek bir Mimsoft commit gerekir (bu sprint kapsamı dışı, Mimsoft F1 toplu commit'inde).
 - **Yeni fonksiyonel path eklendiğinde drift:** Generator'da yeni `(i: number) => template literal` path eklenirse, `invoice-session.ts`'teki overload bloğu **manuel** güncellenmeli. `npm run verify:paths` drift'i CI'da yakalar (mevcut), ama overload eksikliği ancak TS 5.7+ tüketicide TS2345 olarak görünür. Mitigation: `verify:paths` script'ine ek bir kontrol — yeni fonksiyonel path eklendiyse `invoice-session.ts`'te ilgili overload var mı diye scan eder. (Sprint kapsamı dışı, gelecek iş.)
 
 ## Açık Sorular (Resolved 2026-04-29)
@@ -379,7 +379,7 @@ Bu script Sprint 8l.2 commit'inde eklenir, **package.json `scripts`'ine `check:t
 
 2. **`SuggestionRule` ve `SuggestionSeverity` re-export'u:** **Evet** (Mimsoft kabul). `Suggestion`'la birlikte re-export edilir, tutarlı + advisory rule yazmak isteyen tüketiciye açık.
 
-3. **v2.2.4 vs v2.2.3 publish sırası:** **Seçenek C** (Mimsoft kabul). v2.2.3 audit kanonu zaten yazıldı, tag'lenir; v2.2.4 hemen ardından publish edilir; Mimsoft tek `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.4` ile geçer.
+3. **v2.2.4 vs v2.2.3 publish sırası:** **Seçenek C** (Mimsoft kabul). v2.2.3 audit kanonu zaten yazıldı, tag'lenir; v2.2.4 hemen ardından publish edilir; Mimsoft tek `yarn upgrade json2ubl-ts@2.2.4` ile geçer.
 
 ---
 

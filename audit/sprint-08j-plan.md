@@ -135,7 +135,7 @@ class InvoiceSession {
 5. Doğrula: `dist/index.mjs`'te `SessionPaths` constant'ı çıktı veriyor mu
 6. Doğrula: `dist/index.d.ts`'te `SessionPaths` ve `SessionPathMap` export ediliyor mu
 
-**Test:** `__tests__/integration/session-paths-export.test.ts` — `import { SessionPaths } from '@rahat-fatura/json2ubl-ts'` ile gerçekten import edilebiliyor mu, key'leri doğru mu.
+**Test:** `__tests__/integration/session-paths-export.test.ts` — `import { SessionPaths } from 'json2ubl-ts'` ile gerçekten import edilebiliyor mu, key'leri doğru mu.
 
 #### 8j.2 — Party Identifications Path Entries
 

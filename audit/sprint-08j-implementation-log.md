@@ -157,7 +157,7 @@ class InvoiceSession {
 
 1. ✅ **Bulgu 1 — `SessionPaths` runtime export.** README örnekleri artık çalışır:
    ```typescript
-   import { SessionPaths } from '@rahat-fatura/json2ubl-ts';
+   import { SessionPaths } from 'json2ubl-ts';
    session.update(SessionPaths.senderTaxNumber, '1234567890');
    ```
 

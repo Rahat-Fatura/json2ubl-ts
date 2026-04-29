@@ -7,7 +7,7 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 **Library Suggestions Patch (Mimsoft greenfield F2.C2.6 + C2.9).** Tek küçük additive öneri uygulandı.
 
 ### Added
-- **`PartyIdentificationSchemeId`** literal union public re-export (Library Öneri #7) — 27 UBL TR-Identifier şema kodu (B-69, `PartyIdentification.schemeID`). Tüketicilerin `Record<PartyIdentificationSchemeId, string>` narrow map (label/option dropdown) kurması için gerekli. Önceden lokal türetim (S-8 sınırı) gerekiyordu; v2.2.5 ile cast'siz `import type { PartyIdentificationSchemeId } from '@rahat-fatura/json2ubl-ts'`.
+- **`PartyIdentificationSchemeId`** literal union public re-export (Library Öneri #7) — 27 UBL TR-Identifier şema kodu (B-69, `PartyIdentification.schemeID`). Tüketicilerin `Record<PartyIdentificationSchemeId, string>` narrow map (label/option dropdown) kurması için gerekli. Önceden lokal türetim (S-8 sınırı) gerekiyordu; v2.2.5 ile cast'siz `import type { PartyIdentificationSchemeId } from 'json2ubl-ts'`.
   - VKN/TCKN literal union'a **dahil edilmedi** (bunlar `party.taxNumber` alanında ayrı yönetilir; UI akışında "ek tanımlayıcı" rolünde kullanılan kodlar için narrow tip).
   - Runtime `PARTY_IDENTIFICATION_SCHEME_IDS` seti (29 entry, TCKN+VKN dahil) **değişmedi** — despatch validator'ları (`despatch-validators.ts`) bu seti `set.has(schemeId)` ile string kabul ederek kullanıyor.
 
@@ -17,13 +17,13 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 
 ### Migration v2.2.4 → v2.2.5
 
-API değişikliği yok, additive — `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.5` yeterli.
+API değişikliği yok, additive — `yarn upgrade json2ubl-ts@2.2.5` yeterli.
 
 ```typescript
 import {
   PARTY_IDENTIFICATION_SCHEME_IDS,
   type PartyIdentificationSchemeId,
-} from '@rahat-fatura/json2ubl-ts';
+} from 'json2ubl-ts';
 
 // Mimsoft greenfield F2.C2.9 — narrow label map (drift mitigation):
 const PARTY_IDENTIFICATION_SCHEME_LABELS: Record<PartyIdentificationSchemeId, string> = {
@@ -45,7 +45,7 @@ PARTY_IDENTIFICATION_SCHEME_IDS.has('TCKN');  // ✓ true (despatch için)
   - `Suggestion`, `SuggestionRule`, `SuggestionSeverity` (`suggestion-types.ts`)
   - `PathErrorPayload`, `PathErrorCode` (`invoice-session.ts`)
   - `LineFieldVisibility` (`line-field-visibility.ts`, direkt re-export — modül zinciri kısaltma)
-  - Önceden inferred type (`SessionEvents['suggestion'][number]`) ile erişiliyordu; v2.2.4 ile cast'siz `import type { Suggestion } from '@rahat-fatura/json2ubl-ts'` mümkün.
+  - Önceden inferred type (`SessionEvents['suggestion'][number]`) ile erişiliyordu; v2.2.4 ile cast'siz `import type { Suggestion } from 'json2ubl-ts'` mümkün.
 - **`SuggestionSeverity`** literal union ayrı tip alias olarak çıkarıldı (`'recommended' | 'optional'`); önceden `Suggestion.severity` field'ında inline literal idi.
 - **`InvoiceSessionUpdateOverloads`** interface'i (generator output, `session-paths.generated.ts`) — declaration merging ile `InvoiceSession` class'ına 130+ spesifik literal `update()` overload enjekte eder.
 - **`scripts/check-ts57-strict.sh`** + **`npm run check:ts57`** — Mimsoft tüketici tsconfig simülasyonu (TS 5.7.3 + bundler moduleResolution + strict). CI hook'u olarak gelecekte eklenebilir.
@@ -61,7 +61,7 @@ PARTY_IDENTIFICATION_SCHEME_IDS.has('TCKN');  // ✓ true (despatch için)
 - **TS 5.7+ strict + bundler `moduleResolution` ortamında fonksiyonel `SessionPaths.X(i)` path'lerinin `update()` çağrısında `TS2345` hatası** (Library Öneri #6).
   - Sprint 8k.2'deki narrow `as` template literal cast TS 5.3.3'te yeterliydi fakat TS 5.7'de yetersizdi.
   - v2.2.4 ile `InvoiceSessionUpdateOverloads` interface'i 130+ spesifik literal overload üretir; Mimsoft action helper pattern'i (`forEach + i: number → SessionPaths.X(i) → update(path, value)`) **cast'siz** çalışır.
-  - Mimsoft'taki **15 cast satırı + `LIBRARY-SUGGESTION-#6 PENDING` etiketleri** `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.4` sonrası silinebilir.
+  - Mimsoft'taki **15 cast satırı + `LIBRARY-SUGGESTION-#6 PENDING` etiketleri** `yarn upgrade json2ubl-ts@2.2.4` sonrası silinebilir.
   - Doğrulama: `npm run check:ts57` (TS 5.7.3 + Mimsoft tsconfig) → 0 hata.
 
 ### Test
@@ -71,7 +71,7 @@ PARTY_IDENTIFICATION_SCHEME_IDS.has('TCKN');  // ✓ true (despatch için)
 
 ### Migration v2.2.3 → v2.2.4
 
-API değişikliği yok, additive — `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.4` yeterli.
+API değişikliği yok, additive — `yarn upgrade json2ubl-ts@2.2.4` yeterli.
 
 ```typescript
 // v2.2.3'te workaround/cast gerekiyordu, v2.2.4'te cast'siz çalışır:
@@ -81,7 +81,7 @@ import {
   type Suggestion,
   type PathErrorPayload,
   type LineFieldVisibility,
-} from '@rahat-fatura/json2ubl-ts';
+} from 'json2ubl-ts';
 
 const session = new InvoiceSession();
 
@@ -104,7 +104,7 @@ session.on('path-error', (e: PathErrorPayload) => { ... });
 
 - **`SimpleSgkType` literal union public re-export'u** (Library Öneri #1, Sprint 8k.1) — `simple-types.ts`'te tanımlı olan tip ana paket entry'sinden public olarak erişilebilir hale geldi:
   ```typescript
-  import type { SimpleSgkType } from '@rahat-fatura/json2ubl-ts';
+  import type { SimpleSgkType } from 'json2ubl-ts';
   const t: SimpleSgkType = 'SAGLIK_ECZ';
   ```
 - **`InvoiceSession.removeIdentification(party, index)`** API (Library Öneri #4, Sprint 8k.4) — sender/customer/buyerCustomer identifications array'inde belirli index'i siler. Path-based `update()` API'si index kaydırma yapamadığı için KAMU MUSTERINO / IDIS SEVKIYATNO ekle-sil akışında kritik. Tek elemanlı array sonrası undefined yapılır (XML'de `<cbc:ID schemeID=""/>` üretiminden kaçınır).
@@ -136,7 +136,7 @@ session.on('path-error', (e: PathErrorPayload) => { ... });
 
 ### Migration v2.2.2 → v2.2.3
 
-API değişikliği yok, additive — `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.3` yeterli.
+API değişikliği yok, additive — `yarn upgrade json2ubl-ts@2.2.3` yeterli.
 
 ```typescript
 // v2.2.2'de cast/workaround gerekiyordu, v2.2.3'te cast'siz çalışır:
@@ -145,7 +145,7 @@ import {
   SessionPaths,
   type SimpleSgkType,
   type IdentificationParty,
-} from '@rahat-fatura/json2ubl-ts';
+} from 'json2ubl-ts';
 
 const session = new InvoiceSession();
 session.update(SessionPaths.senderIdentificationSchemeId(0), 'MERSISNO');  // narrow type
@@ -173,7 +173,7 @@ API değişikliği yok, sadece bug fix. Mimsoft ve diğer browser tüketicileri 
 
 ### Added
 
-- **`SessionPaths` runtime export** (Bulgu 1): generated dosyada (`src/calculator/session-paths.generated.ts`) `SessionPaths` constant mevcuttu fakat ana paket entry'sinden re-export edilmiyordu. README'deki `import { SessionPaths } from '@rahat-fatura/json2ubl-ts'` örnekleri artık runtime'da çalışır. `SessionPathMap` tipi de re-export edildi.
+- **`SessionPaths` runtime export** (Bulgu 1): generated dosyada (`src/calculator/session-paths.generated.ts`) `SessionPaths` constant mevcuttu fakat ana paket entry'sinden re-export edilmiyordu. README'deki `import { SessionPaths } from 'json2ubl-ts'` örnekleri artık runtime'da çalışır. `SessionPathMap` tipi de re-export edildi.
 - **Party identifications path entries** (Bulgu 2 — 6 yeni entry):
   - `senderIdentificationSchemeId(i)` / `senderIdentificationValue(i)` — `sender.identifications[i].schemeId/value`
   - `customerIdentificationSchemeId(i)` / `customerIdentificationValue(i)` — `customer.identifications[i].schemeId/value`
@@ -210,11 +210,11 @@ API değişikliği yok, sadece bug fix. Mimsoft ve diğer browser tüketicileri 
 
 ### Migration v2.2.0 → v2.2.1
 
-Geri uyumlu — `npm install @rahat-fatura/json2ubl-ts@2.2.1` ile yeterli.
+Geri uyumlu — `npm install json2ubl-ts@2.2.1` ile yeterli.
 
 ```typescript
 // v2.2.0'da çalışmıyordu, v2.2.1'de çalışır:
-import { SessionPaths, InvoiceSession } from '@rahat-fatura/json2ubl-ts';
+import { SessionPaths, InvoiceSession } from 'json2ubl-ts';
 
 const session = new InvoiceSession();
 session.update(SessionPaths.senderIdentificationSchemeId(0), 'MERSISNO');

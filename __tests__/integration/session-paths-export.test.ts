@@ -3,7 +3,7 @@
  *
  * Bulgu: v2.2.0'da `SessionPaths` constant generated dosyada vardı ama
  * ana paket entry'sinden re-export edilmemişti — README örnekleri
- * `import { SessionPaths } from '@rahat-fatura/json2ubl-ts'` formundaydı,
+ * `import { SessionPaths } from 'json2ubl-ts'` formundaydı,
  * fakat runtime'da bulunmuyordu. v2.2.1 ile re-export eklendi.
  *
  * Bu test paketi public surface'i kontrol eder: kütüphane index'inden

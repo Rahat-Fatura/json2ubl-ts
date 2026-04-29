@@ -146,7 +146,7 @@ class InvoiceSession {
 
 1. ✅ **Öneri #1 — `SimpleSgkType` public export.** F4.3 sgk-info-section'da cast'siz import:
    ```typescript
-   import type { SimpleSgkType } from '@rahat-fatura/json2ubl-ts';
+   import type { SimpleSgkType } from 'json2ubl-ts';
    ```
 
 2. ✅ **Öneri #2 — Identifications path narrow type.** F1+ form akışlarında cast'siz:
@@ -197,7 +197,7 @@ gh release create v2.2.3 --title "v2.2.3 — Library Suggestions Patch" --notes-
 
 Sonra Mimsoft monorepo'da:
 ```bash
-yarn upgrade @rahat-fatura/json2ubl-ts@2.2.3
+yarn upgrade json2ubl-ts@2.2.3
 # audit/greenfield/99-library-suggestions.md "Yeni sürüm yayınlandı" + "yarn upgrade yaptı" checkbox'ları işaretle
 # audit/greenfield/99-implementation-log.md decision log: "v2.2.3 prerekuizit uygulandı"
 ```

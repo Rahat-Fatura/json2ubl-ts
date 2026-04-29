@@ -112,10 +112,10 @@ durum: KAPATILDI — v2.2.4 publish hazır
 
 1. ✅ **Öneri #5 — Public type re-export.** Mimsoft `state/invoice-session-store.ts`'te inferred type tanımları (3 adet) silinebilir; direkt import:
    ```typescript
-   import type { Suggestion, PathErrorPayload, LineFieldVisibility } from '@rahat-fatura/json2ubl-ts';
+   import type { Suggestion, PathErrorPayload, LineFieldVisibility } from 'json2ubl-ts';
    ```
 
-2. ✅ **Öneri #6 — TS 5.7+ inference fix.** Mimsoft `actions/` altındaki **15 cast satırı + `LIBRARY-SUGGESTION-#6 PENDING` etiketleri** `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.4` sonrası silinebilir. `tsc --noEmit` 0 hata bekleniyor (kütüphane içi `npm run check:ts57` simülasyonu doğruladı).
+2. ✅ **Öneri #6 — TS 5.7+ inference fix.** Mimsoft `actions/` altındaki **15 cast satırı + `LIBRARY-SUGGESTION-#6 PENDING` etiketleri** `yarn upgrade json2ubl-ts@2.2.4` sonrası silinebilir. `tsc --noEmit` 0 hata bekleniyor (kütüphane içi `npm run check:ts57` simülasyonu doğruladı).
 
 ## Disiplin Doğrulamaları
 
@@ -149,7 +149,7 @@ gh release create v2.2.4 --title "v2.2.4 — Library Suggestions Patch (TS 5.7+ 
 
 Sonra Mimsoft monorepo'da:
 ```bash
-yarn upgrade @rahat-fatura/json2ubl-ts@2.2.4
+yarn upgrade json2ubl-ts@2.2.4
 # Mimsoft F1 toplu commit zincirinde:
 #   - 15 cast satırı + LIBRARY-SUGGESTION-#6 PENDING etiketleri silinir
 #   - 3 inferred type tanımı + LIBRARY-SUGGESTION-#5 PENDING silinir
