@@ -226,8 +226,57 @@ export const YTB_ITEM_CLASSIFICATION_CODES = new Set([
   '01', '02', '03', '04',
 ]);
 
-/** Taraf kimlik schemeID değerleri */
-export const PARTY_IDENTIFICATION_SCHEME_IDS = new Set([
+/**
+ * Taraf kimlik schemeID literal union (Sprint 8m.1 / v2.2.5 — Library Öneri #7).
+ *
+ * UBL TR-Identifier şema kodları (B-69, `PartyIdentification.schemeID`).
+ * Tüketicilerin (Mimsoft form akışı, UI label/option map'leri) `Record<PartyIdentificationSchemeId, string>`
+ * narrow map kurması için public re-export edilir. Library evrimleşirse (yeni scheme
+ * eklenirse) tüketici tarafında TS hatası ile drift yakalanır.
+ *
+ * **VKN ve TCKN hariç tutuldu** — bunlar `party.taxNumber` alanında ayrı yönetilir
+ * (`SimplePartyInput.taxNumber`); `PartyIdentification.schemeID` UI akışında
+ * "ek tanımlayıcı" rolünde kullanılır. Runtime `PARTY_IDENTIFICATION_SCHEME_IDS`
+ * seti bu iki kodu **dahil eder** (despatch validator'ları için gerekli).
+ */
+export type PartyIdentificationSchemeId =
+  | 'HIZMETNO'
+  | 'MUSTERINO'
+  | 'TESISATNO'
+  | 'TELEFONNO'
+  | 'DISTRIBUTORNO'
+  | 'TICARETSICILNO'
+  | 'TAPDKNO'
+  | 'BAYINO'
+  | 'ABONENO'
+  | 'SAYACNO'
+  | 'EPDKNO'
+  | 'SUBENO'
+  | 'PASAPORTNO'
+  | 'ARACIKURUMETIKET'
+  | 'ARACIKURUMVKN'
+  | 'CIFTCINO'
+  | 'IMALATCINO'
+  | 'DOSYANO'
+  | 'HASTANO'
+  | 'MERSISNO'
+  | 'URETICINO'
+  | 'GTB_REFNO'
+  | 'GTB_GCB_TESCILNO'
+  | 'GTB_FIILI_IHRACAT_TARIHI'
+  | 'ARACKIMLIKNO'
+  | 'PLAKA'
+  | 'SEVKIYATNO';
+
+/**
+ * Taraf kimlik schemeID değerleri (runtime set).
+ *
+ * `PartyIdentificationSchemeId` (UI narrow tip, 27 entry) ile **VKN + TCKN ek**
+ * (validator runtime için zorunlu). Despatch validator'ları (`despatch-validators.ts`)
+ * bu seti `set.has(schemeId)` ile kullanır; tip parametresi `string` kalır
+ * (runtime'da TCKN/VKN'yi de yakalaması için).
+ */
+export const PARTY_IDENTIFICATION_SCHEME_IDS = new Set<string>([
   'TCKN', 'VKN', 'HIZMETNO', 'MUSTERINO', 'TESISATNO', 'TELEFONNO',
   'DISTRIBUTORNO', 'TICARETSICILNO', 'TAPDKNO', 'BAYINO', 'ABONENO',
   'SAYACNO', 'EPDKNO', 'SUBENO', 'PASAPORTNO', 'ARACIKURUMETIKET',

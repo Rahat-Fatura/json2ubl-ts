@@ -10,6 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { PARTY_IDENTIFICATION_SCHEME_IDS } from '../../src';
 import type {
   SimpleSgkType,
   SimpleSgkInput,
@@ -20,6 +21,7 @@ import type {
   PathErrorPayload,
   PathErrorCode,
   LineFieldVisibility,
+  PartyIdentificationSchemeId,
 } from '../../src';
 
 describe('Public type re-exports (Sprint 8k.1)', () => {
@@ -121,5 +123,63 @@ describe('Public type re-exports (Sprint 8l.1 / v2.2.4 — Library Öneri #5)', 
     };
     expect(typeof lfv.showKdvExemptionCodeSelector).toBe('boolean');
     expect(typeof lfv.showWithholdingTaxSelector).toBe('boolean');
+  });
+});
+
+describe('Public type re-exports (Sprint 8m.1 / v2.2.5 — Library Öneri #7)', () => {
+  it('PartyIdentificationSchemeId literal union covers all 27 UBL scheme codes (VKN/TCKN hariç)', () => {
+    const all: PartyIdentificationSchemeId[] = [
+      'HIZMETNO', 'MUSTERINO', 'TESISATNO', 'TELEFONNO',
+      'DISTRIBUTORNO', 'TICARETSICILNO', 'TAPDKNO', 'BAYINO', 'ABONENO',
+      'SAYACNO', 'EPDKNO', 'SUBENO', 'PASAPORTNO', 'ARACIKURUMETIKET',
+      'ARACIKURUMVKN', 'CIFTCINO', 'IMALATCINO', 'DOSYANO', 'HASTANO',
+      'MERSISNO', 'URETICINO', 'GTB_REFNO', 'GTB_GCB_TESCILNO',
+      'GTB_FIILI_IHRACAT_TARIHI', 'ARACKIMLIKNO', 'PLAKA', 'SEVKIYATNO',
+    ];
+    expect(all).toHaveLength(27);
+    // Tüm narrow tipler runtime set'te de bulunmalı
+    for (const code of all) {
+      expect(PARTY_IDENTIFICATION_SCHEME_IDS.has(code)).toBe(true);
+    }
+  });
+
+  it('Record<PartyIdentificationSchemeId, string> narrow map kullanım örneği (Mimsoft pattern)', () => {
+    const labels: Record<PartyIdentificationSchemeId, string> = {
+      HIZMETNO: 'Hizmet No',
+      MUSTERINO: 'Müşteri No',
+      TESISATNO: 'Tesisat No',
+      TELEFONNO: 'Telefon No',
+      DISTRIBUTORNO: 'Distribütör No',
+      TICARETSICILNO: 'Ticaret Sicil No',
+      TAPDKNO: 'TAPDK No',
+      BAYINO: 'Bayi No',
+      ABONENO: 'Abone No',
+      SAYACNO: 'Sayaç No',
+      EPDKNO: 'EPDK No',
+      SUBENO: 'Şube No',
+      PASAPORTNO: 'Pasaport No',
+      ARACIKURUMETIKET: 'Aracı Kurum Etiket',
+      ARACIKURUMVKN: 'Aracı Kurum VKN',
+      CIFTCINO: 'Çiftçi No',
+      IMALATCINO: 'İmalatçı No',
+      DOSYANO: 'Dosya No',
+      HASTANO: 'Hasta No',
+      MERSISNO: 'MERSİS No',
+      URETICINO: 'Üretici No',
+      GTB_REFNO: 'GTB Referans No',
+      GTB_GCB_TESCILNO: 'GTB GCB Tescil No',
+      GTB_FIILI_IHRACAT_TARIHI: 'GTB Fiili İhracat Tarihi',
+      ARACKIMLIKNO: 'Araç Kimlik No',
+      PLAKA: 'Plaka',
+      SEVKIYATNO: 'Sevkiyat No',
+    };
+    expect(labels.MERSISNO).toBe('MERSİS No');
+    expect(Object.keys(labels)).toHaveLength(27);
+  });
+
+  it('runtime set VKN/TCKN dahil 29 entry — despatch validator uyumu korunur', () => {
+    expect(PARTY_IDENTIFICATION_SCHEME_IDS.has('TCKN')).toBe(true);
+    expect(PARTY_IDENTIFICATION_SCHEME_IDS.has('VKN')).toBe(true);
+    expect(PARTY_IDENTIFICATION_SCHEME_IDS.size).toBe(29);
   });
 });

@@ -30,3 +30,4 @@ export {
     UUID_REGEX,
     PARTY_IDENTIFICATION_SCHEME_IDS,
 } from "./config/constants";
+export type { PartyIdentificationSchemeId } from "./config/constants";
