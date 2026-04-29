@@ -14,6 +14,18 @@ import type { InvoiceUIState } from './invoice-rules';
  * T-3: ruleId namespace formatı '{domain}/{slug}' (örn. 'kdv/zero-suggest-351').
  * T-5: displayLabel/displayValue opsiyonel (UI rendering hint).
  */
+
+/**
+ * Suggestion severity literal union (Sprint 8l.1 / v2.2.4 — Library Öneri #5).
+ *
+ * UI tüketicileri (Mimsoft suggestion panel vb.) cast'siz `import type` ile
+ * kullanmak isteyebilir; v2.2.4 ile ayrı bir tip olarak public re-export edilir.
+ *
+ * - `recommended`: sistem hatırlatma (uygun varsayılan, kullanıcının kabul etmesi beklenir)
+ * - `optional`: ipucu / heuristic (kullanıcı isterse kullanır)
+ */
+export type SuggestionSeverity = 'recommended' | 'optional';
+
 export interface Suggestion {
   /** SessionPaths.X formatında path. Örn: 'lines[0].kdvExemptionCode'. */
   path: string;
@@ -25,7 +37,7 @@ export interface Suggestion {
   reason: string;
 
   /** Severity: recommended (sistem hatırlatma) | optional (ipucu/heuristic). */
-  severity: 'recommended' | 'optional';
+  severity: SuggestionSeverity;
 
   /** Namespace'li ruleId. Format: '{domain}/{slug}'. Örn: 'kdv/zero-suggest-351'. */
   ruleId: string;

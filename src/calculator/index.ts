@@ -72,7 +72,16 @@ export type {
     InvoiceSessionOptions,
     UnsetScope,
     IdentificationParty,
+    PathErrorPayload,
+    PathErrorCode,
 } from "./invoice-session";
+
+// Line-level UI visibility (Sprint 8l.1 / v2.2.4 — direkt re-export, modül zinciri kısaltma)
+export type { LineFieldVisibility } from "./line-field-visibility";
+
+// SuggestionEngine ve advisory öneriler (AR-10 Faz 2)
+export { runSuggestionEngine, diffSuggestions } from "./suggestion-engine";
+export type { Suggestion, SuggestionRule, SuggestionSeverity } from "./suggestion-types";
 
 // SessionPaths runtime export (AR-10) — path-based update API için tip-güvenli sabit map.
 // Generator: scripts/generate-session-paths.ts (input: SimpleInvoiceInput).
