@@ -1,6 +1,6 @@
 {
   "name": "json2ubl-ts",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "description": "JSON verilerinden resmi UBL-TR 2.1 XML belgeleri oluşturan kapsamlı TypeScript kütüphanesi",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
