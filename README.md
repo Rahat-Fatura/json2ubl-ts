@@ -160,6 +160,9 @@ import {
   type PathErrorPayload,
   type PathErrorCode,
   type LineFieldVisibility,
+  // v2.2.5+ — UBL TR-Identifier scheme literal union (Library Öneri #7)
+  type PartyIdentificationSchemeId,
+  PARTY_IDENTIFICATION_SCHEME_IDS,
 } from 'json2ubl-ts';
 
 const session = new InvoiceSession();

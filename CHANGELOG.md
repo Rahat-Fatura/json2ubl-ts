@@ -2,6 +2,40 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [2.2.5] — 2026-04-29
+
+**Library Suggestions Patch (Mimsoft greenfield F2.C2.6 + C2.9).** Tek küçük additive öneri uygulandı.
+
+### Added
+- **`PartyIdentificationSchemeId`** literal union public re-export (Library Öneri #7) — 27 UBL TR-Identifier şema kodu (B-69, `PartyIdentification.schemeID`). Tüketicilerin `Record<PartyIdentificationSchemeId, string>` narrow map (label/option dropdown) kurması için gerekli. Önceden lokal türetim (S-8 sınırı) gerekiyordu; v2.2.5 ile cast'siz `import type { PartyIdentificationSchemeId } from '@rahat-fatura/json2ubl-ts'`.
+  - VKN/TCKN literal union'a **dahil edilmedi** (bunlar `party.taxNumber` alanında ayrı yönetilir; UI akışında "ek tanımlayıcı" rolünde kullanılan kodlar için narrow tip).
+  - Runtime `PARTY_IDENTIFICATION_SCHEME_IDS` seti (29 entry, TCKN+VKN dahil) **değişmedi** — despatch validator'ları (`despatch-validators.ts`) bu seti `set.has(schemeId)` ile string kabul ederek kullanıyor.
+
+### Test
+- Public re-export integration (Öneri #7, +3): `__tests__/integration/exports.test.ts`
+- 1763 → 1766 (+3)
+
+### Migration v2.2.4 → v2.2.5
+
+API değişikliği yok, additive — `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.5` yeterli.
+
+```typescript
+import {
+  PARTY_IDENTIFICATION_SCHEME_IDS,
+  type PartyIdentificationSchemeId,
+} from '@rahat-fatura/json2ubl-ts';
+
+// Mimsoft greenfield F2.C2.9 — narrow label map (drift mitigation):
+const PARTY_IDENTIFICATION_SCHEME_LABELS: Record<PartyIdentificationSchemeId, string> = {
+  MERSISNO: 'MERSİS No',
+  MUSTERINO: 'Müşteri No',
+  // ... library yeni scheme eklerse Mimsoft TS hatası alır → label eklenmesi zorunlu
+};
+
+// Runtime set hâlâ string kabul eder (validator uyumu):
+PARTY_IDENTIFICATION_SCHEME_IDS.has('TCKN');  // ✓ true (despatch için)
+```
+
 ## [2.2.4] — 2026-04-29
 
 **Library Suggestions Patch (Mimsoft greenfield F1.C1.x).** İki öneri uygulandı; biri additive public re-export, biri TS 5.7+ inference uyumsuzluğu için generator-driven overload bloğu.
