@@ -150,7 +150,17 @@ builder.build({
 Frontend'de canlı veri girişi sırasında **path-based update + field-level events + line-level FieldVisibility + validator pipeline** sağlar:
 
 ```typescript
-import { InvoiceSession, SessionPaths } from 'json2ubl-ts';
+import {
+  InvoiceSession,
+  SessionPaths,
+  // v2.2.4+ — public type re-export'ları (Library Öneri #5)
+  type Suggestion,
+  type SuggestionRule,
+  type SuggestionSeverity,
+  type PathErrorPayload,
+  type PathErrorCode,
+  type LineFieldVisibility,
+} from 'json2ubl-ts';
 
 const session = new InvoiceSession();
 
@@ -206,6 +216,16 @@ const xml = session.buildXml();
 session.on('field-changed', ({ path, value, previousValue, requestedValue, forcedReason }) => {
   // path: 'sender.taxNumber' | 'lines[0].kdvPercent' vb.
   // requestedValue + forcedReason: D-12 force durumunda dolar (örn. isExport=true tip ISTISNA force)
+});
+
+// 1b. Public tipli event listener'lar (v2.2.4+ — Suggestion / PathErrorPayload import'a açık)
+session.on('suggestion', (suggestions: Suggestion[]) => {
+  // her öneri: { ruleId, path, value, reason, severity }
+  showSuggestionPanel(suggestions);
+});
+session.on('path-error', (err: PathErrorPayload) => {
+  // err.code: PathErrorCode literal union (INVALID_PATH | UNKNOWN_PATH | ...)
+  showError(err.code, err.reason);
 });
 
 session.on('field-activated', ({ path, reason }) => {
