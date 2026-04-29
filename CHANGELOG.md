@@ -2,6 +2,66 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [2.2.4] — 2026-04-29
+
+**Library Suggestions Patch (Mimsoft greenfield F1.C1.x).** İki öneri uygulandı; biri additive public re-export, biri TS 5.7+ inference uyumsuzluğu için generator-driven overload bloğu.
+
+### Added
+- **6 public type re-export'u** (Library Öneri #5):
+  - `Suggestion`, `SuggestionRule`, `SuggestionSeverity` (`suggestion-types.ts`)
+  - `PathErrorPayload`, `PathErrorCode` (`invoice-session.ts`)
+  - `LineFieldVisibility` (`line-field-visibility.ts`, direkt re-export — modül zinciri kısaltma)
+  - Önceden inferred type (`SessionEvents['suggestion'][number]`) ile erişiliyordu; v2.2.4 ile cast'siz `import type { Suggestion } from '@rahat-fatura/json2ubl-ts'` mümkün.
+- **`SuggestionSeverity`** literal union ayrı tip alias olarak çıkarıldı (`'recommended' | 'optional'`); önceden `Suggestion.severity` field'ında inline literal idi.
+- **`InvoiceSessionUpdateOverloads`** interface'i (generator output, `session-paths.generated.ts`) — declaration merging ile `InvoiceSession` class'ına 130+ spesifik literal `update()` overload enjekte eder.
+- **`scripts/check-ts57-strict.sh`** + **`npm run check:ts57`** — Mimsoft tüketici tsconfig simülasyonu (TS 5.7.3 + bundler moduleResolution + strict). CI hook'u olarak gelecekte eklenebilir.
+
+### Changed
+- **`InvoiceSession.update()`** method imzası yeniden organize edildi (Library Öneri #6 — TS 5.7+ inference fix):
+  - Class'ta sadece **implementation imzası** var: `update(path: string, value: unknown): void`.
+  - Tüm public overload'lar `InvoiceSessionUpdateOverloads` interface'inde (declaration merging ile enjekte).
+  - Sebep: TS 5.4–5.7 arasında template literal type inference davranışı değişti; `keyof SessionPathMap` template literal placeholder key'lerini (`'X[${number}].Y'`) distributive union'da match etmiyor; `<P extends keyof SessionPathMap>` generic catch-all'ı declaration merging'le incompatible. Çözüm: TÜM path entry'leri için spesifik literal overload üretmek (doc-level + fonksiyonel) — generator-driven, sürdürülebilir.
+  - Runtime davranış değişmedi — sadece public type surface yeniden organize edildi. Mevcut tüm tüketici kodları çalışmaya devam eder.
+
+### Fixed
+- **TS 5.7+ strict + bundler `moduleResolution` ortamında fonksiyonel `SessionPaths.X(i)` path'lerinin `update()` çağrısında `TS2345` hatası** (Library Öneri #6).
+  - Sprint 8k.2'deki narrow `as` template literal cast TS 5.3.3'te yeterliydi fakat TS 5.7'de yetersizdi.
+  - v2.2.4 ile `InvoiceSessionUpdateOverloads` interface'i 130+ spesifik literal overload üretir; Mimsoft action helper pattern'i (`forEach + i: number → SessionPaths.X(i) → update(path, value)`) **cast'siz** çalışır.
+  - Mimsoft'taki **15 cast satırı + `LIBRARY-SUGGESTION-#6 PENDING` etiketleri** `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.4` sonrası silinebilir.
+  - Doğrulama: `npm run check:ts57` (TS 5.7.3 + Mimsoft tsconfig) → 0 hata.
+
+### Test
+- Public re-export integration (Öneri #5, +6): `__tests__/integration/exports.test.ts`
+- Action helper pattern overload smoke (Öneri #6, +7): `__tests__/integration/session-paths-action-helper.test.ts`
+- 1750 → 1763 (+13)
+
+### Migration v2.2.3 → v2.2.4
+
+API değişikliği yok, additive — `yarn upgrade @rahat-fatura/json2ubl-ts@2.2.4` yeterli.
+
+```typescript
+// v2.2.3'te workaround/cast gerekiyordu, v2.2.4'te cast'siz çalışır:
+import {
+  InvoiceSession,
+  SessionPaths,
+  type Suggestion,
+  type PathErrorPayload,
+  type LineFieldVisibility,
+} from '@rahat-fatura/json2ubl-ts';
+
+const session = new InvoiceSession();
+
+// Öneri #5 — public tipler:
+session.on('suggestion', (s: Suggestion[]) => { ... });
+session.on('path-error', (e: PathErrorPayload) => { ... });
+
+// Öneri #6 — action helper pattern cast'siz:
+[{ schemeId: 'MERSISNO', value: '0001' }].forEach((id, i) => {
+  session.update(SessionPaths.senderIdentificationSchemeId(i), id.schemeId);  // ✓ cast yok
+  session.update(SessionPaths.senderIdentificationValue(i), id.value);
+});
+```
+
 ## [2.2.3] — 2026-04-28
 
 **Library Suggestions Patch (Mimsoft greenfield prerekuizitleri).** Mimsoft monorepo greenfield refactor (`audit/greenfield/99-library-suggestions.md`) için 4 öneri uygulandı. Tüm değişiklikler additive, breaking change yok. Sprint 8k (8 atomik commit, 1724→1750 test, +26).
