@@ -144,12 +144,24 @@ function parseInterfaces(): Map<string, InterfaceField[]> {
       // veya `{ schemeId: string; value: string }[]`) → synthetic interface'e indirge.
       // Bu sayede addSubObjectEntries içindeki array-of-interface dalı normal şekilde
       // çalışır (8j.2: party identifications için kritik).
+      //
+      // Sprint 8n.1 / v2.2.6 / Library Öneri #9 — array değilse single inline literal
+      // (örn. `attachment?: { filename; mimeCode; ... }`) için de synthetic interface
+      // üretilir. Array kontrolü ÖNCE yapılır (regression koruması: `Array<{...}>`
+      // form `{...}` olarak yanlış parse edilmesin).
       if (member.type) {
-        const inlineFields = extractInlineLiteralArrayFields(member.type, sourceFile);
-        if (inlineFields) {
+        const inlineArrayFields = extractInlineLiteralArrayFields(member.type, sourceFile);
+        if (inlineArrayFields) {
           const syntheticName = `__Inline_${stmt.name.text}_${name}_Element`;
-          interfaces.set(syntheticName, inlineFields);
+          interfaces.set(syntheticName, inlineArrayFields);
           type = `${syntheticName}[]`;
+        } else {
+          const inlineObjFields = extractInlineLiteralFields(member.type, sourceFile);
+          if (inlineObjFields) {
+            const syntheticName = `__InlineObj_${stmt.name.text}_${name}`;
+            interfaces.set(syntheticName, inlineObjFields);
+            type = syntheticName;
+          }
         }
       }
 
@@ -200,6 +212,35 @@ function extractInlineLiteralArrayFields(
 
   const fields: InterfaceField[] = [];
   for (const member of elementTypeNode.members) {
+    if (!ts.isPropertySignature(member)) continue;
+    if (!member.name || !ts.isIdentifier(member.name)) continue;
+    const subName = member.name.text;
+    const subType = member.type ? member.type.getText(sourceFile).trim() : 'unknown';
+    const subOptional = !!member.questionToken;
+    fields.push({ name: subName, type: subType, optional: subOptional });
+  }
+  return fields.length > 0 ? fields : undefined;
+}
+
+/**
+ * Sprint 8n.1 / v2.2.6 / Library Öneri #9 — Single inline TypeLiteral parse (array DEĞİL).
+ *
+ * `attachment?: { filename: string; mimeCode: string; ... }` gibi inline object literal
+ * field'ları synthetic interface'e indirger. `extractInlineLiteralArrayFields` helper'ının
+ * non-array versiyonu — array form (`Array<{...}>` ve `{...}[]`) önce kontrol edilir
+ * (parseInterfaces içinde), bu helper sadece tek `{...}` formuna düşer.
+ *
+ * Sprint 8j.2'deki "still skips single inline literals" disiplini bu commit'te kaldırıldı.
+ * Şu an kütüphane çapında tek etkilenen field: `SimpleAdditionalDocumentInput.attachment`.
+ */
+function extractInlineLiteralFields(
+  typeNode: ts.TypeNode,
+  sourceFile: ts.SourceFile,
+): InterfaceField[] | undefined {
+  if (!ts.isTypeLiteralNode(typeNode)) return undefined;
+
+  const fields: InterfaceField[] = [];
+  for (const member of typeNode.members) {
     if (!ts.isPropertySignature(member)) continue;
     if (!member.name || !ts.isIdentifier(member.name)) continue;
     const subName = member.name.text;

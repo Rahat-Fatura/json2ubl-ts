@@ -510,6 +510,21 @@ export const SessionPaths = {
    */
   additionalDocumentDocumentDescription: (i: number) => `additionalDocuments[${i}].documentDescription` as `additionalDocuments[${number}].documentDescription`,
 
+  /** Expected type: string */
+  additionalDocumentAttachmentFilename: (i: number) => `additionalDocuments[${i}].attachment.filename` as `additionalDocuments[${number}].attachment.filename`,
+
+  /** Expected type: string */
+  additionalDocumentAttachmentMimeCode: (i: number) => `additionalDocuments[${i}].attachment.mimeCode` as `additionalDocuments[${number}].attachment.mimeCode`,
+
+  /** Expected type: string */
+  additionalDocumentAttachmentData: (i: number) => `additionalDocuments[${i}].attachment.data` as `additionalDocuments[${number}].attachment.data`,
+
+  /** Expected type: string | undefined */
+  additionalDocumentAttachmentEncodingCode: (i: number) => `additionalDocuments[${i}].attachment.encodingCode` as `additionalDocuments[${number}].attachment.encodingCode`,
+
+  /** Expected type: string | undefined */
+  additionalDocumentAttachmentCharacterSetCode: (i: number) => `additionalDocuments[${i}].attachment.characterSetCode` as `additionalDocuments[${number}].attachment.characterSetCode`,
+
   /**
    * Ödeme yöntemi kodu (ör: "1" Nakit, "42" Banka, "48" Kredi Kartı, "ZZZ" Diğer)
    * Expected type: string
@@ -828,6 +843,11 @@ export interface SessionPathMap {
   'additionalDocuments[${number}].documentTypeCode': string | undefined;
   'additionalDocuments[${number}].documentType': string | undefined;
   'additionalDocuments[${number}].documentDescription': string | undefined;
+  'additionalDocuments[${number}].attachment.filename': string;
+  'additionalDocuments[${number}].attachment.mimeCode': string;
+  'additionalDocuments[${number}].attachment.data': string;
+  'additionalDocuments[${number}].attachment.encodingCode': string | undefined;
+  'additionalDocuments[${number}].attachment.characterSetCode': string | undefined;
   'paymentMeans.meansCode': string;
   'paymentMeans.dueDate': string | undefined;
   'paymentMeans.channelCode': string | undefined;
@@ -871,6 +891,11 @@ export interface SessionPathMap {
 }
 
 export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
+  'additionalDocuments[*].attachment.characterSetCode',
+  'additionalDocuments[*].attachment.data',
+  'additionalDocuments[*].attachment.encodingCode',
+  'additionalDocuments[*].attachment.filename',
+  'additionalDocuments[*].attachment.mimeCode',
   'additionalDocuments[*].documentDescription',
   'additionalDocuments[*].documentType',
   'additionalDocuments[*].documentTypeCode',
@@ -1095,6 +1120,11 @@ export interface InvoiceSessionUpdateOverloads {
   update(path: `additionalDocuments[${number}].documentTypeCode`, value: string | undefined): void;
   update(path: `additionalDocuments[${number}].documentType`, value: string | undefined): void;
   update(path: `additionalDocuments[${number}].documentDescription`, value: string | undefined): void;
+  update(path: `additionalDocuments[${number}].attachment.filename`, value: string): void;
+  update(path: `additionalDocuments[${number}].attachment.mimeCode`, value: string): void;
+  update(path: `additionalDocuments[${number}].attachment.data`, value: string): void;
+  update(path: `additionalDocuments[${number}].attachment.encodingCode`, value: string | undefined): void;
+  update(path: `additionalDocuments[${number}].attachment.characterSetCode`, value: string | undefined): void;
   update(path: 'paymentMeans.meansCode', value: string): void;
   update(path: 'paymentMeans.dueDate', value: string | undefined): void;
   update(path: 'paymentMeans.channelCode', value: string | undefined): void;

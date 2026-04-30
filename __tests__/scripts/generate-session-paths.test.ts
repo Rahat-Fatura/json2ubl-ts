@@ -131,10 +131,18 @@ describe('generate-session-paths (Sprint 8h.1)', () => {
     expect(out).toMatch(/buyerCustomerIdentificationSchemeId:\s*\(i:\s*number\)\s*=>\s*`buyerCustomer\.identifications\[\$\{i\}\]\.schemeId`/);
   });
 
-  it('still skips single inline object literals (attachment.filename — non-array inline)', () => {
+  it('includes single inline literal sub-object paths (Sprint 8n.1 / v2.2.6 — Library Öneri #9)', () => {
     const out = generateSessionPaths();
-    // additionalDocuments[i].attachment: { filename; mimeCode; ... } — array değil, skip
-    expect(out).not.toContain('attachment.filename');
+    // additionalDocuments[i].attachment: { filename; mimeCode; ... } — single inline literal
+    // (array değil), Sprint 8n.1'de generator extension ile path üretiliyor.
+    expect(out).toMatch(/additionalDocumentAttachmentFilename:\s*\(i:\s*number\)\s*=>\s*`additionalDocuments\[\$\{i\}\]\.attachment\.filename`/);
+    expect(out).toMatch(/additionalDocumentAttachmentMimeCode:\s*\(i:\s*number\)\s*=>\s*`additionalDocuments\[\$\{i\}\]\.attachment\.mimeCode`/);
+    expect(out).toMatch(/additionalDocumentAttachmentData:\s*\(i:\s*number\)\s*=>\s*`additionalDocuments\[\$\{i\}\]\.attachment\.data`/);
+    expect(out).toMatch(/additionalDocumentAttachmentEncodingCode:\s*\(i:\s*number\)\s*=>\s*`additionalDocuments\[\$\{i\}\]\.attachment\.encodingCode`/);
+    expect(out).toMatch(/additionalDocumentAttachmentCharacterSetCode:\s*\(i:\s*number\)\s*=>\s*`additionalDocuments\[\$\{i\}\]\.attachment\.characterSetCode`/);
+    // SessionPathMap'te de tip kayıtlı olmalı (zorunlu vs opsiyonel ayrımı)
+    expect(out).toContain("'additionalDocuments[${number}].attachment.filename': string;");
+    expect(out).toContain("'additionalDocuments[${number}].attachment.encodingCode': string | undefined;");
   });
 
   it('preserves JSDoc from source interface fields', () => {
