@@ -2,6 +2,51 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [2.2.6] — 2026-04-30
+
+**Library Suggestions Patch (Mimsoft greenfield F5 ENGELLEYİCİ).** Tek küçük additive öneri — generator extension.
+
+### Added
+- **`additionalDocuments[i].attachment.*`** alt-field'ları için 5 SessionPaths path entry (Library Öneri #9):
+  - `additionalDocumentAttachmentFilename(i)` — `string`
+  - `additionalDocumentAttachmentMimeCode(i)` — `string`
+  - `additionalDocumentAttachmentData(i)` — `string` (base64)
+  - `additionalDocumentAttachmentEncodingCode(i)` — `string | undefined` (UBL spec genelde `'Base64'`, mapper fallback)
+  - `additionalDocumentAttachmentCharacterSetCode(i)` — `string | undefined` (mapper fallback `'UTF-8'`)
+  - 5 yeni `update()` template literal overload (`InvoiceSessionUpdateOverloads` interface'i otomatik genişledi — generator-driven, Sprint 8l.2 pattern).
+- **Generator inline literal sub-object desteği** (`scripts/generate-session-paths.ts` → `extractInlineLiteralFields()` helper) — single `{...}` form (array değil); Sprint 8j.2'deki `Array<{...}>` / `{...}[]` desteğinin tamamlayıcısı. Şu an kütüphane çapında tek etkilenen field: `SimpleAdditionalDocumentInput.attachment`.
+
+### Changed
+- **`session-paths.generated.ts`** regenerate (1140 → 1170 line). Side effect yok — yalnızca yeni 5 path + 5 overload + `__InlineObj_SimpleAdditionalDocumentInput_attachment` synthetic interface.
+
+### Test
+- `__tests__/calculator/simple-additional-document-attachment.test.ts` (+4) — 5 path round-trip, attachment optional, `unset('additionalDocuments')` cleanup, UBL mapper smoke (XML çıktısında `cbc:EmbeddedDocumentBinaryObject` element'leri).
+- `__tests__/scripts/generate-session-paths.test.ts` — Sprint 8j.2'de eklenen "still skips single inline literals" testi inverse edildi → "includes single inline literal sub-object paths" (artık 5 path üretiliyor).
+- 1766 → 1770 (+4)
+
+### Notes
+- **Tip alanı (`SimpleAdditionalDocumentInput.attachment`) ve UBL Attachment mapper v2.2.5'te zaten mevcuttu** — bu patch sadece SessionPaths/update() yüzeyini açtı. Mimsoft öneri 1.5-4 saat scope öngörüyordu (mapper genişletme dahil); kod incelemesi sonucu 30-60 dakika scope (sadece generator extension).
+- F5 (additional-documents-section) Mimsoft `yarn upgrade json2ubl-ts@2.2.6` sonrası başlatılabilir.
+
+### Migration v2.2.5 → v2.2.6
+
+API değişikliği yok, additive — `yarn upgrade json2ubl-ts@2.2.6` yeterli.
+
+```typescript
+import { InvoiceSession, SessionPaths } from 'json2ubl-ts';
+
+const session = new InvoiceSession();
+session.update(SessionPaths.additionalDocumentId(0), 'DOC-001');
+// File upload (FileReader → base64) sonucu attachment alanları:
+session.update(SessionPaths.additionalDocumentAttachmentFilename(0), 'fatura.pdf');
+session.update(SessionPaths.additionalDocumentAttachmentMimeCode(0), 'application/pdf');
+session.update(SessionPaths.additionalDocumentAttachmentData(0), '<base64-encoded-data>');
+session.update(SessionPaths.additionalDocumentAttachmentEncodingCode(0), 'Base64');
+
+// UBL XML üretiminde attachment cac:Attachment / cbc:EmbeddedDocumentBinaryObject olarak çıkar.
+const xml = session.buildXml();
+```
+
 ## [2.2.5] — 2026-04-29
 
 **Library Suggestions Patch (Mimsoft greenfield F2.C2.6 + C2.9).** Tek küçük additive öneri uygulandı.

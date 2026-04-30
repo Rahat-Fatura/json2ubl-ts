@@ -192,6 +192,13 @@ session.update(SessionPaths.senderIdentificationValue(0), '0123456789012345');
 session.update(SessionPaths.buyerCustomerIdentificationSchemeId(0), 'MUSTERINO');  // KAMU B-83
 session.update(SessionPaths.buyerCustomerIdentificationValue(0), 'MUS-9876');
 
+// Additional documents attachment (v2.2.6+, Library Öneri #9) — file upload pattern
+session.update(SessionPaths.additionalDocumentId(0), 'DOC-001');
+session.update(SessionPaths.additionalDocumentAttachmentFilename(0), 'fatura.pdf');
+session.update(SessionPaths.additionalDocumentAttachmentMimeCode(0), 'application/pdf');
+session.update(SessionPaths.additionalDocumentAttachmentData(0), '<base64>');  // FileReader sonucu
+session.update(SessionPaths.additionalDocumentAttachmentEncodingCode(0), 'Base64');
+
 // Composite alanı temizleme (v2.2.1+) — v1.x setX(undefined) karşılığı
 session.unset('billingReference');         // tüm composite kaldırılır
 session.unset('paymentMeans');
