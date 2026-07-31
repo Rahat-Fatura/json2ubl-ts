@@ -2,6 +2,33 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [2.3.1] — 2026-08-01
+
+**İki hata düzeltmesi; ikisi de belgeye/akışa gerçek olmayan bir sonuç veriyordu.**
+
+### 🔴 Düzeltildi — gece yarısı reddi (B-65 regresyonu)
+
+`validateCommon` `issueDate` üst sınırını `new Date().toISOString().slice(0, 10)` ile, yani
+**UTC gününden** okuyordu. Türkiye UTC+3 olduğu için her gece **00:00–03:00 (TR)** arasında UTC
+hâlâ bir önceki gündedir; o üç saatte düzenlenen ve tarihi DOĞRU olan her Türk faturası
+"gelecek tarihli" diye reddediliyordu. Kütüphane fiilen **her gün üç saat fatura üretemez**
+hâle geliyordu.
+
+Schematron `TimeCheck` (Common_Schematron:169) "gelecekte olamaz" der ve "gelecek" GİB'in
+takvimine göredir — GİB Türkiye saatiyle çalışır. Artık sabit UTC+3 aritmetiğiyle hesaplanıyor
+(Türkiye 2016'dan beri yaz saati uygulamıyor; `Intl`e bağımlılık yok, ICU'suz derlemelerde de
+doğru çalışır). Sahte saatli iki regresyon testi eklendi.
+
+### 🟡 Düzeltildi — uydurma posta kodu
+
+`mapParty` bilinmeyen posta kodunu `'00000'` ile dolduruyordu. `00000` geçerli bir Türk posta
+kodu değildir; belgeye gerçek olmayan veri yazılıyordu. `cbc:PostalZone` UBL'de seçimlidir
+(`AddressType`, minOccurs=0) ve serializer zaten `cbcOptionalTag` kullanıyor — bilinmiyorsa
+eleman artık **hiç yazılmıyor**.
+
+`examples-matrix` altın çıktıları yeniden üretildi: **116 dosyanın tamamında tek fark**
+kaldırılan `<cbc:PostalZone>00000</cbc:PostalZone>` satırıdır.
+
 ## [Unreleased]
 
 **B-102 — "Tipte var, XML'de yok" sınıfının sistematik denetimi.** B-101 tekil bir hata değil, bir SINIF hatasıydı. Bu turda `SimpleInvoiceInput` ağacının **135 leaf alanının tamamı** TypeScript Compiler API ile çıkarılıp `src/` altındaki property-read'lerle mekanik olarak karşılaştırıldı. **9 alan** hiçbir yerde okunmuyordu; 1 alan daha koşullu olarak düşüyordu. Sürüm numarası bilerek yükseltilmedi; yayın kararı sürdürücüye ait.
