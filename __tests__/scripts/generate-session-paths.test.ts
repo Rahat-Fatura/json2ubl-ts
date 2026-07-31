@@ -159,11 +159,14 @@ describe('generate-session-paths (Sprint 8h.1)', () => {
     expect(expectedTypeCount).toBeGreaterThan(100);
   });
 
-  it('total generated file size: 800-1200 lines (target ~960)', () => {
+  // Üst sınır 1200 → 1300 (Sprint 8o / B-101): SimpleOnlineSaleInput'a 4 kargo alanı
+  // eklendi (carrierDistrict, carrierCity, carrierAddress, carrierCountry) → 1206 satır.
+  // Bu kontrol kontrolsüz büyümeye karşı korkuluktur, kesin bir bütçe değil.
+  it('total generated file size: 800-1300 lines (target ~1200)', () => {
     const out = generateSessionPaths();
     const lineCount = out.split('\n').length;
     expect(lineCount).toBeGreaterThan(800);
-    expect(lineCount).toBeLessThan(1200);
+    expect(lineCount).toBeLessThan(1300);
   });
 
   it('SessionPathMap value types include primitives + literal unions + undefined for optionals', () => {

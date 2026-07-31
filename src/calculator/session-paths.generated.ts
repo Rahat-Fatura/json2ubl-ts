@@ -700,19 +700,43 @@ export const SessionPaths = {
   onlineSalePaymentDate: 'onlineSale.paymentDate',
 
   /**
-   * Kargo firma vergi numarası
+   * Kargo firma vergi numarası — `cac:Delivery/cac:CarrierParty/cac:PartyIdentification/cbc:ID`. 10 hane → `schemeID="VKN"` (tüzel kişi), 11 hane → `schemeID="TCKN"` (gerçek kişi).
    * Expected type: string | undefined
    */
   onlineSaleCarrierTaxNumber: 'onlineSale.carrierTaxNumber',
 
   /**
-   * Kargo firma adı
+   * Kargo firma adı/unvanı — `cac:CarrierParty/cac:PartyName/cbc:Name`
    * Expected type: string | undefined
    */
   onlineSaleCarrierName: 'onlineSale.carrierName',
 
   /**
-   * Teslimat tarihi
+   * Kargo firmasının ilçesi — `cac:CarrierParty/cac:PostalAddress/cbc:CitySubdivisionName`. UBL-TR `PartyType`'ta `cac:PostalAddress` **zorunludur** (minOccurs=1), içinde de CityName + CitySubdivisionName zorunludur (B-35). Bu yüzden CarrierParty emit edebilmek için il/ilçe gerekir.
+   * Expected type: string | undefined
+   */
+  onlineSaleCarrierDistrict: 'onlineSale.carrierDistrict',
+
+  /**
+   * Kargo firmasının ili — `cac:CarrierParty/cac:PostalAddress/cbc:CityName`
+   * Expected type: string | undefined
+   */
+  onlineSaleCarrierCity: 'onlineSale.carrierCity',
+
+  /**
+   * Kargo firmasının açık adresi — `cac:CarrierParty/cac:PostalAddress/cbc:StreetName` (opsiyonel)
+   * Expected type: string | undefined
+   */
+  onlineSaleCarrierAddress: 'onlineSale.carrierAddress',
+
+  /**
+   * Kargo firmasının ülkesi — varsayılan "Türkiye"
+   * Expected type: string | undefined
+   */
+  onlineSaleCarrierCountry: 'onlineSale.carrierCountry',
+
+  /**
+   * Ürünün alıcıya gönderildiği/teslim edildiği tarih (YYYY-MM-DD) — `cac:Delivery/cbc:ActualDeliveryDate`. e-Arşiv raporunda `gonderiBilgileri/gonderimTarihi` karşılığıdır.
    * Expected type: string | undefined
    */
   onlineSaleDeliveryDate: 'onlineSale.deliveryDate',
@@ -880,6 +904,10 @@ export interface SessionPathMap {
   'onlineSale.paymentDate': string;
   'onlineSale.carrierTaxNumber': string | undefined;
   'onlineSale.carrierName': string | undefined;
+  'onlineSale.carrierDistrict': string | undefined;
+  'onlineSale.carrierCity': string | undefined;
+  'onlineSale.carrierAddress': string | undefined;
+  'onlineSale.carrierCountry': string | undefined;
   'onlineSale.deliveryDate': string | undefined;
   'eArchiveInfo.sendType': "ELEKTRONIK" | "KAGIT";
   'invoicePeriod.startDate': string;
@@ -974,6 +1002,10 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'lines[*].withholdingTaxCode',
   'lines[*].withholdingTaxPercent',
   'notes',
+  'onlineSale.carrierAddress',
+  'onlineSale.carrierCity',
+  'onlineSale.carrierCountry',
+  'onlineSale.carrierDistrict',
   'onlineSale.carrierName',
   'onlineSale.carrierTaxNumber',
   'onlineSale.deliveryDate',
@@ -1157,6 +1189,10 @@ export interface InvoiceSessionUpdateOverloads {
   update(path: 'onlineSale.paymentDate', value: string): void;
   update(path: 'onlineSale.carrierTaxNumber', value: string | undefined): void;
   update(path: 'onlineSale.carrierName', value: string | undefined): void;
+  update(path: 'onlineSale.carrierDistrict', value: string | undefined): void;
+  update(path: 'onlineSale.carrierCity', value: string | undefined): void;
+  update(path: 'onlineSale.carrierAddress', value: string | undefined): void;
+  update(path: 'onlineSale.carrierCountry', value: string | undefined): void;
   update(path: 'onlineSale.deliveryDate', value: string | undefined): void;
   update(path: 'eArchiveInfo.sendType', value: "ELEKTRONIK" | "KAGIT"): void;
   update(path: 'invoicePeriod.startDate', value: string): void;

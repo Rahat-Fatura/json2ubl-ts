@@ -349,6 +349,16 @@ export const ADDRESS_SEQ = [
 
 // ─── Delivery ─────────────────────────────────────────────────────────────
 // B-14 fix: DeliveryAddress → CarrierParty → Despatch
+//
+// B-101 (Sprint 8o): CarrierParty slotu eklendi. Sıra GİB UBL-TR paketindeki
+// daraltılmış `DeliveryType`'tan alındı (UBL-TR 1.2.1 pakedi,
+// `xsdrt/common/UBL-CommonAggregateComponents-2.1.xsd`):
+//   ID → Quantity → ActualDeliveryDate → ActualDeliveryTime → LatestDeliveryDate
+//   → LatestDeliveryTime → TrackingID → DeliveryAddress → AlternativeDeliveryLocation
+//   → EstimatedDeliveryPeriod → CarrierParty → DeliveryParty → Despatch
+//   → DeliveryTerms → Shipment
+// DİKKAT: OASIS UBL 2.1'de sıra `DeliveryParty` → `CarrierParty`'dir; GİB bu ikisini
+// TERS çevirmiştir. UBL-TR belgesi ürettiğimiz için GİB sırası bağlayıcıdır.
 export const DELIVERY_SEQ = [
   'ID',
   'Quantity',
@@ -365,6 +375,7 @@ export const DELIVERY_SEQ = [
   'RequestedDeliveryPeriod',
   'PromisedDeliveryPeriod',
   'EstimatedDeliveryPeriod',
+  'CarrierParty',            // GİB UBL-TR: DeliveryParty'den ÖNCE (OASIS'te sonra)
   'DeliveryParty',
   'Despatch',                // CarrierParty SONRASI
   'DeliveryTerms',

@@ -308,11 +308,38 @@ export interface SimpleOnlineSaleInput {
     paymentMethod: string;
     /** Ödeme tarihi */
     paymentDate: string;
-    /** Kargo firma vergi numarası */
+
+    // ─── Gönderi bilgileri (B-101) ────────────────────────────────────────────
+    // e-Arşiv raporu `internetSatisBilgi/gonderiBilgileri` bloğunu besler
+    // (gonderimTarihi ve gonderiTasiyan, ikisi de kardinalite 1 — v1.17/22.05.2024).
+    // XML karşılığı `cac:Delivery`; EXT_* AdditionalDocumentReference DEĞİL, çünkü
+    // bu iki bilginin UBL-TR'de yerleşik yeri var (storeUrl/paymentMethod'un yok).
+
+    /**
+     * Kargo firma vergi numarası — `cac:Delivery/cac:CarrierParty/cac:PartyIdentification/cbc:ID`.
+     * 10 hane → `schemeID="VKN"` (tüzel kişi), 11 hane → `schemeID="TCKN"` (gerçek kişi).
+     */
     carrierTaxNumber?: string;
-    /** Kargo firma adı */
+    /** Kargo firma adı/unvanı — `cac:CarrierParty/cac:PartyName/cbc:Name` */
     carrierName?: string;
-    /** Teslimat tarihi */
+    /**
+     * Kargo firmasının ilçesi — `cac:CarrierParty/cac:PostalAddress/cbc:CitySubdivisionName`.
+     * UBL-TR `PartyType`'ta `cac:PostalAddress` **zorunludur** (minOccurs=1), içinde de
+     * CityName + CitySubdivisionName zorunludur (B-35). Bu yüzden CarrierParty emit
+     * edebilmek için il/ilçe gerekir.
+     */
+    carrierDistrict?: string;
+    /** Kargo firmasının ili — `cac:CarrierParty/cac:PostalAddress/cbc:CityName` */
+    carrierCity?: string;
+    /** Kargo firmasının açık adresi — `cac:CarrierParty/cac:PostalAddress/cbc:StreetName` (opsiyonel) */
+    carrierAddress?: string;
+    /** Kargo firmasının ülkesi — varsayılan "Türkiye" */
+    carrierCountry?: string;
+    /**
+     * Ürünün alıcıya gönderildiği/teslim edildiği tarih (YYYY-MM-DD) —
+     * `cac:Delivery/cbc:ActualDeliveryDate`. e-Arşiv raporunda
+     * `gonderiBilgileri/gonderimTarihi` karşılığıdır.
+     */
     deliveryDate?: string;
 }
 

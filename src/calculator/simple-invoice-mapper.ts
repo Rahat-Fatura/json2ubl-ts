@@ -32,7 +32,10 @@ import type {
   TaxRepresentativeInput,
   ItemInput,
   AdditionalItemIdInput,
+  DeliveryInput,
 } from '../types/common';
+import { isNonEmpty } from '../utils/formatters';
+import { canBuildCarrierParty } from '../validators/online-sale-validator';
 
 // ─── Ana Dönüşüm Fonksiyonu ────────────────────────────────────────────────────
 
@@ -160,7 +163,80 @@ function buildInvoiceInput(
 
   }
 
+  // B-101: Online satış gönderi bilgisi → cac:Delivery (ActualDeliveryDate + CarrierParty).
+  // Önceki davranış: onlineSale.carrierName / carrierTaxNumber / deliveryDate tipte
+  // tanımlıydı ama mapper'da hiç okunmuyordu → XML'e SESSİZCE düşmüyordu.
+  const onlineSaleDelivery = buildOnlineSaleDelivery(simple);
+  if (onlineSaleDelivery) {
+    result.delivery = onlineSaleDelivery;
+  }
+
   return result;
+}
+
+/**
+ * Online satış kargo/teslim bilgisini `cac:Delivery`'ye eşler (B-101).
+ *
+ * Yerleşim kaynağı — GİB UBL-TR `DeliveryType` (ubltr-1.2.1 pakedi,
+ * `xsdrt/common/UBL-CommonAggregateComponents-2.1.xsd`):
+ *   `cbc:ActualDeliveryDate` ← deliveryDate
+ *   `cac:CarrierParty`       ← carrierName + carrierTaxNumber + adres
+ * Bu ikisi e-Arşiv raporundaki `internetSatisBilgi/gonderiBilgileri/gonderimTarihi`
+ * ve `.../gonderiTasiyan` (kisiType) alanlarını besler.
+ *
+ * CarrierParty ancak ŞEMA-GEÇERLİ olabiliyorsa emit edilir: UBL-TR `PartyType`'ta
+ * `cac:PartyIdentification` ve `cac:PostalAddress` zorunludur, adresin içinde de
+ * CityName + CitySubdivisionName zorunludur (B-35). Eksik kombinasyon 'strict'
+ * seviyede `validateOnlineSaleShipment` ile hata olarak raporlanır; 'basic'te
+ * sessizce atlanır (geriye dönük uyum).
+ */
+function buildOnlineSaleDelivery(simple: SimpleInvoiceInput): DeliveryInput | undefined {
+  const os = simple.onlineSale;
+  if (!os) return undefined;
+
+  const delivery: DeliveryInput = {};
+
+  if (isNonEmpty(os.deliveryDate)) {
+    delivery.actualDeliveryDate = os.deliveryDate;
+  }
+
+  if (canBuildCarrierParty(os)) {
+    const taxNumber = os.carrierTaxNumber!.trim();
+    const isTckn = taxNumber.length === 11;
+
+    const carrierParty: PartyInput = {
+      vknTckn: taxNumber,
+      taxIdType: isTckn ? 'TCKN' : 'VKN',
+      citySubdivisionName: os.carrierDistrict,
+      cityName: os.carrierCity,
+      country: os.carrierCountry ?? 'Türkiye',
+    };
+
+    if (isNonEmpty(os.carrierAddress)) {
+      carrierParty.streetName = os.carrierAddress;
+    }
+
+    // Unvan her hâlükârda PartyName'e yazılır (ham değer kaybolmasın).
+    if (isNonEmpty(os.carrierName)) {
+      carrierParty.name = os.carrierName;
+
+      // Gerçek kişi taşıyıcı (TCKN): rapor `gercekKisi/adiSoyadi` bekler; UBL tarafında
+      // cac:Person/FirstName+FamilyName gerekir. Son kelime soyad kabul edilir.
+      if (isTckn) {
+        const parts = os.carrierName.trim().split(/\s+/);
+        if (parts.length > 1) {
+          carrierParty.familyName = parts[parts.length - 1];
+          carrierParty.firstName = parts.slice(0, -1).join(' ');
+        } else {
+          carrierParty.firstName = parts[0];
+        }
+      }
+    }
+
+    delivery.carrierParty = carrierParty;
+  }
+
+  return delivery.actualDeliveryDate || delivery.carrierParty ? delivery : undefined;
 }
 
 // ─── Party Dönüşümü ─────────────────────────────────────────────────────────────

@@ -14,7 +14,10 @@
     "paymentMethod": "KREDIKARTI",
     "paymentDate": "2026-04-23",
     "carrierName": "Hızlı Kargo A.Ş.",
-    "carrierTaxNumber": "5555555555"
+    "carrierTaxNumber": "5555555555",
+    "carrierDistrict": "Sultangazi",
+    "carrierCity": "İstanbul",
+    "deliveryDate": "2026-04-25"
   },
   "sender": {
     "taxNumber": "1234567890",

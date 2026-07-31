@@ -2,6 +2,40 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [Unreleased]
+
+**B-101 — İnternet satışı kargo/teslim bilgisi XML'e yazılıyor.** Sürüm numarası bilerek yükseltilmedi; yayın kararı sürdürücüye ait.
+
+### Fixed
+- 🔴 **`onlineSale.carrierName` / `carrierTaxNumber` / `deliveryDate` SESSİZCE kayboluyordu.** Alanlar `SimpleOnlineSaleInput` tipinde tanımlıydı, ancak `simple-invoice-mapper` bunları hiç okumuyordu — kullanıcı doldursa bile üretilen XML'de tek iz kalmıyordu. Kütüphanenin kendi `examples/21-earsiv-satis-basic` örneği `carrierName: 'Hızlı Kargo A.Ş.'` + `carrierTaxNumber` veriyor, işlenmiş `output.xml`'de hiçbiri yoktu. Artık `cac:Delivery` bloğuna yazılıyorlar:
+  - `deliveryDate` → `cac:Delivery/cbc:ActualDeliveryDate`
+  - `carrierTaxNumber` → `cac:Delivery/cac:CarrierParty/cac:PartyIdentification/cbc:ID` (`schemeID` 10 hane→`VKN`, 11 hane→`TCKN`)
+  - `carrierName` → `cac:CarrierParty/cac:PartyName/cbc:Name` (TCKN ise ayrıca `cac:Person/FirstName`+`FamilyName`)
+- **`DELIVERY_SEQ`'te `CarrierParty` slotu yoktu** — eleman verilse de XSD sırasına yerleştirilemezdi. Eklendi ve **`DeliveryParty`'den ÖNCE** konumlandırıldı: GİB UBL-TR daraltılmış `DeliveryType`'ta sıra bu yöndedir, OASIS UBL 2.1'de ise TERSİDİR (`DeliveryParty` → `CarrierParty`). UBL-TR belgesi ürettiğimiz için GİB sırası bağlayıcı.
+
+### Added
+- `DeliveryInput.actualDeliveryDate` ve `DeliveryInput.carrierParty` (`PartyInput`).
+- `SimpleOnlineSaleInput`'a taşıyıcı adres alanları: `carrierDistrict`, `carrierCity`, `carrierAddress`, `carrierCountry` (varsayılan `"Türkiye"`). **Gerekçe:** UBL-TR `PartyType`'ta `cac:PostalAddress` **zorunludur** (`minOccurs` verilmemiş = 1) ve içinde `CityName` + `CitySubdivisionName` zorunludur (B-35) — il/ilçe olmadan şema-geçerli `CarrierParty` üretilemez.
+- `serializePartyAs(party, tagName, indent)` — `PartyType` içeriğini istenen `cac:` etiketiyle sarmalar. `cac:CarrierParty` XSD'de `PartyType`'tır; içinde ayrıca `<cac:Party>` sarmalı YOKTUR.
+- `validators/online-sale-validator.ts` — `validateOnlineSaleShipment()` + `canBuildCarrierParty()`.
+
+### Changed
+- **Yalnız `validationLevel: 'strict'`**: internet satışında (`isOnlineSale === true`) `deliveryDate` ve taşıyıcı bilgisi zorunlu; taşıyıcı bilgisi verilmişse blok tam olmalı (`carrierTaxNumber` + `carrierName` + `carrierCity` + `carrierDistrict`); VKN/TCKN 10 veya 11 hane olmalı.
+  - **`'basic'` (varsayılan) davranışı KIRILMADI**: eksik adreste `CarrierParty` sessizce atlanır, `ActualDeliveryDate` yine de yazılır. Bu alanlar bugüne dek zaten yok sayıldığı için eksik gönderen mevcut tüketiciler hatasız çalışmaya devam eder.
+- `examples/21-earsiv-satis-basic` girdisine `carrierDistrict` / `carrierCity` / `deliveryDate` eklendi; `output.xml` yeniden üretildi (artık `cac:Delivery` bloğunu içeriyor).
+- `session-paths.generated.ts` regenerate (1170 → 1206 satır, +4 yeni kargo alanı). Generator boyut korkuluğunun üst sınırı 1200 → 1300.
+
+### Notes — doğrulama kaynakları (tahmin değil)
+- **Yerleşim:** GİB UBL-TR 1.2.1 pakedi `xsdrt/common/UBL-CommonAggregateComponents-2.1.xsd` → `DeliveryType` sırası `… EstimatedDeliveryPeriod → CarrierParty → DeliveryParty → Despatch → DeliveryTerms → Shipment`; `<xsd:element name="CarrierParty" type="PartyType"/>`. `xsdrt/maindoc/UBL-Invoice-2.1.xsd` → `InvoiceType` sırası `… TaxRepresentativeParty → Delivery → PaymentMeans …`.
+- **Zorunluluk:** e-Arşiv Raporu Kılavuzu §3.3.2.17 `fatura/internetSatisBilgi` → `gonderiBilgileri/gonderimTarihi` (kardinalite 1) ve `gonderiBilgileri/gonderiTasiyan` (kardinalite 1, `kisiType`). v1.17 (22.05.2024) ile gönderim bilgileri zorunlu hâle geldi. UBL bu iki veriyi taşımazsa entegratör geçerli e-Arşiv raporu üretemez.
+- **Uçtan uca kanıt:** üretilen `examples/21` çıktısı, imza/zarf iskeleti (`ext:UBLExtensions` + `cac:Signature` — kütüphanenin belgelenmiş sorumluluk sınırı DIŞI) tamamlandıktan sonra `xmllint --schema xsdrt/maindoc/UBL-Invoice-2.1.xsd` doğrulamasından **geçer**.
+- **Schematron:** UBL-TR Main/Common Schematron'da fatura seviyesinde `Delivery`/`CarrierParty` kısıtı yok (mevcut kurallar yalnız `DespatchAdvice` bağlamında). Eklenen blok Schematron-nötr.
+- **`onlineSale` verilmezse profil `TICARIFATURA`** davranışı BİLEREK değiştirilmedi — profil seçimi çağıranın sorumluluğudur (e-Fatura mı e-Arşiv mi kararı mükellef sorgusuna dayanır, kütüphane bunu bilemez).
+
+### Test
+- `__tests__/integration/online-sale-delivery.test.ts` (+18) — emisyon, XSD sırası, TCKN gerçek kişi ayrıştırma, basic/strict farkı, geriye dönük uyum.
+- 1770 → 1788 (+18). Mevcut 1770 testin tamamı yeşil kaldı.
+
 ## [2.2.6] — 2026-04-30
 
 **Library Suggestions Patch (Mimsoft greenfield F5 ENGELLEYİCİ).** Tek küçük additive öneri — generator extension.

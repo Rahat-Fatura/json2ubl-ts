@@ -1,17 +1,25 @@
 import type { DeliveryInput, LineDeliveryInput, AddressInput } from '../types/common';
 import { cbcOptionalTag, cbcRequiredTag, joinLines } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
+import { serializePartyAs } from './party-serializer';
 import { DELIVERY_SEQ, ADDRESS_SEQ, SHIPMENT_SEQ, emitInOrder } from './xsd-sequence';
 
 /**
- * Delivery → XML fragment (§3.3 IHRACAT).
+ * Delivery → XML fragment (§3.3 IHRACAT + B-101 e-Arşiv internet satışı).
  * Sequence: DELIVERY_SEQ. B-14 paraleli: DeliveryAddress → Shipment (bu kapsamda DespatchAdvice Delivery farklı, bkz. despatch-serializer).
+ *
+ * B-101: `ActualDeliveryDate` + `CarrierParty` emit edilir. e-Arşiv raporundaki
+ * `internetSatisBilgi/gonderiBilgileri/gonderimTarihi` ve `.../gonderiTasiyan`
+ * (ikisi de kardinalite 1) bu iki alandan beslenir — daha önce mapper'a verilen
+ * kargo bilgisi XML'e hiç düşmüyordu.
  */
 export function serializeDelivery(del: DeliveryInput, indent: string = ''): string {
   const i2 = indent + '  ';
 
   const inner = emitInOrder(DELIVERY_SEQ, {
+    ActualDeliveryDate: () => cbcOptionalTag('ActualDeliveryDate', del.actualDeliveryDate),
     DeliveryAddress: () => (del.deliveryAddress ? serializeAddress(del.deliveryAddress, 'DeliveryAddress', i2) : ''),
+    CarrierParty: () => (del.carrierParty ? serializePartyAs(del.carrierParty, 'CarrierParty', i2) : ''),
     DeliveryTerms: () =>
       del.deliveryTerms
         ? [

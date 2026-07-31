@@ -5,13 +5,26 @@ import { ADDRESS_SEQ, PERSON_SEQ, emitInOrder } from './xsd-sequence';
 
 /** Party → XML fragment (cac:Party içeriği) */
 export function serializeParty(party: PartyInput, indent: string = ''): string {
+  return serializePartyAs(party, 'Party', indent);
+}
+
+/**
+ * PartyType içeriğini istenen cac etiketiyle sarmalar.
+ *
+ * B-101: `cac:CarrierParty` XSD'de `PartyType`'tır — içinde ayrıca `<cac:Party>`
+ * sarmalı YOKTUR, alt elemanlar (PartyIdentification/PartyName/PostalAddress…)
+ * doğrudan gelir. Bkz. GİB UBL-TR `xsdrt/common/UBL-CommonAggregateComponents-2.1.xsd`
+ * `<xsd:element name="CarrierParty" type="PartyType"/>` ve `Irsaliye-Ornek1.xml` §175-189.
+ * Aynı gerekçe `DeliveryParty`, `NotifyParty` gibi diğer PartyType alanları için de geçerli.
+ */
+export function serializePartyAs(party: PartyInput, tagName: string, indent: string = ''): string {
   const i = indent;
   const i2 = indent + '  ';
   const i3 = indent + '    ';
   const i4 = indent + '      ';
   const lines: string[] = [];
 
-  lines.push(`${i}<cac:Party>`);
+  lines.push(`${i}<cac:${tagName}>`);
 
   // WebsiteURI
   if (isNonEmpty(party.websiteUri)) {
@@ -80,7 +93,7 @@ export function serializeParty(party: PartyInput, indent: string = ''): string {
     ));
   }
 
-  lines.push(`${i}</cac:Party>`);
+  lines.push(`${i}</cac:${tagName}>`);
   return joinLines(lines);
 }
 

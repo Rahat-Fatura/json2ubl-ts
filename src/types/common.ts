@@ -250,9 +250,32 @@ export interface ExternalReferenceInput {
   uri: string;
 }
 
-/** Teslimat bilgileri — §3.3 IHRACAT */
+/**
+ * Teslimat bilgileri — §3.3 IHRACAT + B-101 e-Arşiv internet satışı.
+ *
+ * XML karşılığı: `cac:Delivery` (UBL-TR e-Fatura Kılavuzu §2.3.33, Invoice eleman 33, 0..n).
+ * Alt eleman sırası DELIVERY_SEQ ile GİB UBL-TR `DeliveryType`'ına sabitlenmiştir.
+ */
 export interface DeliveryInput {
+  /**
+   * Gerçekleşen teslim tarihi — `cbc:ActualDeliveryDate` (YYYY-MM-DD).
+   *
+   * B-101: e-Arşiv raporunda `internetSatisBilgi/gonderiBilgileri/gonderimTarihi`
+   * (kardinalite 1, v1.17'den beri zorunlu) bu alandan beslenir.
+   */
+  actualDeliveryDate?: string;
   deliveryAddress?: AddressInput;
+  /**
+   * Taşıyıcı taraf — `cac:CarrierParty`.
+   *
+   * B-101: e-Arşiv raporunda `internetSatisBilgi/gonderiBilgileri/gonderiTasiyan`
+   * (kardinalite 1, `kisiType` = tüzel kişi VKN+unvan | gerçek kişi TCKN+ad soyad)
+   * bu alandan beslenir. `taxIdType` VKN ise `name`, TCKN ise `firstName`/`familyName`
+   * doldurulmalıdır.
+   *
+   * XSD sırası: `EstimatedDeliveryPeriod` sonrası, `DeliveryParty` ÖNCESİ (GİB UBL-TR).
+   */
+  carrierParty?: PartyInput;
   deliveryTerms?: DeliveryTermsInput;
   shipment?: ShipmentInput;
 }

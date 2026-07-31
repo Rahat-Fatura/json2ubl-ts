@@ -26,6 +26,7 @@ import { validateManualExemption } from '../validators/manual-exemption-validato
 import { validateSgkInput } from '../validators/sgk-input-validator';
 import { validateSimpleLineRanges } from '../validators/simple-line-range-validator';
 import { validatePhantomKdv } from '../validators/phantom-kdv-validator';
+import { validateOnlineSaleShipment } from '../validators/online-sale-validator';
 import { UblBuildError } from '../errors/ubl-build-error';
 
 export interface SimpleBuilderOptions extends BuilderOptions {
@@ -77,6 +78,15 @@ export class SimpleInvoiceBuilder {
         ...validateSgkInput(input),
         ...validatePhantomKdv(input),
       ];
+
+      // B-101: internet satışı gönderi bilgisi bütünlüğü — YALNIZ strict.
+      // Gerekçe: bu alanlar v2.2.6'ya kadar mapper'da hiç okunmuyordu, eksik
+      // gönderen mevcut tüketiciler bugün hatasız XML alıyor. 'basic'i kırmamak
+      // için kural strict'e bağlandı (bkz. online-sale-validator başlık notu).
+      if (this.options.validationLevel === 'strict') {
+        simpleInputErrors.push(...validateOnlineSaleShipment(input));
+      }
+
       if (simpleInputErrors.length > 0) {
         throw new UblBuildError(simpleInputErrors);
       }

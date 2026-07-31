@@ -24,8 +24,15 @@ export const input: SimpleInvoiceInput = {
     storeUrl: 'https://demo.sinir-tanimaz.example.tr',
     paymentMethod: 'KREDIKARTI',
     paymentDate: '2026-04-23',
+    // B-101: kargo/teslim bilgisi cac:Delivery'ye düşer (ActualDeliveryDate + CarrierParty).
+    // CarrierParty'nin şema-geçerli olması için VKN/TCKN + il + ilçe gerekir (UBL-TR
+    // PartyType'ta cac:PostalAddress zorunlu). e-Arşiv raporundaki
+    // internetSatisBilgi/gonderiBilgileri bloğunu bu alanlar besler.
     carrierName: 'Hızlı Kargo A.Ş.',
     carrierTaxNumber: '5555555555',
+    carrierDistrict: 'Sultangazi',
+    carrierCity: 'İstanbul',
+    deliveryDate: '2026-04-25',
   },
 
   sender: {
