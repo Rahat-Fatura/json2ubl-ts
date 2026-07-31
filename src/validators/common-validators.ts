@@ -24,6 +24,26 @@ import { isNonEmpty } from '../utils/formatters';
 const ISSUE_DATE_MIN = '2005-01-01';
 
 /**
+ * 🔴 "BUGÜN" TÜRKİYE SAATİYLE HESAPLANIR — UTC ile DEĞİL.
+ *
+ * Schematron `TimeCheck` (Common_Schematron:169) düzenlenme tarihinin GELECEKTE olamayacağını
+ * söyler. "Gelecek" GİB'in takvimine göredir ve GİB Türkiye saatiyle çalışır.
+ *
+ * ⛔️ ESKİ HÂL BİR HATAYDI: `new Date().toISOString().slice(0, 10)` UTC gününü verir. Türkiye
+ * UTC+3 olduğu için her gece 00:00–03:00 (TR) arasında UTC hâlâ BİR ÖNCEKİ gündedir; o üç
+ * saatte düzenlenen ve tarihi DOĞRU olan her Türk faturası "gelecek tarihli" diye REDDEDİLİYORDU.
+ * Yani kütüphane her gün üç saat boyunca fatura üretemiyordu.
+ *
+ * Türkiye 2016'dan beri yaz saati uygulamıyor: sabit UTC+3. Sabit ofset aritmetiği bu yüzden
+ * güvenlidir ve `Intl`e (ICU verisi olmayan derlemelerde sessizce UTC'ye düşer) bağımlı değildir.
+ */
+const TURKEY_UTC_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+function turkeyToday(): string {
+  return new Date(Date.now() + TURKEY_UTC_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/**
  * §1 Ortak zorunluluk validasyonu — tüm faturalar için geçerli kurallar
  */
 export function validateCommon(input: InvoiceInput): ValidationError[] {
@@ -60,7 +80,7 @@ export function validateCommon(input: InvoiceInput): ValidationError[] {
     errors.push(invalidFormat('issueDate', 'YYYY-MM-DD', input.issueDate));
   } else {
     // B-65: IssueDate aralık kontrolü (CommonSchematron:169-170)
-    const today = new Date().toISOString().slice(0, 10);
+    const today = turkeyToday();
     if (input.issueDate < ISSUE_DATE_MIN || input.issueDate > today) {
       errors.push(invalidValue('issueDate',
         `${ISSUE_DATE_MIN} ≤ tarih ≤ ${today}`, input.issueDate));

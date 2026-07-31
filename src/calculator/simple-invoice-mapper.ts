@@ -249,7 +249,12 @@ function mapParty(party: SimplePartyInput): PartyInput {
     streetName: party.address,
     citySubdivisionName: party.district,
     cityName: party.city,
-    postalZone: party.zipCode ?? '00000',
+    // 🔴 POSTA KODU UYDURULMAZ. Eskiden bilinmeyen posta kodu `'00000'` ile dolduruluyordu;
+    // `00000` geçerli bir Türk posta kodu DEĞİLDİR, yani belgeye GERÇEK OLMAYAN bir veri
+    // yazılıyordu. VUK 227/3 belgede yer alan bilgilerin gerçeği yansıtmasını arar.
+    // `cbc:PostalZone` UBL'de seçimlidir (`AddressType`, minOccurs=0) ve serializer zaten
+    // `cbcOptionalTag` kullanıyor — bilinmiyorsa ELEMAN HİÇ YAZILMAZ, sıfırlarla değil.
+    postalZone: party.zipCode,
     country: party.country ?? 'Türkiye',
     taxOffice: party.taxOffice,
     telephone: party.phone,

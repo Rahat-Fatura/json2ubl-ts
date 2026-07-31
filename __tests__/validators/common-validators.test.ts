@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { validateCommon, validateParty } from '../../src/validators/common-validators';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
@@ -233,6 +233,37 @@ describe('§1 B-65 IssueDate aralık kontrolü', () => {
   it('B-65: 2005-01-01 sınırı kabul edilir', () => {
     const errors = validateCommon(createValidInput({ issueDate: '2005-01-01' }));
     expect(errors.filter(e => e.path === 'issueDate')).toHaveLength(0);
+  });
+
+  /*
+   * 🔴 GECE YARISI HATASI — "bugün" TÜRKİYE saatiyle hesaplanmalı, UTC ile değil.
+   *
+   * Türkiye UTC+3. Saat TR'de 00:30 iken UTC hâlâ BİR ÖNCEKİ gündedir. "Bugün" UTC'den
+   * okunursa, o saatte düzenlenen ve tarihi DOĞRU olan Türk faturası "gelecek tarihli" diye
+   * reddedilir — yani kütüphane her gece 00:00–03:00 arası fatura üretemez hâle gelir.
+   * Aşağıdaki testler saati tam o pencereye sabitler ve hatanın geri gelmesini engeller.
+   */
+  it('🔴 B-65: TR gece yarısından sonra (UTC hâlâ dün) BUGÜNÜN faturası kabul edilir', () => {
+    vi.useFakeTimers();
+    try {
+      // 2026-08-01T00:30 Türkiye = 2026-07-31T21:30 UTC.
+      vi.setSystemTime(new Date('2026-07-31T21:30:00Z'));
+      const errors = validateCommon(createValidInput({ issueDate: '2026-08-01' }));
+      expect(errors.filter(e => e.path === 'issueDate')).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('🔴 B-65: TR saatiyle YARIN olan tarih yine de reddedilir (kapı gevşemedi)', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-07-31T21:30:00Z')); // TR: 2026-08-01 00:30
+      const errors = validateCommon(createValidInput({ issueDate: '2026-08-02' }));
+      expect(errors.some(e => e.code === 'INVALID_VALUE' && e.path === 'issueDate')).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

@@ -30,7 +30,6 @@
         <cbc:StreetName>Levent Mah. No:42</cbc:StreetName>
         <cbc:CitySubdivisionName>Beşiktaş</cbc:CitySubdivisionName>
         <cbc:CityName>İstanbul</cbc:CityName>
-        <cbc:PostalZone>00000</cbc:PostalZone>
         <cac:Country>
           <cbc:Name>Türkiye</cbc:Name>
         </cac:Country>
@@ -54,7 +53,6 @@
         <cbc:StreetName>Bahnhofstraße 123</cbc:StreetName>
         <cbc:CitySubdivisionName>Munich</cbc:CitySubdivisionName>
         <cbc:CityName>Bayern</cbc:CityName>
-        <cbc:PostalZone>00000</cbc:PostalZone>
         <cac:Country>
           <cbc:Name>Türkiye</cbc:Name>
         </cac:Country>

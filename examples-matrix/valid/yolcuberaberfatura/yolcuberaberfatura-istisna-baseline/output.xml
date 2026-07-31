@@ -30,7 +30,6 @@
         <cbc:StreetName>İstiklal Cad. No:321</cbc:StreetName>
         <cbc:CitySubdivisionName>Beyoğlu</cbc:CitySubdivisionName>
         <cbc:CityName>İstanbul</cbc:CityName>
-        <cbc:PostalZone>00000</cbc:PostalZone>
         <cac:Country>
           <cbc:Name>Türkiye</cbc:Name>
         </cac:Country>
@@ -54,7 +53,6 @@
         <cbc:StreetName>Bağdat Cad. No:100</cbc:StreetName>
         <cbc:CitySubdivisionName>Kadıköy</cbc:CitySubdivisionName>
         <cbc:CityName>İstanbul</cbc:CityName>
-        <cbc:PostalZone>00000</cbc:PostalZone>
         <cac:Country>
           <cbc:Name>Türkiye</cbc:Name>
         </cac:Country>
