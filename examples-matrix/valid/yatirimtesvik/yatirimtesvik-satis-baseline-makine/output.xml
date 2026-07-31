@@ -111,6 +111,7 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>Sanayi kompresör</cbc:Name>
+      <cbc:BrandName>Matrix</cbc:BrandName>
       <cbc:ModelName>MTX-MAK-01</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>

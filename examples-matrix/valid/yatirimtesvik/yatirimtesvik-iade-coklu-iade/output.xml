@@ -118,6 +118,7 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>İade makine A</cbc:Name>
+      <cbc:BrandName>Matrix</cbc:BrandName>
       <cbc:ModelName>IADE-A</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>
@@ -151,6 +152,7 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>İade makine B</cbc:Name>
+      <cbc:BrandName>Matrix</cbc:BrandName>
       <cbc:ModelName>IADE-B</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>

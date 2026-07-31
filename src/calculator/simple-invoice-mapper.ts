@@ -450,12 +450,28 @@ function buildSingleLine(
     taxSubtotals,
   };
 
-  // Ürün bilgileri
+  // Ürün bilgileri.
+  //
+  // B-102: brand / buyerCode / sellerCode / manufacturerCode / origin alanları
+  // `SimpleLineInput`'ta v1'den beri tanımlıydı ama mapper bunları HİÇ okumuyordu —
+  // B-101'deki kargo alanlarıyla aynı sınıf hata (tipte var, XML'de yok).
+  // Yerleşim GİB UBL-TR 1.2.1 `ItemType`'tan doğrulandı:
+  //   brand            → cbc:BrandName
+  //   buyerCode        → cac:BuyersItemIdentification/cbc:ID
+  //   sellerCode       → cac:SellersItemIdentification/cbc:ID
+  //   manufacturerCode → cac:ManufacturersItemIdentification/cbc:ID
+  //   origin           → cac:OriginCountry/cbc:Name  (CountryType'ta Name minOccurs=1)
   const item: ItemInput = {
     name: line.name,
     description: line.description,
     modelName: line.model,
   };
+
+  if (isNonEmpty(line.brand)) item.brandName = line.brand;
+  if (isNonEmpty(line.buyerCode)) item.buyersItemIdentification = line.buyerCode;
+  if (isNonEmpty(line.sellerCode)) item.sellersItemIdentification = line.sellerCode;
+  if (isNonEmpty(line.manufacturerCode)) item.manufacturersItemIdentification = line.manufacturerCode;
+  if (isNonEmpty(line.origin)) item.originCountryName = line.origin;
 
   // Ek ürün tanımlayıcıları (TEKNOLOJIDESTEK IMEI, IDIS ETIKETNO vb.)
   if (line.additionalItemIdentifications?.length) {
@@ -492,6 +508,12 @@ function buildSingleLine(
     price: { priceAmount: line.price },
   };
 
+  // B-102: satır notu → cbc:Note (InvoiceLineType'ta ID ile InvoicedQuantity ARASINDA).
+  // `line.note` da tipte tanımlıydı ama mapper okumuyordu.
+  if (isNonEmpty(line.note)) {
+    result.notes = [line.note!];
+  }
+
   // Satır iskontosu
   if (cl.allowanceObject.amount > 0) {
     const allowance: AllowanceChargeInput = {
@@ -520,12 +542,22 @@ function buildSingleLine(
   // Satır seviyesi teslimat (ihracat, IHRACKAYITLI+702)
   if (line.delivery) {
     const del = line.delivery;
-    // transportHandlingUnits: packageTypeCode (paketleme) ve/veya alicidibsatirkod
+    // transportHandlingUnits: paket bilgisi ve/veya alicidibsatirkod
     // (B-07 IHRACKAYITLI+702 gümrük beyannamesi) için tek element oluştur.
-    const thuNeeded = del.packageTypeCode || del.alicidibsatirkod;
+    //
+    // B-102 iki düzeltme:
+    //  1. `packageId` tipte tanımlıydı ama mapper HİÇ okumuyordu →
+    //     `cac:ActualPackage/cbc:ID` (GİB PackageType'ta ilk eleman).
+    //  2. `packageQuantity` okunuyordu ama ActualPackage YALNIZ `packageTypeCode`
+    //     verilmişse üretiliyordu; tek başına miktar (veya ID) verildiğinde
+    //     KOŞULLU olarak düşüyordu. Artık üç alandan herhangi biri paketi doğurur.
+    const hasPackage =
+      isNonEmpty(del.packageId) || isNonEmpty(del.packageTypeCode) || del.packageQuantity !== undefined;
+    const thuNeeded = hasPackage || del.alicidibsatirkod;
     const transportHandlingUnits = thuNeeded ? [{
-      actualPackages: del.packageTypeCode
+      actualPackages: hasPackage
         ? [{
+          id: del.packageId,
           packagingTypeCode: del.packageTypeCode,
           quantity: del.packageQuantity,
         }]

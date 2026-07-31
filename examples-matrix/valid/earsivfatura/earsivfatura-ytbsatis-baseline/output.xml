@@ -111,6 +111,7 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>Teşvikli makine</cbc:Name>
+      <cbc:BrandName>Matrix</cbc:BrandName>
       <cbc:ModelName>MTX-01</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>

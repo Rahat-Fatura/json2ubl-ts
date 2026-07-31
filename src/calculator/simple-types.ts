@@ -33,7 +33,24 @@ export interface SimplePartyInput {
     website?: string;
     /** Ek taraf kimlik tanımlamaları (ör: MERSISNO, TICARETSICILNO) */
     identifications?: SimplePartyIdentification[];
-    /** e-Fatura/e-Arşiv posta kutusu etiketi (ör: "urn:mail:defaultpk@...") */
+    /**
+     * e-Fatura posta kutusu etiketi (ör: "urn:mail:defaultpk@firma.com.tr").
+     *
+     * ⚠️ **Bu alan üretilen UBL-TR Invoice XML'ine YAZILMAZ — bilerek.**
+     *
+     * Etiket, faturanın kendisine değil **zarfa** (GİB e-Fatura Paketi SBDH:
+     * `<sender identifier="..." alias="urn:mail:..."/>` /
+     * `<receiver identifier="..." alias="..."/>`) aittir. GİB UBL-TR 1.2.1
+     * `PartyType`'ında etiket için tanımlı bir eleman yoktur; `cbc:EndpointID`
+     * şemada bulunsa da UBL-TR kılavuzunda bu amaçla kullanılmaz, dolayısıyla
+     * oraya yazmak standart dışı olurdu. e-Arşiv faturalarında etiket kavramı
+     * hiç yoktur.
+     *
+     * Zarf üretimi kütüphanenin sorumluluk sınırının dışındadır (aynı sınır
+     * UBLExtensions/imza için de geçerlidir — bkz. B-101). Etiketi entegratöre
+     * gönderirken zarf tarafında siz taşımalısınız; alan burada yalnızca
+     * çağıranın veri modelini tek yerde tutabilmesi için durur (B-102 denetimi).
+     */
     alias?: string;
 }
 
@@ -93,21 +110,31 @@ export interface SimpleLineInput {
     withholdingTaxPercent?: number;
 
     // ─── Ürün ek bilgileri ─────────────────────────────────────────────────────
-    /** Ürün açıklaması */
+    // B-102: brand/buyerCode/sellerCode/manufacturerCode/origin/note v2.2.6'ya
+    // kadar mapper tarafından HİÇ okunmuyordu (B-101 ile aynı sınıf hata).
+    // Yerleşimler GİB UBL-TR 1.2.1 ItemType / InvoiceLineType'tan doğrulandı.
+
+    /** Ürün açıklaması — `cac:Item/cbc:Description` */
     description?: string;
-    /** Marka */
+    /** Marka — `cac:Item/cbc:BrandName` (B-102) */
     brand?: string;
-    /** Model */
+    /** Model — `cac:Item/cbc:ModelName` */
     model?: string;
-    /** Alıcı ürün kodu */
+    /** Alıcı ürün kodu — `cac:Item/cac:BuyersItemIdentification/cbc:ID` (B-102) */
     buyerCode?: string;
-    /** Satıcı ürün kodu */
+    /** Satıcı ürün kodu — `cac:Item/cac:SellersItemIdentification/cbc:ID` (B-102) */
     sellerCode?: string;
-    /** Üretici ürün kodu */
+    /** Üretici ürün kodu — `cac:Item/cac:ManufacturersItemIdentification/cbc:ID` (B-102) */
     manufacturerCode?: string;
-    /** Menşe ülke */
+    /**
+     * Menşe ülke **adı** — `cac:Item/cac:OriginCountry/cbc:Name` (B-102).
+     *
+     * GİB `CountryType`'ta `cbc:Name` minOccurs=1'dir; bu yüzden değer ülke ADI
+     * olarak yazılır (ISO kodu değil). Kod da göndermek isteyen çağıran alt
+     * seviye `ItemInput.originCountryCode` alanını kullanabilir.
+     */
     origin?: string;
-    /** Satır notu */
+    /** Satır notu — `cac:InvoiceLine/cbc:Note` (B-102) */
     note?: string;
 
     // ─── Satır seviyesi teslimat (ihracat vb.) ─────────────────────────────────
@@ -145,11 +172,18 @@ export interface SimpleLineDeliveryInput {
     alicidibsatirkod?: string;
     /** Taşıma modu kodu (ör: "1" Deniz, "3" Karayolu, "4" Havayolu) */
     transportModeCode?: string;
-    /** Paket ID */
+    /**
+     * Paket ID — `cac:Shipment/cac:TransportHandlingUnit/cac:ActualPackage/cbc:ID` (B-102).
+     * v2.2.6'ya kadar mapper bu alanı hiç okumuyordu.
+     */
     packageId?: string;
-    /** Paket miktarı */
+    /**
+     * Paket miktarı — `.../cac:ActualPackage/cbc:Quantity`.
+     * B-102: önceden yalnızca `packageTypeCode` ile BİRLİKTE verildiğinde yazılıyordu;
+     * artık tek başına da `cac:ActualPackage` doğurur.
+     */
     packageQuantity?: number;
-    /** Paket tipi kodu */
+    /** Paket tipi kodu — `.../cac:ActualPackage/cbc:PackagingTypeCode` */
     packageTypeCode?: string;
 }
 

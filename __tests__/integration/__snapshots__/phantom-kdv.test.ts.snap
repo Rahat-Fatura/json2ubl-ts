@@ -256,6 +256,7 @@ exports[`M12 Phantom KDV — End-to-End Integration > YATIRIMTESVIK+ISTISNA + Ma
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>Sanayi Tipi Kompresör</cbc:Name>
+      <cbc:BrandName>DemoMakine</cbc:BrandName>
       <cbc:ModelName>DMK-2000</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>
@@ -528,6 +529,7 @@ exports[`M12 Phantom KDV — End-to-End Integration YATIRIMTESVIK+ISTISNA + Maki
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>Sanayi Tipi Kompresör</cbc:Name>
+      <cbc:BrandName>DemoMakine</cbc:BrandName>
       <cbc:ModelName>DMK-2000</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>

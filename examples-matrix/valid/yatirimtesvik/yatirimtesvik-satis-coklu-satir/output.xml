@@ -111,6 +111,7 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>Makine parçası A</cbc:Name>
+      <cbc:BrandName>Matrix</cbc:BrandName>
       <cbc:ModelName>PT-A</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>
@@ -144,6 +145,7 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>Makine parçası B</cbc:Name>
+      <cbc:BrandName>Matrix</cbc:BrandName>
       <cbc:ModelName>PT-B</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>

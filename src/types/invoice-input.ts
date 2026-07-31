@@ -111,6 +111,13 @@ export interface InvoiceInput {
 export interface InvoiceLineInput {
   /** Satır numarası */
   id: string;
+  /**
+   * Satır notları — `cbc:Note` (B-102).
+   *
+   * GİB UBL-TR `InvoiceLineType` sekansında `cbc:ID`'den hemen SONRA,
+   * `cbc:InvoicedQuantity`'den ÖNCE gelir (maxOccurs=unbounded).
+   */
+  notes?: string[];
   /** Faturalanan miktar */
   invoicedQuantity: number;
   /** Birim kodu (UnitCodeList) */

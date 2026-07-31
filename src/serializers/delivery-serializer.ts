@@ -2,7 +2,7 @@ import type { DeliveryInput, LineDeliveryInput, AddressInput } from '../types/co
 import { cbcOptionalTag, cbcRequiredTag, joinLines } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
 import { serializePartyAs } from './party-serializer';
-import { DELIVERY_SEQ, ADDRESS_SEQ, SHIPMENT_SEQ, emitInOrder } from './xsd-sequence';
+import { DELIVERY_SEQ, ADDRESS_SEQ, SHIPMENT_SEQ, PACKAGE_SEQ, emitInOrder } from './xsd-sequence';
 
 /**
  * Delivery → XML fragment (§3.3 IHRACAT + B-101 e-Arşiv internet satışı).
@@ -143,15 +143,19 @@ function serializeShipment(shipment: DeliveryInput['shipment'], indent: string):
         shipment.transportHandlingUnits.map(thu => {
           const thuLines: string[] = [`${i2}<cac:TransportHandlingUnit>`];
           // XSD sequence: ActualPackage (12) → ... → CustomsDeclaration (21)
+          //
+          // B-102: ActualPackage içi sıra artık PACKAGE_SEQ'ten gelir
+          // (ID → Quantity → PackagingTypeCode). Önceki kod PackagingTypeCode'u
+          // Quantity'den ÖNCE yazıyordu; ikisi birlikte verildiğinde şema-geçersizdi.
           if (thu.actualPackages) {
             for (const pkg of thu.actualPackages) {
+              const pkgInner = emitInOrder(PACKAGE_SEQ, {
+                ID: () => cbcOptionalTag('ID', pkg.id),
+                Quantity: () => (pkg.quantity !== undefined ? cbcOptionalTag('Quantity', String(pkg.quantity)) : ''),
+                PackagingTypeCode: () => cbcOptionalTag('PackagingTypeCode', pkg.packagingTypeCode),
+              });
               thuLines.push(`${i3}<cac:ActualPackage>`);
-              if (isNonEmpty(pkg.packagingTypeCode)) {
-                thuLines.push(`${i3}  ${cbcOptionalTag('PackagingTypeCode', pkg.packagingTypeCode)}`);
-              }
-              if (pkg.quantity !== undefined) {
-                thuLines.push(`${i3}  ${cbcOptionalTag('Quantity', String(pkg.quantity))}`);
-              }
+              for (const p of pkgInner) thuLines.push(`${i3}  ${p}`);
               thuLines.push(`${i3}</cac:ActualPackage>`);
             }
           }

@@ -4,6 +4,59 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 
 ## [Unreleased]
 
+**B-102 — "Tipte var, XML'de yok" sınıfının sistematik denetimi.** B-101 tekil bir hata değil, bir SINIF hatasıydı. Bu turda `SimpleInvoiceInput` ağacının **135 leaf alanının tamamı** TypeScript Compiler API ile çıkarılıp `src/` altındaki property-read'lerle mekanik olarak karşılaştırıldı. **9 alan** hiçbir yerde okunmuyordu; 1 alan daha koşullu olarak düşüyordu. Sürüm numarası bilerek yükseltilmedi; yayın kararı sürdürücüye ait.
+
+### Denetim tablosu (135 leaf alan tarandı)
+
+| Alan | Tipte | Mapper okuyor mu (önce) | UBL karşılığı | Durum |
+|---|---|---|---|---|
+| `lines[].brand` | ✔ | ✖ | `cac:Item/cbc:BrandName` | ✅ düzeltildi |
+| `lines[].buyerCode` | ✔ | ✖ | `cac:Item/cac:BuyersItemIdentification/cbc:ID` | ✅ düzeltildi |
+| `lines[].sellerCode` | ✔ | ✖ | `cac:Item/cac:SellersItemIdentification/cbc:ID` | ✅ düzeltildi |
+| `lines[].manufacturerCode` | ✔ | ✖ | `cac:Item/cac:ManufacturersItemIdentification/cbc:ID` | ✅ düzeltildi |
+| `lines[].origin` | ✔ | ✖ | `cac:Item/cac:OriginCountry/cbc:Name` | ✅ düzeltildi |
+| `lines[].note` | ✔ | ✖ | `cac:InvoiceLine/cbc:Note` | ✅ düzeltildi |
+| `lines[].delivery.packageId` | ✔ | ✖ | `…/cac:ActualPackage/cbc:ID` | ✅ düzeltildi |
+| `lines[].delivery.packageQuantity` | ✔ | ⚠ koşullu | `…/cac:ActualPackage/cbc:Quantity` | ✅ düzeltildi |
+| `sender.alias` | ✔ | ✖ | **YOK** — zarf/SBDH seviyesi | 📝 belgelendi |
+| `customer.alias` | ✔ | ✖ | **YOK** — zarf/SBDH seviyesi | 📝 belgelendi |
+
+Kalan 125 alan ya mapper'da ya da hesaplama motorunda (`line-calculator` / `document-calculator`: `kdvPercent`, `allowancePercent`, `withholdingTaxCode`, `withholdingTaxPercent`) okunuyor — hepsi çıktıya ulaşıyor.
+
+### Fixed
+- 🔴 **`lines[].brand` / `buyerCode` / `sellerCode` / `manufacturerCode` / `origin` / `note` SESSİZCE kayboluyordu.** B-101 ile birebir aynı sınıf: alan `SimpleLineInput`'ta tanımlı, `simple-invoice-mapper` onu hiç okumuyor. Kanıt yine kütüphanenin kendinden geldi — `examples/12-yatirimtesvik-satis-makina` ve 9 matrix senaryosu `brand` veriyordu, üretilmiş `output.xml`'lerin hiçbirinde `cbc:BrandName` yoktu.
+- 🔴 **`ITEM_SEQ`'te slotlar vardı ama emitter'ları yoktu.** `BrandName`, `Buyers/Sellers/ManufacturersItemIdentification`, `OriginCountry` sıra tablosunda zaten listeliydi; `serializeItem` bunlar için hiç emitter tanımlamamıştı. Yani hata iki katmanda birden vardı (mapper okumuyor + serializer yazmıyor).
+- 🔴 **`cac:ActualPackage` element sırası XSD'ye AYKIRIYDI.** Serializer `PackagingTypeCode`'u `Quantity`'den **önce** yazıyordu; GİB `PackageType` sırası `ID → Quantity → … → PackagingTypeCode`'tur. İki alan birlikte verildiğinde çıktı şema-geçersizdi. Kütüphanede bu kombinasyonu üreten test/örnek olmadığı için hata bugüne dek görünmemişti. `xmllint` ile hem eski sıranın **reddedildiği** hem yeni sıranın **geçtiği** doğrulandı.
+- ⚠ **`packageQuantity` koşullu düşüyordu.** `cac:ActualPackage` YALNIZ `packageTypeCode` verildiğinde üretiliyordu; tek başına miktar (veya yeni `packageId`) verildiğinde sessizce yok sayılıyordu. Artık üç alandan herhangi biri paketi doğurur.
+
+### Added
+- `ItemInput`: `brandName`, `buyersItemIdentification`, `sellersItemIdentification`, `manufacturersItemIdentification`, `originCountryName`, `originCountryCode`.
+- `InvoiceLineInput.notes?: string[]` — `cbc:Note` (XSD `maxOccurs="unbounded"`). `SimpleLineInput.note` tek değer olduğu için mapper onu tek elemanlı diziye sarar.
+- `ActualPackageInput.id` — `cac:ActualPackage/cbc:ID`.
+- `PACKAGE_SEQ` (`xsd-sequence.ts`) — `PackageType` sıra tablosu.
+- `line-serializer`: `itemIdentificationBlock()` ve `originCountryBlock()` yardımcıları.
+
+### Changed
+- **`cac:OriginCountry` yalnız ülke ADI varken emit edilir.** GİB `CountryType`'ta `cbc:Name` **minOccurs=1**'dir; sadece `originCountryCode` verilmişse blok hiç yazılmaz — eksik veriyle şema-geçersiz belge üretmemek için.
+- `examples/12`, `examples/14` ve 9 matrix senaryosunun `output.xml`'i yeniden üretildi (artık `cbc:BrandName` içeriyorlar — daha önce kaybolan veri).
+- `session-paths.generated.ts` regenerate (JSDoc değişiklikleri; path SAYISI değişmedi).
+
+### Notes — karşılığı olmayan alanlar
+- **`SimplePartyInput.alias` (sender + customer) — UBL-TR Invoice'ta karşılığı YOKTUR.** Etiket (`urn:mail:defaultpk@…`) faturaya değil **zarfa** aittir (GİB e-Fatura Paketi SBDH: `<sender alias="…"/>` / `<receiver alias="…"/>`). GİB `PartyType`'ında etiket için tanımlı eleman yoktur; `cbc:EndpointID` şemada bulunsa da UBL-TR kılavuzunda bu amaçla kullanılmaz — oraya yazmak standart dışı olurdu. e-Arşiv'de etiket kavramı hiç yoktur. **Tipten çıkarmak public API'de kırıcı olurdu**, bu yüzden alan korundu ve JSDoc'ta "XML'e YAZILMAZ, zarf seviyesindedir" olarak açıkça belgelendi. Zarf üretimi kütüphanenin sorumluluk sınırı dışıdır (aynı sınır `UBLExtensions`/imza için de geçerli).
+
+### Notes — doğrulama kaynakları (tahmin değil)
+- **Yerleşim:** GİB UBL-TR 1.2.1 pakedi `xsdrt/common/UBL-CommonAggregateComponents-2.1.xsd` → `ItemType` (`Description → Name → Keyword → BrandName → ModelName → Buyers… → Sellers… → Manufacturers… → AdditionalItemIdentification → OriginCountry → CommodityClassification → ItemInstance`), `InvoiceLineType` (`ID → Note → InvoicedQuantity → …`), `PackageType` (`ID → Quantity → … → PackagingTypeCode`), `CountryType` (`IdentificationCode 0..1 → Name 1..1`), `ItemIdentificationType` (yalnız `cbc:ID`).
+- **GİB–OASIS sıralama farkı:** B-101'de GİB, `DeliveryType`'ta `CarrierParty`/`DeliveryParty` sırasını OASIS'e göre TERS çevirmişti. Bu turda dokunulan **dört tipin hiçbirinde** (`ItemType`, `InvoiceLineType`, `PackageType`, `CountryType`) böyle bir sapma YOKTUR — GİB, OASIS UBL 2.1 göreli sırasını korumuştur. Yine de tüm sıralar OASIS'ten değil GİB pakedinden okundu.
+- **Uçtan uca kanıt:** altı yeni alanın tamamını + paket bloğunu içeren IHRACAT faturası, imza/zarf iskeleti tamamlandıktan sonra `xmllint --schema xsdrt/maindoc/UBL-Invoice-2.1.xsd` doğrulamasından **geçer**; aynı belgenin eski `ActualPackage` sırasıyla üretilmiş hâli **reddedilir**.
+- **Schematron:** UBL-TR Main/Common Schematron'da `BrandName`, `OriginCountry`, `*ItemIdentification` ve `InvoiceLine/cbc:Note` üzerinde hiçbir kısıt yok. Tek ilgili kural `ActualPackage/cbc:PackagingTypeCode`'un kod listesinde olmasıdır (zaten `package-type-code-config` ile karşılanıyor). Eklenen bloklar Schematron-nötr.
+- **`'basic'` kipi KIRILMADI ve yeni zorunluluk EKLENMEDİ.** Tüm alanlar opsiyonel `cbc`/`cac` elemanlarıdır; boş/verilmemiş alanda hiçbir element emit edilmez. `basic` ile `strict` çıktıları birebir aynıdır (test ile sabitlendi). Public API tamamen additive — kırıcı değişiklik yok.
+
+### Test
+- `__tests__/integration/line-item-fields.test.ts` (+22) — emisyon, `ItemType`/`InvoiceLineType`/`PackageType` XSD sırası, `OriginCountry` Name-zorunluluğu, çok değerli `cbc:Note`, boş-string koruması, basic≡strict eşitliği, `alias`'ın XML'e yazılmadığının sözleşme testi.
+- 1788 → 1810 (+22). Mevcut 1788 testin tamamı yeşil kaldı.
+
+---
+
 **B-101 — İnternet satışı kargo/teslim bilgisi XML'e yazılıyor.** Sürüm numarası bilerek yükseltilmedi; yayın kararı sürdürücüye ait.
 
 ### Fixed

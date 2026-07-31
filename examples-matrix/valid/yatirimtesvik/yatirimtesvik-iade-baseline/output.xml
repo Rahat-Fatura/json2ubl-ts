@@ -118,6 +118,7 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>Teşvikli iade</cbc:Name>
+      <cbc:BrandName>Matrix</cbc:BrandName>
       <cbc:ModelName>MTX-IADE</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>

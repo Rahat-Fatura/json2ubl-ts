@@ -117,6 +117,7 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>Sanayi Tipi Kompresör — İade</cbc:Name>
+      <cbc:BrandName>DemoMakine</cbc:BrandName>
       <cbc:ModelName>DMK-2000</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>

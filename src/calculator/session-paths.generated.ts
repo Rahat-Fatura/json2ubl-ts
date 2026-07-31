@@ -97,7 +97,7 @@ export const SessionPaths = {
   senderIdentificationValue: (i: number) => `sender.identifications[${i}].value` as `sender.identifications[${number}].value`,
 
   /**
-   * e-Fatura/e-Arşiv posta kutusu etiketi (ör: "urn:mail:defaultpk@...")
+   * e-Fatura posta kutusu etiketi (ör: "urn:mail:defaultpk@firma.com.tr"). ⚠️ **Bu alan üretilen UBL-TR Invoice XML'ine YAZILMAZ — bilerek.** Etiket, faturanın kendisine değil **zarfa** (GİB e-Fatura Paketi SBDH: `<sender identifier="..." alias="urn:mail:..."/>` / `<receiver identifier="..." alias="..."/>`) aittir. GİB UBL-TR 1.2.1 `PartyType`'ında etiket için tanımlı bir eleman yoktur; `cbc:EndpointID` şemada bulunsa da UBL-TR kılavuzunda bu amaçla kullanılmaz, dolayısıyla oraya yazmak standart dışı olurdu. e-Arşiv faturalarında etiket kavramı hiç yoktur. Zarf üretimi kütüphanenin sorumluluk sınırının dışındadır (aynı sınır UBLExtensions/imza için de geçerlidir — bkz. B-101). Etiketi entegratöre gönderirken zarf tarafında siz taşımalısınız; alan burada yalnızca çağıranın veri modelini tek yerde tutabilmesi için durur (B-102 denetimi).
    * Expected type: string | undefined
    */
   senderAlias: 'sender.alias',
@@ -181,7 +181,7 @@ export const SessionPaths = {
   customerIdentificationValue: (i: number) => `customer.identifications[${i}].value` as `customer.identifications[${number}].value`,
 
   /**
-   * e-Fatura/e-Arşiv posta kutusu etiketi (ör: "urn:mail:defaultpk@...")
+   * e-Fatura posta kutusu etiketi (ör: "urn:mail:defaultpk@firma.com.tr"). ⚠️ **Bu alan üretilen UBL-TR Invoice XML'ine YAZILMAZ — bilerek.** Etiket, faturanın kendisine değil **zarfa** (GİB e-Fatura Paketi SBDH: `<sender identifier="..." alias="urn:mail:..."/>` / `<receiver identifier="..." alias="..."/>`) aittir. GİB UBL-TR 1.2.1 `PartyType`'ında etiket için tanımlı bir eleman yoktur; `cbc:EndpointID` şemada bulunsa da UBL-TR kılavuzunda bu amaçla kullanılmaz, dolayısıyla oraya yazmak standart dışı olurdu. e-Arşiv faturalarında etiket kavramı hiç yoktur. Zarf üretimi kütüphanenin sorumluluk sınırının dışındadır (aynı sınır UBLExtensions/imza için de geçerlidir — bkz. B-101). Etiketi entegratöre gönderirken zarf tarafında siz taşımalısınız; alan burada yalnızca çağıranın veri modelini tek yerde tutabilmesi için durur (B-102 denetimi).
    * Expected type: string | undefined
    */
   customerAlias: 'customer.alias',
@@ -253,49 +253,49 @@ export const SessionPaths = {
   lineWithholdingTaxPercent: (i: number) => `lines[${i}].withholdingTaxPercent` as `lines[${number}].withholdingTaxPercent`,
 
   /**
-   * Ürün açıklaması
+   * Ürün açıklaması — `cac:Item/cbc:Description`
    * Expected type: string | undefined
    */
   lineDescription: (i: number) => `lines[${i}].description` as `lines[${number}].description`,
 
   /**
-   * Marka
+   * Marka — `cac:Item/cbc:BrandName` (B-102)
    * Expected type: string | undefined
    */
   lineBrand: (i: number) => `lines[${i}].brand` as `lines[${number}].brand`,
 
   /**
-   * Model
+   * Model — `cac:Item/cbc:ModelName`
    * Expected type: string | undefined
    */
   lineModel: (i: number) => `lines[${i}].model` as `lines[${number}].model`,
 
   /**
-   * Alıcı ürün kodu
+   * Alıcı ürün kodu — `cac:Item/cac:BuyersItemIdentification/cbc:ID` (B-102)
    * Expected type: string | undefined
    */
   lineBuyerCode: (i: number) => `lines[${i}].buyerCode` as `lines[${number}].buyerCode`,
 
   /**
-   * Satıcı ürün kodu
+   * Satıcı ürün kodu — `cac:Item/cac:SellersItemIdentification/cbc:ID` (B-102)
    * Expected type: string | undefined
    */
   lineSellerCode: (i: number) => `lines[${i}].sellerCode` as `lines[${number}].sellerCode`,
 
   /**
-   * Üretici ürün kodu
+   * Üretici ürün kodu — `cac:Item/cac:ManufacturersItemIdentification/cbc:ID` (B-102)
    * Expected type: string | undefined
    */
   lineManufacturerCode: (i: number) => `lines[${i}].manufacturerCode` as `lines[${number}].manufacturerCode`,
 
   /**
-   * Menşe ülke
+   * Menşe ülke **adı** — `cac:Item/cac:OriginCountry/cbc:Name` (B-102). GİB `CountryType`'ta `cbc:Name` minOccurs=1'dir; bu yüzden değer ülke ADI olarak yazılır (ISO kodu değil). Kod da göndermek isteyen çağıran alt seviye `ItemInput.originCountryCode` alanını kullanabilir.
    * Expected type: string | undefined
    */
   lineOrigin: (i: number) => `lines[${i}].origin` as `lines[${number}].origin`,
 
   /**
-   * Satır notu
+   * Satır notu — `cac:InvoiceLine/cbc:Note` (B-102)
    * Expected type: string | undefined
    */
   lineNote: (i: number) => `lines[${i}].note` as `lines[${number}].note`,
@@ -325,19 +325,19 @@ export const SessionPaths = {
   lineDeliveryTransportModeCode: (i: number) => `lines[${i}].delivery.transportModeCode` as `lines[${number}].delivery.transportModeCode`,
 
   /**
-   * Paket ID
+   * Paket ID — `cac:Shipment/cac:TransportHandlingUnit/cac:ActualPackage/cbc:ID` (B-102). v2.2.6'ya kadar mapper bu alanı hiç okumuyordu.
    * Expected type: string | undefined
    */
   lineDeliveryPackageId: (i: number) => `lines[${i}].delivery.packageId` as `lines[${number}].delivery.packageId`,
 
   /**
-   * Paket miktarı
+   * Paket miktarı — `.../cac:ActualPackage/cbc:Quantity`. B-102: önceden yalnızca `packageTypeCode` ile BİRLİKTE verildiğinde yazılıyordu; artık tek başına da `cac:ActualPackage` doğurur.
    * Expected type: number | undefined
    */
   lineDeliveryPackageQuantity: (i: number) => `lines[${i}].delivery.packageQuantity` as `lines[${number}].delivery.packageQuantity`,
 
   /**
-   * Paket tipi kodu
+   * Paket tipi kodu — `.../cac:ActualPackage/cbc:PackagingTypeCode`
    * Expected type: string | undefined
    */
   lineDeliveryPackageTypeCode: (i: number) => `lines[${i}].delivery.packageTypeCode` as `lines[${number}].delivery.packageTypeCode`,

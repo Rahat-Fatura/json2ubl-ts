@@ -176,15 +176,44 @@ export interface ItemInstanceInput {
   serialId?: string;
 }
 
-/** Kalem ürün bilgileri */
+/**
+ * Kalem ürün bilgileri.
+ *
+ * Alan sırası GİB UBL-TR 1.2.1 `ItemType` sekansını izler
+ * (`xsdrt/common/UBL-CommonAggregateComponents-2.1.xsd`):
+ *   Description → Name → Keyword → BrandName → ModelName
+ *   → BuyersItemIdentification → SellersItemIdentification
+ *   → ManufacturersItemIdentification → AdditionalItemIdentification
+ *   → OriginCountry → CommodityClassification → ItemInstance
+ * (GİB bu tipte OASIS UBL 2.1 göreli sırasını KORUMUŞTUR — B-101'deki
+ * DeliveryType ters-çevirmesinin bir benzeri burada yoktur.)
+ */
 export interface ItemInput {
   /** Ürün adı — zorunlu, boş olamaz */
   name: string;
   description?: string;
+  /** Marka adı — `cbc:BrandName` (B-102) */
+  brandName?: string;
   /** Model adı — §3.10 YATIRIMTESVIK Kod 01 */
   modelName?: string;
+  /** Alıcı ürün kodu — `cac:BuyersItemIdentification/cbc:ID` (B-102) */
+  buyersItemIdentification?: string;
+  /** Satıcı ürün kodu — `cac:SellersItemIdentification/cbc:ID` (B-102) */
+  sellersItemIdentification?: string;
+  /** Üretici ürün kodu — `cac:ManufacturersItemIdentification/cbc:ID` (B-102) */
+  manufacturersItemIdentification?: string;
   /** Ek ürün kimlikleri — HKS, ILAC, TEKNOLOJI, IDIS */
   additionalItemIdentifications?: AdditionalItemIdInput[];
+  /**
+   * Menşe ülke adı — `cac:OriginCountry/cbc:Name` (B-102).
+   *
+   * GİB `CountryType`'ta `cbc:Name` **minOccurs=1**'dir; bu alan boşken
+   * `originCountryCode` verilse bile `cac:OriginCountry` bloğu emit EDİLMEZ
+   * (şema-geçersiz belge üretmemek için).
+   */
+  originCountryName?: string;
+  /** Menşe ülke ISO 3166-1 alpha-2 kodu — `cac:OriginCountry/cbc:IdentificationCode` (B-102) */
+  originCountryCode?: string;
   /** Emtia sınıflandırması — §3.10 YATIRIMTESVIK */
   commodityClassification?: CommodityClassificationInput;
   /** Ürün örnekleri — §3.10 YATIRIMTESVIK Kod 01 */
@@ -336,7 +365,18 @@ export interface TransportHandlingUnitInput {
   customsDeclarations?: CustomsDeclarationInput[];
 }
 
+/**
+ * Paket bilgisi — `cac:ActualPackage`.
+ *
+ * GİB UBL-TR `PackageType` sekansı: `cbc:ID` → `cbc:Quantity`
+ * → ReturnableMaterialIndicator → PackageLevelCode → `cbc:PackagingTypeCode`
+ * → PackingMaterial → ContainedPackage → GoodsItem → MeasurementDimension.
+ * B-102: serializer bu sırayı `PACKAGE_SEQ` üzerinden uygular (önceden
+ * PackagingTypeCode, Quantity'den ÖNCE yazılıyordu — şema-geçersiz).
+ */
 export interface ActualPackageInput {
+  /** Paket kimliği — `cbc:ID` (B-102) */
+  id?: string;
   packagingTypeCode?: string;
   quantity?: number;
 }

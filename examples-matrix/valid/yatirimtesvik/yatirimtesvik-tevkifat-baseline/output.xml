@@ -139,6 +139,7 @@
     </cac:WithholdingTaxTotal>
     <cac:Item>
       <cbc:Name>Tevkifatlı teşvikli hizmet</cbc:Name>
+      <cbc:BrandName>Matrix</cbc:BrandName>
       <cbc:ModelName>MTX-TEV</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>

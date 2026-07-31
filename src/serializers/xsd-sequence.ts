@@ -453,6 +453,31 @@ export const TRANSPORT_HANDLING_UNIT_SEQ = [
   'Status',
 ] as const;
 
+// ─── Package (cac:ActualPackage) ─────────────────────────────────────────
+// UBL-CommonAggregateComponents-2.1.xsd PackageType.
+//
+// B-102: Önceki serializer `PackagingTypeCode`'u `Quantity`'den ÖNCE yazıyordu —
+// XSD sırası tersidir (ID → Quantity → ... → PackagingTypeCode). İki alan birlikte
+// verildiğinde çıktı şema-geçersizdi; kütüphanede bu kombinasyonu üreten test/örnek
+// olmadığı için hata bugüne dek görünmemişti.
+// GİB UBL-TR PackageType, OASIS UBL 2.1 göreli sırasını korur (ters-çevirme yok).
+export const PACKAGE_SEQ = [
+  'ID',
+  'Quantity',
+  'ReturnableMaterialIndicator',
+  'PackageLevelCode',
+  'PackagingTypeCode',
+  'PackingMaterial',
+  'ContainedPackage',
+  'ContainingTransportEquipment',
+  'GoodsItem',
+  'MeasurementDimension',
+  'DeliveryUnit',
+  'Delivery',
+  'Despatch',
+  'Pickup',
+] as const;
+
 // UBL-CommonAggregateComponents-2.1.xsd CustomsDeclarationType
 export const CUSTOMS_DECLARATION_SEQ = [
   'ID',

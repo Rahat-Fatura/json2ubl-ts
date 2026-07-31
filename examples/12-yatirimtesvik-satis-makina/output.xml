@@ -111,6 +111,7 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>Sanayi Tipi Kompresör</cbc:Name>
+      <cbc:BrandName>DemoMakine</cbc:BrandName>
       <cbc:ModelName>DMK-2000</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>
@@ -144,6 +145,7 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>Endüstriyel Pres Makinesi</cbc:Name>
+      <cbc:BrandName>DemoMakine</cbc:BrandName>
       <cbc:ModelName>DPM-500</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>

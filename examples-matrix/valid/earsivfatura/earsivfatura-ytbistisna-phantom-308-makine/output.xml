@@ -117,6 +117,7 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>Teşvikli makine — phantom KDV</cbc:Name>
+      <cbc:BrandName>Matrix</cbc:BrandName>
       <cbc:ModelName>MTX-02</cbc:ModelName>
       <cac:CommodityClassification>
         <cbc:ItemClassificationCode>01</cbc:ItemClassificationCode>

@@ -16,10 +16,21 @@ import { INVOICE_LINE_SEQ, ITEM_SEQ, PRICE_SEQ, DESPATCH_LINE_SEQ, emitInOrder }
 /**
  * InvoiceLine → XML fragment.
  * Sequence: INVOICE_LINE_SEQ. B-10 fix: Delivery, AllowanceCharge ÖNCESİ.
+ *
+ * B-102: `cbc:Note` emit edildi — GİB UBL-TR `InvoiceLineType`'ta `cbc:ID` ile
+ * `cbc:InvoicedQuantity` ARASINDA, maxOccurs=unbounded.
  */
 export function serializeInvoiceLine(line: InvoiceLineInput, currencyCode: string, indent: string = ''): string {
   const inner = emitInOrder(INVOICE_LINE_SEQ, {
     ID: () => cbcRequiredTag('ID', line.id, 'InvoiceLine'),
+    Note: () =>
+      line.notes?.length
+        ? joinLines(
+            line.notes
+              .filter(n => isNonEmpty(n))
+              .map(n => `${indent}  ${cbcOptionalTag('Note', n)}`),
+          )
+        : '',
     InvoicedQuantity: () => cbcOptionalQuantityTag('InvoicedQuantity', line.invoicedQuantity, line.unitCode),
     LineExtensionAmount: () => cbcOptionalAmountTag('LineExtensionAmount', line.lineExtensionAmount, currencyCode),
     Delivery: () => (line.delivery ? serializeLineDelivery(line.delivery, indent + '  ') : ''),
@@ -39,15 +50,54 @@ export function serializeInvoiceLine(line: InvoiceLineInput, currencyCode: strin
 }
 
 /**
+ * Tekil `cac:*ItemIdentification` bloğu — GİB `ItemIdentificationType` yalnızca
+ * `cbc:ID` (minOccurs=1) içerir. Değer boşsa blok hiç emit edilmez (B-102).
+ */
+function itemIdentificationBlock(tagName: string, value: string | undefined, indent: string): string {
+  if (!isNonEmpty(value)) return '';
+  return [
+    `${indent}<cac:${tagName}>`,
+    `${indent}  ${cbcRequiredTag('ID', value, tagName)}`,
+    `${indent}</cac:${tagName}>`,
+  ].join('\n');
+}
+
+/**
+ * `cac:OriginCountry` bloğu — GİB `CountryType`: `cbc:IdentificationCode` (0..1)
+ * → `cbc:Name` (**1..1**). Name zorunlu olduğu için isim yoksa blok emit edilmez;
+ * yalnız kod verilmiş olsa bile şema-geçersiz belge üretilmez (B-102).
+ */
+function originCountryBlock(code: string | undefined, name: string | undefined, indent: string): string {
+  if (!isNonEmpty(name)) return '';
+  const inner: string[] = [];
+  if (isNonEmpty(code)) inner.push(`${indent}  ${cbcOptionalTag('IdentificationCode', code)}`);
+  inner.push(`${indent}  ${cbcRequiredTag('Name', name, 'OriginCountry')}`);
+  return [`${indent}<cac:OriginCountry>`, ...inner, `${indent}</cac:OriginCountry>`].join('\n');
+}
+
+/**
  * Item → XML fragment. Sequence: ITEM_SEQ.
  * B-13 fix: Description Name ÖNCESİ.
+ *
+ * B-102: BrandName / Buyers-Sellers-ManufacturersItemIdentification / OriginCountry
+ * emit edildi. Slotlar ITEM_SEQ'te zaten vardı, emitter'ları yoktu — bu yüzden
+ * `SimpleLineInput.brand/buyerCode/sellerCode/manufacturerCode/origin` alanları
+ * uçtan uca sessizce düşüyordu.
  */
 function serializeItem(item: InvoiceLineInput['item'], indent: string): string {
   const i2 = indent + '  ';
   const inner = emitInOrder(ITEM_SEQ, {
     Description: () => cbcOptionalTag('Description', item.description),
     Name: () => cbcRequiredTag('Name', item.name, 'Item'),
+    BrandName: () => cbcOptionalTag('BrandName', item.brandName),
     ModelName: () => cbcOptionalTag('ModelName', item.modelName),
+    BuyersItemIdentification: () =>
+      itemIdentificationBlock('BuyersItemIdentification', item.buyersItemIdentification, i2),
+    SellersItemIdentification: () =>
+      itemIdentificationBlock('SellersItemIdentification', item.sellersItemIdentification, i2),
+    ManufacturersItemIdentification: () =>
+      itemIdentificationBlock('ManufacturersItemIdentification', item.manufacturersItemIdentification, i2),
+    OriginCountry: () => originCountryBlock(item.originCountryCode, item.originCountryName, i2),
     AdditionalItemIdentification: () =>
       item.additionalItemIdentifications
         ? joinLines(
