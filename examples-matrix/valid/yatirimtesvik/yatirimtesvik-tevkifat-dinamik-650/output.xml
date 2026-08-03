@@ -16,7 +16,7 @@
   <cbc:IssueDate>2026-04-24</cbc:IssueDate>
   <cbc:IssueTime>10:00:00</cbc:IssueTime>
   <cbc:InvoiceTypeCode>TEVKIFAT</cbc:InvoiceTypeCode>
-  <cbc:Note>#YAZIYLA:BİN YÜZ YİRMİ LİRA 00 KURUŞ#</cbc:Note>
+  <cbc:Note>YAZIYLA:#BİN YÜZ YİRMİ TÜRK LIRASI#</cbc:Note>
   <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
   <cbc:LineCountNumeric>1</cbc:LineCountNumeric>
   <cac:ContractDocumentReference>

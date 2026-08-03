@@ -16,7 +16,7 @@
   <cbc:IssueDate>2026-04-24</cbc:IssueDate>
   <cbc:IssueTime>10:00:00</cbc:IssueTime>
   <cbc:InvoiceTypeCode>SATIS</cbc:InvoiceTypeCode>
-  <cbc:Note>#YAZIYLA:BİN İKİ YÜZ EURO 00 SENT#</cbc:Note>
+  <cbc:Note>YAZIYLA:#BİN İKİ YÜZ AVRO#</cbc:Note>
   <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
   <cbc:LineCountNumeric>1</cbc:LineCountNumeric>
   <cac:AccountingSupplierParty>

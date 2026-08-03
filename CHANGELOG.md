@@ -6,7 +6,7 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 
 > ### ⚠️ DAVRANIŞ DEĞİŞİKLİĞİ — mevcut tüketicilerin ÇIKTISI DEĞİŞİYOR
 >
-> Bu sürümden itibaren **her faturaya**, notların **İLKİ** olarak `#YAZIYLA:...#` biçiminde
+> Bu sürümden itibaren **her faturaya**, notların **İLKİ** olarak `YAZIYLA:#...#` biçiminde
 > bir "yazıyla tutar" notu eklenir. **Opsiyon yoktur, kapatılamaz.** Byte-bazlı XML
 > karşılaştırması / snapshot testi yapan her tüketicinin altın çıktıları kırılacaktır.
 > Yükseltmeden önce beklenen çıktılarınızı yeniden üretin.
@@ -14,19 +14,51 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 > Bu değişiklik **yalnız `Invoice`** belgelerini etkiler. `DespatchAdvice`'ta parasal dip
 > toplam yoktur; irsaliye çıktıları **hiç değişmez**.
 
-### Added — "yazıyla tutar" notu (`#YAZIYLA:...#`)
+### Added — "yazıyla tutar" notu (`YAZIYLA:#...#`)
 
 Tutarın yazıyla yazılması her tüketicinin ayrı ayrı, tutarsız biçimde çözdüğü bir işti.
 Artık kütüphane çözüyor: kullanıldığı her yerde aynı ve doğru.
 
-**Biçim**
+**Biçim — SAHADAN ÖLÇÜLDÜ, UYDURULMADI**
 
 ```
-#YAZIYLA:<TAMSAYI YAZIYLA> <BÜYÜK BİRİM> <KURUŞ HANESİ RAKAMLA> <KÜÇÜK BİRİM>#
-#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#
+YAZIYLA:#<TAMSAYI YAZIYLA> <BÜYÜK BİRİM> <KESİR YAZIYLA> <KÜÇÜK BİRİM>#
+
+YAZIYLA:#ÜÇ BİN İKİ YÜZ KIRK ÜÇ TÜRK LIRASI ELLİ ALTI KURUŞ#
+YAZIYLA:#ALTI YÜZ ALTMIŞ BİN TÜRK LIRASI#                     ← kuruş sıfır
 ```
 
-Tam sayı kısmı YAZIYLA, kesir kısmı RAKAMLA — Türkiye'deki yaygın pratik.
+Biçim **88 gerçek fatura notundan** (kullanıcının indirdiği belgeler) bayt düzeyinde
+çıkarıldı. Sabit olduğu doğrulananlar: `YAZIYLA:#` öneki (88/88), `#` soneki (88/88),
+tam sayı **ve** kesirin ikisinin de yazıyla yazılması, kuruş sıfırken kesir kısmının
+hiç yazılmaması.
+
+**🔬 Doğrulama:** 88 saha notunun tamamı `PayableAmount`tan yeniden hesaplandı —
+**kelime ve birim adı farkı SIFIR**. 22 kayıt bayt-bayt aynı; kalan 66 kayıt yalnız
+ayırıcı boşluk karakterinde ayrılıyor (aşağıya bakınız).
+
+**🔴 Sahada İKİ ÜRETİCİ var — hangisini uyguladık ve neden**
+
+Büyük birim ile kesir arasındaki ayırıcı sahada tek tip **değil**:
+
+| Üretici | Kuruş varken | Kuruş sıfırken | Kayıt |
+|---|---|---|---|
+| **A** | `TÜRK LIRASI⏎ ELLİ ALTI KURUŞ#` | `TÜRK LIRASI⏎#` | 66 (44 LF + 22 CR) |
+| **B** | `TÜRK LIRASI ELLİ ALTI KURUŞ#` | `TÜRK LIRASI#` | 22 |
+
+Aynı tutarın (`25576,03`) **her iki biçimde de** kayıtlı olması, bunun tek üreticinin
+tutarsızlığı değil iki AYRI üretici olduğunun kanıtıdır.
+
+**B uygulandı.** Gerekçe: (a) `cbc:Note` içine gömülü ham satır sonu kırılgandır —
+XSLT/HTML görüntüleyicide zaten boşluğa çöker ama XML'i bayt bazlı karşılaştıran herkesi
+görünmez bir karakterle uğraştırır; (b) tek satırlık biçim sahada atteste ve talep edilen
+biçimdir; (c) A biçimine geçmek gerekirse `MAJOR_MINOR_SEPARATOR` tek satırlık bir
+değişikliktir.
+
+**🔴 Kuruş sıfırken kapanış `#`inden önce BOŞLUK YOKTUR.** 88 kaydın **hiçbirinde**
+`LIRASI #` (boşluk + `#`) geçmiyor; 38 kayıtta geçen `LIRASI⏎#` bir **satır sonudur**,
+boşluk değil. Boşluk bırakmak sahadaki hiçbir üreticiyle eşleşmeyen **üçüncü** bir
+varyant üretirdi.
 
 **Kaynak:** `cac:LegalMonetaryTotal/cbc:PayableAmount` — belgede yazan dip toplam.
 Not, `cbc:PayableAmount`ın yazdığı string'in **birebir aynı yuvarlamasından**
@@ -36,26 +68,34 @@ Not, `cbc:PayableAmount`ın yazdığı string'in **birebir aynı yuvarlamasında
 
 | Durum | Karar | Gerekçe |
 |---|---|---|
-| Kesir hanesi | Her zaman **iki hane, sıfır dolgulu** — `,05` → `05 KURUŞ` | Sabit genişlik; `5` mi `50` mi belirsizliği kalmaz |
-| Kuruş sıfır (`182,00`) | Kesir kısmı **yine yazılır** → `... LİRA 00 KURUŞ` | Sabit ve makine-okunur biçim; "kuruş yok mu, sıfır mı" sorusu doğmaz |
-| Sıfır tutar (`0,00`) | `#YAZIYLA:SIFIR LİRA 00 KURUŞ#` | Not koşulsuz eklendiği için atlanmaz; `SIFIR` doğru Türkçe okunuştur |
-| Negatif tutar | `EKSİ` öneki → `#YAZIYLA:EKSİ YÜZ LİRA 00 KURUŞ#` | UBL-TR'de `PayableAmount` negatif olmamalıdır (iade belgeleri pozitif tutar + farklı tip koduyla düzenlenir), ama işaret **sessizce yutulmaz**. Yuvarlama sonrası sıfırlanan negatifler (`-0,001`) `EKSİ` almaz |
+| Kesir | **Yazıyla** — `,56` → `ELLİ ALTI KURUŞ`, `,05` → `BEŞ KURUŞ` | Sahadan ölçüldü; kesir de saf sayı okuma modülünden geçer |
+| Kuruş sıfır (`182,00`) | Kesir kısmı **hiç yazılmaz** → `... TÜRK LIRASI#` | Sahadan ölçüldü (53 kayıt) |
+| Sıfır tutar (`0,00`) | `YAZIYLA:#SIFIR TÜRK LIRASI#` | Not koşulsuz eklendiği için atlanmaz; `SIFIR` doğru okunuş, kuruş da sıfır olduğu için kesir yukarıdaki kuralla düşer |
+| Negatif tutar | `EKSİ` öneki → `YAZIYLA:#EKSİ YÜZ TÜRK LIRASI#` | UBL-TR'de `PayableAmount` negatif olmamalıdır (iade belgeleri pozitif tutar + farklı tip koduyla düzenlenir), ama işaret **sessizce yutulmaz**. Yuvarlama sonrası sıfırlanan negatifler (`-0,001`) `EKSİ` almaz |
 | Okunamayan tutar | Not **hiç yazılmaz** | `NaN`/`Infinity`/güvenli tam sayı aralığı dışı: kozmetik bir not yüzünden serializer patlayıp geçerli belge üretilememesi kabul edilemez |
 
-**Para birimine göre birim adları** (`config/amount-in-words-config.ts` — genişletilebilir):
+**Para birimine göre birim adları** (`config/amount-in-words-config.ts` — genişletilebilir)
 
-| Kod | Büyük | Küçük |
+Her ad ya **ÖLÇÜLDÜ** ya da **seçildi**; ayrım tabloda ve kodun yorumlarında işaretlidir.
+
+| Kod | Büyük birim | Küçük birim |
 |---|---|---|
-| `TRY` | LİRA | KURUŞ |
-| `USD` | DOLAR | SENT |
-| `EUR` | EURO | SENT |
-| `GBP` | STERLİN | PENİ |
+| `TRY` | `TÜRK LIRASI` — **ÖLÇÜLDÜ** (86 kayıt) | `KURUŞ` — **ÖLÇÜLDÜ** (33 kayıt) |
+| `USD` | `AMERIKAN DOLARI` — **ÖLÇÜLDÜ** (1 kayıt) | `SENT` — seçildi |
+| `EUR` | `AVRO` — **ÖLÇÜLDÜ** (1 kayıt), `EURO` değil | `SENT` — seçildi |
+| `GBP` | `İNGİLİZ STERLİNİ` — seçildi | `PENİ` — seçildi |
 
-**Bilinmeyen kur kodunda** büyük birim = **ISO kodunun kendisi** (`#YAZIYLA:İKİ CHF 50 KURUŞ#`),
-küçük birim = `KURUŞ`. Gerekçe: (a) kod belgede yazanın aynısıdır, asla uydurulmaz;
-(b) kesir zaten rakamla yazıldığı için küçük birim adı sayısal bilgi taşımaz ve Türkçe bir
-notta 1/100 alt biriminin genel karşılığı "kuruş"tur; (c) tablo dışa açık — bir kur için
-doğru ad gerekiyorsa tek satır eklenir. Kur kodu boş/eksikse `TRY` varsayılır.
+**🔴 `TÜRK LIRASI` ve `AMERIKAN DOLARI` noktasız `I` (U+0049) ile yazılır.** Türkçe yazım
+kuralına göre `LİRASI` / `AMERİKAN` doğru olurdu; saha standardı böyle **değil** — 86
+kaydın hiçbirinde noktalı `İ` yok. Amaç alanı birebir eşlemektir, bu bilinçli bir
+"yanlış yazım", düzeltmeyin. Buna karşılık **seçilen** adlar (GBP) doğru Türkçe yazımla
+yazılır — saha taklidi yalnız ölçülen adlar için geçerlidir.
+
+**Bilinmeyen kur kodunda** büyük birim = **ISO kodunun kendisi** (`YAZIYLA:#İKİ CHF ELLİ
+KURUŞ#`), küçük birim = `KURUŞ`. Gerekçe: (a) kod belgede yazanın aynısıdır, asla
+uydurulmaz; (b) Türkçe bir notta 1/100 alt biriminin genel karşılığı "kuruş"tur;
+(c) tablo dışa açık — bir kur için doğru ad gerekiyorsa tek satır eklenir. Kur kodu
+boş/eksikse `TRY` varsayılır.
 
 `calculator/currency-config.ts`teki `CURRENCY_DEFINITIONS` **kullanılmadı**: oradaki `unit`
 alanı 30 kodun 26'sında boş, `subunit` değerleri karışık dilde ve çoğuldur (`Cents`, `Pence`,
@@ -64,7 +104,8 @@ alanı 30 kodun 26'sında boş, `subunit` değerleri karışık dilde ve çoğul
 **Yeni public API**
 
 - `numberToTurkishWords(n)` — saf sayı okuma (`utils/turkish-number-words.ts`); para birimi,
-  UBL veya fatura bilmez. `TURKISH_ZERO_WORD`, `TURKISH_MINUS_WORD`, `MAX_READABLE_INTEGER`.
+  UBL veya fatura bilmez. Hem lira hem kuruş tarafı buradan geçer.
+  `TURKISH_ZERO_WORD`, `TURKISH_MINUS_WORD`, `MAX_READABLE_INTEGER`.
 - `formatAmountInWordsNote(amount, currencyCode)` — not metni; okunamayan tutarda `null`.
 - `isAmountInWordsNote(note)`, `AMOUNT_IN_WORDS_PREFIX/SUFFIX/NOTE_PATTERN`.
 - `AMOUNT_IN_WORDS_UNITS`, `getAmountInWordsUnits(code)`, `DEFAULT_MINOR_UNIT`,
@@ -72,7 +113,7 @@ alanı 30 kodun 26'sında boş, `subunit` değerleri karışık dilde ve çoğul
 
 ### Changed
 
-- 🔴 **`serializeInvoice` her faturaya `#YAZIYLA:...#` notunu İLK not olarak yazar.**
+- 🔴 **`serializeInvoice` her faturaya `YAZIYLA:#...#` notunu İLK not olarak yazar.**
   Tüketicinin `notes` dizisi sırasını koruyarak arkadan gelir.
 - 🔴 **Tüketicinin elle yazdığı yazıyla-notları artık serileştirmede ATILIR.**
   `notes` içinde `^\s*#?\s*YAZ[Iı]YLA\s*:` desenine uyan girdiler yazılmaz. Aksi halde
@@ -80,40 +121,43 @@ alanı 30 kodun 26'sında boş, `subunit` değerleri karışık dilde ve çoğul
   kaynağı kütüphanedir. Girdi nesnesi (`InvoiceInput.notes`) değiştirilmez — eleme yalnız
   serileştirme anındadır.
 - **Altın çıktılar yeniden üretildi.** `examples/` (38) + `examples-matrix/` (123) = 161
-  dosyanın **150'sinde tek fark eklenen `<cbc:Note>#YAZIYLA:...#</cbc:Note>` satırıdır**;
+  dosyanın **150'sinde tek fark eklenen `<cbc:Note>YAZIYLA:#...#</cbc:Note>` satırıdır**;
   değişmeyen 11 dosya irsaliyedir. İki dosyada (`examples/02`, `examples/03`) ek olarak elle
   yazılmış eski `YAZIYLA: ...` notu kaldırıldı — yerini hesaplanan not aldı. Başka hiçbir
-  alan kaymadı.
+  alan kaymadı; 150 dosyanın tamamı `PayableAmount`tan yeniden hesaplanarak doğrulandı.
 - `__tests__/integration/line-item-fields.test.ts`: satır notu iddiaları artık tüm XML'i
   değil yalnız `cac:InvoiceLine` bloğunu tarar (belge seviyesinde artık her zaman bir
   `cbc:Note` vardır).
 
 ### Notlar
 
-- **Sahadaki GİB/Mimsoft varyantından farkı:** depodaki gerçek fatura örneklerinde
-  (`xmls/sgk.xml`, `__tests__/fixtures/mimsoft-real-invoices/*.xml`) not
-  `YAZIYLA:#BİR TÜRK LIRASI⏎ YİRMİ KURUŞ#` biçimindedir — `#` iki nokta üst üsteden
-  **sonra**, birim `TÜRK LIRASI`, kuruş **yazıyla** ve araya satır sonu girer. v3.0.0 bunun
-  yerine talep edilen `#YAZIYLA:... LİRA 20 KURUŞ#` biçimini uygular (tek satır, `#`
-  başta, kuruş rakamla). Farklı bir biçim gerekirse davranış tek noktadan
-  (`utils/amount-in-words.ts`) değiştirilebilir.
 - **Şema uyumu:** `cbc:Note` UBL 2.1'de `TextType`'tır (`xsd:string`); UBL-TR XSD'sinde
   uzunluk kısıtı, UBL-TR Şematron'unda (`UBL-TR_Main/Common_Schematron.xml`) `cbc:Note`
-  kuralı **yoktur**. Üretilen not tipik olarak < 100 karakterdir (teorik en uzun hâli
-  ~150 karakter). Kısıt riski yok.
+  kuralı **yoktur**. Üretilen not tipik olarak < 100 karakterdir. Kısıt riski yok.
 - Not içeriği XML-özel karakter üretmez; yine de mevcut `escapeXml` yolundan geçer.
+- Not **tek satırdır** — içinde `\r` veya `\n` bulunmaz.
 
 ### Tests
 
-+94 test (1812 → 1906, 91 dosya). Türkçe sayı okumanın tuzaklarının **her biri ayrı test**:
-`1`↔`100`↔`1000` (`BİR YÜZ`/`BİR BİN` yasağı), `1.000.000` → `BİR MİLYON` (bin'den farklı),
++105 test (1812 → 1917, 91 dosya).
+
+**Saha kanıtı testleri** — gerçek faturalardaki üç kayıt birebir üretiliyor
+(`3243,56` · `41813,35` · `660000,00`), artı 6 rastgele kayıt ve ölçülen iki yabancı para
+kaydı (`3810,00 EUR → AVRO`, `10000,00 USD → AMERIKAN DOLARI`). Kuruş sıfırken kapanış
+`#`inden önce boşluk olmadığı ve notun tek satır olduğu ayrıca kilitlendi.
+
+**Türkçe sayı okumanın tuzaklarının her biri ayrı test:** `1`↔`100`↔`1000`
+(`BİR YÜZ`/`BİR BİN` yasağı), `1.000.000` → `BİR MİLYON` (bin'den farklı),
 `101`/`1001`/`1100`/`11000`, sıfırlı grupların atlanması, basamak adları
 (`BİN/MİLYON/MİLYAR/TRİLYON/KATRİLYON`), sıfır, negatif, ondalık/NaN/aralık dışı,
-Türkçe büyük harf doğruluğu (noktalı `İ` / noktasız `I`), kesir hanesi kararı, kuruş sıfır
-kararı, bilinmeyen kur kararı, `PayableAmount` ile yuvarlama tutarlılığı (`1,999` → `İKİ LİRA
-00 KURUŞ`, `999,995` → `BİN LİRA 00 KURUŞ`), notun ilk sırada olması, çelişen notun elenmesi
-ve XSD sırasının korunması. Gerçek Mimsoft faturalarındaki tutarlar (`14550`, `13200`,
-`17220`) regresyon çıpası olarak kilitlendi.
+Türkçe büyük harf doğruluğu (noktalı `İ` / noktasız `I`).
+
+**Kuruş alanı ayrıca kapsandı:** `,05` → `BEŞ KURUŞ`, `,15` → `ON BEŞ KURUŞ`,
+`,00` → kesir kısmı hiç yok; 1–99 arası her kuruş değerinin okunabildiği ve nottaki
+kesirde hiç rakam kalmadığı döngüyle doğrulandı.
+
+**Yuvarlama tutarlılığı:** `1,999` → `İKİ TÜRK LIRASI`, `999,995` → `BİN TÜRK LIRASI`,
+`1,006` → `BİR KURUŞ` — not her zaman `cbc:PayableAmount`ın yazdığı değeri okur.
 
 ## [2.3.1] — 2026-08-01
 

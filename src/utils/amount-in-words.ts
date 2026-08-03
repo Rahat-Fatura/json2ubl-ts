@@ -1,25 +1,50 @@
 /**
- * "Yazıyla tutar" notu (`#YAZIYLA:...#`) — v3.0.0.
+ * "Yazıyla tutar" notu (`YAZIYLA:#...#`) — v3.0.0.
  *
- * ## Biçim
+ * ## Biçim — SAHADAN ÖLÇÜLDÜ
  * ```
- * #YAZIYLA:<TAMSAYI YAZIYLA> <BÜYÜK BİRİM> <KURUŞ HANESİ RAKAMLA> <KÜÇÜK BİRİM>#
- * #YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#
+ * YAZIYLA:#<TAMSAYI YAZIYLA> <BÜYÜK BİRİM> <KESİR YAZIYLA> <KÜÇÜK BİRİM>#
+ * YAZIYLA:#ÜÇ BİN İKİ YÜZ KIRK ÜÇ TÜRK LIRASI ELLİ ALTI KURUŞ#
+ * YAZIYLA:#ALTI YÜZ ALTMIŞ BİN TÜRK LIRASI#                    (kuruş sıfır)
  * ```
- * Tam sayı kısmı YAZIYLA, kesir kısmı RAKAMLA (Türkiye'de yaygın pratik).
+ * Biçim uydurulmadı: 88 gerçek fatura notu bayt düzeyinde incelenerek
+ * çıkarıldı. Sabitler: `YAZIYLA:#` öneki (88/88), `#` soneki (88/88), tam sayı
+ * ve kesir İKİSİ DE YAZIYLA, kuruş sıfırsa kesir kısmı HİÇ yazılmaz.
+ *
+ * ## 🔴 Sahada İKİ ÜRETİCİ var — hangisini uyguladığımız ve NEDEN
+ * Büyük birim ile kesir arasındaki ayırıcı sahada tek tip DEĞİL:
+ *
+ * | Üretici | Kuruş varken | Kuruş sıfırken | Kayıt |
+ * |---|---|---|---|
+ * | **A** | `TÜRK LIRASI\n ELLİ ALTI KURUŞ#` | `TÜRK LIRASI\n#` | 66 |
+ * | **B** | `TÜRK LIRASI ELLİ ALTI KURUŞ#` | `TÜRK LIRASI#` | 22 |
+ *
+ * Aynı tutarın (`25576,03`) her iki biçimde de kayıtlı olması iki AYRI üretici
+ * olduğunun kanıtıdır — tek üreticinin tutarsızlığı değil.
+ *
+ * **B uygulandı.** Gerekçe: (a) `cbc:Note` içine gömülü ham satır sonu
+ * kırılgandır — XSLT/HTML görüntüleyicide zaten boşluğa çöker, ama XML'i bayt
+ * bazlı karşılaştıran herkesi görünmez bir karakterle uğraştırır; (b) tek
+ * satırlık biçim sahada ATTESTE ve talep edilen biçimdir; (c) A biçimine
+ * geçmek gerekirse `MAJOR_MINOR_SEPARATOR` tek satırlık bir değişikliktir.
+ *
+ * 🔴 Kuruş sıfırken kapanış `#`inden ÖNCE BOŞLUK YOKTUR. 88 kaydın
+ * **hiçbirinde** `LIRASI #` (boşluk + `#`) geçmiyor; 38 kayıtta geçen
+ * `LIRASI\n#` bir SATIR SONUdur, boşluk değil. Boşluk bırakmak sahadaki hiçbir
+ * üreticiyle eşleşmeyen ÜÇÜNCÜ bir varyant üretirdi.
  *
  * ## Kaynak
  * `LegalMonetaryTotal/PayableAmount` — belgede yazan dip toplam. Not,
  * `cbc:PayableAmount`ın yazdığı string'in AYNI yuvarlamasından
- * (`formatDecimal(x, 2)`) türetilir; böylece not ile XML'deki tutar asla
- * birbirinden ayrışamaz.
+ * (`formatDecimal(x, 2)`) türetilir; not ile XML'deki tutar asla ayrışamaz.
  *
  * ## Kararlar
- * - **Kesir hanesi:** her zaman İKİ HANE, sıfır dolgulu — `,05` → `05 KURUŞ`.
- * - **Kuruş sıfırsa:** kesir kısmı YİNE yazılır — `182,00` → `... LİRA 00 KURUŞ`.
- *   Gerekçe: sabit ve makine-okunur biçim; "kuruş yok mu, sıfır mı" belirsizliği kalmaz.
- * - **Sıfır tutar:** `#YAZIYLA:SIFIR LİRA 00 KURUŞ#`. Not koşulsuz eklendiği
- *   için atlanmaz; `SIFIR` doğru Türkçe okunuştur.
+ * - **Kesir YAZIYLA:** `,56` → `ELLİ ALTI KURUŞ`, `,05` → `BEŞ KURUŞ`,
+ *   `,15` → `ON BEŞ KURUŞ`. Kesir de saf sayı okuma modülünden geçer.
+ * - **Kuruş sıfırsa** kesir kısmı HİÇ yazılmaz (sahadan ölçüldü).
+ * - **Sıfır tutar:** `YAZIYLA:#SIFIR TÜRK LIRASI#`. Not koşulsuz eklendiği için
+ *   atlanmaz; `SIFIR` doğru Türkçe okunuştur ve kuruş da sıfır olduğu için
+ *   kesir kısmı yukarıdaki kuralla düşer.
  * - **Negatif tutar:** UBL-TR'de `PayableAmount` negatif olmamalıdır (iade
  *   belgeleri pozitif tutar + farklı tip koduyla düzenlenir). Yine de savunmacı
  *   davranılır: işaret sessizce yutulmaz, `EKSİ` öneki yazılır. Yuvarlama
@@ -35,11 +60,19 @@ import { formatDecimal } from './formatters';
 import { numberToTurkishWords, TURKISH_MINUS_WORD } from './turkish-number-words';
 import { getAmountInWordsUnits } from '../config/amount-in-words-config';
 
-/** Not öneki — `#YAZIYLA:` */
-export const AMOUNT_IN_WORDS_PREFIX = '#YAZIYLA:';
+/** Not öneki — `YAZIYLA:#` (sahada 88/88). */
+export const AMOUNT_IN_WORDS_PREFIX = 'YAZIYLA:#';
 
-/** Not soneki — `#` */
+/** Not soneki — `#` (sahada 88/88). */
 export const AMOUNT_IN_WORDS_SUFFIX = '#';
+
+/**
+ * Büyük birim ile kesir kısmı arasındaki ayırıcı.
+ *
+ * Sahadaki B üreticisi tek boşluk kullanır; A üreticisi `'\n '` kullanır
+ * (bkz. dosya başı). A biçimine geçmek gerekirse YALNIZ burası değişir.
+ */
+const MAJOR_MINOR_SEPARATOR = ' ';
 
 /**
  * Tüketicinin elle yazdığı "yazıyla tutar" notlarını tanıyan desen.
@@ -48,9 +81,9 @@ export const AMOUNT_IN_WORDS_SUFFIX = '#';
  * desene uyan girdileri atar ve yerine hesapladığı notu ilk sıraya koyar.
  * Aksi halde belgede birbiriyle çelişen iki "yazıyla" notu bulunabilirdi.
  *
- * Hem kütüphane biçimini (`#YAZIYLA:...#`) hem sahada görülen GİB/Mimsoft
- * varyantını (`YAZIYLA:#...#`, `YAZIYLA: ...`) yakalar. `YAZ[Iı]YLA` alternasyonu
- * gerekli: JS'in `i` bayrağı `I` ile noktasız `ı`yı eşleştirmez.
+ * Hem kütüphane biçimini (`YAZIYLA:#...#`) hem de sahada/eski kodda görülen
+ * `#YAZIYLA:...#` ve `YAZIYLA: ...` varyantlarını yakalar. `YAZ[Iı]YLA`
+ * alternasyonu gerekli: JS'in `i` bayrağı `I` ile noktasız `ı`yı eşleştirmez.
  */
 export const AMOUNT_IN_WORDS_NOTE_PATTERN = /^\s*#?\s*YAZ[Iı]YLA\s*:/i;
 
@@ -60,16 +93,19 @@ export function isAmountInWordsNote(note: string): boolean {
 }
 
 /**
- * Ödenecek tutardan `#YAZIYLA:...#` notunu üretir.
+ * Ödenecek tutardan `YAZIYLA:#...#` notunu üretir.
  *
  * @param amount `LegalMonetaryTotal/PayableAmount`
  * @param currencyCode Belge para birimi (`DocumentCurrencyCode`)
  * @returns Not metni; tutar okunamıyorsa `null`
  *
  * @example
- * formatAmountInWordsNote(182.2, 'TRY')  // '#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#'
- * formatAmountInWordsNote(0, 'TRY')      // '#YAZIYLA:SIFIR LİRA 00 KURUŞ#'
- * formatAmountInWordsNote(5.05, 'USD')   // '#YAZIYLA:BEŞ DOLAR 05 SENT#'
+ * formatAmountInWordsNote(3243.56, 'TRY')
+ * // 'YAZIYLA:#ÜÇ BİN İKİ YÜZ KIRK ÜÇ TÜRK LIRASI ELLİ ALTI KURUŞ#'
+ * formatAmountInWordsNote(660000, 'TRY')
+ * // 'YAZIYLA:#ALTI YÜZ ALTMIŞ BİN TÜRK LIRASI#'
+ * formatAmountInWordsNote(0, 'TRY')
+ * // 'YAZIYLA:#SIFIR TÜRK LIRASI#'
  */
 export function formatAmountInWordsNote(
   amount: number | undefined | null,
@@ -86,17 +122,25 @@ export function formatAmountInWordsNote(
 
   const integerValue = Number(integerDigits);
   if (!Number.isSafeInteger(integerValue)) return null;
+  const fractionValue = Number(fractionDigits);
 
   const units = getAmountInWordsUnits(currencyCode);
   const integerWords = numberToTurkishWords(integerValue);
 
   // Yuvarlama sonrası sıfırlanan negatifler EKSİ almaz (-0,001 → "SIFIR ...").
-  const isZero = integerValue === 0 && Number(fractionDigits) === 0;
+  const isZero = integerValue === 0 && fractionValue === 0;
   const sign = negative && !isZero ? `${TURKISH_MINUS_WORD} ` : '';
+
+  // Kuruş SIFIRSA kesir kısmı hiç yazılmaz — ayırıcı da yazılmaz (sahadan
+  // ölçüldü: kapanış `#`inden önce boşluk YOK).
+  const minorPart =
+    fractionValue === 0
+      ? ''
+      : `${MAJOR_MINOR_SEPARATOR}${numberToTurkishWords(fractionValue)} ${units.minor}`;
 
   return (
     AMOUNT_IN_WORDS_PREFIX +
-    `${sign}${integerWords} ${units.major} ${fractionDigits} ${units.minor}` +
+    `${sign}${integerWords} ${units.major}${minorPart}` +
     AMOUNT_IN_WORDS_SUFFIX
   );
 }

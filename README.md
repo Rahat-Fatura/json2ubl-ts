@@ -18,7 +18,7 @@ GIB e-Fatura Paketi 17 Schematron kurallarını tam kapsam destekler. İki katma
 - **3 İrsaliye Profili**: TEMELIRSALIYE, HKSIRSALIYE, IDISIRSALIYE
 - **3 Katmanlı Validasyon**: Ortak + Tip-bazlı + Profil-bazlı + Çapraz matris
 - **53 Schematron Kuralı**: Tam uyumluluk (UBL-TR Common + Main Schematron)
-- **Yazıyla Tutar Notu (v3.0.0)**: Her faturaya `#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#` notu otomatik ve koşulsuz eklenir → [§7.1](#71-yazıyla-tutar-notu-v300)
+- **Yazıyla Tutar Notu (v3.0.0)**: Her faturaya `YAZIYLA:#ÜÇ BİN İKİ YÜZ KIRK ÜÇ TÜRK LIRASI ELLİ ALTI KURUŞ#` notu otomatik ve koşulsuz eklenir (biçim sahadan ölçüldü) → [§7.1](#71-yazıyla-tutar-notu-v300)
 - **CJS + ESM + DTS** çıktı
 
 ## Kurulum
@@ -701,39 +701,59 @@ SDK aşağıdaki verileri statik olarak embed eder. ConfigManager ile runtime'da
 
 ```xml
 <cbc:InvoiceTypeCode>SATIS</cbc:InvoiceTypeCode>
-<cbc:Note>#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#</cbc:Note>   <!-- otomatik, ilk sırada -->
-<cbc:Note>Sicil No: 0606</cbc:Note>                            <!-- sizin notlarınız -->
+<cbc:Note>YAZIYLA:#ÜÇ BİN İKİ YÜZ KIRK ÜÇ TÜRK LIRASI ELLİ ALTI KURUŞ#</cbc:Note>  <!-- otomatik, ilk sırada -->
+<cbc:Note>Sicil No: 0606</cbc:Note>                                               <!-- sizin notlarınız -->
 <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
 ```
+
+Biçim **uydurulmadı**: 88 gerçek fatura notu bayt düzeyinde incelenerek çıkarıldı ve 88'inin
+tamamı `PayableAmount`tan yeniden hesaplanarak doğrulandı — **kelime/birim farkı sıfır**.
 
 Kaynak `cac:LegalMonetaryTotal/cbc:PayableAmount`tır ve not, `cbc:PayableAmount`ın yazdığı
 string'in **birebir aynı yuvarlamasından** türetilir — not ile belgedeki tutar ayrışamaz.
 
 | Durum | Çıktı |
 |---|---|
-| `182,20` TRY | `#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#` |
-| `182,05` TRY | `#YAZIYLA:YÜZ SEKSEN İKİ LİRA 05 KURUŞ#` — kesir daima **iki hane** |
-| `182,00` TRY | `#YAZIYLA:YÜZ SEKSEN İKİ LİRA 00 KURUŞ#` — kuruş sıfırken de **yazılır** |
-| `0,00` TRY | `#YAZIYLA:SIFIR LİRA 00 KURUŞ#` |
-| `-182,20` TRY | `#YAZIYLA:EKSİ YÜZ SEKSEN İKİ LİRA 20 KURUŞ#` — işaret yutulmaz |
-| `2,50` USD | `#YAZIYLA:İKİ DOLAR 50 SENT#` |
-| `2,50` CHF (tablo dışı) | `#YAZIYLA:İKİ CHF 50 KURUŞ#` — ISO kodu olduğu gibi |
+| `3243,56` TRY | `YAZIYLA:#ÜÇ BİN İKİ YÜZ KIRK ÜÇ TÜRK LIRASI ELLİ ALTI KURUŞ#` |
+| `1,05` TRY | `YAZIYLA:#BİR TÜRK LIRASI BEŞ KURUŞ#` — kesir de **yazıyla** |
+| `660000,00` TRY | `YAZIYLA:#ALTI YÜZ ALTMIŞ BİN TÜRK LIRASI#` — kuruş sıfırsa kesir **hiç yazılmaz** |
+| `0,00` TRY | `YAZIYLA:#SIFIR TÜRK LIRASI#` |
+| `-182,20` TRY | `YAZIYLA:#EKSİ YÜZ SEKSEN İKİ TÜRK LIRASI YİRMİ KURUŞ#` — işaret yutulmaz |
+| `10000,00` USD | `YAZIYLA:#ON BİN AMERIKAN DOLARI#` |
+| `2,50` CHF (tablo dışı) | `YAZIYLA:#İKİ CHF ELLİ KURUŞ#` — ISO kodu olduğu gibi |
 
-Birim adları `TRY→LİRA/KURUŞ`, `USD→DOLAR/SENT`, `EUR→EURO/SENT`, `GBP→STERLİN/PENİ`.
-Tablo genişletilebilir: `AMOUNT_IN_WORDS_UNITS` (`src/config/amount-in-words-config.ts`).
+🔴 **Kuruş sıfırken kapanış `#`inden önce boşluk YOKTUR** ve not **tek satırdır**.
+
+### Birim adları — ÖLÇÜLDÜ / seçildi
+
+| Kod | Büyük birim | Küçük birim |
+|---|---|---|
+| `TRY` | `TÜRK LIRASI` — **ÖLÇÜLDÜ** (86 kayıt) | `KURUŞ` — **ÖLÇÜLDÜ** (33 kayıt) |
+| `USD` | `AMERIKAN DOLARI` — **ÖLÇÜLDÜ** (1 kayıt) | `SENT` — seçildi |
+| `EUR` | `AVRO` — **ÖLÇÜLDÜ** (1 kayıt), `EURO` değil | `SENT` — seçildi |
+| `GBP` | `İNGİLİZ STERLİNİ` — seçildi | `PENİ` — seçildi |
+
+🔴 `TÜRK LIRASI` ve `AMERIKAN DOLARI` **noktasız `I`** ile yazılır. Türkçe yazım kuralına göre
+`LİRASI`/`AMERİKAN` doğru olurdu; saha standardı böyle değil ve amaç alanı birebir eşlemektir —
+bu bilinçli, düzeltmeyin. **Seçilen** adlar (GBP) ise doğru Türkçe yazımla yazılır.
+
+Tablo tek satırla genişletilebilir: `AMOUNT_IN_WORDS_UNITS`
+(`src/config/amount-in-words-config.ts`).
 
 `notes` dizinizde elle yazılmış bir yazıyla-notu (`YAZIYLA:` ile başlayan) varsa
 **serileştirmede atılır** — belgede çelişen iki not bulunmasın diye. Girdi nesneniz değişmez.
 
-Sayı okuma saf ve ayrı bir modüldedir; doğrudan da kullanılabilir:
+Sayı okuma saf ve ayrı bir modüldedir (lira **ve** kuruş tarafı buradan geçer):
 
 ```ts
 import { numberToTurkishWords, formatAmountInWordsNote } from 'json2ubl-ts';
 
-numberToTurkishWords(1000);            // 'BİN'        (❌ 'BİR BİN')
-numberToTurkishWords(1_000_000);       // 'BİR MİLYON' (burada BİR yazılır)
-numberToTurkishWords(11_000);          // 'ON BİR BİN'
-formatAmountInWordsNote(182.2, 'TRY'); // '#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#'
+numberToTurkishWords(1000);      // 'BİN'        (❌ 'BİR BİN')
+numberToTurkishWords(1_000_000); // 'BİR MİLYON' (burada BİR yazılır)
+numberToTurkishWords(11_000);    // 'ON BİR BİN'
+numberToTurkishWords(56);        // 'ELLİ ALTI'  (kuruş tarafı da aynı modül)
+formatAmountInWordsNote(3243.56, 'TRY');
+// 'YAZIYLA:#ÜÇ BİN İKİ YÜZ KIRK ÜÇ TÜRK LIRASI ELLİ ALTI KURUŞ#'
 ```
 
 ---
@@ -756,7 +776,7 @@ Kütüphane hangi karardan sorumlu, hangisinden değil. Tüketici kodunun bilmes
 | **M10** (B-102) | **`setLiability()` `isExport=true` iken no-op** (error yerine) | `src/calculator/invoice-rules.ts` |
 | **M11** (Sprint 8c, B-NEW-11) | **Self-exemption tipleri** (ISTISNA, IHRACKAYITLI, OZELMATRAH + IHRACAT, YOLCUBERABERFATURA, OZELFATURA, YATIRIMTESVIK profilleri) kendi istisna kodlarını taşır; dışındaki tiplerde KDV=0 kalem için **kullanıcıdan 351 manuel zorunlu** (calculator otomatik atamaz) | `src/config/self-exemption-types.ts` · `src/validators/manual-exemption-validator.ts` |
 | **M12** (Sprint 8d) | **Phantom KDV (Vazgeçilen KDV Tutarı)** — YATIRIMTESVIK+ISTISNA ve EARSIVFATURA+YTBISTISNA'da satır KDV matematiği TaxSubtotal içinde taşınır fakat LegalMonetaryTotal + parent TaxTotal'a dahil edilmez; `CalculationSequenceNumeric=-1` otomatik. Her satırda `0 < kdvPercent ≤ 100` + exemption code (308 Makine/01, 339 İnşaat/02) zorunlu. Kaynak: GİB Yatırım Teşvik Teknik Kılavuzu v1.1 (Aralık 2025) | `src/calculator/phantom-kdv-rules.ts` · `src/validators/phantom-kdv-validator.ts` |
-| **M13** (v3.0.0) | **Yazıyla tutar notu** — `#YAZIYLA:...#` HER faturaya, notların İLKİ olarak, KOŞULSUZ eklenir (opsiyon yok). Kaynak `PayableAmount`; tam sayı yazıyla, kesir iki hane rakamla. Tüketicinin elle yazdığı yazıyla-notları serileştirmede elenir. İrsaliye etkilenmez | `src/utils/amount-in-words.ts` · `src/utils/turkish-number-words.ts` · `src/config/amount-in-words-config.ts` · [§7.1](#71-yazıyla-tutar-notu-v300) |
+| **M13** (v3.0.0) | **Yazıyla tutar notu** — `YAZIYLA:#...#` HER faturaya, notların İLKİ olarak, KOŞULSUZ eklenir (opsiyon yok). Biçim 88 gerçek fatura notundan ÖLÇÜLDÜ. Kaynak `PayableAmount`; tam sayı VE kesir yazıyla, kuruş sıfırsa kesir hiç yazılmaz. Tüketicinin elle yazdığı yazıyla-notları serileştirmede elenir. İrsaliye etkilenmez | `src/utils/amount-in-words.ts` · `src/utils/turkish-number-words.ts` · `src/config/amount-in-words-config.ts` · [§7.1](#71-yazıyla-tutar-notu-v300) |
 | **AR-1** | `cbcTag` → `cbcRequiredTag` + `cbcOptionalTag` split | `src/utils/xml-helpers.ts` |
 | **AR-2** | `driverPerson` → `driverPersons[]` array (çoklu sürücü desteği) | `src/types/despatch-input.ts` · [examples/34](./examples/34-irsaliye-temel-sevk-coklu-sofor/) |
 | **AR-3..5** | PROFILE_TYPE_MATRIX helper API; map/matrix export edilmez | `src/calculator/invoice-rules.ts` |

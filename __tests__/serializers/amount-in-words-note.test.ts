@@ -1,5 +1,5 @@
 /**
- * v3.0.0 — `#YAZIYLA:...#` notunun serializer'a bağlanması.
+ * v3.0.0 — `YAZIYLA:#...#` notunun serializer'a bağlanması.
  *
  * Sözleşme:
  * - Not KOŞULSUZ eklenir (opsiyon yok)
@@ -95,14 +95,14 @@ function documentNotes(xml: string): string[] {
 }
 
 describe('v3.0.0 — yazıyla notu KOŞULSUZ eklenir', () => {
-  it('hiç not verilmese bile #YAZIYLA:...# yazılır', () => {
+  it('hiç not verilmese bile YAZIYLA:#...# yazılır', () => {
     const xml = serializeInvoice(baseInput());
-    expect(documentNotes(xml)).toEqual(['#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#']);
+    expect(documentNotes(xml)).toEqual(['YAZIYLA:#YÜZ SEKSEN İKİ TÜRK LIRASI YİRMİ KURUŞ#']);
   });
 
   it('notes: [] verildiğinde de yazılır', () => {
     const xml = serializeInvoice(baseInput({ notes: [] }));
-    expect(documentNotes(xml)).toEqual(['#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#']);
+    expect(documentNotes(xml)).toEqual(['YAZIYLA:#YÜZ SEKSEN İKİ TÜRK LIRASI YİRMİ KURUŞ#']);
   });
 
   it('kaynak PayableAmount — TaxInclusiveAmount DEĞİL', () => {
@@ -116,7 +116,7 @@ describe('v3.0.0 — yazıyla notu KOŞULSUZ eklenir', () => {
         },
       }),
     );
-    expect(documentNotes(xml)[0]).toBe('#YAZIYLA:DOKSAN LİRA 50 KURUŞ#');
+    expect(documentNotes(xml)[0]).toBe('YAZIYLA:#DOKSAN TÜRK LIRASI ELLİ KURUŞ#');
   });
 });
 
@@ -126,7 +126,7 @@ describe('v3.0.0 — not, notların İLKİdir', () => {
       baseInput({ notes: ['Sicil No: 0606', 'İF NO:709'] }),
     );
     expect(documentNotes(xml)).toEqual([
-      '#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#',
+      'YAZIYLA:#YÜZ SEKSEN İKİ TÜRK LIRASI YİRMİ KURUŞ#',
       'Sicil No: 0606',
       'İF NO:709',
     ]);
@@ -141,21 +141,21 @@ describe('v3.0.0 — elle yazılmış yazıyla-notu atılır (çelişki olmasın
       }),
     );
     expect(documentNotes(xml)).toEqual([
-      '#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#',
+      'YAZIYLA:#YÜZ SEKSEN İKİ TÜRK LIRASI YİRMİ KURUŞ#',
       'Sicil No: 0606',
     ]);
   });
 
-  it('GİB/Mimsoft varyantı (YAZIYLA:#...#) da atılır', () => {
+  it('v3.0.0 öncesi taslak varyantı (#YAZIYLA:...#) da atılır', () => {
     const xml = serializeInvoice(
-      baseInput({ notes: ['YAZIYLA:#BİR TÜRK LIRASI YİRMİ KURUŞ#'] }),
+      baseInput({ notes: ['#YAZIYLA:BİR LİRA 20 KURUŞ#'] }),
     );
-    expect(documentNotes(xml)).toEqual(['#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#']);
+    expect(documentNotes(xml)).toEqual(['YAZIYLA:#YÜZ SEKSEN İKİ TÜRK LIRASI YİRMİ KURUŞ#']);
   });
 
   it('belgede asla iki yazıyla-notu bulunmaz', () => {
     const xml = serializeInvoice(
-      baseInput({ notes: ['#YAZIYLA:ESKİ NOT#', '#YAZIYLA:BAŞKA ESKİ NOT#'] }),
+      baseInput({ notes: ['YAZIYLA:#ESKİ NOT#', '#YAZIYLA:BAŞKA ESKİ NOT#'] }),
     );
     const yaziyla = documentNotes(xml).filter(n => n.includes('YAZIYLA'));
     expect(yaziyla).toHaveLength(1);
@@ -163,14 +163,14 @@ describe('v3.0.0 — elle yazılmış yazıyla-notu atılır (çelişki olmasın
 });
 
 describe('v3.0.0 — para birimi notu şekillendirir', () => {
-  it('USD faturada DOLAR/SENT yazılır', () => {
+  it('USD faturada AMERIKAN DOLARI/SENT yazılır', () => {
     const xml = serializeInvoice(baseInput({ currencyCode: 'USD' }));
-    expect(documentNotes(xml)[0]).toBe('#YAZIYLA:YÜZ SEKSEN İKİ DOLAR 20 SENT#');
+    expect(documentNotes(xml)[0]).toBe('YAZIYLA:#YÜZ SEKSEN İKİ AMERIKAN DOLARI YİRMİ SENT#');
   });
 
-  it('EUR faturada EURO/SENT yazılır', () => {
+  it('EUR faturada AVRO/SENT yazılır', () => {
     const xml = serializeInvoice(baseInput({ currencyCode: 'EUR' }));
-    expect(documentNotes(xml)[0]).toBe('#YAZIYLA:YÜZ SEKSEN İKİ EURO 20 SENT#');
+    expect(documentNotes(xml)[0]).toBe('YAZIYLA:#YÜZ SEKSEN İKİ AVRO YİRMİ SENT#');
   });
 });
 

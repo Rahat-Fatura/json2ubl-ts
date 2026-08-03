@@ -159,11 +159,52 @@ describe('numberToTurkishWords — basamak adları: BİN, MİLYON, MİLYAR, TRİ
     );
   });
 
-  it('gerçek Mimsoft faturasındaki tutarlar (regresyon çıpası)', () => {
+  it('gerçek faturalardaki tutarlar (regresyon çıpası)', () => {
     // __tests__/fixtures/mimsoft-real-invoices/*.xml içindeki YAZIYLA notları
     expect(numberToTurkishWords(14_550)).toBe('ON DÖRT BİN BEŞ YÜZ ELLİ');
     expect(numberToTurkishWords(13_200)).toBe('ON ÜÇ BİN İKİ YÜZ');
     expect(numberToTurkishWords(17_220)).toBe('ON YEDİ BİN İKİ YÜZ YİRMİ');
+    // Kullanıcının indirdiği gerçek faturalardan
+    expect(numberToTurkishWords(3_243)).toBe('ÜÇ BİN İKİ YÜZ KIRK ÜÇ');
+    expect(numberToTurkishWords(41_813)).toBe('KIRK BİR BİN SEKİZ YÜZ ON ÜÇ');
+    expect(numberToTurkishWords(660_000)).toBe('ALTI YÜZ ALTMIŞ BİN');
+    expect(numberToTurkishWords(1_358_381)).toBe(
+      'BİR MİLYON ÜÇ YÜZ ELLİ SEKİZ BİN ÜÇ YÜZ SEKSEN BİR',
+    );
+    expect(numberToTurkishWords(1_971_624)).toBe(
+      'BİR MİLYON DOKUZ YÜZ YETMİŞ BİR BİN ALTI YÜZ YİRMİ DÖRT',
+    );
+    expect(numberToTurkishWords(3_173_288)).toBe(
+      'ÜÇ MİLYON YÜZ YETMİŞ ÜÇ BİN İKİ YÜZ SEKSEN SEKİZ',
+    );
+  });
+});
+
+describe('numberToTurkishWords — KURUŞ alanı (1–99): kesir de bu modülden geçer', () => {
+  it('tek haneli kuruş: baştaki sıfır okunmaz (,05 → BEŞ)', () => {
+    expect(numberToTurkishWords(5)).toBe('BEŞ');
+    expect(numberToTurkishWords(1)).toBe('BİR');
+    expect(numberToTurkishWords(9)).toBe('DOKUZ');
+  });
+
+  it(',15 → ON BEŞ · ,35 → OTUZ BEŞ · ,56 → ELLİ ALTI', () => {
+    expect(numberToTurkishWords(15)).toBe('ON BEŞ');
+    expect(numberToTurkishWords(35)).toBe('OTUZ BEŞ');
+    expect(numberToTurkishWords(56)).toBe('ELLİ ALTI');
+  });
+
+  it('yuvarlak onluklar: ,10 → ON · ,20 → YİRMİ · ,70 → YETMİŞ', () => {
+    expect(numberToTurkishWords(10)).toBe('ON');
+    expect(numberToTurkishWords(20)).toBe('YİRMİ');
+    expect(numberToTurkishWords(70)).toBe('YETMİŞ');
+  });
+
+  it('1–99 arası HER kuruş değeri okunabilir ve rakam içermez', () => {
+    for (let k = 1; k <= 99; k++) {
+      const words = numberToTurkishWords(k);
+      expect(words, `k=${k}`).not.toMatch(/\d/);
+      expect(words.length, `k=${k}`).toBeGreaterThan(0);
+    }
   });
 });
 

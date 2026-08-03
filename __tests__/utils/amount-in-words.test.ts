@@ -1,8 +1,9 @@
 /**
- * v3.0.0 — `#YAZIYLA:...#` not biçimlendirme testleri.
+ * v3.0.0 — `YAZIYLA:#...#` not biçimlendirme testleri.
  *
- * Biçim kararlarının (kesir hanesi, sıfır tutar, negatif, bilinmeyen kur)
- * her biri ayrı test olarak kilitlenmiştir.
+ * Biçim SAHADAN ÖLÇÜLDÜ (88 gerçek fatura notu). Kararların her biri —
+ * kesir yazıyla, kuruş sıfırken kesirin düşmesi, sıfır tutar, negatif,
+ * bilinmeyen kur — ayrı test olarak kilitlenmiştir.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -19,60 +20,138 @@ import {
 } from '../../src/config/amount-in-words-config';
 import { formatDecimal } from '../../src/utils/formatters';
 
-describe('formatAmountInWordsNote — kullanıcının referans örneği', () => {
-  it('182,20 TRY → #YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#', () => {
-    expect(formatAmountInWordsNote(182.2, 'TRY')).toBe(
-      '#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#',
+describe('SAHA KANITI — gerçek faturalardaki notu BİREBİR üretir', () => {
+  /**
+   * Bu üç kayıt kullanıcının indirdiği gerçek faturalardan alındı. Alanı
+   * eşlediğimizin kanıtıdır; biçim değişirse ilk burası kırılır.
+   */
+  it('3243,56 → YAZIYLA:#ÜÇ BİN İKİ YÜZ KIRK ÜÇ TÜRK LIRASI ELLİ ALTI KURUŞ#', () => {
+    expect(formatAmountInWordsNote(3243.56, 'TRY')).toBe(
+      'YAZIYLA:#ÜÇ BİN İKİ YÜZ KIRK ÜÇ TÜRK LIRASI ELLİ ALTI KURUŞ#',
     );
   });
 
-  it('not # ile başlar ve # ile biter', () => {
-    const note = formatAmountInWordsNote(1, 'TRY')!;
-    expect(note.startsWith(AMOUNT_IN_WORDS_PREFIX)).toBe(true);
-    expect(note.endsWith(AMOUNT_IN_WORDS_SUFFIX)).toBe(true);
+  it('41813,35 → YAZIYLA:#KIRK BİR BİN SEKİZ YÜZ ON ÜÇ TÜRK LIRASI OTUZ BEŞ KURUŞ#', () => {
+    expect(formatAmountInWordsNote(41813.35, 'TRY')).toBe(
+      'YAZIYLA:#KIRK BİR BİN SEKİZ YÜZ ON ÜÇ TÜRK LIRASI OTUZ BEŞ KURUŞ#',
+    );
   });
 
-  it('tam sayı YAZIYLA, kesir RAKAMLA yazılır', () => {
-    expect(formatAmountInWordsNote(1234.56, 'TRY')).toBe(
-      '#YAZIYLA:BİN İKİ YÜZ OTUZ DÖRT LİRA 56 KURUŞ#',
+  it('660000,00 → YAZIYLA:#ALTI YÜZ ALTMIŞ BİN TÜRK LIRASI# (kuruş kısmı YOK)', () => {
+    expect(formatAmountInWordsNote(660000, 'TRY')).toBe(
+      'YAZIYLA:#ALTI YÜZ ALTMIŞ BİN TÜRK LIRASI#',
+    );
+  });
+
+  it('sahadaki diğer kayıtlar (rastgele seçilmiş 6 kayıt)', () => {
+    const cases: Array<[number, string, string]> = [
+      [6495.86, 'TRY', 'YAZIYLA:#ALTI BİN DÖRT YÜZ DOKSAN BEŞ TÜRK LIRASI SEKSEN ALTI KURUŞ#'],
+      [3063.3, 'TRY', 'YAZIYLA:#ÜÇ BİN ALTMIŞ ÜÇ TÜRK LIRASI OTUZ KURUŞ#'],
+      [5001.02, 'TRY', 'YAZIYLA:#BEŞ BİN BİR TÜRK LIRASI İKİ KURUŞ#'],
+      [25576.03, 'TRY', 'YAZIYLA:#YİRMİ BEŞ BİN BEŞ YÜZ YETMİŞ ALTI TÜRK LIRASI ÜÇ KURUŞ#'],
+      [74820, 'TRY', 'YAZIYLA:#YETMİŞ DÖRT BİN SEKİZ YÜZ YİRMİ TÜRK LIRASI#'],
+      [
+        1358381.7,
+        'TRY',
+        'YAZIYLA:#BİR MİLYON ÜÇ YÜZ ELLİ SEKİZ BİN ÜÇ YÜZ SEKSEN BİR TÜRK LIRASI YETMİŞ KURUŞ#',
+      ],
+    ];
+    for (const [amount, currency, expected] of cases) {
+      expect(formatAmountInWordsNote(amount, currency)).toBe(expected);
+    }
+  });
+
+  it('YABANCI PARA — sahadan ölçülen iki kayıt', () => {
+    // 3810,00 EUR → "AVRO" (EURO DEĞİL) · 10000,00 USD → "AMERIKAN DOLARI"
+    expect(formatAmountInWordsNote(3810, 'EUR')).toBe(
+      'YAZIYLA:#ÜÇ BİN SEKİZ YÜZ ON AVRO#',
+    );
+    expect(formatAmountInWordsNote(10000, 'USD')).toBe(
+      'YAZIYLA:#ON BİN AMERIKAN DOLARI#',
     );
   });
 });
 
-describe('formatAmountInWordsNote — KARAR: kesir her zaman İKİ HANE, sıfır dolgulu', () => {
-  it('182,05 → "05 KURUŞ" (❌ "5 KURUŞ")', () => {
-    expect(formatAmountInWordsNote(182.05, 'TRY')).toBe(
-      '#YAZIYLA:YÜZ SEKSEN İKİ LİRA 05 KURUŞ#',
-    );
+describe('biçim iskeleti — YAZIYLA:#...# (sahada 88/88)', () => {
+  it('önek YAZIYLA:# — # iki noktadan SONRA', () => {
+    expect(AMOUNT_IN_WORDS_PREFIX).toBe('YAZIYLA:#');
+    expect(formatAmountInWordsNote(1, 'TRY')!.startsWith('YAZIYLA:#')).toBe(true);
   });
 
-  it('0,01 → "01 KURUŞ"', () => {
-    expect(formatAmountInWordsNote(0.01, 'TRY')).toBe('#YAZIYLA:SIFIR LİRA 01 KURUŞ#');
+  it('sonek #', () => {
+    expect(AMOUNT_IN_WORDS_SUFFIX).toBe('#');
+    expect(formatAmountInWordsNote(1, 'TRY')!.endsWith('#')).toBe(true);
   });
 
-  it('kesir kelimeye çevrilmez — rakam olarak kalır', () => {
-    expect(formatAmountInWordsNote(1.2, 'TRY')).toBe('#YAZIYLA:BİR LİRA 20 KURUŞ#');
-    expect(formatAmountInWordsNote(1.2, 'TRY')).not.toContain('YİRMİ KURUŞ');
-  });
-});
-
-describe('formatAmountInWordsNote — KARAR: kuruş sıfır olsa da kesir kısmı YAZILIR', () => {
-  it('182,00 → "... LİRA 00 KURUŞ" (kesir atlanmaz)', () => {
-    expect(formatAmountInWordsNote(182, 'TRY')).toBe(
-      '#YAZIYLA:YÜZ SEKSEN İKİ LİRA 00 KURUŞ#',
-    );
+  it('not TEK SATIRDIR — içinde satır sonu YOK', () => {
+    expect(formatAmountInWordsNote(3243.56, 'TRY')).not.toMatch(/[\r\n]/);
+    expect(formatAmountInWordsNote(660000, 'TRY')).not.toMatch(/[\r\n]/);
   });
 
-  it('14550,00 → gerçek Mimsoft tutarı, sabit biçimle', () => {
-    expect(formatAmountInWordsNote(14550, 'TRY')).toBe(
-      '#YAZIYLA:ON DÖRT BİN BEŞ YÜZ ELLİ LİRA 00 KURUŞ#',
-    );
+  it('🔴 kuruş sıfırken kapanış #inden ÖNCE BOŞLUK YOKTUR', () => {
+    // Sahadaki 88 kaydın HİÇBİRİNDE "LIRASI #" (boşluk + #) geçmiyor.
+    // 38 kayıttaki "LIRASI\n#" bir SATIR SONUdur, boşluk değil.
+    const note = formatAmountInWordsNote(660000, 'TRY')!;
+    expect(note).not.toContain(' #');
+    expect(note.endsWith('LIRASI#')).toBe(true);
   });
 });
 
-describe('formatAmountInWordsNote — KARAR: sıfır tutar SIFIR olarak okunur', () => {
-  it('0,00 → #YAZIYLA:SIFIR LİRA 00 KURUŞ#', () => {
-    expect(formatAmountInWordsNote(0, 'TRY')).toBe('#YAZIYLA:SIFIR LİRA 00 KURUŞ#');
+describe('KARAR: kesir de YAZIYLA yazılır (rakamla DEĞİL)', () => {
+  it(',56 → ELLİ ALTI KURUŞ', () => {
+    expect(formatAmountInWordsNote(1.56, 'TRY')).toBe(
+      'YAZIYLA:#BİR TÜRK LIRASI ELLİ ALTI KURUŞ#',
+    );
+  });
+
+  it(',05 → BEŞ KURUŞ (baştaki sıfır okunmaz)', () => {
+    expect(formatAmountInWordsNote(1.05, 'TRY')).toBe('YAZIYLA:#BİR TÜRK LIRASI BEŞ KURUŞ#');
+  });
+
+  it(',15 → ON BEŞ KURUŞ', () => {
+    expect(formatAmountInWordsNote(1.15, 'TRY')).toBe(
+      'YAZIYLA:#BİR TÜRK LIRASI ON BEŞ KURUŞ#',
+    );
+  });
+
+  it(',01 → BİR KURUŞ · ,99 → DOKSAN DOKUZ KURUŞ', () => {
+    expect(formatAmountInWordsNote(1.01, 'TRY')).toBe('YAZIYLA:#BİR TÜRK LIRASI BİR KURUŞ#');
+    expect(formatAmountInWordsNote(1.99, 'TRY')).toBe(
+      'YAZIYLA:#BİR TÜRK LIRASI DOKSAN DOKUZ KURUŞ#',
+    );
+  });
+
+  it(',10 → ON KURUŞ · ,20 → YİRMİ KURUŞ (yuvarlak onluklar)', () => {
+    expect(formatAmountInWordsNote(1.1, 'TRY')).toBe('YAZIYLA:#BİR TÜRK LIRASI ON KURUŞ#');
+    expect(formatAmountInWordsNote(1.2, 'TRY')).toBe('YAZIYLA:#BİR TÜRK LIRASI YİRMİ KURUŞ#');
+  });
+
+  it('kesirde RAKAM kalmaz — 1..99 arası tüm kuruşlar yazıyla', () => {
+    for (let k = 1; k <= 99; k++) {
+      const note = formatAmountInWordsNote(1 + k / 100, 'TRY')!;
+      expect(note, `kuruş=${k}`).not.toMatch(/\d/);
+    }
+  });
+});
+
+describe('KARAR: kuruş SIFIRSA kesir kısmı HİÇ yazılmaz', () => {
+  it(',00 → kuruş kısmı yok', () => {
+    expect(formatAmountInWordsNote(182, 'TRY')).toBe('YAZIYLA:#YÜZ SEKSEN İKİ TÜRK LIRASI#');
+  });
+
+  it('"SIFIR KURUŞ" ASLA yazılmaz', () => {
+    expect(formatAmountInWordsNote(182, 'TRY')).not.toContain('SIFIR KURUŞ');
+    expect(formatAmountInWordsNote(0, 'TRY')).not.toContain('SIFIR KURUŞ');
+  });
+
+  it('kuruş sıfırken "KURUŞ" kelimesi hiç geçmez', () => {
+    expect(formatAmountInWordsNote(74820, 'TRY')).not.toContain('KURUŞ');
+  });
+});
+
+describe('KARAR: sıfır tutar', () => {
+  it('0,00 → YAZIYLA:#SIFIR TÜRK LIRASI#', () => {
+    expect(formatAmountInWordsNote(0, 'TRY')).toBe('YAZIYLA:#SIFIR TÜRK LIRASI#');
   });
 
   it('sıfır tutarda not yine de üretilir (koşulsuz)', () => {
@@ -80,14 +159,20 @@ describe('formatAmountInWordsNote — KARAR: sıfır tutar SIFIR olarak okunur',
   });
 
   it('-0 → EKSİ almaz', () => {
-    expect(formatAmountInWordsNote(-0, 'TRY')).toBe('#YAZIYLA:SIFIR LİRA 00 KURUŞ#');
+    expect(formatAmountInWordsNote(-0, 'TRY')).toBe('YAZIYLA:#SIFIR TÜRK LIRASI#');
+  });
+
+  it('0,56 → SIFIR TÜRK LIRASI ELLİ ALTI KURUŞ (bir liradan küçük)', () => {
+    expect(formatAmountInWordsNote(0.56, 'TRY')).toBe(
+      'YAZIYLA:#SIFIR TÜRK LIRASI ELLİ ALTI KURUŞ#',
+    );
   });
 });
 
-describe('formatAmountInWordsNote — KARAR: negatif tutar EKSİ öneki alır', () => {
-  it('-182,20 → #YAZIYLA:EKSİ YÜZ SEKSEN İKİ LİRA 20 KURUŞ#', () => {
-    expect(formatAmountInWordsNote(-182.2, 'TRY')).toBe(
-      '#YAZIYLA:EKSİ YÜZ SEKSEN İKİ LİRA 20 KURUŞ#',
+describe('KARAR: negatif tutar EKSİ öneki alır', () => {
+  it('-3243,56 → EKSİ öneki', () => {
+    expect(formatAmountInWordsNote(-3243.56, 'TRY')).toBe(
+      'YAZIYLA:#EKSİ ÜÇ BİN İKİ YÜZ KIRK ÜÇ TÜRK LIRASI ELLİ ALTI KURUŞ#',
     );
   });
 
@@ -96,35 +181,61 @@ describe('formatAmountInWordsNote — KARAR: negatif tutar EKSİ öneki alır', 
   });
 
   it('yuvarlama sonrası sıfırlanan negatif EKSİ ALMAZ (-0,001 → SIFIR)', () => {
-    expect(formatAmountInWordsNote(-0.001, 'TRY')).toBe('#YAZIYLA:SIFIR LİRA 00 KURUŞ#');
+    expect(formatAmountInWordsNote(-0.001, 'TRY')).toBe('YAZIYLA:#SIFIR TÜRK LIRASI#');
   });
 });
 
-describe('formatAmountInWordsNote — para birimine göre birim adları', () => {
-  it('TRY → LİRA / KURUŞ', () => {
-    expect(formatAmountInWordsNote(2.5, 'TRY')).toBe('#YAZIYLA:İKİ LİRA 50 KURUŞ#');
+describe('para birimine göre birim adları', () => {
+  it('TRY → TÜRK LIRASI / KURUŞ (ÖLÇÜLDÜ)', () => {
+    expect(formatAmountInWordsNote(2.5, 'TRY')).toBe(
+      'YAZIYLA:#İKİ TÜRK LIRASI ELLİ KURUŞ#',
+    );
   });
 
-  it('USD → DOLAR / SENT', () => {
-    expect(formatAmountInWordsNote(2.5, 'USD')).toBe('#YAZIYLA:İKİ DOLAR 50 SENT#');
+  it('🔴 TÜRK LIRASI noktasız I ile yazılır (saha standardı — düzeltilmez)', () => {
+    const note = formatAmountInWordsNote(1, 'TRY')!;
+    expect(note).toContain('TÜRK LIRASI');
+    expect(note).not.toContain('TÜRK LİRASI');
+    // Bayt düzeyi: LIRASI'daki iki I da U+0049 (noktasız), U+0130 (İ) DEĞİL
+    expect([...'LIRASI'].map(c => c.codePointAt(0))).toEqual([
+      0x4c, 0x49, 0x52, 0x41, 0x53, 0x49,
+    ]);
+    expect(note).toContain('LIRASI');
   });
 
-  it('EUR → EURO / SENT', () => {
-    expect(formatAmountInWordsNote(2.5, 'EUR')).toBe('#YAZIYLA:İKİ EURO 50 SENT#');
+  it('USD → AMERIKAN DOLARI / SENT', () => {
+    expect(formatAmountInWordsNote(2.5, 'USD')).toBe(
+      'YAZIYLA:#İKİ AMERIKAN DOLARI ELLİ SENT#',
+    );
   });
 
-  it('GBP → STERLİN / PENİ', () => {
-    expect(formatAmountInWordsNote(2.5, 'GBP')).toBe('#YAZIYLA:İKİ STERLİN 50 PENİ#');
+  it('🔴 AMERIKAN DOLARI da noktasız I ile (ÖLÇÜLDÜ)', () => {
+    const note = formatAmountInWordsNote(1, 'USD')!;
+    expect(note).toContain('AMERIKAN DOLARI');
+    expect(note).not.toContain('AMERİKAN');
+  });
+
+  it('EUR → AVRO / SENT (EURO DEĞİL — ÖLÇÜLDÜ)', () => {
+    expect(formatAmountInWordsNote(2.5, 'EUR')).toBe('YAZIYLA:#İKİ AVRO ELLİ SENT#');
+    expect(formatAmountInWordsNote(2.5, 'EUR')).not.toContain('EURO');
+  });
+
+  it('GBP → İNGİLİZ STERLİNİ / PENİ (SEÇİLDİ — saha kanıtı yok)', () => {
+    expect(formatAmountInWordsNote(2.5, 'GBP')).toBe(
+      'YAZIYLA:#İKİ İNGİLİZ STERLİNİ ELLİ PENİ#',
+    );
   });
 
   it('küçük harf kod da tanınır', () => {
-    expect(formatAmountInWordsNote(2.5, 'try')).toBe('#YAZIYLA:İKİ LİRA 50 KURUŞ#');
+    expect(formatAmountInWordsNote(2.5, 'try')).toBe(
+      'YAZIYLA:#İKİ TÜRK LIRASI ELLİ KURUŞ#',
+    );
   });
 });
 
-describe('formatAmountInWordsNote — KARAR: bilinmeyen kur kodu olduğu gibi kullanılır', () => {
+describe('KARAR: bilinmeyen kur kodu olduğu gibi kullanılır', () => {
   it('CHF → büyük birim ISO kodu, küçük birim KURUŞ', () => {
-    expect(formatAmountInWordsNote(2.5, 'CHF')).toBe('#YAZIYLA:İKİ CHF 50 KURUŞ#');
+    expect(formatAmountInWordsNote(2.5, 'CHF')).toBe('YAZIYLA:#İKİ CHF ELLİ KURUŞ#');
   });
 
   it('bilinmeyen kodda uydurma birim adı YAZILMAZ', () => {
@@ -140,7 +251,7 @@ describe('formatAmountInWordsNote — KARAR: bilinmeyen kur kodu olduğu gibi ku
   it('boş/eksik kodda TRY varsayılır', () => {
     expect(getAmountInWordsUnits('')).toEqual(AMOUNT_IN_WORDS_UNITS.TRY);
     expect(getAmountInWordsUnits(undefined)).toEqual(AMOUNT_IN_WORDS_UNITS.TRY);
-    expect(formatAmountInWordsNote(1, undefined)).toBe('#YAZIYLA:BİR LİRA 00 KURUŞ#');
+    expect(formatAmountInWordsNote(1, undefined)).toBe('YAZIYLA:#BİR TÜRK LIRASI#');
   });
 
   it('tablo genişletilebilir — 4 seed kod tanımlı', () => {
@@ -148,33 +259,35 @@ describe('formatAmountInWordsNote — KARAR: bilinmeyen kur kodu olduğu gibi ku
   });
 });
 
-describe('formatAmountInWordsNote — cbc:PayableAmount ile yuvarlama tutarlılığı', () => {
-  const cases = [0, 0.005, 0.015, 1.005, 2.675, 182.2, 1234.565, 99999.994, 1e6 + 0.335];
-
-  for (const amount of cases) {
-    it(`${amount} → nottaki rakamlar formatDecimal(amount, 2) ile birebir aynı`, () => {
-      const printed = formatDecimal(amount, 2); // XML'e yazılan string
-      const [intPart, fracPart] = printed.split('.');
-      const note = formatAmountInWordsNote(amount, 'TRY')!;
-      expect(note).toContain(` ${fracPart} KURUŞ#`);
-      // tam sayı kısmı da aynı değerden türetilmiş olmalı
-      expect(note.startsWith('#YAZIYLA:')).toBe(true);
-      expect(Number(intPart)).toBeGreaterThanOrEqual(0);
-    });
-  }
-
-  it('yuvarlama YUKARI çıkınca tam sayı da takip eder (1,999 → İKİ LİRA 00 KURUŞ)', () => {
+describe('cbc:PayableAmount ile yuvarlama tutarlılığı', () => {
+  it('yuvarlama YUKARI çıkınca tam sayı da takip eder (1,999 → İKİ TÜRK LIRASI)', () => {
     expect(formatDecimal(1.999, 2)).toBe('2.00');
-    expect(formatAmountInWordsNote(1.999, 'TRY')).toBe('#YAZIYLA:İKİ LİRA 00 KURUŞ#');
+    expect(formatAmountInWordsNote(1.999, 'TRY')).toBe('YAZIYLA:#İKİ TÜRK LIRASI#');
   });
 
-  it('999,995 → BİN LİRA 00 KURUŞ (basamak taşması notta da doğru)', () => {
+  it('999,995 → BİN TÜRK LIRASI (basamak taşması notta da doğru)', () => {
     expect(formatDecimal(999.995, 2)).toBe('1000.00');
-    expect(formatAmountInWordsNote(999.995, 'TRY')).toBe('#YAZIYLA:BİN LİRA 00 KURUŞ#');
+    expect(formatAmountInWordsNote(999.995, 'TRY')).toBe('YAZIYLA:#BİN TÜRK LIRASI#');
+  });
+
+  it('yuvarlanan kesir nota da yuvarlanmış GİRER (1,006 → BİR KURUŞ)', () => {
+    expect(formatDecimal(1.006, 2)).toBe('1.01');
+    expect(formatAmountInWordsNote(1.006, 'TRY')).toBe('YAZIYLA:#BİR TÜRK LIRASI BİR KURUŞ#');
+  });
+
+  it('nottaki kuruş, XML\'e yazılan kesir hanesiyle AYNI değerdir', () => {
+    const cases = [0, 0.005, 0.015, 1.005, 2.675, 182.2, 1234.565, 99999.994];
+    for (const amount of cases) {
+      const printed = formatDecimal(amount, 2);
+      const frac = Number(printed.split('.')[1]);
+      const note = formatAmountInWordsNote(amount, 'TRY')!;
+      if (frac === 0) expect(note, printed).not.toContain('KURUŞ');
+      else expect(note, printed).toContain('KURUŞ');
+    }
   });
 });
 
-describe('formatAmountInWordsNote — okunamayan tutarlarda null (serializer patlamaz)', () => {
+describe('okunamayan tutarlarda null (serializer patlamaz)', () => {
   it('undefined / null → null', () => {
     expect(formatAmountInWordsNote(undefined, 'TRY')).toBeNull();
     expect(formatAmountInWordsNote(null, 'TRY')).toBeNull();
@@ -193,17 +306,21 @@ describe('formatAmountInWordsNote — okunamayan tutarlarda null (serializer pat
 
   it('güvenli aralığın en üstü hâlâ okunur', () => {
     expect(formatAmountInWordsNote(1_000_000_000_000, 'TRY')).toBe(
-      '#YAZIYLA:BİR TRİLYON LİRA 00 KURUŞ#',
+      'YAZIYLA:#BİR TRİLYON TÜRK LIRASI#',
     );
   });
 });
 
 describe('isAmountInWordsNote — elle yazılmış yazıyla-notlarını tanır', () => {
   it('kütüphane biçimini tanır', () => {
+    expect(isAmountInWordsNote('YAZIYLA:#BİR TÜRK LIRASI#')).toBe(true);
+  });
+
+  it('v3.0.0 öncesi taslak biçimi (#YAZIYLA:...#) de tanır', () => {
     expect(isAmountInWordsNote('#YAZIYLA:BİR LİRA 00 KURUŞ#')).toBe(true);
   });
 
-  it('GİB/Mimsoft varyantını tanır (YAZIYLA:#...#)', () => {
+  it('sahadaki A üreticisinin satır sonlu biçimini tanır', () => {
     expect(isAmountInWordsNote('YAZIYLA:#BİR TÜRK LIRASI\n YİRMİ KURUŞ#')).toBe(true);
   });
 
