@@ -16,6 +16,7 @@
   <cbc:IssueDate>2026-04-23</cbc:IssueDate>
   <cbc:IssueTime>10:00:00</cbc:IssueTime>
   <cbc:InvoiceTypeCode>ISTISNA</cbc:InvoiceTypeCode>
+  <cbc:Note>#YAZIYLA:ON BİN BEŞ YÜZ DOLAR 00 SENT#</cbc:Note>
   <cbc:Note>Showcase — tam IHRACAT senaryosu (5 satır + INCOTERMS + gümrük).</cbc:Note>
   <cbc:Note>Each line has distinct GTIP and INCOTERMS for export traceability.</cbc:Note>
   <cbc:DocumentCurrencyCode>USD</cbc:DocumentCurrencyCode>

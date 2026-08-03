@@ -16,6 +16,7 @@
   <cbc:IssueDate>2026-04-23</cbc:IssueDate>
   <cbc:IssueTime>10:00:00</cbc:IssueTime>
   <cbc:InvoiceTypeCode>TEVKIFAT</cbc:InvoiceTypeCode>
+  <cbc:Note>#YAZIYLA:BİN DOKUZ YÜZ YİRMİ ALTI EURO 90 SENT#</cbc:Note>
   <cbc:Note>Showcase — tüm feature&apos;ları tek faturada gösteren örnek.</cbc:Note>
   <cbc:Note>3 farklı KDV oranı + 650 dinamik tevkifat + iskonto + EUR.</cbc:Note>
   <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>

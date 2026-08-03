@@ -173,6 +173,11 @@ describe('B-102 — satır/ürün alanları → cac:Item + cbc:Note', () => {
   });
 
   describe('Geriye dönük uyum — verilmeyen alan hiç emit edilmez', () => {
+    // v3.0.0: belge seviyesinde KOŞULSUZ `#YAZIYLA:...#` notu var; satır notu
+    // iddiaları artık yalnız cac:InvoiceLine bloğuna bakar.
+    const lineBlockOf = (xml: string): string =>
+      /<cac:InvoiceLine>([\s\S]*?)<\/cac:InvoiceLine>/.exec(xml)![1];
+
     it('alanlar boşsa hiçbir yeni element yazılmaz', () => {
       const xml = buildXml({});
       for (const t of [
@@ -181,10 +186,10 @@ describe('B-102 — satır/ürün alanları → cac:Item + cbc:Note', () => {
         '<cac:SellersItemIdentification>',
         '<cac:ManufacturersItemIdentification>',
         '<cac:OriginCountry>',
-        '<cbc:Note>',
       ]) {
         expect(xml).not.toContain(t);
       }
+      expect(lineBlockOf(xml)).not.toContain('<cbc:Note>');
     });
 
     it('boş string → element yazılmaz (isNonEmpty koruması)', () => {
@@ -192,7 +197,7 @@ describe('B-102 — satır/ürün alanları → cac:Item + cbc:Note', () => {
       expect(xml).not.toContain('<cbc:BrandName>');
       expect(xml).not.toContain('<cac:BuyersItemIdentification>');
       expect(xml).not.toContain('<cac:OriginCountry>');
-      expect(xml).not.toContain('<cbc:Note>');
+      expect(lineBlockOf(xml)).not.toContain('<cbc:Note>');
     });
 
     it('basic kipi strict ile aynı çıktıyı üretir (yeni zorunluluk eklenmedi)', () => {

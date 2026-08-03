@@ -16,6 +16,7 @@
   <cbc:IssueDate>2026-04-24</cbc:IssueDate>
   <cbc:IssueTime>10:00:00</cbc:IssueTime>
   <cbc:InvoiceTypeCode>SGK</cbc:InvoiceTypeCode>
+  <cbc:Note>#YAZIYLA:BİN İKİ YÜZ ON LİRA 00 KURUŞ#</cbc:Note>
   <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
   <cbc:AccountingCost>SAGLIK_HAS</cbc:AccountingCost>
   <cbc:LineCountNumeric>2</cbc:LineCountNumeric>

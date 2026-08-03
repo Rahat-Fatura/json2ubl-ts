@@ -31,3 +31,25 @@ export {
     PARTY_IDENTIFICATION_SCHEME_IDS,
 } from "./config/constants";
 export type { PartyIdentificationSchemeId } from "./config/constants";
+
+// Yazıyla tutar (v3.0.0) — saf sayı okuma + not biçimlendirme
+export {
+    numberToTurkishWords,
+    TURKISH_ZERO_WORD,
+    TURKISH_MINUS_WORD,
+    MAX_READABLE_INTEGER,
+} from "./utils/turkish-number-words";
+export {
+    formatAmountInWordsNote,
+    isAmountInWordsNote,
+    AMOUNT_IN_WORDS_PREFIX,
+    AMOUNT_IN_WORDS_SUFFIX,
+    AMOUNT_IN_WORDS_NOTE_PATTERN,
+} from "./utils/amount-in-words";
+export {
+    AMOUNT_IN_WORDS_UNITS,
+    DEFAULT_MINOR_UNIT,
+    DEFAULT_CURRENCY_CODE_FOR_WORDS,
+    getAmountInWordsUnits,
+} from "./config/amount-in-words-config";
+export type { AmountInWordsUnits } from "./config/amount-in-words-config";

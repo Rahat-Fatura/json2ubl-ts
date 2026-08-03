@@ -31,6 +31,10 @@ import {
     serializePaymentMeans,
 } from "./monetary-serializer";
 import { serializeAllowanceCharge, serializePeriod } from "./common-serializer";
+import {
+    formatAmountInWordsNote,
+    isAmountInWordsNote,
+} from "../utils/amount-in-words";
 
 /**
  * Invoice JSON → tam UBL-TR XML string (§1.10 sırasında)
@@ -78,9 +82,22 @@ export function serializeInvoice(
     // 10. InvoiceTypeCode
     parts.push(`${ind}${cbcOptionalTag("InvoiceTypeCode", input.invoiceTypeCode)}`);
 
-    // 11. Note (opsiyonel, çoklu)
+    // 11. Note (çoklu)
+    //
+    // v3.0.0 — KOŞULSUZ "yazıyla tutar" notu: PayableAmount'tan türetilen
+    // `#YAZIYLA:...#` notu HER faturaya, notların İLKİ olarak eklenir.
+    // Tüketicinin elle yazdığı yazıyla-notları atılır (çelişen iki not olmasın);
+    // diğer notlar sırasını koruyarak arkadan gelir.
+    const amountInWordsNote = formatAmountInWordsNote(
+        input.legalMonetaryTotal?.payableAmount,
+        cc,
+    );
+    if (amountInWordsNote) {
+        parts.push(`${ind}${cbcOptionalTag("Note", amountInWordsNote)}`);
+    }
     if (input.notes) {
         for (const note of input.notes) {
+            if (isAmountInWordsNote(note)) continue;
             parts.push(`${ind}${cbcOptionalTag("Note", note)}`);
         }
     }
