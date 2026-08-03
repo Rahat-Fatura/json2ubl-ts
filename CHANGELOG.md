@@ -2,6 +2,119 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [3.0.0] — 2026-08-03
+
+> ### ⚠️ DAVRANIŞ DEĞİŞİKLİĞİ — mevcut tüketicilerin ÇIKTISI DEĞİŞİYOR
+>
+> Bu sürümden itibaren **her faturaya**, notların **İLKİ** olarak `#YAZIYLA:...#` biçiminde
+> bir "yazıyla tutar" notu eklenir. **Opsiyon yoktur, kapatılamaz.** Byte-bazlı XML
+> karşılaştırması / snapshot testi yapan her tüketicinin altın çıktıları kırılacaktır.
+> Yükseltmeden önce beklenen çıktılarınızı yeniden üretin.
+>
+> Bu değişiklik **yalnız `Invoice`** belgelerini etkiler. `DespatchAdvice`'ta parasal dip
+> toplam yoktur; irsaliye çıktıları **hiç değişmez**.
+
+### Added — "yazıyla tutar" notu (`#YAZIYLA:...#`)
+
+Tutarın yazıyla yazılması her tüketicinin ayrı ayrı, tutarsız biçimde çözdüğü bir işti.
+Artık kütüphane çözüyor: kullanıldığı her yerde aynı ve doğru.
+
+**Biçim**
+
+```
+#YAZIYLA:<TAMSAYI YAZIYLA> <BÜYÜK BİRİM> <KURUŞ HANESİ RAKAMLA> <KÜÇÜK BİRİM>#
+#YAZIYLA:YÜZ SEKSEN İKİ LİRA 20 KURUŞ#
+```
+
+Tam sayı kısmı YAZIYLA, kesir kısmı RAKAMLA — Türkiye'deki yaygın pratik.
+
+**Kaynak:** `cac:LegalMonetaryTotal/cbc:PayableAmount` — belgede yazan dip toplam.
+Not, `cbc:PayableAmount`ın yazdığı string'in **birebir aynı yuvarlamasından**
+(`formatDecimal(x, 2)`) türetilir; not ile XML'deki tutar hiçbir koşulda ayrışamaz.
+
+**Biçim kararları**
+
+| Durum | Karar | Gerekçe |
+|---|---|---|
+| Kesir hanesi | Her zaman **iki hane, sıfır dolgulu** — `,05` → `05 KURUŞ` | Sabit genişlik; `5` mi `50` mi belirsizliği kalmaz |
+| Kuruş sıfır (`182,00`) | Kesir kısmı **yine yazılır** → `... LİRA 00 KURUŞ` | Sabit ve makine-okunur biçim; "kuruş yok mu, sıfır mı" sorusu doğmaz |
+| Sıfır tutar (`0,00`) | `#YAZIYLA:SIFIR LİRA 00 KURUŞ#` | Not koşulsuz eklendiği için atlanmaz; `SIFIR` doğru Türkçe okunuştur |
+| Negatif tutar | `EKSİ` öneki → `#YAZIYLA:EKSİ YÜZ LİRA 00 KURUŞ#` | UBL-TR'de `PayableAmount` negatif olmamalıdır (iade belgeleri pozitif tutar + farklı tip koduyla düzenlenir), ama işaret **sessizce yutulmaz**. Yuvarlama sonrası sıfırlanan negatifler (`-0,001`) `EKSİ` almaz |
+| Okunamayan tutar | Not **hiç yazılmaz** | `NaN`/`Infinity`/güvenli tam sayı aralığı dışı: kozmetik bir not yüzünden serializer patlayıp geçerli belge üretilememesi kabul edilemez |
+
+**Para birimine göre birim adları** (`config/amount-in-words-config.ts` — genişletilebilir):
+
+| Kod | Büyük | Küçük |
+|---|---|---|
+| `TRY` | LİRA | KURUŞ |
+| `USD` | DOLAR | SENT |
+| `EUR` | EURO | SENT |
+| `GBP` | STERLİN | PENİ |
+
+**Bilinmeyen kur kodunda** büyük birim = **ISO kodunun kendisi** (`#YAZIYLA:İKİ CHF 50 KURUŞ#`),
+küçük birim = `KURUŞ`. Gerekçe: (a) kod belgede yazanın aynısıdır, asla uydurulmaz;
+(b) kesir zaten rakamla yazıldığı için küçük birim adı sayısal bilgi taşımaz ve Türkçe bir
+notta 1/100 alt biriminin genel karşılığı "kuruş"tur; (c) tablo dışa açık — bir kur için
+doğru ad gerekiyorsa tek satır eklenir. Kur kodu boş/eksikse `TRY` varsayılır.
+
+`calculator/currency-config.ts`teki `CURRENCY_DEFINITIONS` **kullanılmadı**: oradaki `unit`
+alanı 30 kodun 26'sında boş, `subunit` değerleri karışık dilde ve çoğuldur (`Cents`, `Pence`,
+`Øre`). Not Türkçe ve büyük harf olmak zorunda olduğundan ayrı tablo tutuldu.
+
+**Yeni public API**
+
+- `numberToTurkishWords(n)` — saf sayı okuma (`utils/turkish-number-words.ts`); para birimi,
+  UBL veya fatura bilmez. `TURKISH_ZERO_WORD`, `TURKISH_MINUS_WORD`, `MAX_READABLE_INTEGER`.
+- `formatAmountInWordsNote(amount, currencyCode)` — not metni; okunamayan tutarda `null`.
+- `isAmountInWordsNote(note)`, `AMOUNT_IN_WORDS_PREFIX/SUFFIX/NOTE_PATTERN`.
+- `AMOUNT_IN_WORDS_UNITS`, `getAmountInWordsUnits(code)`, `DEFAULT_MINOR_UNIT`,
+  `DEFAULT_CURRENCY_CODE_FOR_WORDS`, tip `AmountInWordsUnits`.
+
+### Changed
+
+- 🔴 **`serializeInvoice` her faturaya `#YAZIYLA:...#` notunu İLK not olarak yazar.**
+  Tüketicinin `notes` dizisi sırasını koruyarak arkadan gelir.
+- 🔴 **Tüketicinin elle yazdığı yazıyla-notları artık serileştirmede ATILIR.**
+  `notes` içinde `^\s*#?\s*YAZ[Iı]YLA\s*:` desenine uyan girdiler yazılmaz. Aksi halde
+  belgede birbiriyle çelişen iki "yazıyla" notu bulunabilirdi; v3.0.0'da bu notun tek
+  kaynağı kütüphanedir. Girdi nesnesi (`InvoiceInput.notes`) değiştirilmez — eleme yalnız
+  serileştirme anındadır.
+- **Altın çıktılar yeniden üretildi.** `examples/` (38) + `examples-matrix/` (123) = 161
+  dosyanın **150'sinde tek fark eklenen `<cbc:Note>#YAZIYLA:...#</cbc:Note>` satırıdır**;
+  değişmeyen 11 dosya irsaliyedir. İki dosyada (`examples/02`, `examples/03`) ek olarak elle
+  yazılmış eski `YAZIYLA: ...` notu kaldırıldı — yerini hesaplanan not aldı. Başka hiçbir
+  alan kaymadı.
+- `__tests__/integration/line-item-fields.test.ts`: satır notu iddiaları artık tüm XML'i
+  değil yalnız `cac:InvoiceLine` bloğunu tarar (belge seviyesinde artık her zaman bir
+  `cbc:Note` vardır).
+
+### Notlar
+
+- **Sahadaki GİB/Mimsoft varyantından farkı:** depodaki gerçek fatura örneklerinde
+  (`xmls/sgk.xml`, `__tests__/fixtures/mimsoft-real-invoices/*.xml`) not
+  `YAZIYLA:#BİR TÜRK LIRASI⏎ YİRMİ KURUŞ#` biçimindedir — `#` iki nokta üst üsteden
+  **sonra**, birim `TÜRK LIRASI`, kuruş **yazıyla** ve araya satır sonu girer. v3.0.0 bunun
+  yerine talep edilen `#YAZIYLA:... LİRA 20 KURUŞ#` biçimini uygular (tek satır, `#`
+  başta, kuruş rakamla). Farklı bir biçim gerekirse davranış tek noktadan
+  (`utils/amount-in-words.ts`) değiştirilebilir.
+- **Şema uyumu:** `cbc:Note` UBL 2.1'de `TextType`'tır (`xsd:string`); UBL-TR XSD'sinde
+  uzunluk kısıtı, UBL-TR Şematron'unda (`UBL-TR_Main/Common_Schematron.xml`) `cbc:Note`
+  kuralı **yoktur**. Üretilen not tipik olarak < 100 karakterdir (teorik en uzun hâli
+  ~150 karakter). Kısıt riski yok.
+- Not içeriği XML-özel karakter üretmez; yine de mevcut `escapeXml` yolundan geçer.
+
+### Tests
+
++94 test (1812 → 1906, 91 dosya). Türkçe sayı okumanın tuzaklarının **her biri ayrı test**:
+`1`↔`100`↔`1000` (`BİR YÜZ`/`BİR BİN` yasağı), `1.000.000` → `BİR MİLYON` (bin'den farklı),
+`101`/`1001`/`1100`/`11000`, sıfırlı grupların atlanması, basamak adları
+(`BİN/MİLYON/MİLYAR/TRİLYON/KATRİLYON`), sıfır, negatif, ondalık/NaN/aralık dışı,
+Türkçe büyük harf doğruluğu (noktalı `İ` / noktasız `I`), kesir hanesi kararı, kuruş sıfır
+kararı, bilinmeyen kur kararı, `PayableAmount` ile yuvarlama tutarlılığı (`1,999` → `İKİ LİRA
+00 KURUŞ`, `999,995` → `BİN LİRA 00 KURUŞ`), notun ilk sırada olması, çelişen notun elenmesi
+ve XSD sırasının korunması. Gerçek Mimsoft faturalarındaki tutarlar (`14550`, `13200`,
+`17220`) regresyon çıpası olarak kilitlendi.
+
 ## [2.3.1] — 2026-08-01
 
 **İki hata düzeltmesi; ikisi de belgeye/akışa gerçek olmayan bir sonuç veriyordu.**
