@@ -19,6 +19,12 @@
   <cbc:Note>YAZIYLA:#YÜZ YİRMİ TÜRK LIRASI#</cbc:Note>
   <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
   <cbc:LineCountNumeric>1</cbc:LineCountNumeric>
+  <cac:InvoicePeriod>
+    <cbc:StartDate>2026-04-01</cbc:StartDate>
+    <cbc:StartTime>00:00:00</cbc:StartTime>
+    <cbc:EndDate>2026-04-24</cbc:EndDate>
+    <cbc:EndTime>18:30:00</cbc:EndTime>
+  </cac:InvoicePeriod>
   <cac:AccountingSupplierParty>
     <cac:Party>
       <cac:PartyIdentification>
@@ -46,6 +52,9 @@
     <cac:Party>
       <cac:PartyIdentification>
         <cbc:ID schemeID="VKN">9876543210</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="PLAKA">06ANK042</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
         <cbc:Name>Matrix Test Alıcı Ltd.</cbc:Name>
@@ -106,6 +115,9 @@
     </cac:TaxTotal>
     <cac:Item>
       <cbc:Name>EV AC şarj anlık</cbc:Name>
+      <cac:ItemInstance>
+        <cbc:SerialID>ESU-SN-000420</cbc:SerialID>
+      </cac:ItemInstance>
     </cac:Item>
     <cac:Price>
       <cbc:PriceAmount currencyID="TRY">5.00</cbc:PriceAmount>

@@ -22,7 +22,22 @@ export const input: SimpleInvoiceInput = {
     address: 'Bağdat Cad. No:100',
     district: 'Kadıköy',
     city: 'İstanbul',
+    // Sprint 9 — EnerjiPartyIdentificationPlakaCheck: TAM 1 adet PLAKA zorunlu
+    identifications: [{ schemeId: 'PLAKA', value: '34ABC123' }],
   },
+  // Sprint 9 — EnerjiInvoicePeriodCheck: 4 alan dolu, tarih >= 2005-01-01
+  invoicePeriod: {
+    startDate: '2026-04-01',
+    startTime: '00:00:00',
+    endDate: '2026-04-24',
+    endTime: '10:00:00',
+  },
+  // Sprint 9 — EnerjiESURaporIDCheck (yalnız SARJ)
+  additionalDocuments: [{
+    id: 'a1b2c3d4-e5f6-4789-8abc-def012345678',
+    schemeId: 'ESURaporID',
+    issueDate: '2026-04-24',
+  }],
   lines: [
     {
       name: 'EV DC Hızlı Şarj 45 kWh',

@@ -1,0 +1,16 @@
+{
+  "id": "enerji-invoice-period-required-sarj-invoice-period-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "ENERJI_INVOICE_PERIOD_REQUIRED",
+  "errorCodes": [
+    "ENERJI_INVOICE_PERIOD_REQUIRED"
+  ],
+  "description": "SARJ faturasında InvoicePeriod hiç yok (EnerjiInvoicePeriodCheck)",
+  "profileContext": "ENERJI",
+  "typeContext": "SARJ",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-08-24T15:10:03.985Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

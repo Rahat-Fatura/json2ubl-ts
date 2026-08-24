@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "ENERJI_ITEM_SERIAL_ID_REQUIRED",
+      "path": "lines[0].item.itemInstances",
+      "message": "SARJANLIK faturalarında her kalemde cac:Item/cac:ItemInstance/cbc:SerialID bulunmalı ve boş olmamalıdır"
+    }
+  ]
+}

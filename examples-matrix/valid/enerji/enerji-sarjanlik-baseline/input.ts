@@ -22,7 +22,18 @@ export const input: SimpleInvoiceInput = {
     address: 'Bağdat Cad. No:100',
     district: 'Kadıköy',
     city: 'İstanbul',
+    // Sprint 9 — EnerjiPartyIdentificationPlakaCheck: TAM 1 adet PLAKA zorunlu
+    identifications: [{ schemeId: 'PLAKA', value: '06ANK042' }],
   },
+  // Sprint 9 — EnerjiInvoicePeriodCheck
+  invoicePeriod: {
+    startDate: '2026-04-01',
+    startTime: '00:00:00',
+    endDate: '2026-04-24',
+    endTime: '18:30:00',
+  },
+  // NOT: EnerjiESURaporIDCheck yalnız SARJ tipine uygulanır — SARJANLIK'ta
+  // ESURaporID referansı ZORUNLU DEĞİLDİR (bilinçli olarak eklenmedi).
   lines: [
     {
       name: 'EV AC şarj anlık',
@@ -30,6 +41,9 @@ export const input: SimpleInvoiceInput = {
       price: 5,
       unitCode: 'KWH',
       kdvPercent: 20,
+      // Sprint 9 — EnerjiItemInstanceSerialIDCheck: SARJANLIK'ta HER satırda
+      // Item/ItemInstance/SerialID dolu olmalı.
+      serialId: 'ESU-SN-000420',
     },
   ],
 };

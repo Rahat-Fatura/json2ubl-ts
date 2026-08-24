@@ -1,13 +1,13 @@
 {
-  "id": "MTX2026000000066",
-  "uuid": "a1000066-0001-4000-8001-000000000066",
+  "id": "MTX2026000000322",
+  "uuid": "b1000322-0001-4000-8001-000000000322",
   "datetime": "2026-04-24T10:00:00",
   "profile": "ENERJI",
-  "type": "SARJANLIK",
+  "type": "SARJ",
   "currencyCode": "TRY",
   "sender": {
     "taxNumber": "1234567890",
-    "name": "Matrix Şarj Operatörü A.Ş.",
+    "name": "Matrix Test Satıcı A.Ş.",
     "taxOffice": "Beşiktaş",
     "address": "Levent Mah. No:42",
     "district": "Beşiktaş",
@@ -23,24 +23,23 @@
     "identifications": [
       {
         "schemeId": "PLAKA",
-        "value": "06ANK042"
+        "value": "34ABC123"
       }
     ]
   },
+  "lines": [
+    {
+      "name": "DC şarj",
+      "quantity": 45,
+      "price": 8,
+      "unitCode": "KWH",
+      "kdvPercent": 20
+    }
+  ],
   "invoicePeriod": {
     "startDate": "2026-04-01",
     "startTime": "00:00:00",
     "endDate": "2026-04-24",
-    "endTime": "18:30:00"
-  },
-  "lines": [
-    {
-      "name": "EV AC şarj anlık",
-      "quantity": 20,
-      "price": 5,
-      "unitCode": "KWH",
-      "kdvPercent": 20,
-      "serialId": "ESU-SN-000420"
-    }
-  ]
+    "endTime": "10:00:00"
+  }
 }

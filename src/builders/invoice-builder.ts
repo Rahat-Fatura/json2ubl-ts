@@ -6,6 +6,7 @@ import { validateCommon } from '../validators/common-validators';
 import { validateByType } from '../validators/type-validators';
 import { validateByProfile } from '../validators/profile-validators';
 import { validateCrossMatrix } from '../validators/cross-validators';
+import { validateEnerji } from '../validators/enerji-validator';
 import { detectReducedKdvRate } from '../validators/reduced-kdv-detector';
 import { serializeInvoice } from '../serializers/invoice-serializer';
 
@@ -78,6 +79,10 @@ export class InvoiceBuilder {
     // hatası tespiti için her modda tetiklenir. İleri tip/profil detay kontrolü
     // (validateByType + validateByProfile) strict'te kalır.
     errors.push(...validateCrossMatrix(input));
+
+    // §5 Enerji/Şarj zorunlulukları (Sprint 9, Schematron 20260701) — basic+strict.
+    // crossMatrix ile aynı gerekçe: GİB kapıda REDDEDİYOR, geç yakalanması pahalı.
+    errors.push(...validateEnerji(input));
 
     if (level === 'strict') {
       // §2 Tip-bazlı validasyon

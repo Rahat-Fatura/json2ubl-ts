@@ -413,6 +413,28 @@ export const FOREIGN_LICENSE_PLATE_REGEX = /^[A-Z0-9_-]+$/;
  */
 export const SEVKIYAT_NO_REGEX = /^(SE|ES)-\d{7}$/;
 
+// ─── Enerji / Şarj (Sprint 9, Schematron 20260701) ──────────────────────────
+
+/**
+ * Enerji/Şarj müşteri plaka formatı — `EnerjiPartyIdentificationPlakaCheck`.
+ *
+ * ⚠️ `TR_LICENSE_PLATE_REGEX`'ten FARKLI: burada il kodu (01-81) kuralı YOKTUR.
+ * İki regex bilinçli olarak ayrı tutulmuştur; Schematron da ayrı tanımlar.
+ */
+export const ENERJI_PLATE_REGEX = /^[A-Z0-9_-]+$/;
+
+/** Enerji/Şarj müşteri plaka azami uzunluğu — Schematron `string-length(...) <= 50` */
+export const ENERJI_PLATE_MAX_LENGTH = 50;
+
+/** Enerji/Şarj InvoicePeriod asgari tarihi — Schematron `xs:date('2005-01-01+04:00')` */
+export const ENERJI_PERIOD_MIN_DATE = '2005-01-01';
+
+/** ESU rapor referansının schemeID değeri — `EnerjiESURaporIDCheck` */
+export const ESU_RAPOR_ID_SCHEME_ID = 'ESURaporID';
+
+/** ESU rapor IssueDate formatı — Schematron `^20\d{2}-\d{2}-\d{2}$` (20xx zorunlu) */
+export const ESU_RAPOR_ISSUE_DATE_REGEX = /^20\d{2}-\d{2}-\d{2}$/;
+
 /** ETIKETNO formatı: 2 harf + 7 rakam */
 export const ETIKET_NO_REGEX = /^[A-Z]{2}\d{7}$/;
 

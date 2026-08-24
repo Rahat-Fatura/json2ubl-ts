@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "ENERJI_ESU_RAPOR_ID_REQUIRED",
+      "path": "additionalDocuments",
+      "message": "SARJ faturalarında schemeID=\"ESURaporID\" olan, GUID formatında cbc:ID ve YYYY-MM-DD formatında cbc:IssueDate taşıyan en az bir cac:AdditionalDocumentReference zorunludur"
+    }
+  ]
+}

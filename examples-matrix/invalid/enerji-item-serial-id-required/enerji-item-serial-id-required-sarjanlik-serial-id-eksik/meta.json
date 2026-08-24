@@ -1,0 +1,16 @@
+{
+  "id": "enerji-item-serial-id-required-sarjanlik-serial-id-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "ENERJI_ITEM_SERIAL_ID_REQUIRED",
+  "errorCodes": [
+    "ENERJI_ITEM_SERIAL_ID_REQUIRED"
+  ],
+  "description": "SARJANLIK faturasında kalemde ItemInstance/SerialID yok (EnerjiItemInstanceSerialIDCheck)",
+  "profileContext": "ENERJI",
+  "typeContext": "SARJANLIK",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-08-24T15:10:03.986Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

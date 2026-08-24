@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "code": "ENERJI_INVOICE_PERIOD_REQUIRED",
+      "path": "invoicePeriod.startTime"
+    },
+    {
+      "code": "ENERJI_INVOICE_PERIOD_REQUIRED",
+      "path": "invoicePeriod.endTime"
+    }
+  ]
+}

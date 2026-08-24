@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "ENERJI_INVOICE_PERIOD_REQUIRED",
+      "path": "invoicePeriod",
+      "message": "SARJ faturalarında cac:InvoicePeriod zorunludur (StartDate, StartTime, EndDate, EndTime dolu olmalı)"
+    }
+  ]
+}

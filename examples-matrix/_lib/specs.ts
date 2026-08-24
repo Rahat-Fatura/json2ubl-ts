@@ -4417,6 +4417,100 @@ export const invalidSpecs: InvalidSpec[] = [
       }],
     },
   },
+
+  // ═════════════════════════════════════════════════════════════════════
+  // Sprint 9 — Enerji/Şarj 4 yeni Schematron kuralı (20260701)
+  // ═════════════════════════════════════════════════════════════════════
+
+  {
+    kind: 'invalid-invoice', variantSlug: 'sarj-invoice-period-eksik',
+    primaryCode: 'ENERJI_INVOICE_PERIOD_REQUIRED',
+    description: 'SARJ faturasında InvoicePeriod hiç yok (EnerjiInvoicePeriodCheck)',
+    profileContext: 'ENERJI', typeContext: 'SARJ',
+    expectedErrors: [{ code: 'ENERJI_INVOICE_PERIOD_REQUIRED', path: 'invoicePeriod' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000320', 'b1000320-0001-4000-8001-000000000320'),
+      profile: 'ENERJI', type: 'SARJ',
+      customer: { ...STANDARD_CUSTOMER, identifications: [{ schemeId: 'PLAKA', value: '34ABC123' }] },
+      additionalDocuments: [{ id: 'a1b2c3d4-e5f6-4789-8abc-def012345678',
+        schemeId: 'ESURaporID', issueDate: '2026-04-24' }],
+      lines: [{ name: 'DC şarj', quantity: 45, price: 8, unitCode: 'KWH', kdvPercent: 20 }],
+    },
+  },
+
+  {
+    kind: 'invalid-invoice', variantSlug: 'sarj-invoice-period-saat-eksik',
+    primaryCode: 'ENERJI_INVOICE_PERIOD_REQUIRED',
+    description: 'SARJ faturasında InvoicePeriod var ama StartTime/EndTime yok',
+    profileContext: 'ENERJI', typeContext: 'SARJ',
+    expectedErrors: [
+      { code: 'ENERJI_INVOICE_PERIOD_REQUIRED', path: 'invoicePeriod.startTime' },
+      { code: 'ENERJI_INVOICE_PERIOD_REQUIRED', path: 'invoicePeriod.endTime' },
+    ],
+    validationLevel: 'strict', isMultiError: true,
+    input: {
+      ...baseInvoiceInput('MTX2026000000321', 'b1000321-0001-4000-8001-000000000321'),
+      profile: 'ENERJI', type: 'SARJ',
+      customer: { ...STANDARD_CUSTOMER, identifications: [{ schemeId: 'PLAKA', value: '34ABC123' }] },
+      invoicePeriod: { startDate: '2026-04-01', endDate: '2026-04-24' },
+      additionalDocuments: [{ id: 'a1b2c3d4-e5f6-4789-8abc-def012345678',
+        schemeId: 'ESURaporID', issueDate: '2026-04-24' }],
+      lines: [{ name: 'DC şarj', quantity: 45, price: 8, unitCode: 'KWH', kdvPercent: 20 }],
+    },
+  },
+
+  {
+    kind: 'invalid-invoice', variantSlug: 'sarj-esu-rapor-id-eksik',
+    primaryCode: 'ENERJI_ESU_RAPOR_ID_REQUIRED',
+    description: 'SARJ faturasında ESURaporID referansı yok (EnerjiESURaporIDCheck)',
+    profileContext: 'ENERJI', typeContext: 'SARJ',
+    expectedErrors: [{ code: 'ENERJI_ESU_RAPOR_ID_REQUIRED', path: 'additionalDocuments' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000322', 'b1000322-0001-4000-8001-000000000322'),
+      profile: 'ENERJI', type: 'SARJ',
+      customer: { ...STANDARD_CUSTOMER, identifications: [{ schemeId: 'PLAKA', value: '34ABC123' }] },
+      invoicePeriod: { startDate: '2026-04-01', startTime: '00:00:00',
+        endDate: '2026-04-24', endTime: '10:00:00' },
+      lines: [{ name: 'DC şarj', quantity: 45, price: 8, unitCode: 'KWH', kdvPercent: 20 }],
+    },
+  },
+
+  {
+    kind: 'invalid-invoice', variantSlug: 'sarj-plaka-eksik',
+    primaryCode: 'ENERJI_CUSTOMER_PLAKA_REQUIRED',
+    description: 'SARJ faturasında alıcıda PLAKA kimliği yok (EnerjiPartyIdentificationPlakaCheck)',
+    profileContext: 'ENERJI', typeContext: 'SARJ',
+    expectedErrors: [{ code: 'ENERJI_CUSTOMER_PLAKA_REQUIRED', path: 'customer.additionalIdentifiers' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000323', 'b1000323-0001-4000-8001-000000000323'),
+      profile: 'ENERJI', type: 'SARJ',
+      invoicePeriod: { startDate: '2026-04-01', startTime: '00:00:00',
+        endDate: '2026-04-24', endTime: '10:00:00' },
+      additionalDocuments: [{ id: 'a1b2c3d4-e5f6-4789-8abc-def012345678',
+        schemeId: 'ESURaporID', issueDate: '2026-04-24' }],
+      lines: [{ name: 'DC şarj', quantity: 45, price: 8, unitCode: 'KWH', kdvPercent: 20 }],
+    },
+  },
+
+  {
+    kind: 'invalid-invoice', variantSlug: 'sarjanlik-serial-id-eksik',
+    primaryCode: 'ENERJI_ITEM_SERIAL_ID_REQUIRED',
+    description: 'SARJANLIK faturasında kalemde ItemInstance/SerialID yok (EnerjiItemInstanceSerialIDCheck)',
+    profileContext: 'ENERJI', typeContext: 'SARJANLIK',
+    expectedErrors: [{ code: 'ENERJI_ITEM_SERIAL_ID_REQUIRED', path: 'lines[0].item.itemInstances' }],
+    validationLevel: 'strict', isMultiError: false,
+    input: {
+      ...baseInvoiceInput('MTX2026000000324', 'b1000324-0001-4000-8001-000000000324'),
+      profile: 'ENERJI', type: 'SARJANLIK',
+      customer: { ...STANDARD_CUSTOMER, identifications: [{ schemeId: 'PLAKA', value: '06ANK042' }] },
+      invoicePeriod: { startDate: '2026-04-01', startTime: '00:00:00',
+        endDate: '2026-04-24', endTime: '18:30:00' },
+      lines: [{ name: 'AC şarj anlık', quantity: 20, price: 5, unitCode: 'KWH', kdvPercent: 20 }],
+    },
+  },
 ];
 
 export const allSpecs: Array<ValidSpec | InvalidSpec> = [

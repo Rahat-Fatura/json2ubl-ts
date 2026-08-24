@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "ENERJI_CUSTOMER_PLAKA_REQUIRED",
+      "path": "customer.additionalIdentifiers",
+      "message": "SARJ faturalarında alıcıda schemeID=\"PLAKA\" olan tam 1 adet PartyIdentification bulunmalıdır"
+    }
+  ]
+}

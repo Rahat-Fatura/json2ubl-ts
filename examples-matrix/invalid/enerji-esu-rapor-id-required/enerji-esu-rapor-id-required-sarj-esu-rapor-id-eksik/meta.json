@@ -1,0 +1,16 @@
+{
+  "id": "enerji-esu-rapor-id-required-sarj-esu-rapor-id-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "ENERJI_ESU_RAPOR_ID_REQUIRED",
+  "errorCodes": [
+    "ENERJI_ESU_RAPOR_ID_REQUIRED"
+  ],
+  "description": "SARJ faturasında ESURaporID referansı yok (EnerjiESURaporIDCheck)",
+  "profileContext": "ENERJI",
+  "typeContext": "SARJ",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-08-24T15:10:03.985Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

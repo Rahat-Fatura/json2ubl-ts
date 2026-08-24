@@ -19,6 +19,20 @@
   <cbc:Note>YAZIYLA:#ALTI YÜZ YETMİŞ BEŞ TÜRK LIRASI#</cbc:Note>
   <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
   <cbc:LineCountNumeric>3</cbc:LineCountNumeric>
+  <cac:InvoicePeriod>
+    <cbc:StartDate>2026-04-01</cbc:StartDate>
+    <cbc:StartTime>00:00:00</cbc:StartTime>
+    <cbc:EndDate>2026-04-24</cbc:EndDate>
+    <cbc:EndTime>23:59:59</cbc:EndTime>
+  </cac:InvoicePeriod>
+  <cac:AdditionalDocumentReference>
+    <cbc:ID schemeID="ESURaporID">b2c3d4e5-f6a7-4890-9bcd-ef0123456789</cbc:ID>
+    <cbc:IssueDate>2026-04-24</cbc:IssueDate>
+  </cac:AdditionalDocumentReference>
+  <cac:AdditionalDocumentReference>
+    <cbc:ID schemeID="ESURaporID">c3d4e5f6-a7b8-4901-8cde-f01234567890</cbc:ID>
+    <cbc:IssueDate>2026-04-23</cbc:IssueDate>
+  </cac:AdditionalDocumentReference>
   <cac:AccountingSupplierParty>
     <cac:Party>
       <cac:PartyIdentification>
@@ -46,6 +60,9 @@
     <cac:Party>
       <cac:PartyIdentification>
         <cbc:ID schemeID="VKN">9876543210</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="PLAKA">34XYZ789</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
         <cbc:Name>Matrix Test Alıcı Ltd.</cbc:Name>

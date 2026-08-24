@@ -6,11 +6,11 @@ Sprint 8e (Publish Öncesi Kapsam Doğrulama) + Sprint 8f (Bug hotfix + kapsam g
 
 ## 📊 Özet (Dashboard)
 
-- **15 profil** × **20 tip** — PROFILE_TYPE_MATRIX'te **68 kombinasyon** tanımlı
+- **15 profil** × **20 tip** — PROFILE_TYPE_MATRIX'te **69 kombinasyon** tanımlı
 - **123 valid senaryo** (116 invoice + 7 despatch)
-- **41 invalid senaryo** — 15 farklı error code kapsıyor
-- **Coverage:** 68/68 kombinasyon (%100.0)
-- **Toplam:** 164 senaryo
+- **46 invalid senaryo** — 19 farklı error code kapsıyor
+- **Coverage:** 68/69 kombinasyon (%98.6)
+- **Toplam:** 169 senaryo
 
 ## Kullanım
 
@@ -46,7 +46,9 @@ npx tsx examples-matrix/find.ts --has-withholding --currency=USD
 
 ## Coverage Gap Report
 
-✅ **Tüm PROFILE_TYPE_MATRIX kombinasyonları kapsamlı.**
+⚠️ **1 kombinasyon kapsamsız** (PROFILE_TYPE_MATRIX'te izinli ama senaryo yok):
+
+- KAMU × IADE
 
 ## Kod Dağılımları
 
@@ -59,7 +61,11 @@ INVALID_FORMAT                            ████████████�
 INVALID_VALUE                             ███████████ 4
 TYPE_REQUIREMENT                          ███████████ 4
 YATIRIMTESVIK_REQUIRES_YTBNO              ████████ 3
+ENERJI_INVOICE_PERIOD_REQUIRED            █████ 2
 CROSS_MATRIX                              ███ 1
+ENERJI_CUSTOMER_PLAKA_REQUIRED            ███ 1
+ENERJI_ESU_RAPOR_ID_REQUIRED              ███ 1
+ENERJI_ITEM_SERIAL_ID_REQUIRED            ███ 1
 EXEMPTION_351_FORBIDDEN_FOR_NONZERO_KDV   ███ 1
 IHRACKAYITLI_702_REQUIRES_GTIP            ███ 1
 INVALID_PROFILE                           ███ 1
@@ -293,6 +299,31 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 | ID | Profil bağlamı | Tip bağlamı | Multi-error | Açıklama |
 |---|---|---|---|---|
 | [cross-matrix-cross-matrix-ihracat-satis](invalid/cross-matrix/cross-matrix-cross-matrix-ihracat-satis/) | IHRACAT | SATIS | Yes | IHRACAT profili + SATIS tipi (sadece ISTISNA izinli) |
+
+### ENERJI_CUSTOMER_PLAKA_REQUIRED (1)
+
+| ID | Profil bağlamı | Tip bağlamı | Multi-error | Açıklama |
+|---|---|---|---|---|
+| [enerji-customer-plaka-required-sarj-plaka-eksik](invalid/enerji-customer-plaka-required/enerji-customer-plaka-required-sarj-plaka-eksik/) | ENERJI | SARJ | No | SARJ faturasında alıcıda PLAKA kimliği yok (EnerjiPartyIdentificationPlakaCheck) |
+
+### ENERJI_ESU_RAPOR_ID_REQUIRED (1)
+
+| ID | Profil bağlamı | Tip bağlamı | Multi-error | Açıklama |
+|---|---|---|---|---|
+| [enerji-esu-rapor-id-required-sarj-esu-rapor-id-eksik](invalid/enerji-esu-rapor-id-required/enerji-esu-rapor-id-required-sarj-esu-rapor-id-eksik/) | ENERJI | SARJ | No | SARJ faturasında ESURaporID referansı yok (EnerjiESURaporIDCheck) |
+
+### ENERJI_INVOICE_PERIOD_REQUIRED (2)
+
+| ID | Profil bağlamı | Tip bağlamı | Multi-error | Açıklama |
+|---|---|---|---|---|
+| [enerji-invoice-period-required-sarj-invoice-period-eksik](invalid/enerji-invoice-period-required/enerji-invoice-period-required-sarj-invoice-period-eksik/) | ENERJI | SARJ | No | SARJ faturasında InvoicePeriod hiç yok (EnerjiInvoicePeriodCheck) |
+| [enerji-invoice-period-required-sarj-invoice-period-saat-eksik](invalid/enerji-invoice-period-required/enerji-invoice-period-required-sarj-invoice-period-saat-eksik/) | ENERJI | SARJ | Yes | SARJ faturasında InvoicePeriod var ama StartTime/EndTime yok |
+
+### ENERJI_ITEM_SERIAL_ID_REQUIRED (1)
+
+| ID | Profil bağlamı | Tip bağlamı | Multi-error | Açıklama |
+|---|---|---|---|---|
+| [enerji-item-serial-id-required-sarjanlik-serial-id-eksik](invalid/enerji-item-serial-id-required/enerji-item-serial-id-required-sarjanlik-serial-id-eksik/) | ENERJI | SARJANLIK | No | SARJANLIK faturasında kalemde ItemInstance/SerialID yok (EnerjiItemInstanceSerialIDCheck) |
 
 ### EXEMPTION_351_FORBIDDEN_FOR_NONZERO_KDV (1)
 

@@ -1,0 +1,8 @@
+{
+  "errors": [
+    {
+      "code": "ENERJI_CUSTOMER_PLAKA_REQUIRED",
+      "path": "customer.additionalIdentifiers"
+    }
+  ]
+}

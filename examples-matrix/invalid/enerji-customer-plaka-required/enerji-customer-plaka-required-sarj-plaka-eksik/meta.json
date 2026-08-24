@@ -1,0 +1,16 @@
+{
+  "id": "enerji-customer-plaka-required-sarj-plaka-eksik",
+  "kind": "invalid-invoice",
+  "primaryCode": "ENERJI_CUSTOMER_PLAKA_REQUIRED",
+  "errorCodes": [
+    "ENERJI_CUSTOMER_PLAKA_REQUIRED"
+  ],
+  "description": "SARJ faturasında alıcıda PLAKA kimliği yok (EnerjiPartyIdentificationPlakaCheck)",
+  "profileContext": "ENERJI",
+  "typeContext": "SARJ",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-08-24T15:10:03.986Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

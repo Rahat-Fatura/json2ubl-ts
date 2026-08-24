@@ -22,7 +22,30 @@ export const input: SimpleInvoiceInput = {
     address: 'Bağdat Cad. No:100',
     district: 'Kadıköy',
     city: 'İstanbul',
+    // Sprint 9 — EnerjiPartyIdentificationPlakaCheck: TAM 1 adet PLAKA zorunlu
+    identifications: [{ schemeId: 'PLAKA', value: '34XYZ789' }],
   },
+  // Sprint 9 — EnerjiInvoicePeriodCheck
+  invoicePeriod: {
+    startDate: '2026-04-01',
+    startTime: '00:00:00',
+    endDate: '2026-04-24',
+    endTime: '23:59:59',
+  },
+  // Sprint 9 — EnerjiESURaporIDCheck: e-Arşiv Paketi v1.1_8 ile esuRaporID 1..n
+  // oldu; bu senaryo çoklu rapor referansını örnekliyor.
+  additionalDocuments: [
+    {
+      id: 'b2c3d4e5-f6a7-4890-9bcd-ef0123456789',
+      schemeId: 'ESURaporID',
+      issueDate: '2026-04-24',
+    },
+    {
+      id: 'c3d4e5f6-a7b8-4901-8cde-f01234567890',
+      schemeId: 'ESURaporID',
+      issueDate: '2026-04-23',
+    },
+  ],
   lines: [
     {
       name: 'İstanbul İSG-001 DC şarj',

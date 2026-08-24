@@ -273,6 +273,8 @@ export function deriveFieldVisibility(type: string, profile: string, currencyCod
   const isTeknolojiDestek = type === 'TEKNOLOJIDESTEK';
   const isYolcuBeraber = profile === 'YOLCUBERABERFATURA';
   const isIdis = profile === 'IDIS';
+  /** Sprint 9 — Enerji/Şarj: EnerjiInvoicePeriodCheck InvoicePeriod'u zorunlu kılar */
+  const isEnerjiSarj = type === 'SARJ' || type === 'SARJANLIK';
   const isForeign = currencyCode && currencyCode !== 'TRY';
 
   return {
@@ -288,7 +290,9 @@ export function deriveFieldVisibility(type: string, profile: string, currencyCod
     showExchangeRate: !!isForeign,
     showEArchiveInfo: isEarsiv,
     showOnlineSale: isEarsiv,
-    showInvoicePeriod: isSgk,
+    // Sprint 9: SARJ/SARJANLIK'ta EnerjiInvoicePeriodCheck InvoicePeriod'u ZORUNLU
+    // kılıyor — alan gizli kalırsa kullanıcı zorunlu veriyi giremez.
+    showInvoicePeriod: isSgk || isEnerjiSarj,
     showYatirimTesvikNo: isYatirimTesvik,
     showAdditionalItemIdentifications: isIlacTibbi || isTeknolojiDestek || isIdis,
     showCommodityClassification: isYatirimTesvik,

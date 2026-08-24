@@ -1,0 +1,8 @@
+{
+  "errors": [
+    {
+      "code": "ENERJI_INVOICE_PERIOD_REQUIRED",
+      "path": "invoicePeriod"
+    }
+  ]
+}
