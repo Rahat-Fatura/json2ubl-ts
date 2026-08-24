@@ -402,8 +402,14 @@ export const TR_LICENSE_PLATE_REGEX = /^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$/;
  */
 export const FOREIGN_LICENSE_PLATE_REGEX = /^[A-Z0-9_-]+$/;
 
-/** SEVKIYATNO formatı: SE-0000000 */
-export const SEVKIYAT_NO_REGEX = /^SE-\d{7}$/;
+/**
+ * SEVKIYATNO formatı: `SE-0000000` **veya** `ES-0000000`.
+ *
+ * Sprint 9 (Schematron 20260701, History.txt md.7 ve 9): `IdisSevkiyatNoCheck` ve
+ * `DespatchIdisSevkiyatNoCheck` artık `ES-` prefix'ini de kabul ediyor. Gevşetme —
+ * geriye dönük uyumlu.
+ */
+export const SEVKIYAT_NO_REGEX = /^(SE|ES)-\d{7}$/;
 
 /** ETIKETNO formatı: 2 harf + 7 rakam */
 export const ETIKET_NO_REGEX = /^[A-Z]{2}\d{7}$/;

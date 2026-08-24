@@ -352,7 +352,7 @@ function validateIdis(input: InvoiceInput): ValidationError[] {
       'IDIS profilinde satıcıda SEVKIYATNO zorunludur'));
   } else if (!SEVKIYAT_NO_REGEX.test(sevkiyatNo.value)) {
     errors.push(invalidFormat('supplier.additionalIdentifiers.SEVKIYATNO',
-      'SE-0000000 formatı (10 karakter)', sevkiyatNo.value));
+      'SE-0000000 veya ES-0000000 formatı (10 karakter)', sevkiyatNo.value));
   }
 
   // Her satırda ETIKETNO zorunlu

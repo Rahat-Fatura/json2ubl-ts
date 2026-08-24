@@ -240,7 +240,7 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
         'IDISIRSALIYE profilinde satıcıda SEVKIYATNO zorunludur'));
     } else if (!SEVKIYAT_NO_REGEX.test(sevkiyatNo.value)) {
       errors.push(invalidFormat('supplier.additionalIdentifiers.SEVKIYATNO',
-        'SE-0000000 formatı', sevkiyatNo.value));
+        'SE-0000000 veya ES-0000000 formatı', sevkiyatNo.value));
     }
 
     input.lines?.forEach((line, i) => {
