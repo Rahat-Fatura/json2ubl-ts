@@ -26,9 +26,11 @@ export const PROFILE_TYPE_MATRIX: Record<InvoiceProfileId, ReadonlySet<InvoiceTy
   [InvoiceProfileId.YOLCUBERABERFATURA]: new Set([InvoiceTypeCode.ISTISNA]),
   [InvoiceProfileId.OZELFATURA]: new Set([InvoiceTypeCode.ISTISNA]),
   [InvoiceProfileId.KAMU]: new Set([
-    InvoiceTypeCode.SATIS, InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE,
-    InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH, InvoiceTypeCode.IHRACKAYITLI,
-    InvoiceTypeCode.SGK, InvoiceTypeCode.KOMISYONCU, InvoiceTypeCode.KONAKLAMAVERGISI,
+    // Sprint 9: IADE, Schematron 20260701 `IADEInvioceCheck` ile KAMU profiline eklendi.
+    InvoiceTypeCode.SATIS, InvoiceTypeCode.IADE, InvoiceTypeCode.TEVKIFAT,
+    InvoiceTypeCode.TEVKIFATIADE, InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH,
+    InvoiceTypeCode.IHRACKAYITLI, InvoiceTypeCode.SGK, InvoiceTypeCode.KOMISYONCU,
+    InvoiceTypeCode.KONAKLAMAVERGISI,
   ]),
   [InvoiceProfileId.HKS]: new Set([
     InvoiceTypeCode.HKSSATIS, InvoiceTypeCode.HKSKOMISYONCU,
