@@ -6,6 +6,8 @@ import {
   POSTAL_ZONE_REGEX, SEVKIYAT_NO_REGEX, ETIKET_NO_REGEX,
   LICENSE_PLATE_SCHEME_IDS, TCKN_REGEX, VKN_REGEX,
   PARTY_IDENTIFICATION_SCHEME_IDS,
+  FOREIGN_LICENSE_PLATE_SCHEME_IDS,
+  TR_LICENSE_PLATE_REGEX, FOREIGN_LICENSE_PLATE_REGEX,
 } from '../config/constants';
 import { validateParty } from './common-validators';
 import { missingField, invalidFormat, invalidValue, profileRequirement } from './validation-result';
@@ -125,13 +127,40 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
       }
     });
 
-    // Plaka schemeID kontrolü
+    // Plaka schemeID + format kontrolü — LicensePlateIDSchemeIDCheck (Sprint 9)
     s.licensePlates?.forEach((lp, i) => {
       if (!LICENSE_PLATE_SCHEME_IDS.has(lp.schemeId)) {
         errors.push(invalidFormat(`shipment.licensePlates[${i}].schemeId`,
-          'PLAKA veya DORSE', lp.schemeId));
+          Array.from(LICENSE_PLATE_SCHEME_IDS).join('|'), lp.schemeId));
+        return; // schemeID geçersizse hangi format regex'i uygulanacağı belirsiz
+      }
+
+      const plate = lp.plateNumber?.trim() ?? '';
+      const isForeign = FOREIGN_LICENSE_PLATE_SCHEME_IDS.has(lp.schemeId);
+      const regex = isForeign ? FOREIGN_LICENSE_PLATE_REGEX : TR_LICENSE_PLATE_REGEX;
+
+      if (!regex.test(plate)) {
+        errors.push(invalidFormat(`shipment.licensePlates[${i}].plateNumber`,
+          isForeign
+            ? 'Yabancı plaka formatı (^[A-Z0-9_-]+$)'
+            : 'TR plaka formatı (il kodu 01-81 + büyük harf + rakam)',
+          lp.plateNumber));
       }
     });
+
+    // LicensePlateIDCheck (Sprint 9, Schematron 20260701) — irsaliyede plaka ZORUNLU
+    const hasUsablePlate = s.licensePlates?.some(
+      lp => LICENSE_PLATE_SCHEME_IDS.has(lp.schemeId) && isNonEmpty(lp.plateNumber?.trim()),
+    ) ?? false;
+    if (!hasUsablePlate) {
+      errors.push({
+        code: 'DESPATCH_LICENSE_PLATE_REQUIRED',
+        message: 'İrsaliyede en az bir plaka bilgisi (shipment.licensePlates) zorunludur',
+        path: 'shipment.licensePlates',
+        expected: 'geçerli schemeID ve boş olmayan plaka numarası ile en az 1 kayıt',
+        actual: `${s.licensePlates?.length ?? 0} kayıt`,
+      });
+    }
 
     // B-85: CarrierParty VKN/TCKN format + schemeID whitelist (CommonSchematron:505-509)
     if (s.carrierParty) {

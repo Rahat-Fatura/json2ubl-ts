@@ -41,6 +41,10 @@ function createValidDespatchInput(): DespatchInput {
         familyName: 'Kara',
         nationalityId: '12345678901',
       }],
+      // Sprint 9: LicensePlateIDCheck (Schematron 20260701) irsaliyede plakayı
+      // zorunlu kıldı. Bu dosyadaki testler yapı/sıra odaklı — geçerli baseline
+      // kurmak için plaka gerekiyor.
+      licensePlates: [{ plateNumber: '34ABC123', schemeId: 'PLAKA' }],
     },
     lines: [{
       id: '1',

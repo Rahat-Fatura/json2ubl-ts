@@ -106,12 +106,28 @@ export interface CarrierPartyInput {
   additionalIdentifiers?: PartyIdentifierInput[];
 }
 
+/**
+ * Plaka schemeID — Schematron `$LicensePlateIDSchemeIDType` (20260701, Sprint 9).
+ *
+ * `YABANCI*` varyantları TR plaka formatından muaftır (`^[A-Z0-9_-]+$`).
+ */
+export type LicensePlateSchemeId =
+  | 'PLAKA'
+  | 'DORSE'
+  | 'DORSEPLAKA'
+  | 'YABANCIPLAKA'
+  | 'YABANCIDORSE'
+  | 'YABANCIDORSEPLAKA';
+
 /** Plaka bilgisi */
 export interface LicensePlateInput {
-  /** Plaka numarası */
+  /**
+   * Plaka numarası. TR schemeID'lerinde `^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$`,
+   * `YABANCI*` schemeID'lerinde `^[A-Z0-9_-]+$` formatında olmalıdır.
+   */
   plateNumber: string;
-  /** PLAKA veya DORSE */
-  schemeId: 'PLAKA' | 'DORSE';
+  /** Schematron `$LicensePlateIDSchemeIDType` — 6 değer (Sprint 9'da 2'den genişledi) */
+  schemeId: LicensePlateSchemeId;
 }
 
 /** İrsaliye kalemi */

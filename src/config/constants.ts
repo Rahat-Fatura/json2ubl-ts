@@ -331,8 +331,21 @@ export const PAYMENT_MEANS_CODES = new Set([
   '1', '2', '3', '4', '5', '10', '20', '23', '30', '31', '42', '48', '49', '50', '51', '60', '61', '62', '97', 'ZZZ',
 ]);
 
-/** Plaka schemeID değerleri */
-export const LICENSE_PLATE_SCHEME_IDS = new Set(['PLAKA', 'DORSE']);
+/**
+ * Plaka schemeID değerleri — Schematron `$LicensePlateIDSchemeIDType`.
+ *
+ * Sprint 9 (Schematron 20260701): 2 → 6 değer. Yabancı plakalar için ayrı
+ * `YABANCI*` varyantları eklendi.
+ */
+export const LICENSE_PLATE_SCHEME_IDS = new Set([
+  'PLAKA', 'DORSE', 'DORSEPLAKA',
+  'YABANCIPLAKA', 'YABANCIDORSE', 'YABANCIDORSEPLAKA',
+]);
+
+/** Yabancı plaka schemeID'leri — TR format kontrolünden muaf, ayrı regex'e tabi */
+export const FOREIGN_LICENSE_PLATE_SCHEME_IDS = new Set([
+  'YABANCIPLAKA', 'YABANCIDORSE', 'YABANCIDORSEPLAKA',
+]);
 
 /** Muhasebe maliyet kodları */
 export const ACCOUNTING_COST_CODES = new Set([
@@ -370,6 +383,24 @@ export const TCKN_REGEX = /^\d{11}$/;
 
 /** VKN formatı: 10 hane numeric */
 export const VKN_REGEX = /^\d{10}$/;
+
+/**
+ * TR plaka formatı — Schematron `LicensePlateIDSchemeIDCheck` (20260701, Sprint 9).
+ *
+ * `^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$` — il kodu 01-81, ardından en az bir
+ * büyük harf ve en az bir rakam. `PLAKA`, `DORSE`, `DORSEPLAKA` schemeID'lerine uygulanır.
+ *
+ * NOT: Enerji/Şarj faturalarındaki müşteri PLAKA kimliği bu regex'e **tabi değildir**
+ * — orada Schematron `^[A-Z0-9_-]+$` kullanıyor (`ENERJI_PLATE_REGEX`).
+ */
+export const TR_LICENSE_PLATE_REGEX = /^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$/;
+
+/**
+ * Yabancı plaka formatı — Schematron `LicensePlateIDSchemeIDCheck` (20260701, Sprint 9).
+ *
+ * `YABANCIPLAKA`, `YABANCIDORSE`, `YABANCIDORSEPLAKA` schemeID'lerine uygulanır.
+ */
+export const FOREIGN_LICENSE_PLATE_REGEX = /^[A-Z0-9_-]+$/;
 
 /** SEVKIYATNO formatı: SE-0000000 */
 export const SEVKIYAT_NO_REGEX = /^SE-\d{7}$/;
