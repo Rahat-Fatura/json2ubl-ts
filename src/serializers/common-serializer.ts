@@ -27,7 +27,9 @@ export function serializeAllowanceCharge(ac: AllowanceChargeInput, currencyCode:
 export function serializePeriod(period: PeriodInput, indent: string = ''): string {
   const inner = emitInOrder(PERIOD_SEQ, {
     StartDate: () => cbcOptionalTag('StartDate', period.startDate),
+    StartTime: () => cbcOptionalTag('StartTime', period.startTime),
     EndDate: () => cbcOptionalTag('EndDate', period.endDate),
+    EndTime: () => cbcOptionalTag('EndTime', period.endTime),
     Description: () => cbcOptionalTag('Description', period.description),
   });
   if (inner.length === 0) return '';

@@ -107,7 +107,9 @@ export function serializeAdditionalDocument(doc: AdditionalDocumentInput, indent
   };
 
   const inner = emitInOrder(DOCUMENT_REFERENCE_SEQ, {
-    ID: () => cbcRequiredTag('ID', doc.id, 'AdditionalDocumentReference'),
+    // Sprint 9: schemeID — SARJ faturalarında ESURaporID taşıyıcısı
+    ID: () => cbcRequiredTag('ID', doc.id, 'AdditionalDocumentReference',
+      isNonEmpty(doc.schemeId) ? { schemeID: doc.schemeId! } : undefined),
     IssueDate: () => cbcOptionalTag('IssueDate', doc.issueDate),
     DocumentTypeCode: () => cbcOptionalTag('DocumentTypeCode', doc.documentTypeCode),
     DocumentType: () => cbcOptionalTag('DocumentType', doc.documentType),

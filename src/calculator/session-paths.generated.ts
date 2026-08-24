@@ -487,6 +487,12 @@ export const SessionPaths = {
   additionalDocumentId: (i: number) => `additionalDocuments[${i}].id` as `additionalDocuments[${number}].id`,
 
   /**
+   * `cbc:ID/@schemeID` — Sprint 9. SARJ faturalarında `ESURaporID` değeri zorunlu (`EnerjiESURaporIDCheck`).
+   * Expected type: string | undefined
+   */
+  additionalDocumentSchemeId: (i: number) => `additionalDocuments[${i}].schemeId` as `additionalDocuments[${number}].schemeId`,
+
+  /**
    * Belge tarihi
    * Expected type: string | undefined
    */
@@ -754,10 +760,22 @@ export const SessionPaths = {
   invoicePeriodStartDate: 'invoicePeriod.startDate',
 
   /**
+   * Dönem başlangıç saati (HH:mm:ss) — Sprint 9. SARJ/SARJANLIK faturalarında zorunlu (`EnerjiInvoicePeriodCheck`).
+   * Expected type: string | undefined
+   */
+  invoicePeriodStartTime: 'invoicePeriod.startTime',
+
+  /**
    * Dönem bitiş tarihi (ISO format)
    * Expected type: string
    */
   invoicePeriodEndDate: 'invoicePeriod.endDate',
+
+  /**
+   * Dönem bitiş saati (HH:mm:ss) — Sprint 9. SARJ/SARJANLIK faturalarında zorunlu (`EnerjiInvoicePeriodCheck`).
+   * Expected type: string | undefined
+   */
+  invoicePeriodEndTime: 'invoicePeriod.endTime',
 
   /**
    * Yatırım Teşvik Belgesi numarası (6 haneli numerik) — YATIRIMTESVIK profili için zorunlu
@@ -863,6 +881,7 @@ export interface SessionPathMap {
   'despatchReferences[${number}].id': string;
   'despatchReferences[${number}].issueDate': string;
   'additionalDocuments[${number}].id': string;
+  'additionalDocuments[${number}].schemeId': string | undefined;
   'additionalDocuments[${number}].issueDate': string | undefined;
   'additionalDocuments[${number}].documentTypeCode': string | undefined;
   'additionalDocuments[${number}].documentType': string | undefined;
@@ -911,7 +930,9 @@ export interface SessionPathMap {
   'onlineSale.deliveryDate': string | undefined;
   'eArchiveInfo.sendType': "ELEKTRONIK" | "KAGIT";
   'invoicePeriod.startDate': string;
+  'invoicePeriod.startTime': string | undefined;
   'invoicePeriod.endDate': string;
+  'invoicePeriod.endTime': string | undefined;
   'ytbNo': string | undefined;
   'ytbIssueDate': string | undefined;
   'xsltTemplate': string | undefined;
@@ -929,6 +950,7 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'additionalDocuments[*].documentTypeCode',
   'additionalDocuments[*].id',
   'additionalDocuments[*].issueDate',
+  'additionalDocuments[*].schemeId',
   'billingReference.documentTypeCode',
   'billingReference.id',
   'billingReference.issueDate',
@@ -967,7 +989,9 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'exchangeRate',
   'id',
   'invoicePeriod.endDate',
+  'invoicePeriod.endTime',
   'invoicePeriod.startDate',
+  'invoicePeriod.startTime',
   'kdvExemptionCode',
   'liability',
   'lines[*].additionalItemIdentifications[*].schemeId',
@@ -1148,6 +1172,7 @@ export interface InvoiceSessionUpdateOverloads {
   update(path: `despatchReferences[${number}].id`, value: string): void;
   update(path: `despatchReferences[${number}].issueDate`, value: string): void;
   update(path: `additionalDocuments[${number}].id`, value: string): void;
+  update(path: `additionalDocuments[${number}].schemeId`, value: string | undefined): void;
   update(path: `additionalDocuments[${number}].issueDate`, value: string | undefined): void;
   update(path: `additionalDocuments[${number}].documentTypeCode`, value: string | undefined): void;
   update(path: `additionalDocuments[${number}].documentType`, value: string | undefined): void;
@@ -1196,7 +1221,9 @@ export interface InvoiceSessionUpdateOverloads {
   update(path: 'onlineSale.deliveryDate', value: string | undefined): void;
   update(path: 'eArchiveInfo.sendType', value: "ELEKTRONIK" | "KAGIT"): void;
   update(path: 'invoicePeriod.startDate', value: string): void;
+  update(path: 'invoicePeriod.startTime', value: string | undefined): void;
   update(path: 'invoicePeriod.endDate', value: string): void;
+  update(path: 'invoicePeriod.endTime', value: string | undefined): void;
   update(path: 'ytbNo', value: string | undefined): void;
   update(path: 'ytbIssueDate', value: string | undefined): void;
   update(path: 'xsltTemplate', value: string | undefined): void;

@@ -701,6 +701,7 @@ function buildAdditionalDocuments(
     for (const doc of simple.additionalDocuments) {
       const mapped: AdditionalDocumentInput = {
         id: doc.id,
+        schemeId: doc.schemeId,
         issueDate: doc.issueDate,
         documentTypeCode: doc.documentTypeCode,
         documentType: doc.documentType,
@@ -814,6 +815,8 @@ function buildContractReference(simple: SimpleInvoiceInput): ContractReferenceIn
 function buildPeriod(simple: SimpleInvoiceInput): PeriodInput {
   return {
     startDate: simple.invoicePeriod!.startDate,
+    startTime: simple.invoicePeriod!.startTime,
     endDate: simple.invoicePeriod!.endDate,
+    endTime: simple.invoicePeriod!.endTime,
   };
 }

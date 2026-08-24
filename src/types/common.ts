@@ -254,6 +254,11 @@ export interface ContractReferenceInput {
 /** AdditionalDocumentReference — XSLT vb. ek belgeler */
 export interface AdditionalDocumentInput {
   id: string;
+  /**
+   * `cbc:ID/@schemeID` (Sprint 9). SARJ faturalarında `EnerjiESURaporIDCheck`
+   * `schemeID="ESURaporID"` taşıyan en az bir referans zorunlu kılar.
+   */
+  schemeId?: string;
   issueDate?: string;
   documentTypeCode?: string;
   documentType?: string;
@@ -419,10 +424,22 @@ export interface FinancialAccountInput {
   paymentNote?: string;
 }
 
-/** Dönem bilgisi */
+/**
+ * Dönem bilgisi — `cac:InvoicePeriod`. Sıra: `PERIOD_SEQ`.
+ *
+ * `startTime`/`endTime` Sprint 9'da eklendi. Enerji/Şarj faturalarında
+ * (SARJ/SARJANLIK) `EnerjiInvoicePeriodCheck` dördünü de zorunlu kılar; diğer
+ * profillerde opsiyoneldir (XSD hepsinde izin verir).
+ */
 export interface PeriodInput {
+  /** `cbc:StartDate` — YYYY-MM-DD */
   startDate?: string;
+  /** `cbc:StartTime` — HH:mm:ss (Sprint 9) */
+  startTime?: string;
+  /** `cbc:EndDate` — YYYY-MM-DD */
   endDate?: string;
+  /** `cbc:EndTime` — HH:mm:ss (Sprint 9) */
+  endTime?: string;
   description?: string;
 }
 

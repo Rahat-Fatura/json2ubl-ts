@@ -263,6 +263,11 @@ export interface SimpleDespatchReferenceInput {
 export interface SimpleAdditionalDocumentInput {
     /** Belge ID */
     id: string;
+    /**
+     * `cbc:ID/@schemeID` — Sprint 9.
+     * SARJ faturalarında `ESURaporID` değeri zorunlu (`EnerjiESURaporIDCheck`).
+     */
+    schemeId?: string;
     /** Belge tarihi */
     issueDate?: string;
     /** Belge tipi kodu */
@@ -439,8 +444,18 @@ export interface SimpleTaxRepresentativeInput {
 export interface SimplePeriodInput {
     /** Dönem başlangıç tarihi (ISO format) */
     startDate: string;
+    /**
+     * Dönem başlangıç saati (HH:mm:ss) — Sprint 9.
+     * SARJ/SARJANLIK faturalarında zorunlu (`EnerjiInvoicePeriodCheck`).
+     */
+    startTime?: string;
     /** Dönem bitiş tarihi (ISO format) */
     endDate: string;
+    /**
+     * Dönem bitiş saati (HH:mm:ss) — Sprint 9.
+     * SARJ/SARJANLIK faturalarında zorunlu (`EnerjiInvoicePeriodCheck`).
+     */
+    endTime?: string;
 }
 
 // ─── Ana Fatura Girişi ─────────────────────────────────────────────────────────
