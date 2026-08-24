@@ -614,7 +614,7 @@ const xml = builder.build({
 | EARSIVFATURA | Tüm standart + TEKNOLOJIDESTEK + HKSSATIS/HKSKOMISYONCU + YTB* |
 | IHRACAT | SATIS, ISTISNA, IHRACKAYITLI |
 | YOLCUBERABERFATURA | SATIS, ISTISNA |
-| KAMU | SATIS, ISTISNA, TEVKIFAT, IHRACKAYITLI, OZELMATRAH, KONAKLAMAVERGISI |
+| KAMU | SATIS, **IADE**, ISTISNA, TEVKIFAT, TEVKIFATIADE, IHRACKAYITLI, OZELMATRAH, SGK, KOMISYONCU, KONAKLAMAVERGISI |
 | HKS | SATIS, KOMISYONCU |
 | ILAC_TIBBICIHAZ | SATIS, ISTISNA, TEVKIFAT, TEVKIFATIADE, IADE, IHRACKAYITLI |
 | YATIRIMTESVIK | SATIS, ISTISNA, IADE, TEVKIFAT, TEVKIFATIADE |
@@ -625,7 +625,7 @@ const xml = builder.build({
 
 | Senaryo | Zorunlu Alanlar |
 |---------|----------------|
-| **IADE** | `billingReference` (fatura ref.), profil otomatik TEMELFATURA |
+| **IADE** | `billingReference` (fatura ref.); profil seçilmemişse otomatik TEMELFATURA. İzinli profiller: TEMELFATURA, EARSIVFATURA, ILAC_TIBBICIHAZ, YATIRIMTESVIK, IDIS, **KAMU** (v4.0.0) |
 | **TEVKIFAT** | En az 1 satırda `withholdingTaxCode` |
 | **ISTISNA** | `kdvExemptionCode` (201-350) |
 | **IHRACKAYITLI** | `kdvExemptionCode` (701-703) |
@@ -634,6 +634,9 @@ const xml = builder.build({
 | **IHRACAT** | `buyerCustomer` + satırlarda `delivery` (INCOTERMS, GTİP) |
 | **YOLCUBERABERFATURA** | `buyerCustomer` + `taxRepresentativeParty` |
 | **KAMU** | `paymentMeans` + IBAN (TR + 24 karakter) |
+| **SARJ** (v4.0.0) | `invoicePeriod` (4 alan: startDate/startTime/endDate/endTime, tarih ≥ 2005-01-01) + `additionalDocuments` içinde `schemeId: 'ESURaporID'` GUID + IssueDate + alıcıda **tam 1** `PLAKA` kimliği |
+| **SARJANLIK** (v4.0.0) | `invoicePeriod` (4 alan) + alıcıda **tam 1** `PLAKA` kimliği + **her satırda** `serialId` |
+| **e-İrsaliye** (v4.0.0) | `shipment.licensePlates` — en az 1 geçerli plaka **zorunlu**; TR formatı `^(0[1-9]\|[1-7][0-9]\|8[01])[A-Z]+[0-9]+$`, yabancı `^[A-Z0-9_-]+$` |
 | **Döviz** | `currencyCode` + `exchangeRate` |
 
 ---
@@ -777,6 +780,7 @@ Kütüphane hangi karardan sorumlu, hangisinden değil. Tüketici kodunun bilmes
 | **M11** (Sprint 8c, B-NEW-11) | **Self-exemption tipleri** (ISTISNA, IHRACKAYITLI, OZELMATRAH + IHRACAT, YOLCUBERABERFATURA, OZELFATURA, YATIRIMTESVIK profilleri) kendi istisna kodlarını taşır; dışındaki tiplerde KDV=0 kalem için **kullanıcıdan 351 manuel zorunlu** (calculator otomatik atamaz) | `src/config/self-exemption-types.ts` · `src/validators/manual-exemption-validator.ts` |
 | **M12** (Sprint 8d) | **Phantom KDV (Vazgeçilen KDV Tutarı)** — YATIRIMTESVIK+ISTISNA ve EARSIVFATURA+YTBISTISNA'da satır KDV matematiği TaxSubtotal içinde taşınır fakat LegalMonetaryTotal + parent TaxTotal'a dahil edilmez; `CalculationSequenceNumeric=-1` otomatik. Her satırda `0 < kdvPercent ≤ 100` + exemption code (308 Makine/01, 339 İnşaat/02) zorunlu. Kaynak: GİB Yatırım Teşvik Teknik Kılavuzu v1.1 (Aralık 2025) | `src/calculator/phantom-kdv-rules.ts` · `src/validators/phantom-kdv-validator.ts` |
 | **M13** (v3.0.0) | **Yazıyla tutar notu** — `YAZIYLA:#...#` HER faturaya, notların İLKİ olarak, KOŞULSUZ eklenir (opsiyon yok). Biçim 88 gerçek fatura notundan ÖLÇÜLDÜ. Kaynak `PayableAmount`; tam sayı VE kesir yazıyla, kuruş sıfırsa kesir hiç yazılmaz. Tüketicinin elle yazdığı yazıyla-notları serileştirmede elenir. İrsaliye etkilenmez | `src/utils/amount-in-words.ts` · `src/utils/turkish-number-words.ts` · `src/config/amount-in-words-config.ts` · [§7.1](#71-yazıyla-tutar-notu-v300) |
+| **M14** (v4.0.0) | **GİB Schematron 20260701 uyumu** — Enerji/Şarj 4 zorunluluk, e-İrsaliye plaka zorunluluğu + format, 308/339 YATIRIMTESVIK kapsam kısıtı, İDİS `SE-`/`ES-`, IADE+KAMU, kod 233. Yeni kurallar **koşulsuz** uygulanır (`issueDate` koşullu geçiş dönemi YOK). Enerji kuralları `basic` seviyede de çalışır. Yürürlük 14.09.2026 | `src/validators/enerji-validator.ts` · `src/validators/despatch-validators.ts` · `src/validators/yatirim-tesvik-validator.ts` · [audit/sprint-09-plan.md](./audit/sprint-09-plan.md) |
 | **AR-1** | `cbcTag` → `cbcRequiredTag` + `cbcOptionalTag` split | `src/utils/xml-helpers.ts` |
 | **AR-2** | `driverPerson` → `driverPersons[]` array (çoklu sürücü desteği) | `src/types/despatch-input.ts` · [examples/34](./examples/34-irsaliye-temel-sevk-coklu-sofor/) |
 | **AR-3..5** | PROFILE_TYPE_MATRIX helper API; map/matrix export edilmez | `src/calculator/invoice-rules.ts` |
@@ -796,6 +800,10 @@ Kütüphane hangi karardan sorumlu, hangisinden değil. Tüketici kodunun bilmes
 - **Dijital imza** — `ext:UBLExtensions` yapısı kütüphane tarafından üretilmez. Bu imzalayıcı servisin (GİB veya özel entegrasyon) sorumluluğudur (ACIK-SORULAR §3).
 - **Stopaj modeli XML pattern seçimi** — negatif `TaxAmount` mı yoksa ayrı `AllowanceCharge` mı: kütüphane XSD uyumlu pozitif stopaj subtotal üretir; GİB reddederse tüketici sorumluluğu.
 - **Prod schematron simülasyonu** — `validationLevel: 'strict'` statik kurallar. GİB schematron + production quirks ayrı.
+- **e-Arşiv RAPORU** (`EArsiv.xsd`) — kütüphane yalnız EARSIVFATURA **UBL faturası** üretir; günlük/aylık rapor XML'i üretmez. `EArsiv.xsd` v1.1_8 değişiklikleri (`aliciType` → `xs:choice`, `esuRaporID` 1..n) bu yüzden kapsam dışıdır.
+- **Kullanıcı hesabı / HR-XML** — `erreceipt` alias'ı, `UserOptionCode` 171-174, `AuthorizedWorkScope` kuralları özel entegratör operasyonuna aittir.
+- **e-Müstahsil Makbuzu (e-MM)** — SMS doğrulama dahil, bu belge tipi kütüphanede yok.
+- **e-Arşiv zorunluluk eşiği** (509 GT §IV.2.4.3; 1/1/2026'dan itibaren tutara bakılmaksızın) — "hangi belgeyi keseyim" kararı tüketiciye aittir; kütüphane verilen profili üretir.
 
 Ayrıntı: [audit/FIX-PLANI-v3.md](./audit/FIX-PLANI-v3.md).
 

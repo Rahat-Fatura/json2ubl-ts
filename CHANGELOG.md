@@ -2,6 +2,91 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.0.0] — 2026-08-24
+
+> ### ⚠️ BREAKING — daha önce GEÇERLİ sayılan girdiler artık REDDEDİLİYOR
+>
+> Bu sürüm, GİB'in **27.07.2026** duyurusuyla yayımladığı **Schematron 20260701** ve
+> **UBL-TR Kod Listeleri v1.43** paketine uyum getirir. **Yürürlük: 14.09.2026.**
+>
+> Yeni zorunluluklar **koşulsuz** uygulanır — `issueDate`'e bakan geçiş dönemi davranışı
+> **yoktur**. Kütüphane 14.09.2026 sonrası doğru olanı üretir. Yükseltmeden önce aşağıdaki
+> altı maddeyi girdilerinizle karşılaştırın.
+
+### Artık reddedilen girdiler
+
+| # | Daha önce geçerliydi | Artık | Hata kodu |
+|---|---|---|---|
+| 1 | Plakasız `DespatchAdvice` | ❌ | `DESPATCH_LICENSE_PLATE_REQUIRED` |
+| 2 | `InvoicePeriod`'suz SARJ/SARJANLIK | ❌ | `ENERJI_INVOICE_PERIOD_REQUIRED` |
+| 3 | `ESURaporID` referansı olmayan SARJ | ❌ | `ENERJI_ESU_RAPOR_ID_REQUIRED` |
+| 4 | Alıcıda `PLAKA` kimliği olmayan SARJ/SARJANLIK | ❌ | `ENERJI_CUSTOMER_PLAKA_REQUIRED` |
+| 5 | `SerialID`'siz SARJANLIK kalemi | ❌ | `ENERJI_ITEM_SERIAL_ID_REQUIRED` |
+| 6 | YATIRIMTESVIK/YTB* dışı profilde 308 veya 339 istisna kodu | ❌ | `EXEMPTION_REQUIRES_YATIRIMTESVIK_SCOPE` |
+
+Ayrıca plaka değerleri artık formata tabi: TR plakalar
+`^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$`, yabancı plakalar `^[A-Z0-9_-]+$`.
+
+### Added
+
+- **`PeriodInput.startTime` / `endTime`** — `cbc:StartTime` / `cbc:EndTime`. Tüm
+  `InvoicePeriod` kullanımlarına açık (yalnız ENERJI'ye kısıtlı değil); XSD hepsinde
+  izin verir. `SimplePeriodInput` eşleniği ve 2 yeni `SessionPaths` girdisi dahil.
+- **`AdditionalDocumentInput.schemeId`** — `cbc:ID/@schemeID`. SARJ faturalarında
+  `ESURaporID` taşıyıcısı. `SimpleAdditionalDocumentInput` eşleniği + `SessionPaths` girdisi.
+- **`LicensePlateSchemeId` tipi** — 6 değerli union: `PLAKA`, `DORSE`, `DORSEPLAKA`,
+  `YABANCIPLAKA`, `YABANCIDORSE`, `YABANCIDORSEPLAKA` (önceden 2 değer).
+- **İstisna kodu 233** — *2942 Sayılı Kamulaştırma Kanunu Kapsamında Taşınmazların
+  Kamulaştırmayı Yapan Devlet ve Kamu Tüzel Kişilerine Devri* (Kısmi İstisna).
+- **`src/validators/enerji-validator.ts`** — dört Enerji/Şarj kuralı.
+- Yeni sabitler: `TR_LICENSE_PLATE_REGEX`, `FOREIGN_LICENSE_PLATE_REGEX`,
+  `FOREIGN_LICENSE_PLATE_SCHEME_IDS`, `ENERJI_PLATE_REGEX`, `ENERJI_PLATE_MAX_LENGTH`,
+  `ENERJI_PERIOD_MIN_DATE`, `ESU_RAPOR_ID_SCHEME_ID`, `ESU_RAPOR_ISSUE_DATE_REGEX`,
+  `YATIRIM_TESVIK_ONLY_EXEMPTION_CODES`, `YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES`.
+
+### Changed
+
+- **`InvoiceTypeCode=IADE` artık `KAMU` profilinde de geçerli**
+  (`IADEInvioceCheck`). "IADE → TEMELFATURA" otomatik düşürmesi korundu; kullanıcının
+  açık KAMU seçimi ezilmez.
+- **İstisna kodu 229 metni** v1.43 PDF ile birebir eşitlendi: `17/2-b` öneki kaldırıldı,
+  "Darülacezeye" ibaresi eklendi.
+- **`showInvoicePeriod`** SARJ/SARJANLIK'ta da `true` — alan gizliyken kullanıcı artık
+  zorunlu olan veriyi giremiyordu.
+- Enerji kuralları `validationLevel: 'basic'`'te de çalışır (`crossMatrix` ile aynı
+  gerekçe: GİB kapıda reddediyor, geç yakalanması pahalı).
+
+### Fixed
+
+- **İDİS sevkiyat numarası `ES-` prefix'ini de kabul ediyor**
+  (`SEVKIYAT_NO_REGEX`: `/^SE-\d{7}$/` → `/^(SE|ES)-\d{7}$/`). Gevşetme — geriye
+  dönük uyumlu, mevcut `SE-*` değerleri etkilenmez.
+
+### Bilinçli olarak KAPSAM DIŞI
+
+Bilgi katmanı (`gib-claude-skills`) CHANGELOG'unda yer alan ama bu kütüphaneyi
+ilgilendirmeyen değişiklikler — kütüphane yalnız `Invoice` ve `DespatchAdvice` üretir:
+
+| Değişiklik | Gerekçe |
+|---|---|
+| EArsiv.xsd v1.1_8 (`aliciType` → `xs:choice`, `esuRaporID` 1..n) | Kütüphane e-Arşiv **raporu** üretmiyor; yalnız EARSIVFATURA UBL faturası |
+| `erreceipt` alias + `UserOptionCode` 171-174 + `AuthorizedWorkScope` yasağı | HR-XML kullanıcı hesabı belgesi kütüphanede yok |
+| e-Müstahsil SMS doğrulama (zorunluluk 5.11.2026) | e-MM belge tipi kütüphanede yok |
+| 509 GT e-Arşiv eşiği (1/1/2026'dan tutar-bağımsız) | Belge **üretim** kuralı değil; "hangi belgeyi keseyim" kararı tüketicide |
+
+### Yenilenen örnekler
+
+`examples/25-enerji-sarj` ve `examples-matrix/valid/enerji/*` (3 senaryo) yeni zorunlu
+alanlarla güncellendi — **çıktı XML'leri değişti**. `enerji-sarj-coklu-sarj` iki
+`ESURaporID` taşıyor (e-Arşiv Paketi v1.1_8 `esuRaporID` 1..n genişlemesi).
+5 yeni negatif matris senaryosu eklendi.
+
+### Test
+
+`1917 → 2081` (+164). `matrix:run` 169/169. Plan: [audit/sprint-09-plan.md](./audit/sprint-09-plan.md).
+
+---
+
 ## [3.0.0] — 2026-08-03
 
 > ### ⚠️ DAVRANIŞ DEĞİŞİKLİĞİ — mevcut tüketicilerin ÇIKTISI DEĞİŞİYOR
