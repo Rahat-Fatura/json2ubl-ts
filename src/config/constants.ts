@@ -116,6 +116,35 @@ export const YATIRIM_TESVIK_EARSIV_TYPES = new Set<InvoiceTypeCode>([
   InvoiceTypeCode.YTBSATIS, InvoiceTypeCode.YTBTEVKIFAT, InvoiceTypeCode.YTBISTISNA,
 ]);
 
+/**
+ * Schematron `$YatirimTesvikEArsivInvoiceTypeCodeList` — **5 tipin tamamı** (Sprint 9).
+ *
+ * `YATIRIM_TESVIK_EARSIV_TYPES` (yukarıda, 3 tip) ile KARIŞTIRMA. O sabit B-08 KDV
+ * kontrolüne ait ve IADE türevlerini `YATIRIM_TESVIK_IADE_TYPES` erken-return'ü ile
+ * ayrıca elediği için kısaltılmış haldedir. `TaxExemptionReasonCodeCheck` böyle bir
+ * eleme yapmaz — Schematron değişkeninin tamamına ihtiyaç duyar.
+ *
+ * @see YATIRIM_TESVIK_ONLY_EXEMPTION_CODES
+ */
+export const YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.YTBSATIS, InvoiceTypeCode.YTBIADE, InvoiceTypeCode.YTBISTISNA,
+  InvoiceTypeCode.YTBTEVKIFAT, InvoiceTypeCode.YTBTEVKIFATIADE,
+]);
+
+/**
+ * Yalnız Yatırım Teşvik kapsamında geçerli istisna kodları — Schematron
+ * `$YatirimTesvikTaxExemptionReasonCodeType` (Schematron 20260701, Sprint 9).
+ *
+ * 308 ve 339, 20260701 paketinde genel `$TaxExemptionReasonCodeType` listesinden
+ * ÇIKARILDI ve bu ayrı değişkene alındı. Artık yalnız
+ * `ProfileID='YATIRIMTESVIK'` **veya**
+ * `InvoiceTypeCode ∈ YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES` olduğunda geçerli.
+ *
+ * **Bilgi katmanı şerhi:** UBL-TR Kod Listeleri v1.43 metni ile Schematron ayrışıyor;
+ * GİB kapıda Schematron çalıştırdığı için **Schematron esas alınmıştır**.
+ */
+export const YATIRIM_TESVIK_ONLY_EXEMPTION_CODES = new Set<string>(['308', '339']);
+
 // ============================================================
 // §6 KOD LİSTELERİ
 // ============================================================

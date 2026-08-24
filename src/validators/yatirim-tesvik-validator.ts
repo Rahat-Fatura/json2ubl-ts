@@ -33,6 +33,8 @@ import { InvoiceTypeCode, InvoiceProfileId } from '../types/enums';
 import {
   YATIRIM_TESVIK_IADE_TYPES,
   YATIRIM_TESVIK_EARSIV_TYPES,
+  YATIRIM_TESVIK_ONLY_EXEMPTION_CODES,
+  YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES,
 } from '../config/constants';
 import type { InvoiceInput } from '../types/invoice-input';
 import type { ValidationError } from '../errors/ubl-build-error';
@@ -133,6 +135,73 @@ export function validateYatirimTesvikKdvLine(input: InvoiceInput): ValidationErr
         });
       }
     }
+  });
+
+  return errors;
+}
+
+// ============================================================
+// Sprint 9 — TaxExemptionReasonCodeCheck (Schematron 20260701)
+// ============================================================
+
+/**
+ * 308/339 istisna kodu kapsam kontrolü — `TaxExemptionReasonCodeCheck`.
+ *
+ * Schematron 20260701'de 308 ve 339 genel `$TaxExemptionReasonCodeType` listesinden
+ * çıkarılıp ayrı `$YatirimTesvikTaxExemptionReasonCodeType`'a alındı:
+ *
+ * ```xml
+ * contains($TaxExemptionReasonCodeType, code)
+ *   OR ( contains($YatirimTesvikTaxExemptionReasonCodeType, code)
+ *        AND ( ProfileID = 'YATIRIMTESVIK'
+ *              OR contains($YatirimTesvikEArsivInvoiceTypeCodeList, InvoiceTypeCode) ) )
+ * ```
+ *
+ * Bu kural `TAX_EXEMPTION_MATRIX`'ten (kod × fatura tipi) **ayrıdır**: matris kodun
+ * hangi fatura tipinde kullanılabileceğine bakar, bu kural kodun bu **profilde**
+ * hiç var olup olmadığına bakar. Kapsam dışı kullanımı GİB kapıda reddeder.
+ *
+ * @see YATIRIM_TESVIK_ONLY_EXEMPTION_CODES
+ * @see schematrons/UBL-TR_Common_Schematron.xml — TaxExemptionReasonCodeCheck
+ */
+export function validateYatirimTesvikExemptionScope(input: InvoiceInput): ValidationError[] {
+  const inScope =
+    input.profileId === InvoiceProfileId.YATIRIMTESVIK ||
+    YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES.has(input.invoiceTypeCode);
+
+  if (inScope) return [];
+
+  const errors: ValidationError[] = [];
+
+  const report = (code: string, path: string): void => {
+    errors.push({
+      code: 'EXEMPTION_REQUIRES_YATIRIMTESVIK_SCOPE',
+      message:
+        `'${code}' istisna kodu yalnız ProfileID=YATIRIMTESVIK veya ` +
+        `YTB fatura tiplerinde (YTBSATIS, YTBIADE, YTBISTISNA, YTBTEVKIFAT, ` +
+        `YTBTEVKIFATIADE) kullanılabilir`,
+      path,
+      expected: 'ProfileID=YATIRIMTESVIK veya InvoiceTypeCode ∈ YTB*',
+      actual: code,
+    });
+  };
+
+  input.taxTotals.forEach((tt, ttIdx) => {
+    tt.taxSubtotals.forEach((ts, tsIdx) => {
+      const code = ts.taxExemptionReasonCode;
+      if (code && YATIRIM_TESVIK_ONLY_EXEMPTION_CODES.has(code)) {
+        report(code, `taxTotals[${ttIdx}].taxSubtotals[${tsIdx}].taxExemptionReasonCode`);
+      }
+    });
+  });
+
+  input.lines.forEach((line, lineIdx) => {
+    line.taxTotal.taxSubtotals.forEach((ts, tsIdx) => {
+      const code = ts.taxExemptionReasonCode;
+      if (code && YATIRIM_TESVIK_ONLY_EXEMPTION_CODES.has(code)) {
+        report(code, `lines[${lineIdx}].taxTotal.taxSubtotals[${tsIdx}].taxExemptionReasonCode`);
+      }
+    });
   });
 
   return errors;

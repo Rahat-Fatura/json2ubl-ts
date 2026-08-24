@@ -7,6 +7,7 @@ import { validateIhrackayitli702 } from './ihrackayitli-validator';
 import {
   validateYatirimTesvikKdvDocument,
   validateYatirimTesvikKdvLine,
+  validateYatirimTesvikExemptionScope,
 } from './yatirim-tesvik-validator';
 
 /**
@@ -44,6 +45,9 @@ export function validateCrossMatrix(input: InvoiceInput): ValidationError[] {
   // §4 — YatirimTesvikKDVCheck + LineKDVCheck (Sprint 5 B-08)
   errors.push(...validateYatirimTesvikKdvDocument(input));
   errors.push(...validateYatirimTesvikKdvLine(input));
+
+  // §5 — TaxExemptionReasonCodeCheck 308/339 kapsam gate'i (Sprint 9, Schematron 20260701)
+  errors.push(...validateYatirimTesvikExemptionScope(input));
 
   return errors;
 }
