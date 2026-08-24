@@ -14,14 +14,47 @@ import {
 } from '../../src/config/constants';
 
 describe('exemption-config', () => {
-  describe('B-03 — 10 geçersiz kod config\'de yok', () => {
-    const invalidCodes = ['203', '210', '222', '224', '233', '243', '244', '245', '246', '247', '248', '249'];
+  describe('B-03 — geçersiz kodlar config\'de yok', () => {
+    // NOT: 233 bu listeden Sprint 9'da çıkarıldı — Kod Listeleri v1.43 (2026-07-27)
+    // ile Kısmi İstisna listesine eklendi. Aşağıdaki "v1.43" bloğuna bakınız.
+    const invalidCodes = ['203', '210', '222', '224', '243', '244', '245', '246', '247', '248', '249'];
     for (const code of invalidCodes) {
       it(`${code} kodu tanımsız`, () => {
         expect(EXEMPTION_MAP.has(code)).toBe(false);
         expect(ISTISNA_TAX_EXEMPTION_REASON_CODES.has(code)).toBe(false);
       });
     }
+  });
+
+  describe('Sprint 9 — UBL-TR Kod Listeleri v1.43 (2026-07-27)', () => {
+    it('233 Kısmi İstisna kodu ISTISNA tipinde tanımlı', () => {
+      const def = EXEMPTION_MAP.get('233');
+      expect(def).toBeDefined();
+      expect(def?.type).toBe('KDV');
+      expect(def?.documentType).toBe('ISTISNA');
+      expect(def?.name).toBe(
+        '2942 Sayılı Kamulaştırma Kanunu Kapsamında Taşınmazların Kamulaştırmayı Yapan Devlet ve Kamu Tüzel Kişilerine Devri',
+      );
+    });
+
+    it('233 ISTISNA kod havuzuna türetiliyor', () => {
+      expect(ISTISNA_TAX_EXEMPTION_REASON_CODES.has('233')).toBe(true);
+      expect(isValidExemptionCode('233')).toBe(true);
+    });
+
+    it('229 metni v1.43 ile eşitlendi — Darülacezeye eklendi, 17/2-b öneki kalktı', () => {
+      const def = EXEMPTION_MAP.get('229');
+      expect(def?.name).toBe(
+        'Gıda Bankacılığı Faaliyetinde Bulunan Darülacezeye, Dernek ve Vakıflara Bağışlanan, Gıda, Temizlik, Giyecek ve Yakacak Maddeleri',
+      );
+      expect(def?.name).not.toContain('17/2-b');
+    });
+
+    it('233 kod sırasında 232 ile 234 arasında duruyor', () => {
+      const codes = EXEMPTION_DEFINITIONS.map(d => d.code);
+      expect(codes.indexOf('233')).toBe(codes.indexOf('232') + 1);
+      expect(codes.indexOf('234')).toBe(codes.indexOf('233') + 1);
+    });
   });
 
   describe('B-57 + M7 — Yeni ISTISNA kodları eklendi', () => {

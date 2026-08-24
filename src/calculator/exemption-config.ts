@@ -38,10 +38,14 @@ export const EXEMPTION_DEFINITIONS: ReadonlyArray<ExemptionDefinition> = [
   { code: '226', name: '17/2-b Özel Okullar, Üniversite ve Yüksekokullar Tarafından Verilen Bedelsiz Eğitim ve Öğretim Hizmetleri', type: 'KDV', documentType: 'ISTISNA' },
   { code: '227', name: '17/2-b Kanunların Gösterdiği Gerek Üzerine Bedelsiz Olarak Yapılan Teslim ve Hizmetler', type: 'KDV', documentType: 'ISTISNA' },
   { code: '228', name: '17/2-b Kanunun (17/1) Maddesinde Sayılan Kurum ve Kuruluşlara Bedelsiz Olarak Yapılan Teslimler', type: 'KDV', documentType: 'ISTISNA' },
-  { code: '229', name: '17/2-b Gıda Bankacılığı Faaliyetinde Bulunan Dernek ve Vakıflara Bağışlanan Gıda, Temizlik, Giyecek ve Yakacak Maddeleri', type: 'KDV', documentType: 'ISTISNA' },
+  // Metin UBL-TR Kod Listeleri v1.43 (2026-07-27, Sayfa 10) ile birebir eşitlendi:
+  // "17/2-b" öneki kaldırıldı, "Darülacezeye" ibaresi eklendi.
+  { code: '229', name: 'Gıda Bankacılığı Faaliyetinde Bulunan Darülacezeye, Dernek ve Vakıflara Bağışlanan, Gıda, Temizlik, Giyecek ve Yakacak Maddeleri', type: 'KDV', documentType: 'ISTISNA' },
   { code: '230', name: '17/4-g Külçe Altın, Külçe Gümüş ve Kıymetli Taşların Teslimi', type: 'KDV', documentType: 'ISTISNA' },
   { code: '231', name: '17/4-g Metal, Plastik, Lastik, Kauçuk, Kağıt, Cam Hurda ve Atıkların Teslimi', type: 'KDV', documentType: 'ISTISNA' },
   { code: '232', name: '17/4-g Döviz, Para, Damga Pulu, Değerli Kağıtlar, Hisse Senedi ve Tahvil Teslimleri', type: 'KDV', documentType: 'ISTISNA' },
+  // v1.43 (2026-07-27) ile Kısmi İstisna listesine eklendi.
+  { code: '233', name: '2942 Sayılı Kamulaştırma Kanunu Kapsamında Taşınmazların Kamulaştırmayı Yapan Devlet ve Kamu Tüzel Kişilerine Devri', type: 'KDV', documentType: 'ISTISNA' },
   { code: '234', name: '17/4-ş Konut Finansmanı Amacıyla Teminat Gösterilen ve İpotek Konulan Konutların Teslimi', type: 'KDV', documentType: 'ISTISNA' },
   { code: '235', name: '16/1-c Transit ve Gümrük Antrepo Rejimleri ile Geçici Depolama ve Serbest Bölge Hükümlerinin Uygulandığı Malların Teslimi', type: 'KDV', documentType: 'ISTISNA' },
   { code: '236', name: '19/2 Uluslararası Anlaşmalar Kapsamındaki İstisnalar (İade Hakkı Tanınmayan)', type: 'KDV', documentType: 'ISTISNA' },
