@@ -16,7 +16,9 @@
 
 import type { SimpleInvoiceInput } from '../calculator/simple-types';
 import type { ValidationError } from '../errors/ubl-build-error';
-import { WITHHOLDING_TAX_MAP } from '../calculator/withholding-config';
+// 4.1.0: statik `WITHHOLDING_TAX_MAP` yerine configManager — merkezî katalogdan
+// enjekte edilen tevkifat kodu burada "geçersiz kod" diye reddedilmesin diye.
+import { configManager } from '../calculator/config-manager';
 
 export function validateSimpleLineRanges(input: SimpleInvoiceInput): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -59,7 +61,7 @@ export function validateSimpleLineRanges(input: SimpleInvoiceInput): ValidationE
 
     // B-NEW-v2-04 — withholding kod/oran tutarlılığı (Sprint 8g.1)
     if (line.withholdingTaxCode) {
-      const whDef = WITHHOLDING_TAX_MAP.get(line.withholdingTaxCode);
+      const whDef = configManager.getWithholdingTax(line.withholdingTaxCode);
       if (!whDef) {
         // Bilinmeyen kod
         errors.push({

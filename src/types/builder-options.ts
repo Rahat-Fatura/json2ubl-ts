@@ -14,6 +14,29 @@ export interface BuilderOptions {
    * kesme hesabından sorumludur. Default: false.
    */
   allowReducedKdvRate?: boolean;
+  /**
+   * Boş `ext:UBLExtensions` iskeleti üretilsin mi — **varsayılan: `false`**.
+   *
+   * `true` iken kök elemanın İLK çocuğu olarak şu blok yazılır:
+   * ```xml
+   * <ext:UBLExtensions>
+   *   <ext:UBLExtension>
+   *     <ext:ExtensionContent/>
+   *   </ext:UBLExtension>
+   * </ext:UBLExtensions>
+   * ```
+   *
+   * Neden gerekli: GİB `UBL-Invoice-2.1.xsd` kök sequence'ında
+   * `ext:UBLExtensions` İLK elemandır; iskelet yokken XSD doğrulaması
+   * *"UBLVersionID elementi bu konumda geçersiz. Bu noktada beklenen:
+   * UBLExtensions."* ile düşer. İmzalayıcı XAdES'i `ExtensionContent`
+   * içine yazar.
+   *
+   * Neden varsayılan `false`: kütüphane imza üretmez ve yerleşik
+   * tüketicilerin çoğunda zarfı/imzayı ENTEGRATÖR ekler — koşulsuz emit
+   * onların çıktısını değiştirirdi. İmzayı kendi atan tüketiciler açar.
+   */
+  includeUblExtensions?: boolean;
 }
 
 /** Validasyon seviyeleri */

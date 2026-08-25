@@ -97,7 +97,7 @@
     <cac:TaxSubtotal>
       <cbc:TaxableAmount currencyID="TRY">120.00</cbc:TaxableAmount>
       <cbc:TaxAmount currencyID="TRY">108.00</cbc:TaxAmount>
-      <cbc:Percent>90.00</cbc:Percent>
+      <cbc:Percent>90</cbc:Percent>
             <cac:TaxCategory>
                 <cac:TaxScheme>
           <cbc:Name>İşgücü Temin Hizmetleri</cbc:Name>
@@ -147,7 +147,7 @@
       <cac:TaxSubtotal>
         <cbc:TaxableAmount currencyID="TRY">120.00</cbc:TaxableAmount>
         <cbc:TaxAmount currencyID="TRY">108.00</cbc:TaxAmount>
-        <cbc:Percent>90.00</cbc:Percent>
+        <cbc:Percent>90</cbc:Percent>
                 <cac:TaxCategory>
                     <cac:TaxScheme>
             <cbc:Name>İşgücü Temin Hizmetleri</cbc:Name>

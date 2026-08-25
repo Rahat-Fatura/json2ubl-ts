@@ -17,6 +17,8 @@ const DEFAULT_OPTIONS: Required<BuilderOptions> = {
   validationLevel: 'basic',
   xmlDeclaration: true,
   allowReducedKdvRate: false,
+  /** 4.1.0 — geriye uyumluluk için KAPALI; bkz. BuilderOptions.includeUblExtensions */
+  includeUblExtensions: false,
 };
 
 /**
@@ -55,7 +57,7 @@ export class InvoiceBuilder {
     }
 
     // Serialize
-    return serializeInvoice(input, this.options.prettyPrint);
+    return serializeInvoice(input, this.options.prettyPrint, this.options.includeUblExtensions);
   }
 
   /**
@@ -100,6 +102,6 @@ export class InvoiceBuilder {
    * Dikkat: Geçersiz veri ile hatalı XML oluşabilir
    */
   buildUnsafe(input: InvoiceInput): string {
-    return serializeInvoice(input, this.options.prettyPrint);
+    return serializeInvoice(input, this.options.prettyPrint, this.options.includeUblExtensions);
   }
 }

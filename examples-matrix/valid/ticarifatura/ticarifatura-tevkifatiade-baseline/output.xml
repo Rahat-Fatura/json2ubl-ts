@@ -91,7 +91,7 @@
     <cac:TaxSubtotal>
       <cbc:TaxableAmount currencyID="TRY">200.00</cbc:TaxableAmount>
       <cbc:TaxAmount currencyID="TRY">140.00</cbc:TaxAmount>
-      <cbc:Percent>70.00</cbc:Percent>
+      <cbc:Percent>70</cbc:Percent>
             <cac:TaxCategory>
                 <cac:TaxScheme>
           <cbc:Name>İstisnadan Vazgeçenlerin Hurda ve Atık Teslimi</cbc:Name>
@@ -130,7 +130,7 @@
       <cac:TaxSubtotal>
         <cbc:TaxableAmount currencyID="TRY">200.00</cbc:TaxableAmount>
         <cbc:TaxAmount currencyID="TRY">140.00</cbc:TaxAmount>
-        <cbc:Percent>70.00</cbc:Percent>
+        <cbc:Percent>70</cbc:Percent>
                 <cac:TaxCategory>
                     <cac:TaxScheme>
             <cbc:Name>İstisnadan Vazgeçenlerin Hurda ve Atık Teslimi</cbc:Name>

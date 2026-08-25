@@ -5,7 +5,7 @@ import {
   cbcRequiredTag,
   joinLines,
 } from '../utils/xml-helpers';
-import { formatDecimal } from '../utils/formatters';
+import { formatDecimal, formatDecimalRange } from '../utils/formatters';
 import {
   TAX_SUBTOTAL_SEQ,
   TAX_CATEGORY_SEQ,
@@ -40,6 +40,15 @@ export function serializeTaxSubtotal(ts: TaxSubtotalInput, currencyCode: string,
       ts.calculationSequenceNumeric !== undefined
         ? cbcOptionalTag('CalculationSequenceNumeric', String(ts.calculationSequenceNumeric))
         : '',
+    // KDV (ve diğer hesaplanan vergi) oranı SABİT 2 basamakta BIRAKILDI.
+    // Gerekçe: şematronda `TaxTotal/.../cbc:Percent` için HİÇBİR kural yok —
+    // `decimalCheck` bu bağlama uygulanmaz (yalnız 6 parasal bağlam), tek
+    // Percent kuralı tevkifata özgü `WithholdingTaxTotalCheck`'tir. Yani
+    // "18.00" biçimi geçerlidir. Tevkifattaki ondalıksız yazım bir ÜSLUP
+    // tercihi değil, kod-listesi eşleşme ZORUNLULUĞUDUR (bkz. aşağıda
+    // `serializeWithholdingSubtotal`) — iki alan bu yüzden bilerek farklı
+    // biçimlenir; burayı değiştirmek hiçbir uyum sorununu çözmez, yalnızca
+    // yerleşik çıktıyı kırardı.
     Percent: () =>
       ts.percent !== undefined ? cbcOptionalTag('Percent', formatDecimal(ts.percent, 2)) : '',
     TaxCategory: () => serializeTaxCategory(ts, indent + '  '),
@@ -88,11 +97,32 @@ export function serializeWithholdingTaxTotal(wtt: WithholdingTaxTotalInput, curr
   return joinLines(lines);
 }
 
+/**
+ * WithholdingTaxSubtotal → XML fragment.
+ *
+ * 🔴 4.1.0 — `cbc:Percent` ONDALIKSIZ yazılır (eskiden `formatDecimal(p, 2)`
+ * ile "90.00" üretiliyordu ve belge GİB kapısında REDDEDİLİYORDU).
+ *
+ * Kural (`UBL-TR_Common_Schematron.xml:312`, `WithholdingTaxTotalCheck`):
+ *   contains($WithholdingTaxTypeWithPercent,
+ *            concat(',', cac:TaxCategory/cac:TaxScheme/cbc:TaxTypeCode, cbc:Percent, ','))
+ *
+ * Yani kod ile oran BİTİŞİK olarak tek bir anahtara çevrilip kod listesinde
+ * aranıyor. Liste (`UBL-TR_Codelist.xml:17`) tamamen ondalıksızdır:
+ *   ,60130,60140,60290,...,60690,...,801100,802100,...
+ * `606` + `90` → `,60690,` ✅   ·   `606` + `90.00` → `,60690.00,` ❌
+ *
+ * Canlı kanıt (şematron paketi 20260701):
+ *   "Uyumsuz vergi tipi yüzdesi: '606' vergi tipinin yüzdesi '90.00' olamaz"
+ *
+ * Listedeki oranların tamamı tam sayı olduğundan min=0 seçildi; float
+ * artefaktına karşı önce 6 basamağa sabitlenip fazlalık sıfırlar kırpılır.
+ */
 function serializeWithholdingSubtotal(ts: WithholdingTaxSubtotalInput, currencyCode: string, indent: string): string {
   const inner = emitInOrder(TAX_SUBTOTAL_SEQ, {
     TaxableAmount: () => cbcOptionalAmountTag('TaxableAmount', ts.taxableAmount, currencyCode),
     TaxAmount: () => cbcOptionalAmountTag('TaxAmount', ts.taxAmount, currencyCode),
-    Percent: () => cbcOptionalTag('Percent', formatDecimal(ts.percent, 2)),
+    Percent: () => cbcOptionalTag('Percent', formatDecimalRange(ts.percent, 0, 6)),
     TaxCategory: () => {
       const cat = emitInOrder(TAX_CATEGORY_SEQ, {
         TaxScheme: () => serializeTaxScheme(ts.taxTypeCode, ts.taxTypeName, indent + '    '),

@@ -5,6 +5,7 @@ import {
     joinLines,
     xmlDeclaration,
     invoiceOpenTag,
+    ublExtensionsSkeleton,
 } from "../utils/xml-helpers";
 import {
     serializeAccountingSupplierParty,
@@ -38,10 +39,15 @@ import {
 
 /**
  * Invoice JSON → tam UBL-TR XML string (§1.10 sırasında)
+ *
+ * @param includeUblExtensions 4.1.0 — boş `ext:UBLExtensions` iskeleti emit
+ *   edilsin mi (varsayılan `false`, geriye uyumlu). Ayrıntı için
+ *   `BuilderOptions.includeUblExtensions`.
  */
 export function serializeInvoice(
     input: InvoiceInput,
     prettyPrint: boolean = true,
+    includeUblExtensions: boolean = false,
 ): string {
     const ind = prettyPrint ? "  " : "";
     const cc = input.currencyCode;
@@ -52,6 +58,12 @@ export function serializeInvoice(
 
     // Invoice açılış tag'i
     parts.push(invoiceOpenTag(INVOICE_NAMESPACES));
+
+    // 1. UBLExtensions — INVOICE_SEQ'in İLK slotu. Opsiyonel bayrak (4.1.0):
+    //    imzayı kendi atan tüketiciler için boş iskelet; kapalıyken hiç yazılmaz.
+    if (includeUblExtensions) {
+        parts.push(ublExtensionsSkeleton(ind));
+    }
 
     // UBLVersionID, CustomizationID
     parts.push(`${ind}${cbcOptionalTag("UBLVersionID", UBL_CONSTANTS.ublVersionId)}`);

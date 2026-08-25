@@ -4,6 +4,7 @@ import {
   cbcOptionalTag,
   cbcOptionalAmountTag,
   cbcOptionalQuantityTag,
+  cbcOptionalUnitPriceTag,
   cbcRequiredTag,
   joinLines,
 } from '../utils/xml-helpers';
@@ -135,9 +136,18 @@ function serializeItem(item: InvoiceLineInput['item'], indent: string): string {
   return [`${indent}<cac:Item>`, body, `${indent}</cac:Item>`].join('\n');
 }
 
+/**
+ * Price → XML fragment.
+ *
+ * 4.1.0: `cbc:PriceAmount` artık `cbcOptionalUnitPriceTag` ile 2..6 ondalık
+ * aralığında yazılır (eskiden sabit 2). BİRİM FİYAT parasal görünse de
+ * `decimalCheck` KAPSAMINDA DEĞİLDİR — kural yalnız `LegalMonetaryTotal`'ın
+ * 5 alanına + `Invoice/TaxTotal/TaxAmount`'a bağlıdır. Sabit 2 basamak
+ * `0,0035 TL` gibi hassas birim fiyatları "0.00"a indiriyordu.
+ */
 function serializePrice(priceAmount: number, currencyCode: string, indent: string): string {
   const inner = emitInOrder(PRICE_SEQ, {
-    PriceAmount: () => cbcOptionalAmountTag('PriceAmount', priceAmount, currencyCode),
+    PriceAmount: () => cbcOptionalUnitPriceTag('PriceAmount', priceAmount, currencyCode),
   });
   const body = joinLines(inner.map(s => indent + '  ' + s));
   return [`${indent}<cac:Price>`, body, `${indent}</cac:Price>`].join('\n');

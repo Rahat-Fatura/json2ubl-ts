@@ -2,6 +2,204 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.1.0] — 2026-08-25
+
+> ### 🔴 UYUMLULUK DÜZELTMESİ — tevkifatlı faturalar GİB kapısında reddediliyordu
+>
+> Bu sürümdeki düzeltmelerin tamamı **canlı GİB doğrulayıcısıyla** (Schematron paketi
+> **20260701**, XSD `2026-08-05`) ölçülmüştür — tahmin yoktur. Davranış değişiklikleri
+> **geriye uyumludur**: hiçbir varsayılan değişmedi, yeni bayrak varsayılan olarak
+> kapalıdır.
+
+### Fixed
+
+- 🔴 **Tevkifat `cbc:Percent` artık ONDALIKSIZ yazılıyor** (`"90.00"` → `"90"`).
+  4.0.0'da tevkifatlı **her fatura** GİB tarafından REDDEDİLİYORDU.
+
+  **Kanıt** (canlı, `POST /v1/validate`):
+  ```
+  ruleId : WithholdingTaxTotalCheck
+  mesaj  : Uyumsuz vergi tipi yüzdesi: '606' vergi tipinin yüzdesi '90.00' olamaz
+  ```
+
+  **Neden**: `UBL-TR_Common_Schematron.xml:312` kod ile oranı BİTİŞİK tek bir anahtara
+  çevirip kod listesinde arıyor —
+  `concat(',', TaxTypeCode, Percent, ',')`. `UBL-TR_Codelist.xml:17` listesi tamamen
+  ondalıksızdır (`,60130,60140,…,60690,…,801100,`), yani `606`+`90` → `,60690,` ✅ ama
+  `606`+`90.00` → `,60690.00,` ❌ hiçbir zaman eşleşemez.
+
+  ⚠️ `cac:TaxTotal` altındaki **KDV `Percent`'i 2 basamakta KALDI** (`"20.00"`) — o
+  bağlama bağlı hiçbir şematron kuralı yoktur (`decimalCheck` yalnız 6 parasal bağlama
+  uygulanır), dolayısıyla değiştirmek hiçbir uyum sorununu çözmez, yalnızca yerleşik
+  çıktıyı kırardı. İki alanın farklı biçimlenmesi bilinçlidir.
+
+- 🔴 **`cbc:MultiplierFactorNumeric` 1 → 4 basamak** — iskonto oranı SESSİZCE bozuluyordu.
+
+  4.0.0 sabit 1 basamak yazıyordu: `%15 → "0.1"`, `%12,5 → "0.1"`, `%5 → "0.1"`,
+  `%1 → "0.0"`, `%3 → "0.0"`. `Amount`/`BaseAmount` doğru kaldığı için belge **kendi
+  içinde tutarsızlaşıyordu** (oran × taban ≠ tutar). Depodaki bir örnekte bu canlı
+  olarak görüldü: `0.1 × 200,00 = 20` iken `Amount` `10,00` idi; artık `0.05` yazılıyor.
+
+  Şematronda bu alan **hiç geçmez** (iki dosyada da sıfır eşleşme) → format serbest.
+  4 basamak ile %0,01'e kadar iskonto ifade edilebilir.
+
+- 🟠 **`InvoicedQuantity` / `DeliveredQuantity` / `PriceAmount` 2 → 6 basamak** —
+  hassas miktar ve birim fiyat imha oluyordu: `0,125 kg → "0.13"`, `0,004 kg → "0.00"`,
+  `0,0035 TL → "0.00"`.
+
+  Şematron bu alanlara format kuralı KOYMAZ: `InvoicedQuantityCheck`
+  (`UBL-TR_Common_Schematron.xml:411`) yalnız `count(@unitCode)=1` denetler.
+
+  ⚠️ **Parasal `*Amount` alanları 2 basamakta KALDI.** `decimalCheck`
+  (`UBL-TR_Common_Schematron.xml:229`) noktadan sonra en fazla 2 hane şart koşar ve
+  `UBL-TR_Main_Schematron.xml`'de TAM 6 bağlama bağlıdır: `LegalMonetaryTotal`'ın beş
+  alanı (`LineExtensionAmount`, `TaxExclusiveAmount`, `TaxInclusiveAmount`,
+  `AllowanceTotalAmount`, `PayableAmount`) + belge düzeyi `TaxTotal/TaxAmount`.
+  `cac:Price/cbc:PriceAmount` bu listede **değildir**, bu yüzden ayrıldı.
+
+- 🟡 **`SimpleBuyerCustomerInput.taxOffice` eklendi** — alan tipte yoktu, dolayısıyla
+  IHRACAT/KAMU alıcısının vergi dairesi hiç yazılamıyordu. Artık
+  `cac:BuyerCustomerParty/cac:Party/cac:PartyTaxScheme/cac:TaxScheme/cbc:Name` alanına
+  eşleniyor (`sender`/`customer` ile aynı desen). `SessionPaths`'e de aktı
+  (`buyerCustomer.taxOffice`).
+
+- 🔴 **`configManager` enjeksiyon dikişi tamamlandı** — enjekte edilen kod hesaplanıyor
+  ama `InvoiceBuilder.validate()` strict modu tarafından REDDEDİLİYORDU.
+
+  `configManager` beş listeyi (vergi / tevkifat / istisna / birim / para birimi)
+  runtime'da override edebiliyordu; ama `constants.ts`'teki türev whitelist `Set`'leri
+  (`TAX_TYPE_CODES`, `WITHHOLDING_TAX_TYPE_CODES`,
+  `WITHHOLDING_TAX_TYPE_WITH_PERCENT`, `ISTISNA_/OZEL_MATRAH_/IHRAC_…_CODES`,
+  `UNIT_CODES`) **import anında bir kez** hesaplanıyordu. Hesaplayıcılar
+  `configManager`'ı, doğrulayıcılar donmuş `Set`'i okuduğu için ikisi ayrışıyordu.
+
+  Türev koleksiyonlar artık `configManager` her değiştiğinde **YERİNDE** tazeleniyor
+  (`src/config/derived-config.ts`). **Geriye uyumlu**: nesneler hâlâ gerçek
+  `Set`/`Map`, kimlikleri sabit, TypeScript imzaları aynı — mevcut
+  `import { TAX_TYPE_CODES } from 'json2ubl-ts'` kullanımları bozulmaz.
+
+  Aynı kusurun taşıdığı diğer statik okumalar da `configManager`'a bağlandı:
+  `TAX_EXEMPTION_MATRIX` (cross-check-matrix), `type-validators` ve
+  `simple-line-range-validator` içindeki `WITHHOLDING_TAX_MAP`,
+  `simple-invoice-mapper` içindeki `EXEMPTION_MAP`.
+
+  `CURRENCY_CODES` **birleşim** olarak türetilir (68 kodluk taban liste ∪
+  `configManager.currencies`) — daralma OLMAZ, yalnız enjekte edilen yeni kodlar eklenir.
+
+### Added
+
+- **`BuilderOptions.includeUblExtensions`** (varsayılan **`false`**) — `true` iken kök
+  elemanın İLK çocuğu olarak boş `ext:UBLExtensions` iskeleti yazılır:
+
+  ```xml
+  <ext:UBLExtensions><ext:UBLExtension><ext:ExtensionContent/></ext:UBLExtension></ext:UBLExtensions>
+  ```
+
+  **Neden**: GİB `UBL-Invoice-2.1.xsd` kök sequence'ında `ext:UBLExtensions` ilk
+  elemandır; iskelet yokken XSD *"UBLVersionID elementi bu konumda geçersiz. Bu noktada
+  beklenen: UBLExtensions."* ile düşer. İmzayı kendi atan tüketiciler (sunucu tarafı
+  mühürleme) XAdES'i `ExtensionContent` içine yazar.
+
+  **Varsayılan neden `false`**: kütüphane imza üretmez ve yerleşik tüketicilerin
+  çoğunda zarfı/imzayı entegratör ekler — koşulsuz emit onların çıktısını değiştirirdi.
+  `InvoiceBuilder`, `DespatchBuilder` ve `SimpleInvoiceBuilder` destekler
+  (`UBL-DespatchAdvice-2.1.xsd` kök sequence'ı da aynı elemanla başlar).
+
+- **`formatDecimalRange(value, min, max)`** (`src/utils/formatters.ts`, **dahili** — kardeşi
+  `formatDecimal` gibi public API'ye açılmadı) — üç düzeltmenin ortak temeli. En az `min`, en fazla `max` ondalık yazar; aradaki fazlalık sıfırları
+  atar. `min`, mevcut çıktı biçimini korumak içindir — bu sayede `1` miktarı yine
+  `"1.00"` üretir ve depodaki 161 örnek çıktısından **hiçbiri** miktar/fiyat yüzünden
+  değişmedi.
+
+- **`cbcOptionalUnitPriceTag`** (`src/utils/xml-helpers.ts`, **dahili**) — birim fiyatı parasal
+  `cbcOptionalAmountTag`'ten ayırır; `decimalCheck` kapsamının doğru uygulanmasını sağlar.
+
+- **Golden-file regresyon seti** — `__tests__/golden/` (8 senaryo, 45 test): basit satış,
+  çok-oranlı KDV, %15 satır iskontosu, 606/%90 tevkifat, tevkifat+iskonto bileşimi,
+  istisna (KDV 0 + kod 351), EUR + kur, e-Arşiv, hassas miktar/birim fiyat. Her golden
+  **canlı GİB doğrulayıcısına** gönderilir; servis erişilemezse testler **atlanır**
+  (sessizce geçmez). Set ayrıca 4.0.0 davranışını geri koyup şematronun gerçekten
+  reddettiğini kanıtlayan bir negatif test içerir.
+
+- **`__tests__/utils/formatters.test.ts`** — `formatDecimalRange` birim testleri
+  (16 test: min koruması, hassasiyet kurtarma, float artefaktı, negatif, kenar durumlar).
+
+- 🔴 **`9015` (KDV Tevkifatı) vergi kodu** — `tax-config.ts` artık GİB Schematron
+  `$TaxType` listesinin **31 kodunun tamamını** taşıyor (önceki: 30).
+
+  `9015` Sprint 2'de bilinçli olarak atlanmıştı: UBL-TR Kod Listeleri v1.42/v1.43
+  belgesinde Türkçe etiketi yoktur (`audit/sprint-02-exemption-todo.md`). Ama GİB
+  whitelist'leri (`UBL-TR_Codelist.xml` §TaxType, `EArsiv.xsd`, `eArsivVeri.xsd`)
+  kodu KABUL EDİYOR ve ESMM (serbest meslek makbuzu) akışı kodu ŞART KOŞUYOR —
+  kütüphane reddettiği için ESMM belgeleri geçemiyordu.
+
+  Etiket **uydurulmadı**: GİB'in kendi normatif görüntüleme şablonları
+  (`eInvoice_Base.xslt`, `eArchive_Base.xslt`) `TaxTypeCode=9015` taşıyan
+  subtotal'ları "Tevkifata Tabi İşlem Tutarı" / "Tevkifata Tabi İşlem Üzerinden
+  Hes. KDV" başlıklarıyla — `WithholdingTaxTotal` ile birebir aynı başlıklarla —
+  basar. Etiketin kaynağı yeni **opsiyonel** `TaxDefinition.labelProvisional`
+  alanıyla işaretlendi (resmî etiket yayımlanınca kaldırılmalı).
+
+  `baseStat: false, baseCalculate: false` — tevkifat KDV matrahını değiştirmez,
+  toplam vergiden düşer (`0003` Gelir Vergisi Stopajı ile aynı davranış sınıfı).
+
+- **`refreshDerivedConfig()`** — türev whitelist'leri elle yeniden hesaplayan kaçış
+  kapağı. Normalde gerekmez; `configManager` her değiştiğinde otomatik tetiklenir.
+
+- **`__tests__/config/config-injection-seam.test.ts`** (20 test) — enjeksiyon dikişinin
+  delili: enjeksiyon öncesi RED → sonrası KABUL → `reset()` sonrası tekrar RED;
+  her mutasyon yolunun tazelediği; geriye uyumluluk (`instanceof Set`, kimlik sabitliği,
+  `CURRENCY_CODES` daralmadı); `9015` ile ESMM benzeri belge üretimi.
+
+### Notes
+
+- **Kütüphane imzasız belge üretir; bu bilinçli sınır XSD tarafından karşılanmaz.**
+  Canlı ölçümde imzasız çıktı `validSchematron: true` (tüm iş kuralları temiz) ama
+  `validSchema: false` verir; TAM İKİ hata imza yokluğundandır: (1) `ExtensionContent`
+  boş olamaz, (2) `cac:Signature` yoktur. Her ikisi de imzalayıcı tarafından
+  eklendiğinde XSD **tamamen geçer** — bu, golden setinde pozitif olarak test edilir.
+  `cac:Signature` üretimi bu sürümün kapsamı dışındadır.
+
+- **Kod listesi sapma ölçümü (Schematron 20260701 `UBL-TR_Codelist.xml` ile diff).**
+  Ölçüldü, uygulanmadı — kararı bekleyen üç kalem:
+
+  | Liste | GİB | Kütüphane | Durum |
+  |---|---|---|---|
+  | `TaxType` | 31 | **31** | ✅ `9015` ile kapandı |
+  | `WithholdingTaxType` | 52 | 53 | ✅ üst küme (`650` dinamik kodu fazladan) |
+  | `WithholdingTaxTypeWithPercent` | 64 | 152 | ⚠️ 7 kombinasyon EKSİK |
+  | `istisnaTaxExemptionReasonCodeType` | 94 | 84 | ⚠️ 10 kod EKSİK |
+  | `ozelMatrahTaxExemptionReasonCodeType` | 12 | 12 | ✅ |
+  | `ihracExemptionReasonCodeType` | 4 | 4 | ✅ |
+
+  **Tevkifat — YAPISAL sınırlama.** `WithholdingTaxDefinition` kod başına TEK bir
+  `percent` tutuyor; GİB 8 koda **iki oran** veriyor. Kütüphane her birinde yalnız
+  yüksek oranı taşıdığı için şu 7 geçerli kombinasyon reddediliyor:
+  `60130` (601 %30), `60350` (603 %50), `60950` (609 %50), `61270` (612 %70),
+  `61370` (613 %70), `61550` (615 %50), `62740` (627 %40).
+  **Öneri:** `percent: number` → `percent: number | number[]` yerine **geriye uyumlu**
+  `percent: number` (varsayılan/önerilen oran) + yeni opsiyonel
+  `alternatePercents?: number[]` alanı. `deriveWithholdingCombos` her ikisini de üretir;
+  hesaplayıcı `percent`'i varsayılan alır, kullanıcı açıkça alternatifi verirse onu kullanır.
+  Böylece hiçbir mevcut çıktı değişmez, yalnız whitelist genişler.
+
+  **İstisna — eksik 10 kod:** `001`, `101`–`108`, `501`. Bunlar GİB'in hem genel
+  `$TaxExemptionReasonCodeType` hem `$istisnaTaxExemptionReasonCodeType` listesinde var
+  ama `exemption-config.ts`'te yok. **Öneri:** kodları resmî Türkçe adlarıyla eklemek —
+  ad kaynağı doğrulanmadan eklenmemeli (`9015`'te uygulanan N1 disiplini). `501` için
+  `cross-check-matrix.ts` zaten "Schematron özel, config'de yok" şerhini taşıyor.
+
+  **`308`/`339` daraltması — KAPSANMIŞ DURUMDA.** 20260701 paketinde bu iki kod genel
+  listeden çıkarılıp `$YatirimTesvikTaxExemptionReasonCodeType`'a taşındı. Kütüphane
+  bunu 4.0.0'da uyguladı: `YATIRIM_TESVIK_ONLY_EXEMPTION_CODES` +
+  `validateYatirimTesvikExemptionScope` (hata kodu
+  `EXEMPTION_REQUIRES_YATIRIMTESVIK_SCOPE`, 4.0.0 tablosu md. 6). Kodlar
+  `exemption-config`'te `documentType: 'ISTISNA'` olarak KALIR — bu doğrudur, çünkü
+  GİB'in `$istisnaTaxExemptionReasonCodeType` listesi de ikisini hâlâ içerir;
+  daraltma ayrı bir kuralla (profil/tip kapsamı) uygulanır. Kütüphane tarafında
+  ek iş YOKTUR. ⚠️ Tek şerh: daraltma **koşulsuz** uygulanır, `issueDate` bakmaz —
+  paketin yürürlüğü 14.09.2026 (4.0.0 sürüm notunda bilinçli karar olarak belgelendi).
+
 ## [4.0.0] — 2026-08-24
 
 > ### ⚠️ BREAKING — daha önce GEÇERLİ sayılan girdiler artık REDDEDİLİYOR

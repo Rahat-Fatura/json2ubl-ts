@@ -402,6 +402,16 @@ export interface SimpleBuyerCustomerInput {
     district: string;
     /** Ülke */
     country: string;
+    /**
+     * Vergi dairesi — 4.1.0'da eklendi.
+     *
+     * `cac:BuyerCustomerParty/cac:Party/cac:PartyTaxScheme/cac:TaxScheme/cbc:Name`
+     * alanına yazılır. Alan UBL'de zaten vardı ve `SimplePartyInput`'ta
+     * (`sender`/`customer`) mevcuttu; yalnız BU tipte eksikti, dolayısıyla
+     * IHRACAT/KAMU alıcısının vergi dairesi hiç yazılamıyordu
+     * (B-101/B-102 ile aynı "tipte yok → XML'de yok" sınıfı).
+     */
+    taxOffice?: string;
     /** Posta kodu */
     zipCode?: string;
     /** Telefon */

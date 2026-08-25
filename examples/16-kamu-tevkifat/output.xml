@@ -118,7 +118,7 @@
     <cac:TaxSubtotal>
       <cbc:TaxableAmount currencyID="TRY">2000.00</cbc:TaxableAmount>
       <cbc:TaxAmount currencyID="TRY">800.00</cbc:TaxAmount>
-      <cbc:Percent>40.00</cbc:Percent>
+      <cbc:Percent>40</cbc:Percent>
             <cac:TaxCategory>
                 <cac:TaxScheme>
           <cbc:Name>Yapım İşleri ile Mühendislik-Mimarlık ve Etüt-Proje Hizmetleri</cbc:Name>
@@ -157,7 +157,7 @@
       <cac:TaxSubtotal>
         <cbc:TaxableAmount currencyID="TRY">2000.00</cbc:TaxableAmount>
         <cbc:TaxAmount currencyID="TRY">800.00</cbc:TaxAmount>
-        <cbc:Percent>40.00</cbc:Percent>
+        <cbc:Percent>40</cbc:Percent>
                 <cac:TaxCategory>
                     <cac:TaxScheme>
             <cbc:Name>Yapım İşleri ile Mühendislik-Mimarlık ve Etüt-Proje Hizmetleri</cbc:Name>

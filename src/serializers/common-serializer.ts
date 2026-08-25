@@ -1,6 +1,6 @@
 import { cbcOptionalTag, cbcOptionalAmountTag, cbcRequiredTag, joinLines } from '../utils/xml-helpers';
 import type { AllowanceChargeInput, PeriodInput } from '../types/common';
-import { formatDecimal } from '../utils/formatters';
+import { formatDecimalRange } from '../utils/formatters';
 import { ALLOWANCE_CHARGE_SEQ, PERIOD_SEQ, emitInOrder } from './xsd-sequence';
 
 /**
@@ -11,9 +11,22 @@ export function serializeAllowanceCharge(ac: AllowanceChargeInput, currencyCode:
   const inner = emitInOrder(ALLOWANCE_CHARGE_SEQ, {
     ChargeIndicator: () => cbcRequiredTag('ChargeIndicator', ac.chargeIndicator ? 'true' : 'false', 'AllowanceCharge'),
     AllowanceChargeReason: () => cbcOptionalTag('AllowanceChargeReason', ac.reason),
+    // 🔴 4.1.0 — İSKONTO ORANI hassasiyeti düzeltildi.
+    //
+    // Eskiden `formatDecimal(x, 1)` idi; SABİT 1 basamak oranı sessizce
+    // bozuyordu ve `Amount`/`BaseAmount` doğru kaldığı için belge KENDİ
+    // İÇİNDE tutarsızlaşıyordu (oran × taban ≠ tutar):
+    //   %15   → 0.15  → "0.1"   ·  %12,5 → 0.125 → "0.1"
+    //   %5    → 0.05  → "0.1"   ·  %1    → 0.01  → "0.0"
+    //   %3    → 0.03  → "0.0"
+    //
+    // Şematronda `cbc:MultiplierFactorNumeric` HİÇ geçmez (iki dosyada da
+    // sıfır eşleşme) → format serbest. max=4 ile %0,01'e kadar iskonto
+    // ifade edilebilir; min=1 mevcut tek-basamaklı çıktıyı korur
+    // (0.1 → "0.1"), fazlalık sıfır yazılmaz (0.15 → "0.15").
     MultiplierFactorNumeric: () =>
       ac.multiplierFactorNumeric !== undefined
-        ? cbcOptionalTag('MultiplierFactorNumeric', formatDecimal(ac.multiplierFactorNumeric, 1))
+        ? cbcOptionalTag('MultiplierFactorNumeric', formatDecimalRange(ac.multiplierFactorNumeric, 1, 4))
         : '',
     Amount: () => cbcOptionalAmountTag('Amount', ac.amount, currencyCode),
     BaseAmount: () =>

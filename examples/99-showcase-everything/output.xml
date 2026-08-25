@@ -145,7 +145,7 @@
     <cac:TaxSubtotal>
       <cbc:TaxableAmount currencyID="EUR">50.00</cbc:TaxableAmount>
       <cbc:TaxAmount currencyID="EUR">15.00</cbc:TaxAmount>
-      <cbc:Percent>30.00</cbc:Percent>
+      <cbc:Percent>30</cbc:Percent>
             <cac:TaxCategory>
                 <cac:TaxScheme>
           <cbc:Name>Diğer</cbc:Name>
@@ -167,7 +167,7 @@
     <cbc:LineExtensionAmount currencyID="EUR">190.00</cbc:LineExtensionAmount>
     <cac:AllowanceCharge>
       <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
-      <cbc:MultiplierFactorNumeric>0.1</cbc:MultiplierFactorNumeric>
+      <cbc:MultiplierFactorNumeric>0.05</cbc:MultiplierFactorNumeric>
       <cbc:Amount currencyID="EUR">10.00</cbc:Amount>
       <cbc:BaseAmount currencyID="EUR">200.00</cbc:BaseAmount>
     </cac:AllowanceCharge>
@@ -215,7 +215,7 @@
       <cac:TaxSubtotal>
         <cbc:TaxableAmount currencyID="EUR">50.00</cbc:TaxableAmount>
         <cbc:TaxAmount currencyID="EUR">15.00</cbc:TaxAmount>
-        <cbc:Percent>30.00</cbc:Percent>
+        <cbc:Percent>30</cbc:Percent>
                 <cac:TaxCategory>
                     <cac:TaxScheme>
             <cbc:Name>Diğer</cbc:Name>

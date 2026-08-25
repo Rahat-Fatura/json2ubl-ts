@@ -13,6 +13,17 @@ export interface TaxDefinition {
   shortName: string;
   baseStat: boolean;
   baseCalculate: boolean;
+  /**
+   * `true` ise `name`/`shortName` **UBL-TR Kod Listeleri belgesinden alınmamıştır**.
+   * Kod GİB'in normatif whitelist'lerinde (Schematron `UBL-TR_Codelist.xml`,
+   * `EArsiv.xsd`) yer alır ama kod listesi belgesinde bir Türkçe etiketi yoktur;
+   * buradaki etiket GİB'in KENDİ görüntüleme XSLT'sinden okunmuştur.
+   *
+   * N1 disiplini: uydurma isim yerine kaynağı işaretlenmiş isim. Resmî etiket
+   * yayımlanırsa bu bayrak kaldırılmalıdır. Opsiyoneldir — mevcut tanımların
+   * hiçbiri taşımaz, tip geriye uyumludur.
+   */
+  labelProvisional?: boolean;
 }
 
 export const TAX_DEFINITIONS: ReadonlyArray<TaxDefinition> = [
@@ -41,6 +52,23 @@ export const TAX_DEFINITIONS: ReadonlyArray<TaxDefinition> = [
   { code: '8006', name: 'Telsiz Kullanım Ücreti', shortName: 'Telsiz Kullanım', baseStat: true, baseCalculate: false },
   { code: '8007', name: 'Telsiz Ruhsat Ücreti', shortName: 'Telsiz Ruhsat', baseStat: true, baseCalculate: false },
   { code: '8008', name: 'Çevre Temizlik Vergisi', shortName: 'Çevre Temizlik V.', baseStat: true, baseCalculate: false },
+  // ─── 9015 — Sprint 9 / 4.1.0'da eklendi ────────────────────────────────────
+  // GİB whitelist'lerinde VAR: Schematron `UBL-TR_Codelist.xml` §TaxType,
+  // `EArsiv.xsd` ve `eArsivVeri.xsd` TaxTypeCode enum'ları.
+  // UBL-TR Kod Listeleri v1.42/v1.43 belgesinde bir TÜRKÇE ETİKETİ YOKTUR
+  // (Sprint 2'de bu yüzden atlanmıştı — `audit/sprint-02-exemption-todo.md`).
+  //
+  // Buradaki etiket UYDURULMAMIŞTIR: GİB'in kendi normatif görüntüleme
+  // şablonları (`eInvoice_Base.xslt` ~1045-1080, `eArchive_Base.xslt` ~2002-2040)
+  // `TaxTypeCode=9015` taşıyan TaxSubtotal'ları "Tevkifata Tabi İşlem Tutarı" /
+  // "Tevkifata Tabi İşlem Üzerinden Hes. KDV" başlıklarıyla — yani
+  // `WithholdingTaxTotal` ile BİREBİR AYNI başlıklarla — basar. 9015 tevkifatın
+  // TaxTotal düzlemindeki (eski) gösterimidir. `labelProvisional: true` ile
+  // etiketin kaynağı dürüstçe işaretlenmiştir.
+  //
+  // baseStat=false/baseCalculate=false: tevkifat KDV matrahını DEĞİŞTİRMEZ,
+  // toplam vergiden DÜŞER (0003 Gelir Vergisi Stopajı ile aynı davranış).
+  { code: '9015', name: 'KDV Tevkifatı', shortName: 'KDV Tevkifatı', baseStat: false, baseCalculate: false, labelProvisional: true },
   { code: '9021', name: '4961 Banka Sigorta Muameleleri Vergisi', shortName: 'BSMV', baseStat: true, baseCalculate: false },
   { code: '9040', name: 'Mera Fonu', shortName: 'Mera Fonu', baseStat: false, baseCalculate: false },
   { code: '9077', name: 'Motorlu Taşıt ÖTV [2. Liste]', shortName: 'ÖTV 2. Liste', baseStat: true, baseCalculate: true },

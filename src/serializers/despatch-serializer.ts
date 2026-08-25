@@ -1,6 +1,6 @@
 import type { DespatchInput } from '../types/despatch-input';
 import { DESPATCH_NAMESPACES, UBL_CONSTANTS } from '../config/namespaces';
-import { cbcOptionalTag, cbcRequiredTag, joinLines, xmlDeclaration, despatchOpenTag } from '../utils/xml-helpers';
+import { cbcOptionalTag, cbcRequiredTag, joinLines, xmlDeclaration, despatchOpenTag, ublExtensionsSkeleton } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
 import { serializeParty } from './party-serializer';
 import { serializeAddress } from './delivery-serializer';
@@ -10,13 +10,27 @@ import { PERSON_SEQ, emitInOrder } from './xsd-sequence';
 
 /**
  * DespatchAdvice JSON → tam UBL-TR XML string (§5.7 sırasında)
+ *
+ * @param includeUblExtensions 4.1.0 — boş `ext:UBLExtensions` iskeleti emit
+ *   edilsin mi (varsayılan `false`). `UBL-DespatchAdvice-2.1.xsd` kök
+ *   sequence'ı da `ext:UBLExtensions` ile başlar (DESPATCH_SEQ), yani Invoice
+ *   ile aynı XSD kısıtı geçerlidir.
  */
-export function serializeDespatch(input: DespatchInput, prettyPrint: boolean = true): string {
+export function serializeDespatch(
+  input: DespatchInput,
+  prettyPrint: boolean = true,
+  includeUblExtensions: boolean = false,
+): string {
   const ind = prettyPrint ? '  ' : '';
   const parts: string[] = [];
 
   parts.push(xmlDeclaration());
   parts.push(despatchOpenTag(DESPATCH_NAMESPACES));
+
+  // 1. UBLExtensions — DESPATCH_SEQ'in İLK slotu (4.1.0, opsiyonel bayrak)
+  if (includeUblExtensions) {
+    parts.push(ublExtensionsSkeleton(ind));
+  }
 
   // UBLVersionID, CustomizationID
   parts.push(`${ind}${cbcOptionalTag('UBLVersionID', UBL_CONSTANTS.ublVersionId)}`);

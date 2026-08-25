@@ -762,6 +762,46 @@ formatAmountInWordsNote(3243.56, 'TRY');
 
 ---
 
+## 7.2. İmza İskeleti — `includeUblExtensions` (v4.1.0)
+
+Kütüphane **imza üretmez**. Belgenin imzalanması entegratörün ya da sunucu tarafı bir
+imzalayıcının işidir. Ancak imzayı **kendiniz atıyorsanız**, XAdES'in yerleştirileceği
+`ext:UBLExtensions` kancasına ihtiyacınız olur.
+
+```typescript
+const builder = new SimpleInvoiceBuilder({
+  validationLevel: 'strict',
+  includeUblExtensions: true,   // varsayılan: false
+});
+```
+
+`true` iken kök elemanın **ilk çocuğu** olarak boş iskelet yazılır:
+
+```xml
+<ext:UBLExtensions>
+  <ext:UBLExtension>
+    <ext:ExtensionContent/>
+  </ext:UBLExtension>
+</ext:UBLExtensions>
+```
+
+**Neden gerekli:** GİB `UBL-Invoice-2.1.xsd` kök sequence'ında `ext:UBLExtensions` ilk
+elemandır. İskelet yokken XSD doğrulaması şu hatayla düşer:
+
+```
+"UBLVersionID" elementi bu konumda geçersiz. Bu noktada beklenen: UBLExtensions.
+```
+
+**Varsayılan neden `false`:** yerleşik tüketicilerin çoğunda zarfı ve imzayı entegratör
+ekler; koşulsuz emit onların çıktısını değiştirirdi. Bayrak `InvoiceBuilder`,
+`DespatchBuilder` ve `SimpleInvoiceBuilder` üzerinde çalışır.
+
+> ⚠️ **İskelet tek başına XSD'yi geçirmez.** `ExtensionContent` boş olamaz ve GİB
+> şeması ayrıca `cac:Signature` bekler — ikisini de imzalayıcı ekler. İmzasız çıktı
+> tüm **Schematron iş kurallarından** temiz geçer; kalan XSD eksiği yalnızca imzadır.
+
+---
+
 ## 8. Sorumluluk Matrisi
 
 Kütüphane hangi karardan sorumlu, hangisinden değil. Tüketici kodunun bilmesi gereken non-obvious davranışlar.

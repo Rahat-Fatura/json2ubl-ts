@@ -8,7 +8,9 @@ import {
   ISTISNA_TAX_EXEMPTION_REASON_CODES, OZEL_MATRAH_TAX_EXEMPTION_REASON_CODES,
   IHRAC_EXEMPTION_REASON_CODES, TAX_4171_ALLOWED_TYPES,
 } from '../config/constants';
-import { WITHHOLDING_TAX_MAP } from '../calculator/withholding-config';
+// 4.1.0: statik `WITHHOLDING_TAX_MAP` yerine configManager — enjekte edilen
+// tevkifat kodunun `dynamicPercent` bayrağı da görülebilsin diye.
+import { configManager } from '../calculator/config-manager';
 import { missingField, invalidValue, typeRequirement } from './validation-result';
 import { isNonEmpty } from '../utils/formatters';
 
@@ -136,7 +138,7 @@ function validateTevkifatGroup(input: InvoiceInput): ValidationError[] {
 
       // Kod+yüzde kombinasyonu kontrolü
       if (isNonEmpty(ts.taxTypeCode) && ts.percent !== undefined && ts.percent !== null) {
-        const whDef = WITHHOLDING_TAX_MAP.get(ts.taxTypeCode);
+        const whDef = configManager.getWithholdingTax(ts.taxTypeCode);
         if (whDef?.dynamicPercent) {
           // M3 — 650 gibi dinamik oran: combo whitelist yerine aralık kontrolü
           if (ts.percent < 0 || ts.percent > 100) {

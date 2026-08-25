@@ -26,13 +26,16 @@
  *   opt-in flag gate'i `reduced-kdv-detector.ts`'te korunur.
  * - **501**: Schematron özel — `exemption-config`'de tanımlı değil (validator UNKNOWN döner)
  *
- * ## Türetme (M7 pattern)
- * `EXEMPTION_DEFINITIONS.documentType` → `allowedInvoiceTypes` mapping otomatik.
+ * ## Türetme (M7 pattern + 4.1.0 CANLI bağ)
+ * `configManager.exemptions[].documentType` → `allowedInvoiceTypes` mapping otomatik.
  * 151 ve 351 özel kurallar `buildMatrix` içinde manuel override olarak eklenir.
+ * Matris `configManager` her değiştiğinde YERİNDE tazelenir (`derivedMap`) —
+ * enjekte edilen istisna kodu artık `UNKNOWN_EXEMPTION_CODE` almaz.
  */
 
 import { InvoiceTypeCode } from '../types/enums';
-import { EXEMPTION_DEFINITIONS } from '../calculator/exemption-config';
+import { configManager } from '../calculator/config-manager';
+import { derivedMap } from '../config/derived-config';
 import type { ValidationError } from '../errors/ubl-build-error';
 
 /** Bir istisna kodunun fatura tipi kısıtları + ek koşullar */
@@ -151,7 +154,7 @@ const CODE_351_FORBIDDEN_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTy
 function buildMatrix(): Map<string, TaxExemptionRule> {
   const matrix = new Map<string, TaxExemptionRule>();
 
-  for (const def of EXEMPTION_DEFINITIONS) {
+  for (const def of configManager.exemptions) {
     // SATIS özel durumlar (151, 351, 555) aşağıda manuel override
     if (def.documentType === 'SATIS') continue;
 
@@ -214,14 +217,16 @@ function buildMatrix(): Map<string, TaxExemptionRule> {
 /**
  * İstisna kodu → kural Map'i (O(1) lookup).
  *
- * `EXEMPTION_DEFINITIONS` değişirse matris otomatik senkron olur (M7 pattern).
+ * `configManager.exemptions` değişirse matris otomatik senkron olur (M7 pattern
+ * + 4.1.0 canlı bağ). Nesne KİMLİĞİ korunur — mevcut `import`'lar bozulmaz.
  * 151/351 özel kurallar `buildMatrix` içinde manuel eklenir.
  *
  * **Matris dışı kodlar (bilinçli):**
  * - `555` (Demirbaş KDV) — M4 flag ile bypass; matris'te YOK ki validator UNKNOWN dönmesin diye ayrı gate
  * - `501` — Schematron özel; `exemption-config` eksik (Sprint 6+ analizi gerekebilir)
  */
-export const TAX_EXEMPTION_MATRIX: ReadonlyMap<string, TaxExemptionRule> = buildMatrix();
+export const TAX_EXEMPTION_MATRIX: ReadonlyMap<string, TaxExemptionRule> =
+  derivedMap<string, TaxExemptionRule>(() => buildMatrix());
 
 /**
  * İstisna kodu × fatura tipi × KDV satır durumu kontrolü.

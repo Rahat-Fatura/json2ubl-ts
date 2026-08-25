@@ -32,6 +32,13 @@ export {
 } from "./config/constants";
 export type { PartyIdentificationSchemeId } from "./config/constants";
 
+/**
+ * 4.1.0 — türev whitelist'leri (`TAX_TYPE_CODES` vb.) `configManager`'ın GÜNCEL
+ * durumundan elle yeniden hesaplar. Normalde GEREKMEZ: `configManager` her
+ * değiştiğinde otomatik tetiklenir. Yalnız kaçış kapağıdır.
+ */
+export { refreshDerivedConfig } from "./config/derived-config";
+
 // Yazıyla tutar (v3.0.0) — saf sayı okuma + not biçimlendirme
 export {
     numberToTurkishWords,

@@ -604,6 +604,12 @@ export const SessionPaths = {
   buyerCustomerCountry: 'buyerCustomer.country',
 
   /**
+   * Vergi dairesi — 4.1.0'da eklendi. `cac:BuyerCustomerParty/cac:Party/cac:PartyTaxScheme/cac:TaxScheme/cbc:Name` alanına yazılır. Alan UBL'de zaten vardı ve `SimplePartyInput`'ta (`sender`/`customer`) mevcuttu; yalnız BU tipte eksikti, dolayısıyla IHRACAT/KAMU alıcısının vergi dairesi hiç yazılamıyordu (B-101/B-102 ile aynı "tipte yok → XML'de yok" sınıfı).
+   * Expected type: string | undefined
+   */
+  buyerCustomerTaxOffice: 'buyerCustomer.taxOffice',
+
+  /**
    * Posta kodu
    * Expected type: string | undefined
    */
@@ -903,6 +909,7 @@ export interface SessionPathMap {
   'buyerCustomer.city': string;
   'buyerCustomer.district': string;
   'buyerCustomer.country': string;
+  'buyerCustomer.taxOffice': string | undefined;
   'buyerCustomer.zipCode': string | undefined;
   'buyerCustomer.phone': string | undefined;
   'buyerCustomer.email': string | undefined;
@@ -966,6 +973,7 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'buyerCustomer.passportId',
   'buyerCustomer.phone',
   'buyerCustomer.taxNumber',
+  'buyerCustomer.taxOffice',
   'buyerCustomer.zipCode',
   'currencyCode',
   'customer.address',
@@ -1194,6 +1202,7 @@ export interface InvoiceSessionUpdateOverloads {
   update(path: 'buyerCustomer.city', value: string): void;
   update(path: 'buyerCustomer.district', value: string): void;
   update(path: 'buyerCustomer.country', value: string): void;
+  update(path: 'buyerCustomer.taxOffice', value: string | undefined): void;
   update(path: 'buyerCustomer.zipCode', value: string | undefined): void;
   update(path: 'buyerCustomer.phone', value: string | undefined): void;
   update(path: 'buyerCustomer.email', value: string | undefined): void;

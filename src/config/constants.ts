@@ -1,9 +1,9 @@
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
-import { TAX_DEFINITIONS, KDV_TAX_CODE } from '../calculator/tax-config';
-import { WITHHOLDING_TAX_DEFINITIONS, type WithholdingTaxDefinition } from '../calculator/withholding-config';
-import { EXEMPTION_DEFINITIONS } from '../calculator/exemption-config';
-import { UNIT_DEFINITIONS } from '../calculator/unit-config';
+import { KDV_TAX_CODE } from '../calculator/tax-config';
+import { type WithholdingTaxDefinition } from '../calculator/withholding-config';
 import { PACKAGING_TYPE_CODE_DEFINITIONS } from '../calculator/package-type-code-config';
+import { configManager } from '../calculator/config-manager';
+import { derivedSet } from './derived-config';
 
 // ============================================================
 // §4 PROFİL × TİP ÇAPRAZ MATRİSİ
@@ -172,33 +172,45 @@ function deriveWithholdingCombos(defs: ReadonlyArray<WithholdingTaxDefinition>):
   return combos;
 }
 
-/** Vergi tipi kodları — tax-config türev (M7). KDV ayrı literal. */
-export const TAX_TYPE_CODES = new Set<string>([
+/**
+ * Vergi tipi kodları — **CANLI** `configManager` türevi (M7 + 4.1.0 enjeksiyon dikişi).
+ *
+ * Varsayılanda `tax-config.ts`'teki `TAX_DEFINITIONS`'tan türer (`configManager`
+ * kendisi bu statikle tohumlanır). `configManager.updateTaxes()` / `initialize()`
+ * çağrıldığında bu `Set` **yerinde** tazelenir — nesne kimliği korunur.
+ * KDV (`0015`) her zaman içeridedir; `configManager.isValidTaxCode()` ile birebir
+ * aynı kabul kümesidir.
+ *
+ * @see ./derived-config.ts — yaklaşım gerekçesi ve geriye uyumluluk tablosu
+ */
+export const TAX_TYPE_CODES = derivedSet<string>(() => [
   KDV_TAX_CODE,
-  ...TAX_DEFINITIONS.map(t => t.code),
+  ...configManager.taxes.map(t => t.code),
 ]);
 
-/** Tevkifat vergi tipi kodları — withholding-config türev (M7). 650 dahil. */
-export const WITHHOLDING_TAX_TYPE_CODES = new Set<string>(
-  WITHHOLDING_TAX_DEFINITIONS.map(w => w.code),
+/** Tevkifat vergi tipi kodları — **CANLI** `configManager` türevi. 650 dahil. */
+export const WITHHOLDING_TAX_TYPE_CODES = derivedSet<string>(() =>
+  configManager.withholdingTaxes.map(w => w.code),
 );
 
-/** Tevkifat vergi kodu+yüzde kombinasyonları — config türev (M7 helper). B-04 regenerate. */
-export const WITHHOLDING_TAX_TYPE_WITH_PERCENT = deriveWithholdingCombos(WITHHOLDING_TAX_DEFINITIONS);
-
-/** İstisna vergi muafiyet sebebi kodları — exemption-config türev (M7). */
-export const ISTISNA_TAX_EXEMPTION_REASON_CODES = new Set<string>(
-  EXEMPTION_DEFINITIONS.filter(e => e.documentType === 'ISTISNA').map(e => e.code),
+/** Tevkifat vergi kodu+yüzde kombinasyonları — **CANLI** türev. B-04 regenerate. */
+export const WITHHOLDING_TAX_TYPE_WITH_PERCENT = derivedSet<string>(() =>
+  deriveWithholdingCombos(configManager.withholdingTaxes),
 );
 
-/** Özel matrah vergi muafiyet sebebi kodları — exemption-config türev (M7). */
-export const OZEL_MATRAH_TAX_EXEMPTION_REASON_CODES = new Set<string>(
-  EXEMPTION_DEFINITIONS.filter(e => e.documentType === 'OZELMATRAH').map(e => e.code),
+/** İstisna vergi muafiyet sebebi kodları — **CANLI** `configManager` türevi. */
+export const ISTISNA_TAX_EXEMPTION_REASON_CODES = derivedSet<string>(() =>
+  configManager.exemptions.filter(e => e.documentType === 'ISTISNA').map(e => e.code),
 );
 
-/** İhraç kayıtlı vergi muafiyet sebebi kodları — exemption-config türev (M7). */
-export const IHRAC_EXEMPTION_REASON_CODES = new Set<string>(
-  EXEMPTION_DEFINITIONS.filter(e => e.documentType === 'IHRACKAYITLI').map(e => e.code),
+/** Özel matrah vergi muafiyet sebebi kodları — **CANLI** `configManager` türevi. */
+export const OZEL_MATRAH_TAX_EXEMPTION_REASON_CODES = derivedSet<string>(() =>
+  configManager.exemptions.filter(e => e.documentType === 'OZELMATRAH').map(e => e.code),
+);
+
+/** İhraç kayıtlı vergi muafiyet sebebi kodları — **CANLI** `configManager` türevi. */
+export const IHRAC_EXEMPTION_REASON_CODES = derivedSet<string>(() =>
+  configManager.exemptions.filter(e => e.documentType === 'IHRACKAYITLI').map(e => e.code),
 );
 
 /**
@@ -214,24 +226,27 @@ export const DEMIRBAS_KDV_EXEMPTION_CODES = new Set<string>(['555']);
  */
 export const NON_ISTISNA_REASON_CODES = new Set<string>(['351']);
 
-/** Birim kodları — unit-config türev (M7, yeni). */
-export const UNIT_CODES = new Set<string>(UNIT_DEFINITIONS.map(u => u.code));
+/** Birim kodları — **CANLI** `configManager` türevi (M7, yeni). */
+export const UNIT_CODES = derivedSet<string>(() => configManager.units.map(u => u.code));
 
-/** Paket/Kap cins kodları — package-type-code-config türev (M7, yeni). */
+/**
+ * Paket/Kap cins kodları — package-type-code-config türev (M7, yeni).
+ *
+ * **CANLI DEĞİL** (bilinçli): `configManager` paket cinsi listesi için bir
+ * override yüzeyi sunmuyor (`ConfigInitOptions`'ta `packagingTypes` alanı yok).
+ * O yüzden enjekte edilecek bir kaynak da yok. `configManager`'a bu liste
+ * eklenirse burası da `derivedSet` yapılmalıdır.
+ */
 export const PACKAGING_TYPE_CODES = new Set<string>(
   PACKAGING_TYPE_CODE_DEFINITIONS.map(p => p.code),
 );
 
 /**
- * Para birimi kodları (ISO 4217).
- *
- * **M7 NOT:** Currency için M7 türetme uygulanmadı; `currency-config.ts` 30 tanım içerir ama
- * validator whitelist bu setteki geniş listeyi kabul eder. Tam M7 için ya config 69 koda
- * genişletilmeli ya constants 30'a küçültülmeli (breaking). Sprint 8 aday.
+ * Para birimi taban whitelist'i (ISO 4217) — `CURRENCY_CODES`'un DEĞİŞMEZ çekirdeği.
  *
  * B-28 uygulandı: TRL (eski Türk Lirası) çıkarıldı.
  */
-export const CURRENCY_CODES = new Set([
+const CURRENCY_CODE_BASELINE: ReadonlyArray<string> = [
   'TRY', 'USD', 'EUR', 'GBP', 'JPY', 'CHF', 'AUD', 'CAD', 'SEK', 'NOK',
   'DKK', 'PLN', 'CZK', 'HUF', 'RON', 'BGN', 'HRK', 'RUB', 'CNY', 'INR',
   'BRL', 'MXN', 'ZAR', 'KRW', 'SGD', 'HKD', 'NZD', 'THB', 'MYR', 'IDR',
@@ -239,6 +254,27 @@ export const CURRENCY_CODES = new Set([
   'JOD', 'LBP', 'TND', 'MAD', 'DZD', 'LYD', 'SDG', 'IRR', 'IQD', 'SYP',
   'PKR', 'AFN', 'AZN', 'GEL', 'KZT', 'UZS', 'TMT', 'KGS', 'TJS', 'AMD',
   'BAM', 'MKD', 'RSD', 'ALL', 'MDL', 'UAH', 'BYN', 'ISK',
+];
+
+/**
+ * Para birimi kodları (ISO 4217) — taban liste **∪** `configManager.currencies`.
+ *
+ * **M7 NOT (güncellendi):** `currency-config.ts` 30 tanım içerirken bu whitelist 68
+ * kod kabul ediyor. İkisini eşitlemek (config'i 68'e çıkarmak ya da whitelist'i
+ * 30'a indirmek) kırıcı olurdu. Onun yerine **BİRLEŞİM** alınır:
+ *
+ * - Taban liste hiç daralmaz → mevcut davranış birebir korunur
+ *   (varsayılanda `CURRENCY_DEFINITIONS ⊂ CURRENCY_CODE_BASELINE`, yani
+ *   varsayılan küme 68 kodda sabit kalır).
+ * - `configManager.updateCurrencies()` ile enjekte edilen YENİ kodlar
+ *   doğrulayıcı tarafından da kabul edilir (enjeksiyon dikişi kapanır).
+ *
+ * Merkezî katalog whitelist'i **daraltmak** isterse `configManager` bunu yapamaz;
+ * daraltma kırıcı olacağı için bilinçli olarak kapsam dışı bırakıldı.
+ */
+export const CURRENCY_CODES = derivedSet<string>(() => [
+  ...CURRENCY_CODE_BASELINE,
+  ...configManager.currencies.map(c => c.code),
 ]);
 
 /** INCOTERMS teslimat koşulları kodları */

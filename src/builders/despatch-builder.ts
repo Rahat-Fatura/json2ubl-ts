@@ -13,6 +13,8 @@ const DEFAULT_OPTIONS: Required<BuilderOptions> = {
   xmlDeclaration: true,
   /** Despatch'te TaxExemptionReasonCode alanı yok — 555 gate'i InvoiceBuilder'a özgü. */
   allowReducedKdvRate: false,
+  /** 4.1.0 — geriye uyumluluk için KAPALI; bkz. BuilderOptions.includeUblExtensions */
+  includeUblExtensions: false,
 };
 
 /**
@@ -40,7 +42,7 @@ export class DespatchBuilder {
     if (errors.length > 0) {
       throw new UblBuildError(errors);
     }
-    return serializeDespatch(input, this.options.prettyPrint);
+    return serializeDespatch(input, this.options.prettyPrint, this.options.includeUblExtensions);
   }
 
   /**
@@ -58,6 +60,6 @@ export class DespatchBuilder {
    * Validasyon yapmadan doğrudan XML oluşturur
    */
   buildUnsafe(input: DespatchInput): string {
-    return serializeDespatch(input, this.options.prettyPrint);
+    return serializeDespatch(input, this.options.prettyPrint, this.options.includeUblExtensions);
   }
 }

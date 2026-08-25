@@ -10,7 +10,9 @@ import type { CalculatedDocument } from './document-calculator';
 import type { CalculatedLine } from './line-calculator';
 import { calculateDocument } from './document-calculator';
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
-import { EXEMPTION_MAP } from './exemption-config';
+// 4.1.0: statik `EXEMPTION_MAP` yerine configManager — enjekte edilen istisna
+// kodunun ADI da XML'e doğru yazılsın diye (varsayılanda aynı veri).
+import { configManager } from './config-manager';
 import type { TaxIdType } from '../types/enums';
 import type { InvoiceInput, InvoiceLineInput } from '../types/invoice-input';
 import type {
@@ -419,7 +421,7 @@ function buildSingleLine(
   // Satır bazı istisna kodu belge seviyesine tercih edilir (B-NEW-11 / M11).
   const lineExemptionCode = line.kdvExemptionCode ?? calc.taxExemptionReason.kdv;
   const lineExemptionName = line.kdvExemptionCode
-    ? EXEMPTION_MAP.get(line.kdvExemptionCode)?.name
+    ? configManager.getExemption(line.kdvExemptionCode)?.name
     : calc.taxExemptionReason.kdvName ?? undefined;
 
   // Satır vergi subtotalleri
@@ -691,8 +693,8 @@ function buildAdditionalDocuments(
     const issueDate = simple.datetime?.substring(0, 10);
     docs.push(
       { id: '.', issueDate, documentTypeCode: 'DOSYA_NO', documentType: simple.sgk.documentNo, documentDescription: 'Döküm No' },
-      { id: '.', issueDate, documentTypeCode: 'MUKELLEF_ADI', documentType: simple.sgk.companyName, documentDescription: `${EXEMPTION_MAP.get(simple.sgk.type)?.name ?? simple.sgk.type} Adı` },
-      { id: '.', issueDate, documentTypeCode: 'MUKELLEF_KODU', documentType: simple.sgk.companyCode, documentDescription: `${EXEMPTION_MAP.get(simple.sgk.type)?.name ?? simple.sgk.type} Sicil Numarası` },
+      { id: '.', issueDate, documentTypeCode: 'MUKELLEF_ADI', documentType: simple.sgk.companyName, documentDescription: `${configManager.getExemption(simple.sgk.type)?.name ?? simple.sgk.type} Adı` },
+      { id: '.', issueDate, documentTypeCode: 'MUKELLEF_KODU', documentType: simple.sgk.companyCode, documentDescription: `${configManager.getExemption(simple.sgk.type)?.name ?? simple.sgk.type} Sicil Numarası` },
     );
   }
 
@@ -763,6 +765,10 @@ function buildBuyerCustomer(simple: SimpleInvoiceInput, profile: string): BuyerC
       cityName: bc.city,
       postalZone: bc.zipCode,
       country: bc.country,
+      // 4.1.0 — vergi dairesi artık BuyerCustomerParty'ye de eşleniyor.
+      // `PartyInput.taxOffice` → `cac:PartyTaxScheme/cac:TaxScheme/cbc:Name`
+      // (party-serializer'da mevcut desen). `mapParty` ile aynı davranış.
+      taxOffice: bc.taxOffice,
       telephone: bc.phone,
       email: bc.email,
       registrationName: bc.name,
