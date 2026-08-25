@@ -271,9 +271,9 @@ eleman artık **hiç yazılmıyor**.
 `examples-matrix` altın çıktıları yeniden üretildi: **116 dosyanın tamamında tek fark**
 kaldırılan `<cbc:PostalZone>00000</cbc:PostalZone>` satırıdır.
 
-## [Unreleased]
+## [2.3.0] — 2026-07-31
 
-**B-102 — "Tipte var, XML'de yok" sınıfının sistematik denetimi.** B-101 tekil bir hata değil, bir SINIF hatasıydı. Bu turda `SimpleInvoiceInput` ağacının **135 leaf alanının tamamı** TypeScript Compiler API ile çıkarılıp `src/` altındaki property-read'lerle mekanik olarak karşılaştırıldı. **9 alan** hiçbir yerde okunmuyordu; 1 alan daha koşullu olarak düşüyordu. Sürüm numarası bilerek yükseltilmedi; yayın kararı sürdürücüye ait.
+**B-102 — "Tipte var, XML'de yok" sınıfının sistematik denetimi.** B-101 tekil bir hata değil, bir SINIF hatasıydı. Bu turda `SimpleInvoiceInput` ağacının **135 leaf alanının tamamı** TypeScript Compiler API ile çıkarılıp `src/` altındaki property-read'lerle mekanik olarak karşılaştırıldı. **9 alan** hiçbir yerde okunmuyordu; 1 alan daha koşullu olarak düşüyordu. Bu değişiklikler 2.3.0 ile yayınlandı.
 
 ### Denetim tablosu (135 leaf alan tarandı)
 
@@ -326,7 +326,7 @@ Kalan 125 alan ya mapper'da ya da hesaplama motorunda (`line-calculator` / `docu
 
 ---
 
-**B-101 — İnternet satışı kargo/teslim bilgisi XML'e yazılıyor.** Sürüm numarası bilerek yükseltilmedi; yayın kararı sürdürücüye ait.
+**B-101 — İnternet satışı kargo/teslim bilgisi XML'e yazılıyor.** Bu değişiklikler 2.3.0 ile yayınlandı.
 
 ### Fixed
 - 🔴 **`onlineSale.carrierName` / `carrierTaxNumber` / `deliveryDate` SESSİZCE kayboluyordu.** Alanlar `SimpleOnlineSaleInput` tipinde tanımlıydı, ancak `simple-invoice-mapper` bunları hiç okumuyordu — kullanıcı doldursa bile üretilen XML'de tek iz kalmıyordu. Kütüphanenin kendi `examples/21-earsiv-satis-basic` örneği `carrierName: 'Hızlı Kargo A.Ş.'` + `carrierTaxNumber` veriyor, işlenmiş `output.xml`'de hiçbiri yoktu. Artık `cac:Delivery` bloğuna yazılıyorlar:

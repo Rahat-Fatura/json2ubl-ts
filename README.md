@@ -2,7 +2,8 @@
 
 JSON verilerinden resmi **UBL-TR 2.1** XML belgeleri oluşturan kapsamlı TypeScript kütüphanesi.
 
-GIB e-Fatura Paketi 17 Schematron kurallarını tam kapsam destekler. İki katmanlı API sunar:
+GİB e-Fatura Paketi **Schematron 20260701** ve **UBL-TR Kod Listeleri v1.43** kurallarını
+hedefler (yürürlük 14.09.2026). İki katmanlı API sunar:
 
 1. **SimpleInvoiceBuilder** — Basit JSON gir, SDK tüm hesaplamaları otomatik yapsın
 2. **InvoiceBuilder** — Tam kontrol — tüm alanları kendin belirle

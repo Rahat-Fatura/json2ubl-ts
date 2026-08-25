@@ -26,6 +26,7 @@
     "generate:paths": "tsx scripts/generate-session-paths.ts",
     "verify:paths": "tsx scripts/generate-session-paths.ts --check",
     "prebuild": "npm run verify:paths",
+    "prepublishOnly": "npm test && npm run build",
     "examples": "tsx examples/run-all.ts",
     "examples:filter": "tsx examples/run-all.ts",
     "matrix:scaffold": "tsx examples-matrix/scaffold.ts",
@@ -46,6 +47,9 @@
   ],
   "author": "rahat-fatura",
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/rahat-fatura/json2ubl-ts.git"
