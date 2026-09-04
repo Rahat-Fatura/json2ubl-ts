@@ -140,6 +140,25 @@ const CODE_351_FORBIDDEN_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTy
   InvoiceTypeCode.IHRACKAYITLI,
 ]);
 
+/**
+ * `documentType: 'SATIS'` kayıtları için VARSAYILAN izinli tipler.
+ *
+ * Bu küme, aşağıdaki üç bilinen kodun (151/351/555) yerine geçmez — onların
+ * kendi manuel override'ları var ve matrise SONRA yazıldıkları için kazanırlar.
+ * Buradaki küme, config'e SONRADAN eklenen (örn. DB'den beslenen) SATIS kodları
+ * içindir: eskiden bu kayıtlar matristen tamamen düşüyor ve `validateExemptionCode`
+ * onlara `UNKNOWN_EXEMPTION_CODE` veriyordu — yani kod tanımlanabiliyor ama
+ * kullanılamıyordu.
+ *
+ * Dar tutuldu (SATIS/TEVKIFAT/KOMISYONCU): geniş bir varsayılan, istisna
+ * türevli tiplerde anlamsız kodların kabulüne yol açardı.
+ */
+const SATIS_GROUP_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTypeCode>([
+  InvoiceTypeCode.SATIS,
+  InvoiceTypeCode.TEVKIFAT,
+  InvoiceTypeCode.KOMISYONCU,
+]);
+
 // ============================================================
 // Matris oluşturma (M7 türetme pattern)
 // ============================================================
@@ -148,18 +167,21 @@ const CODE_351_FORBIDDEN_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTy
  * `EXEMPTION_DEFINITIONS.documentType` alanından matris'i türetir.
  * 151 (OTV SATIS) ve 351 (M5 full) manuel override ile eklenir.
  *
- * `SATIS` documentType'ı olan config kodları (151, 351) bu fonksiyon içinde
- * atlanır — özel kuralları aşağıda ayrıca uygulanır.
+ * `SATIS` documentType'ı olan kayıtlar önce `SATIS_GROUP_ALLOWED_TYPES` ile
+ * matrise girer; bilinen üçünün (151/351/555) kendi kuralları aşağıda ÜZERİNE
+ * yazılır.
  */
 function buildMatrix(): Map<string, TaxExemptionRule> {
   const matrix = new Map<string, TaxExemptionRule>();
 
   for (const def of configManager.exemptions) {
-    // SATIS özel durumlar (151, 351, 555) aşağıda manuel override
-    if (def.documentType === 'SATIS') continue;
-
     let allowed: ReadonlySet<InvoiceTypeCode>;
     switch (def.documentType) {
+      case 'SATIS':
+        // Bilinen üçü (151/351/555) aşağıda manuel override ile ÜZERİNE yazılır;
+        // buradaki varsayılan yalnız sonradan eklenen SATIS kodları için geçerli.
+        allowed = SATIS_GROUP_ALLOWED_TYPES;
+        break;
       case 'ISTISNA':
         allowed = ISTISNA_GROUP_ALLOWED_TYPES;
         break;

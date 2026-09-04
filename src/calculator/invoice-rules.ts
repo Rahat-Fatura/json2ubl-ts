@@ -13,6 +13,7 @@ import type { WithholdingTaxDefinition } from './withholding-config';
 import type { ExemptionDefinition } from './exemption-config';
 import { BillingDocumentTypeCode } from './simple-types';
 import { PROFILE_TYPE_MATRIX } from '../config/constants';
+import { TAX_EXEMPTION_MATRIX } from '../validators/cross-check-matrix';
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 
 /** Schematron IADEInvioceCheck: BillingReference zorunlu olan IADE grubu tipleri */
@@ -326,7 +327,30 @@ export function getAvailableExemptions(type: string): ExemptionDefinition[] {
         ...configManager.getExemptionsByDocumentType('ISTISNA'),
       ];
     default:
-      return [];
+      // 🔴 ESKİDEN BURASI `return []` İDİ — SEÇİM LİSTESİ İLE DOĞRULAYICI AYRIŞIYORDU.
+      //
+      // Kütüphanenin dört parçası aynı senaryoda çelişiyordu (SATIS + KDV %0):
+      //   • veri     — 351/555/151 `documentType: 'SATIS'` taşıyor
+      //   • matris   — CODE_351_ALLOWED_TYPES SATIS içeriyor, `requiresZeroKdvLine: true`
+      //   • öneri    — KDV_ZERO_SUGGEST_351 kullanıcıya 351'i ÖNERİYOR
+      //   • bu liste — boş dönüyordu
+      // Yani kütüphane "351'i kullan" deyip 351'i listeye koymuyordu.
+      //
+      // Kök sebep, seçim listesinin doğrulayıcıdan AYRI bir switch olmasıydı: aynı
+      // veriden iki farklı kuralla türetilen iki yapı kaçınılmaz olarak ayrışır.
+      // Artık bilinmeyen tipler doğrulayıcının matrisinden türetiliyor — "bu tipe
+      // izin verilen istisnalar" sorusunun tek bir cevabı var.
+      //
+      // Yukarıdaki açık `case`'ler BİLEREK korundu: onlar GİB kararlarını (B-45
+      // karma senaryoları, SGK'nın ISTISNA kodlarını da alması) belgeleyen
+      // ifadeler ve bugünkü çıktıları değişmemeli. Bu dal yalnız eskiden BOŞ
+      // dönen tipleri etkiler → değişiklik toplayıcıdır (additive).
+      return configManager.exemptions.filter((def) => {
+        const rule = TAX_EXEMPTION_MATRIX.get(def.code);
+        if (!rule) return false;
+        if (rule.forbiddenInvoiceTypes?.has(type as InvoiceTypeCode)) return false;
+        return rule.allowedInvoiceTypes.has(type as InvoiceTypeCode);
+      });
   }
 }
 

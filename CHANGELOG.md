@@ -2,6 +2,56 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.1.1] — 2026-09-04
+
+> ### İstisna kodu seçim listesi ile doğrulayıcı ayrışıyordu
+>
+> `SATIS` faturasında KDV %0 kalem açan kullanıcıya istisna kodu soruluyor ama
+> seçebileceği **hiçbir kod sunulmuyordu**. Değişiklik **geriye uyumludur**:
+> bugüne kadar dolu dönen hiçbir liste değişmedi, yalnız boş dönenler doldu.
+
+### Fixed
+
+- 🔴 **`getAvailableExemptions` 9 fatura tipinde boş dizi döndürüyordu** — kütüphanenin
+  kendi parçaları birbiriyle çelişiyordu:
+
+  | parça | `SATIS` + KDV %0 senaryosunda |
+  |---|---|
+  | `EXEMPTION_DEFINITIONS` | `351`, `555`, `151` → `documentType: 'SATIS'` |
+  | `TAX_EXEMPTION_MATRIX` | `CODE_351_ALLOWED_TYPES` SATIS içeriyor, `requiresZeroKdvLine: true` |
+  | `KDV_ZERO_SUGGEST_351` | kullanıcıya **351'i öneriyor** |
+  | `getAvailableExemptions` | **`[]`** |
+
+  Yani kütüphane "351'i kullan" deyip 351'i listeye koymuyordu.
+
+  **Neden**: seçim listesi, doğrulayıcıdan AYRI bir `switch`ti ve `default: return []`
+  ile bitiyordu. Aynı veriden iki farklı kuralla türetilen iki yapı kaçınılmaz olarak
+  ayrışır. Artık bilinmeyen tipler `TAX_EXEMPTION_MATRIX`'ten türetiliyor — "bu tipe
+  izin verilen istisnalar" sorusunun tek bir cevabı var. Açık `case`'ler korundu
+  (B-45 karma senaryoları, SGK'nın ISTISNA kodlarını da alması).
+
+- **`documentType: 'SATIS'` kayıtları doğrulama matrisinden düşüyordu.** `buildMatrix`
+  bu kayıtları `continue` ile eliyor, ardından `151`/`351`/`555` elle geri ekleniyordu.
+  Sonuç: `configManager` üzerinden (örn. veritabanından) eklenen yeni bir SATIS kodu
+  tanımlanabiliyor ama kullanılamıyordu — `validateExemptionCode` ona
+  `UNKNOWN_EXEMPTION_CODE` veriyordu. Artık dar bir varsayılan küme
+  (`SATIS`/`TEVKIFAT`/`KOMISYONCU`) ile matrise giriyorlar; bilinen üçünün kendi
+  kuralları yine üzerine yazılıyor.
+
+### Ölçüm
+
+20 fatura tipinin tamamı için önce/sonra — **bozulan 0, kazanılan 9**:
+
+```
+SATIS · TEVKIFAT · KOMISYONCU                 0 → 3   (351, 555, 151)
+HKSSATIS · HKSKOMISYONCU · KONAKLAMAVERGISI
+TEKNOLOJIDESTEK · YTBSATIS · YTBTEVKIFAT      0 → 1   (351)
+ISTISNA · IADE ailesi · SGK
+OZELMATRAH · IHRACKAYITLI                     değişmedi
+```
+
+Test paketi: **100 dosya / 2169 test**, tamamı geçiyor.
+
 ## [4.1.0] — 2026-08-25
 
 > ### 🔴 UYUMLULUK DÜZELTMESİ — tevkifatlı faturalar GİB kapısında reddediliyordu
