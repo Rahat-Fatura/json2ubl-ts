@@ -275,6 +275,8 @@ export class InvoiceSession extends EventEmitter {
   private _uiState: InvoiceUIState;
   private _autoCalculate: boolean;
   private _liability?: CustomerLiability;
+  /** Tip KULLANICI tarafından mı seçildi (yapıcı varsayılanı DEĞİL). Bkz. yapıcıdaki not. */
+  private _typeExplicit = false;
   private readonly _isExport: boolean;
   private readonly _allowReducedKdvRate: boolean;
   /** Sprint 8h.7 / D-3: toInvoiceInput() reference equality cache. */
@@ -314,6 +316,22 @@ export class InvoiceSession extends EventEmitter {
     const effectiveType = this._input.type ?? 'SATIS';
     this._input.profile = effectiveProfile;
     this._input.type = effectiveType;
+
+    /* Tip AÇIKÇA mı seçildi, yoksa varsayılan mı?
+     *
+     * `document-calculator`'daki B-41 "kullanıcı tipi verdiyse DOKUNMA" diyor ve
+     * bu doğru bir karar. Ama yukarıdaki satır tipi PEŞİNEN 'SATIS' yazdığı için
+     * B-41 açısından her session "kullanıcı tip verdi" gibi görünüyordu →
+     * `resolveInvoiceType`'ın otomatik tespiti (tevkifat satırı varsa TEVKIFAT)
+     * session yolunda HİÇ çalışmıyordu.
+     *
+     * Ölçüldü: aynı girdi `calculateDocument`'ta TEVKIFAT, session'da SATIS
+     * üretiyordu — ve SATIS + WithholdingTaxTotal GİB'de reddediliyor
+     * (`GeneralWithholdingTaxTotalCheck`).
+     *
+     * Bayrak "varsayılan" ile "kullanıcı seçimi"ni ayırır; B-41'in korumak
+     * istediği ikincisidir. */
+    this._typeExplicit = options?.initialInput?.type !== undefined;
 
     this._uiState = deriveUIState(
       effectiveType,
@@ -476,6 +494,14 @@ export class InvoiceSession extends EventEmitter {
       }
     }
 
+    /* Tip yoluna DOKUNULDUYSA açık seçimdir — değeri değişmese bile.
+     *
+     * Bunu diff kontrolünden ÖNCE yapmak şart: kullanıcı varsayılanla aynı olan
+     * 'SATIS'ı bilerek seçtiğinde diff no-op'a düşer ve `_updateType` hiç
+     * çağrılmaz. Bayrak orada kurulsaydı "kullanıcı SATIS dedi" ile "hiç
+     * dokunmadı" ayırt edilemez, B-41 sessizce çiğnenirdi. */
+    if (path === 'type') this._typeExplicit = true;
+
     // Diff detection — değişiklik yoksa no-op
     const previousValue = this._readSessionValue(tokens, path);
     if (deepEqual(previousValue, value)) return;
@@ -576,6 +602,9 @@ export class InvoiceSession extends EventEmitter {
    * NOT: D-12 forcedReason field-level event payload Sprint 8h.4'te eklenir.
    */
   private _updateType(type: string, previousType: string | undefined): void {
+    // Güvenlik ağı: `update()` bayrağı zaten kuruyor; _updateType başka bir
+    // yoldan çağrılırsa da işaret kaybolmasın.
+    this._typeExplicit = true;
     const previousProfile = this._input.profile ?? 'TICARIFATURA';
 
     // isExport=true → type force ISTISNA (M10 identity, D-12)
@@ -942,12 +971,31 @@ export class InvoiceSession extends EventEmitter {
     }
 
     try {
-      this._calculation = calculateDocument(this._input);
+      /* Tip açıkça seçilmediyse hesaplayıcıya BOŞ geçilir; B-41'in
+       * "kullanıcı seçimi kazanır" dalı devreye girmez ve `resolveInvoiceType`
+       * satırlardan doğru tipi türetir. */
+      this._calculation = calculateDocument(
+        this._typeExplicit ? this._input : { ...this._input, type: undefined },
+      );
       this.emit('calculated', this._calculation);
 
-      // Hesaplama sonrası tip/profil güncellemesi
-      if (!this._input.type && this._calculation.type !== (this._input.type ?? 'SATIS')) {
+      /* Türetilen tip varsayılandan farklıysa BENİMSE. Eskiden buradaki koşul
+       * `!this._input.type` idi; yapıcı tipi hep doldurduğu için ÖLÜ DALDI. */
+      if (!this._typeExplicit && this._calculation.type !== this._input.type) {
+        const previousType = this._input.type;
+        const previousProfile = this._input.profile;
+        const newType = this._calculation.type;
+        const newProfile = this._isExport
+          ? 'IHRACAT'
+          : resolveProfileForType(this._input.profile, newType, this._liability, false);
+        this._input = { ...this._input, type: newType, profile: newProfile };
         this.updateUIState();
+        this.emit('type-changed', {
+          type: newType,
+          profile: newProfile,
+          previousType: previousType ?? 'SATIS',
+          previousProfile,
+        });
       }
 
       return this._calculation;

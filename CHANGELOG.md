@@ -2,6 +2,39 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.1.4] — 2026-09-04
+
+### Fixed
+
+- **`InvoiceSession` ile doğrudan hesaplayıcı aynı girdiye FARKLI fatura tipi veriyordu.**
+
+  ```
+  aynı girdi (kalemde tevkifat kodu 624, tipe hiç dokunulmadı)
+    InvoiceSession    → SATIS      ← GİB reddeder
+    calculateDocument → TEVKIFAT   ← doğru
+  ```
+
+  **Neden**: yapıcı `type`'ı PEŞİNEN `'SATIS'` yazıyordu; `resolveInvoiceType`
+  içindeki B-41 kuralı ("kullanıcı tipi verdiyse dokunma") bunu kullanıcı seçimi
+  sanıyor ve otomatik tespit session yolunda hiç çalışmıyordu. `calculate()`
+  içindeki `if (!this._input.type && …)` dalı da bu yüzden ÖLÜ KODDU.
+
+  **Çözüm**: `_typeExplicit` bayrağı "varsayılan" ile "kullanıcı seçimi"ni ayırır —
+  B-41'in korumak istediği ikincisidir. Bayrak `update()` içinde diff kontrolünden
+  ÖNCE kurulur; aksi halde varsayılanla aynı olan `'SATIS'` bilerek seçildiğinde
+  no-op'a düşer ve seçim sessizce ezilirdi.
+
+  Davranış:
+
+  | senaryo | sonuç |
+  |---|---|
+  | tipe hiç dokunulmadı + tevkifat satırı | `TEVKIFAT` (iki yol hizalı) |
+  | kullanıcı açıkça `SATIS` + tevkifat satırı | `SATIS` korunur **+ 4.1.3 uyarısı** |
+  | kullanıcı açıkça `TEVKIFATIADE` | korunur (B-41'in asıl amacı) |
+  | tevkifatsız fatura | `SATIS`, değişmedi |
+
+Test paketi: **102 dosya / 2207 test**, sıfır regresyon.
+
 ## [4.1.3] — 2026-09-04
 
 > ### HKS faturası kesilemiyordu; iki doğrulama kuralı UI yüzeyine hiç ulaşmıyordu
