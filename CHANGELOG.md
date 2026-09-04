@@ -2,6 +2,52 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.1.2] — 2026-09-04
+
+> ### 🔴 0 KDV'li fatura GİB kapısında REDDEDİLİYORDU
+>
+> İstisna kodu KALEM üzerinde verildiğinde — formların normal yolu — belge
+> seviyesi `TaxTotal` istisnasız üretiliyordu. Kalem XML'i doğru, belge toplamı
+> eksik olduğu için fatura reddediliyordu.
+
+### Fixed
+
+- 🔴 **Belge seviyesi `cac:TaxTotal/cac:TaxSubtotal`, kalem istisna kodunu taşımıyordu.**
+
+  **Kanıt** (GİB Schematron, `TaxExemptionReasonCheck`):
+  ```
+  ../../cbc:InvoiceTypeCode = 'IADE' or … or not(cbc:TaxAmount = 0)
+  or not(cac:TaxCategory/cac:TaxScheme/cbc:TaxTypeCode = '0015')
+  or string-length(normalize-space(cac:TaxCategory/cbc:TaxExemptionReason)) > 0
+  ```
+  `SATIS` + KDV %0 + kalem kodu `351` üretiminde:
+
+  | | `TaxExemptionReasonCode` |
+  |---|---|
+  | `cac:InvoiceLine/cac:TaxTotal` | `351` ✅ |
+  | belge `cac:TaxTotal` | **yok** ❌ → kural ihlali |
+
+  **Neden**: kalem seviyesi `line.kdvExemptionCode ?? belge` önceliğini uyguluyordu
+  (`buildLine`), belge seviyesi ise YALNIZ `calc.taxExemptionReason.kdv`'yi —
+  yani `SimpleInvoiceInput.kdvExemptionCode`'u — okuyordu. Kod yalnız kalemde
+  verildiğinde bu değer `null` kalıyor; `shouldAddExemption` doğru şekilde `true`
+  dönmesine rağmen yazılacak bir değer olmuyordu.
+
+  **Çözüm**: belge seviyesi subtotal, kodu bulamadığında katkı veren kalemlerden
+  türetiyor (`resolveSubtotalExemptionFromLines`, `kdvPercent === subtotal.percent`
+  eşleşmesi). Belge kodu varsa davranış AYNEN korunur → değişiklik toplayıcıdır.
+
+### Ölçüm
+
+```
+kalem 351, KDV 0            → belge kodu 351   (eskiden yok — ihlal)
+belge 351 (eski yol)        → belge kodu 351   (değişmedi)
+iki kalem, ikisi de 351     → belge kodu 351
+KDV %20, istisna yok        → kod yok         (değişmedi)
+```
+
+Test paketi: **100 dosya / 2169 test**, tamamı geçiyor.
+
 ## [4.1.1] — 2026-09-04
 
 > ### İstisna kodu seçim listesi ile doğrulayıcı ayrışıyordu

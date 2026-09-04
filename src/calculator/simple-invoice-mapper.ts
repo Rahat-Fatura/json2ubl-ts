@@ -312,8 +312,24 @@ function buildTaxTotals(
     // İstisna kodu ekle — phantom subtotal'da (CalcSeqNum=-1) her zaman yazılır (§2.1.4)
     const isPhantomSub = ts.calculationSequenceNumeric === -1;
     if (shouldAddExemption(ts, calc, simple) || isPhantomSub) {
-      subtotal.taxExemptionReasonCode = calc.taxExemptionReason.kdv ?? undefined;
-      subtotal.taxExemptionReason = calc.taxExemptionReason.kdvName ?? undefined;
+      // 🔴 KALEM GERİ-DÖNÜŞÜ. Eskiden burada YALNIZ `calc.taxExemptionReason.kdv`
+      // okunuyordu — yani BELGE seviyesindeki `kdvExemptionCode`. İstisna kodu
+      // yalnız KALEM üzerinde verildiğinde (formların normal yolu) bu değer null
+      // kalıyor, `shouldAddExemption` true dönmesine rağmen yazılacak bir şey
+      // olmuyor ve belge seviyesi TaxSubtotal istisnasız çıkıyordu.
+      //
+      // Kalem seviyesi zaten `line.kdvExemptionCode ?? belge` önceliğini
+      // uyguluyor (aşağıda, buildLine); belge seviyesi bu geri-dönüşten yoksundu.
+      // Sonuç GİB kapısında red:
+      //   TaxExemptionReasonCheck — "TaxAmount=0 ve TaxTypeCode=0015 iken
+      //   TaxExemptionReason zorunludur"
+      // Kalem XML'i doğru, belge toplamı eksik olduğu için fatura reddediliyordu.
+      //
+      // Belge kodu varsa DAVRANIŞ AYNEN KORUNUR; geri-dönüş yalnız o yokken devreye
+      // girer → değişiklik toplayıcıdır.
+      const fallback = resolveSubtotalExemptionFromLines(ts, simple);
+      subtotal.taxExemptionReasonCode = calc.taxExemptionReason.kdv ?? fallback?.code;
+      subtotal.taxExemptionReason = calc.taxExemptionReason.kdvName ?? fallback?.name;
     }
 
     return subtotal;
@@ -325,6 +341,32 @@ function buildTaxTotals(
     taxAmount: calc.taxes.taxTotal,
     taxSubtotals,
   }];
+}
+
+/**
+ * Belge seviyesi bir KDV subtotal'ı için istisna kodunu KALEMLERDEN türetir.
+ *
+ * Belge toplamı, kalemleri `kod + yüzde` ikilisine göre grupluyor
+ * (document-calculator 3a). Dolayısıyla bir KDV subtotal'ına katkı veren kalemler
+ * `kdvPercent === ts.percent` olanlardır; istisna sebebi de onlardan gelir.
+ *
+ * Birden çok farklı kod varsa: gruplama zaten tek bir subtotal ürettiği için XML'e
+ * tek bir sebep yazılabilir — ilki seçilir. Bu, modelin kendi sınırı (ayrı sebepler
+ * ayrı subtotal isterdi); burada sessizce yanlış bir şey üretilmiyor, var olan
+ * gruplamaya uyuluyor.
+ */
+function resolveSubtotalExemptionFromLines(
+  ts: { code: string; percent: number },
+  simple: SimpleInvoiceInput,
+): { code: string; name: string | undefined } | undefined {
+  if (ts.code !== '0015') return undefined;
+  for (const line of simple.lines ?? []) {
+    if (line.kdvPercent !== ts.percent) continue;
+    const code = line.kdvExemptionCode;
+    if (!code) continue;
+    return { code, name: configManager.getExemption(code)?.name };
+  }
+  return undefined;
 }
 
 /**
