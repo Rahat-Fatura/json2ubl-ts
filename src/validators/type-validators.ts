@@ -35,7 +35,7 @@ export function validateByType(input: InvoiceInput): ValidationError[] {
   if (input.withholdingTaxTotals && input.withholdingTaxTotals.length > 0) {
     if (!WITHHOLDING_ALLOWED_TYPES.has(typeCode)) {
       errors.push(invalidValue('withholdingTaxTotals',
-        'WithholdingTaxTotal sadece TEVKIFAT/TEVKIFATIADE/YTBTEVKIFAT/YTBTEVKIFATIADE/IADE/YTBIADE/SGK/SARJ/SARJANLIK tiplerinde kullanılabilir',
+        'WithholdingTaxTotal sadece TEVKIFAT/YTBTEVKIFAT/IADE/YTBIADE/SGK/SARJ/SARJANLIK tiplerinde kullanılabilir',
         typeCode));
     }
   }

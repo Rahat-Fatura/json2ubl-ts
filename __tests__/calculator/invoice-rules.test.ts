@@ -126,10 +126,26 @@ describe('invoice-rules — matris tekleştirme (Sprint 1, M1/M2/M8)', () => {
     });
   });
 
-  describe('B-79 — showWithholdingTaxSelector TEVKIFATIADE\'ye daraldı', () => {
-    it('sade IADE tipinde selector görünmez', () => {
+  /**
+   * 🔴 B-79 KARARI 4.1.5'TE TERSİNE ÇEVRİLDİ — BU TESTLERİ ESKİ HÂLİNE ALMAYIN.
+   *
+   * Eski kural "sade IADE'de selector görünmez, TEVKIFATIADE'de görünür" idi.
+   * Gerçeğin tam tersiydi. Canlı GİB paketi (şematron 2026-08-04) ile ölçüldü:
+   *
+   *   TEVKIFATIADE + WithholdingTaxTotal → RED (GeneralWithholdingTaxTotalCheck)
+   *   IADE         + WithholdingTaxTotal → GEÇER
+   *
+   * Şematron metni birebir: "cac:WithholdingTaxTotal elamanı varken fatura tipi
+   * TEVKIFAT, YTBTEVKIFAT, IADE, YTBIADE, SGK, SARJ ve SARJANLIK olabilir."
+   * TEVKIFATIADE o listede YOKTUR.
+   *
+   * Sahadaki tevkifatlı iade = tip IADE + kalemde tevkifat kodu. Eski kural,
+   * doğru senaryoyu kapatıp GİB'in reddettiğini açıyordu.
+   */
+  describe('B-79 (4.1.5 ters) — selector şematronun izinli tip listesinden okunur', () => {
+    it('sade IADE tipinde selector GÖRÜNÜR (eski B-79 bunu gizliyordu)', () => {
       const fv = deriveFieldVisibility('IADE', 'TEMELFATURA');
-      expect(fv.showWithholdingTaxSelector).toBe(false);
+      expect(fv.showWithholdingTaxSelector).toBe(true);
     });
 
     it('TEVKIFAT tipinde selector görünür', () => {
@@ -137,9 +153,20 @@ describe('invoice-rules — matris tekleştirme (Sprint 1, M1/M2/M8)', () => {
       expect(fv.showWithholdingTaxSelector).toBe(true);
     });
 
-    it('TEVKIFATIADE tipinde selector görünür', () => {
+    it('TEVKIFATIADE tipinde selector GÖRÜNMEZ (GİB o tipte stopaj kabul etmiyor)', () => {
       const fv = deriveFieldVisibility('TEVKIFATIADE', 'TEMELFATURA');
-      expect(fv.showWithholdingTaxSelector).toBe(true);
+      expect(fv.showWithholdingTaxSelector).toBe(false);
+    });
+
+    it('şematronun yedi izinli tipinin TAMAMINDA görünür, dışındakilerde görünmez', () => {
+      const izinli = ['TEVKIFAT', 'YTBTEVKIFAT', 'IADE', 'YTBIADE', 'SGK', 'SARJ', 'SARJANLIK'];
+      const disarida = ['TEVKIFATIADE', 'YTBTEVKIFATIADE', 'SATIS', 'ISTISNA', 'IHRACAT'];
+      for (const t of izinli) {
+        expect(deriveFieldVisibility(t, 'TEMELFATURA').showWithholdingTaxSelector, t).toBe(true);
+      }
+      for (const t of disarida) {
+        expect(deriveFieldVisibility(t, 'TEMELFATURA').showWithholdingTaxSelector, t).toBe(false);
+      }
     });
   });
 });

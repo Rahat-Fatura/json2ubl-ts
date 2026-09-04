@@ -83,10 +83,25 @@ describe('examples-matrix/ meta.json integrity', () => {
     }
   });
 
-  it('review alanı whitelist ("auto-ok" | "needs-manual-check")', () => {
+  /**
+   * `review` üç değer alır ve üçü FARKLI güç seviyesidir:
+   *
+   *   auto-ok             — iskele üretti, kimse bakmadı. En ZAYIF sinyal.
+   *   needs-manual-check  — bilinen bir şüphe var, notes'ta yazılı.
+   *   schematron-verified — çıktı CANLI GİB paketine sorulmuş ve temiz dönmüştür.
+   *
+   * Üçüncüsü 4.1.5'te eklendi. Gerekçesi somut: 10 tevkifatlı-iade fixture'ı
+   * "auto-ok" damgasıyla duruyordu ve HEPSİ GİB'in reddettiği XML üretiyordu
+   * (GeneralWithholdingTaxTotalCheck). "İskele ürettiği için doğrudur" bir
+   * doğrulama değildir; ayrı bir damga olmadan bu ikisi karışıyordu.
+   */
+  it('review alanı whitelist ("auto-ok" | "needs-manual-check" | "schematron-verified")', () => {
     for (const p of allPaths) {
       const meta = JSON.parse(fs.readFileSync(p, 'utf-8')) as MetaBase;
-      expect(['auto-ok', 'needs-manual-check'], `invalid review: ${p}`).toContain(meta.review);
+      expect(
+        ['auto-ok', 'needs-manual-check', 'schematron-verified'],
+        `invalid review: ${p}`,
+      ).toContain(meta.review);
     }
   });
 });

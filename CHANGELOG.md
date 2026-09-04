@@ -2,6 +2,75 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.1.5] — 2026-09-04
+
+### Fixed
+
+- **Tevkifatlı iade tam ters kodlanıyordu: GİB'in yasakladığı tip açık, izin
+  verdiği tip kapalıydı.**
+
+  Kütüphane `cac:WithholdingTaxTotal`'a DOKUZ tipte izin veriyordu; şematron
+  YEDİ tipe izin verir. Fazladan olan ikisi tam da "tevkifatlı iade" için
+  eklenmiş `TEVKIFATIADE` ve `YTBTEVKIFATIADE` idi.
+
+  `UBL-TR_Common_Schematron.xml` · `GeneralWithholdingTaxTotalCheck`, birebir:
+
+  > "cac:WithholdingTaxTotal elamanı varken fatura tipi TEVKIFAT, YTBTEVKIFAT,
+  > IADE, YTBIADE, SGK, SARJ ve SARJANLIK olabilir."
+
+  Canlı pakette (şematron `2026-08-04`) ölçüldü:
+
+  | kombinasyon | GİB |
+  |---|---|
+  | `TEVKIFATIADE` + `WithholdingTaxTotal` | ❌ RED |
+  | `YTBTEVKIFATIADE` + `WithholdingTaxTotal` | ❌ RED |
+  | `IADE` + `WithholdingTaxTotal` | ✅ GEÇER |
+
+  Aynı yanlış inanç UI kapısında da vardı (**B-79**: "sade IADE'de selector
+  gereksiz, yalnız TEVKIFATIADE'de göster") — yani kütüphane doğru senaryoyu
+  gizleyip yanlışını öneriyordu. Sahadaki doğru yapı: **tip `IADE` + kalemde
+  tevkifat kodu**.
+
+  Düzeltilenler:
+
+  - `WITHHOLDING_ALLOWED_TYPES` 9 → 7 (şematronun birebir listesi)
+  - `deriveFieldVisibility` · `showWithholdingTaxSelector` artık o listeden
+    okunuyor; B-79 dalı kaldırıldı
+  - `invoice-rules.ts`'teki ayrı 7'lik yerel dizi tek kaynağa bağlandı
+    (kütüphane iki farklı gerçeğe inanıyordu)
+  - Hata mesajından yanlış iki tip çıkarıldı
+
+- **`examples-matrix`'te on fixture GİB'in reddedeceği XML üretiyordu** ve hepsi
+  `review: "auto-ok"` damgalıydı. Her biri canlı şematrona soruldu:
+
+  - 9'u `IADE`/`YTBIADE` tipine taşındı ve **temiz geçtiği ölçülerek**
+    `review: "schematron-verified"` yapıldı; slug'lar da dürüstleştirildi
+    (`*-tevkifatiade-*` → `*-iade-tevkifatli-*`)
+  - `ticarifatura-tevkifatiade-baseline` **negatif fixture'a çevrildi**
+    (`invalid/invalid-value/invalid-value-tevkifatiade-withholding-yasak`):
+    senaryo kurtarılamaz, çünkü `InvoiceTypeCodeCheck` "Fatura tipi IADE iken
+    fatura profili sadece TEMELFATURA, EARSIVFATURA, ILAC_TIBBICIHAZ,
+    YATIRIMTESVIK, IDIS veya KAMU olabilir" der — `TICARIFATURA` listede yok
+
+### Added
+
+- `meta.json` · `review` üçüncü değer aldı: **`schematron-verified`**. Gerekçe
+  somut — on fixture "auto-ok" damgasıyla hatalıydı; "iskele üretti" ile
+  "GİB'in kendi kuralına soruldu" ayrı sinyallerdir.
+- `FieldVisibility` JSDoc'u: `show*` bayrakları **"izinli mi"** demektir,
+  "varsayılanda açık mı" DEĞİL. Üç seviye (izinli / varsayılan-açık /
+  açılabilir) ayrıştırıldı; son ikisi tüketicinin ergonomi kararıdır.
+
+### Known issues
+
+- **Tevkifat kodu `650` ("Diğer", kütüphanenin TEK `dynamicPercent` kodu) canlı
+  GİB paketinde reddediliyor** (`WithholdingTaxTotalCheck`). Tek değişkenli
+  kanıt: aynı belgede `650` → `603` yapıldığında şematron temiz geçiyor. Yani
+  "dinamik yüzde" özelliği şu anda GİB'in kabul etmediği XML üretiyor. Kod
+  listesi kararı gerektirdiği için bu sürümde DEĞİŞTİRİLMEDİ;
+  `temelfatura-iade-tevkifatli-dinamik-650` fixture'ı `needs-manual-check`
+  damgasıyla bu kusuru pinler.
+
 ## [4.1.4] — 2026-09-04
 
 ### Fixed

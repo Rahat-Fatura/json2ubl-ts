@@ -1,0 +1,35 @@
+{
+  "id": "kamu-iade-tevkifatli-baseline",
+  "kind": "invoice",
+  "profile": "KAMU",
+  "type": "IADE",
+  "variantSlug": "iade-tevkifatli-baseline",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [
+      "603"
+    ],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": true,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "buyerCustomer",
+      "iban"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:03:11.516Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "schematron-verified",
+  "notes": "Baseline — KAMU+IADE, kod 603 %70 (kamu iade+tevkifat) (tevkifatlı iade: tip IADE + kalemde tevkifat kodu)",
+  "rationale": "Tip TEVKIFATIADE DEĞİL IADE. Şematron GeneralWithholdingTaxTotalCheck, cac:WithholdingTaxTotal taşıyan belgede yalnız TEVKIFAT/YTBTEVKIFAT/IADE/YTBIADE/SGK/SARJ/SARJANLIK tiplerine izin verir — TEVKIFATIADE listede YOKTUR. Bu fixture 4.1.5 öncesinde 'auto-ok' damgasıyla GİB'in reddedeceği XML üretiyordu; çıktı canlı pakete (şematron 2026-08-04) sorulup temiz döndüğü için review=schematron-verified."
+}

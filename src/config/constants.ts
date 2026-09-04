@@ -104,9 +104,24 @@ export const TEVKIFAT_GROUP_TYPES = new Set<InvoiceTypeCode>([
 ]);
 
 /** WithholdingTaxTotal kullanılabilir tipler */
+/**
+ * `cac:WithholdingTaxTotal` taşıyabilen fatura tipleri — ŞEMATRONUN BİREBİR LİSTESİ.
+ *
+ * Kaynak: `UBL-TR_Common_Schematron.xml` · `GeneralWithholdingTaxTotalCheck`
+ *   "cac:WithholdingTaxTotal elamanı varken fatura tipi TEVKIFAT, YTBTEVKIFAT,
+ *    IADE, YTBIADE, SGK, SARJ ve SARJANLIK olabilir."
+ *
+ * 🔴 Eskiden burada 9 tip vardı: `TEVKIFATIADE` ve `YTBTEVKIFATIADE` FAZLADANDI.
+ * Canlı doğrulandı (paket 20260701): `TEVKIFATIADE` + `WithholdingTaxTotal`
+ * → `GeneralWithholdingTaxTotalCheck` reddi. Yani kütüphane, GİB'in kabul
+ * etmeyeceği bir kombinasyona izin veriyordu.
+ *
+ * Sahadaki doğru yapı: TEVKİFATLI İADE = tip `IADE` + kalemlerde tevkifat kodu.
+ * `IADE` bu listede zaten var; eksik olan, seçicinin ona açılmasıydı (bkz.
+ * `deriveFieldVisibility`, eski B-79 kararı).
+ */
 export const WITHHOLDING_ALLOWED_TYPES = new Set<InvoiceTypeCode>([
-  InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE,
-  InvoiceTypeCode.YTBTEVKIFAT, InvoiceTypeCode.YTBTEVKIFATIADE,
+  InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.YTBTEVKIFAT,
   InvoiceTypeCode.IADE, InvoiceTypeCode.YTBIADE,
   InvoiceTypeCode.SGK, InvoiceTypeCode.SARJ, InvoiceTypeCode.SARJANLIK,
 ]);

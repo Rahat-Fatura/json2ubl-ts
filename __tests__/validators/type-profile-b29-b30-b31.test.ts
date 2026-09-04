@@ -58,8 +58,20 @@ describe('type-validators — B-30 WithholdingTaxTotal ters yön', () => {
     expect(errors.filter(e => e.path === 'withholdingTaxTotals')).toHaveLength(0);
   });
 
-  // Sprint 8f.1 (Bug #1): TEVKIFATIADE + YTBTEVKIFATIADE tevkifatlı iade semantiği — stopaj zorunlu
-  it('B-30: TEVKIFATIADE tipinde WithholdingTaxTotal kabul edilir (Bug #1 fix)', () => {
+  /**
+   * 🔴 "Sprint 8f.1 Bug #1 fix" GERİ ALINDI (4.1.5) — TEKRAR AÇMAYIN.
+   *
+   * O düzeltme, "tevkifatlı iade" senaryosunu TEVKIFATIADE/YTBTEVKIFATIADE
+   * tiplerine stopaj ekleyerek çözmeye çalıştı ve listeyi 7'den 9'a çıkardı.
+   * GİB o iki tipi kabul etmiyor; canlı paketle (şematron 2026-08-04) ölçüldü:
+   *
+   *   TEVKIFATIADE + WithholdingTaxTotal    → GeneralWithholdingTaxTotalCheck RED
+   *   YTBTEVKIFATIADE + WithholdingTaxTotal → aynı RED
+   *
+   * Bu genişletme sessizdi: 10 fixture "auto-ok" damgasıyla GİB'in reddedeceği
+   * XML üretiyordu. Doğru kodlama tip IADE'dir (aşağıdaki testler pinler).
+   */
+  it('B-30 (ters): TEVKIFATIADE tipinde WithholdingTaxTotal REDDEDİLİR', () => {
     const input = createSatisInput({
       invoiceTypeCode: InvoiceTypeCode.TEVKIFATIADE,
       withholdingTaxTotals: [{
@@ -70,12 +82,26 @@ describe('type-validators — B-30 WithholdingTaxTotal ters yön', () => {
       }],
     });
     const errors = validateByType(input);
-    expect(errors.filter(e => e.path === 'withholdingTaxTotals')).toHaveLength(0);
+    expect(errors.filter(e => e.path === 'withholdingTaxTotals')).toHaveLength(1);
   });
 
-  it('B-30: YTBTEVKIFATIADE tipinde WithholdingTaxTotal kabul edilir (Bug #1 fix)', () => {
+  it('B-30 (ters): YTBTEVKIFATIADE tipinde WithholdingTaxTotal REDDEDİLİR', () => {
     const input = createSatisInput({
       invoiceTypeCode: InvoiceTypeCode.YTBTEVKIFATIADE,
+      withholdingTaxTotals: [{
+        taxAmount: 10,
+        taxSubtotals: [{
+          taxableAmount: 100, taxAmount: 10, percent: 10, taxTypeCode: '601',
+        }],
+      }],
+    });
+    const errors = validateByType(input);
+    expect(errors.filter(e => e.path === 'withholdingTaxTotals')).toHaveLength(1);
+  });
+
+  it('B-30: IADE tipinde WithholdingTaxTotal KABUL EDİLİR (tevkifatlı iadenin doğru kodlanışı)', () => {
+    const input = createSatisInput({
+      invoiceTypeCode: InvoiceTypeCode.IADE,
       withholdingTaxTotals: [{
         taxAmount: 10,
         taxSubtotals: [{
@@ -87,7 +113,7 @@ describe('type-validators — B-30 WithholdingTaxTotal ters yön', () => {
     expect(errors.filter(e => e.path === 'withholdingTaxTotals')).toHaveLength(0);
   });
 
-  it('B-30 regresyon: SATIS tipinde WithholdingTaxTotal HALA reddedilir (Bug #1 fix sonrası)', () => {
+  it('B-30 regresyon: SATIS tipinde WithholdingTaxTotal HALA reddedilir', () => {
     const input = createSatisInput({
       invoiceTypeCode: InvoiceTypeCode.SATIS,
       withholdingTaxTotals: [{
@@ -100,8 +126,9 @@ describe('type-validators — B-30 WithholdingTaxTotal ters yön', () => {
     const errors = validateByType(input);
     const wh = errors.find(e => e.code === 'INVALID_VALUE' && e.path === 'withholdingTaxTotals');
     expect(wh).toBeDefined();
-    expect(wh!.expected).toContain('TEVKIFATIADE');
-    expect(wh!.expected).toContain('YTBTEVKIFATIADE');
+    // Mesaj şematronun YEDİ tipini sayar; IADE'yi içerir, TEVKIFATIADE'yi İÇERMEZ.
+    expect(wh!.expected).toContain('IADE');
+    expect(wh!.expected).not.toContain('TEVKIFATIADE');
   });
 });
 

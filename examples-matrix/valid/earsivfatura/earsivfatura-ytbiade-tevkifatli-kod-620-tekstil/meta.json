@@ -1,0 +1,34 @@
+{
+  "id": "earsivfatura-ytbiade-tevkifatli-kod-620-tekstil",
+  "kind": "invoice",
+  "profile": "EARSIVFATURA",
+  "type": "YTBIADE",
+  "variantSlug": "ytbiade-tevkifatli-kod-620-tekstil",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [
+      "620"
+    ],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "ytbNo"
+    ]
+  },
+  "generatedAt": "2026-04-24T14:03:11.520Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "schematron-verified",
+  "notes": "Varyant — EARSIVFATURA+YTBIADE, kod 620 %50 tekstil (tevkifatlı iade: tip YTBIADE + kalemde tevkifat kodu)",
+  "rationale": "Tip YTBTEVKIFATIADE DEĞİL YTBIADE. Şematron GeneralWithholdingTaxTotalCheck, cac:WithholdingTaxTotal taşıyan belgede yalnız TEVKIFAT/YTBTEVKIFAT/IADE/YTBIADE/SGK/SARJ/SARJANLIK tiplerine izin verir — YTBTEVKIFATIADE listede YOKTUR. Bu fixture 4.1.5 öncesinde 'auto-ok' damgasıyla GİB'in reddedeceği XML üretiyordu; çıktı canlı pakete (şematron 2026-08-04) sorulup temiz döndüğü için review=schematron-verified."
+}

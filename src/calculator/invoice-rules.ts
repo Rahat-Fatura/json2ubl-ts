@@ -12,7 +12,7 @@ import { configManager } from './config-manager';
 import type { WithholdingTaxDefinition } from './withholding-config';
 import type { ExemptionDefinition } from './exemption-config';
 import { BillingDocumentTypeCode } from './simple-types';
-import { PROFILE_TYPE_MATRIX } from '../config/constants';
+import { PROFILE_TYPE_MATRIX, WITHHOLDING_ALLOWED_TYPES } from '../config/constants';
 import { TAX_EXEMPTION_MATRIX } from '../validators/cross-check-matrix';
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 
@@ -27,16 +27,14 @@ const IADE_GROUP = ['IADE', 'TEVKIFATIADE', 'YTBIADE', 'YTBTEVKIFATIADE'];
  * ÜRETİR — dolayısıyla tevkifatlı satır ile fatura tipi bu listede kesişmek
  * zorundadır, yoksa GİB kapıda reddeder.
  *
- * ⚠️ `constants.WITHHOLDING_ALLOWED_TYPES` bu listeden GENİŞTİR (TEVKIFATIADE ve
- * YTBTEVKIFATIADE'yi de içerir); şematron paketi 20260701'de o iki tip assert'i
- * GEÇMİYOR. Buradaki dizi şematron metninin birebir karşılığıdır — daraltma
- * bilinçlidir, constants'a hizalanmamalıdır.
+ * 4.1.3'te bu dizi burada AYRI durur, `constants.WITHHOLDING_ALLOWED_TYPES` ise
+ * `TEVKIFATIADE`/`YTBTEVKIFATIADE` ile 9 tip içerirdi — yani kütüphane iki farklı
+ * gerçeğe inanıyordu. 4.1.5'te constants şematrona indirildi ve ikisi TEK KAYNAĞA
+ * bağlandı; bu dizi artık ondan türetiliyor, kopya değil.
  *
  * @see schematrons/UBL-TR_Common_Schematron.xml — GeneralWithholdingTaxTotalCheck
  */
-const WITHHOLDING_TOTAL_ALLOWED_TYPES = [
-  'TEVKIFAT', 'YTBTEVKIFAT', 'IADE', 'YTBIADE', 'SGK', 'SARJ', 'SARJANLIK',
-];
+const WITHHOLDING_TOTAL_ALLOWED_TYPES: readonly string[] = [...WITHHOLDING_ALLOWED_TYPES];
 
 // ─── Alıcı Mükellefiyet Durumu ──────────────────────────────────────────────
 
@@ -129,11 +127,39 @@ export function filterTypesByLiability(
 
 // ─── UI Field Visibility ─────────────────────────────────────────────────────
 
-/** Hangi fatura tipinde hangi ek alanların gösterileceğini belirler */
+/**
+ * Fatura tipine göre hangi ek alanların KULLANILABİLİR olduğunu belirler.
+ *
+ * ## `show*` = "İZİNLİ Mİ", "varsayılanda açık mı" DEĞİL
+ *
+ * Bu adlandırma yanıltıcıdır ve bir kez pahalıya patladı: `show*` bir ergonomi
+ * tavsiyesi değil, GİB'in o alanı o tipte kabul edip etmediğidir. Bayrak
+ * `false` ise alan belgede YASAKTIR — tüketici onu açsa bile GİB reddeder.
+ * `true` ise alan SERBESTTİR; kullanıcıya kendiliğinden mi geleceği, yoksa
+ * bir menüden mi açılacağı KÜTÜPHANENİN KARARI DEĞİLDİR.
+ *
+ * Üç seviyeli doğru okuma (tüketici tarafında, örn. portalın `column-config`i):
+ *
+ *   izinli mi?          ← BURASI (`show*`) — yasal kapı
+ *   varsayılan açık mı? ← tüketici (tipik senaryo hangisi)
+ *   açılabilir mi?      ← tüketici (menüde teklif edilsin mi)
+ *
+ * Somut örnek: `IADE` tipinde `showWithholdingTaxSelector` artık `true` —
+ * çünkü GİB `IADE + WithholdingTaxTotal`'ı kabul eder. Ama iadelerin büyük
+ * çoğunluğu tevkifatsızdır; sütunu herkese açmak gürültü olur. Doğru davranış
+ * "menüde var, kapalı gelir" — ve bu kararı tüketici verir, kütüphane değil.
+ * `TEVKIFAT` tipinde ise aynı bayrak `true` ve tüketici sütunu açık başlatır.
+ */
 export interface FieldVisibility {
   /** İade fatura referansı (billingReference) alanı gösterilsin mi? */
   showBillingReference: boolean;
-  /** Tevkifat kodu seçici gösterilsin mi? (satır bazında) */
+  /**
+   * Satırda tevkifat kodu VERİLEBİLİR mi? (izin kapısı — bkz. arayüz notu)
+   *
+   * Kaynak: `WITHHOLDING_ALLOWED_TYPES` = şematronun
+   * `GeneralWithholdingTaxTotalCheck` listesi (TEVKIFAT, YTBTEVKIFAT, IADE,
+   * YTBIADE, SGK, SARJ, SARJANLIK). `TEVKIFATIADE` bu listede DEĞİLDİR.
+   */
   showWithholdingTaxSelector: boolean;
   /** İstisna kodu seçici gösterilsin mi? */
   showExemptionCodeSelector: boolean;
@@ -278,9 +304,20 @@ export function resolveTypeForProfile(
  */
 export function deriveFieldVisibility(type: string, profile: string, currencyCode?: string): FieldVisibility {
   const isIade = type === 'IADE' || type === 'YTBIADE' || type === 'TEVKIFATIADE' || type === 'YTBTEVKIFATIADE';
-  // B-79: sade IADE'de withholding selector gereksiz; yalnız TEVKIFATIADE/YTBTEVKIFATIADE'de göster
-  const isTevkifatIade = type === 'TEVKIFATIADE' || type === 'YTBTEVKIFATIADE';
-  const isTevkifat = type === 'TEVKIFAT' || type === 'YTBTEVKIFAT';
+  /* 🔴 B-79 KARARI TERSİNE ÇEVRİLDİ (şematronla ölçüldü).
+   *
+   * Eski karar: "sade IADE'de withholding selector gereksiz; yalnız
+   * TEVKIFATIADE/YTBTEVKIFATIADE'de göster". Bu tam tersiydi:
+   *   TEVKIFATIADE + WithholdingTaxTotal → GİB REDDEDİYOR
+   *   IADE         + WithholdingTaxTotal → GİB KABUL EDİYOR
+   * (`GeneralWithholdingTaxTotalCheck`, canlı paket 20260701 ile doğrulandı.)
+   *
+   * Sahadaki gerçek yapı: tevkifatlı iade = tip IADE + kalemde tevkifat kodu.
+   *
+   * Bayrak artık şematronun izinli tip listesinden okunuyor; "İZİNLİ Mİ"
+   * sorusunun cevabıdır — "varsayılanda açık mı" DEĞİL. Sütunun kendiliğinden
+   * gelip gelmeyeceği tüketicinin ergonomi kararıdır (portalda
+   * `column-config.ts` · `visibleByDefault` / `toggleable`). */
   const isIstisna = type === 'ISTISNA' || type === 'YTBISTISNA';
   const isIhracKayitli = type === 'IHRACKAYITLI';
   const isOzelMatrah = type === 'OZELMATRAH';
@@ -299,7 +336,7 @@ export function deriveFieldVisibility(type: string, profile: string, currencyCod
 
   return {
     showBillingReference: isIade,
-    showWithholdingTaxSelector: isTevkifat || isTevkifatIade,
+    showWithholdingTaxSelector: WITHHOLDING_ALLOWED_TYPES.has(type as InvoiceTypeCode),
     showExemptionCodeSelector: isIstisna || isIhracKayitli || isOzelMatrah,
     showOzelMatrah: isOzelMatrah,
     showSgkInfo: isSgk,

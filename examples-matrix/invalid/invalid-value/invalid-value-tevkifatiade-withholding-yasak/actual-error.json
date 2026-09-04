@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "INVALID_VALUE",
+      "path": "withholdingTaxTotals",
+      "message": "Geçersiz değer: withholdingTaxTotals"
+    }
+  ]
+}

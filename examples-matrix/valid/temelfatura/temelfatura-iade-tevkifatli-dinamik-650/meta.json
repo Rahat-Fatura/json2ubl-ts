@@ -1,0 +1,32 @@
+{
+  "id": "temelfatura-iade-tevkifatli-dinamik-650",
+  "kind": "invoice",
+  "profile": "TEMELFATURA",
+  "type": "IADE",
+  "variantSlug": "iade-tevkifatli-dinamik-650",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [
+      "650"
+    ],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": []
+  },
+  "generatedAt": "2026-04-24T14:03:11.512Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "needs-manual-check",
+  "notes": "Varyant — TEMELFATURA+IADE, 650 dinamik kod %50 (tevkifatlı iade: tip IADE + kalemde tevkifat kodu)",
+  "rationale": "Tip TEVKIFATIADE DEĞİL IADE. Şematron GeneralWithholdingTaxTotalCheck, cac:WithholdingTaxTotal taşıyan belgede yalnız TEVKIFAT/YTBTEVKIFAT/IADE/YTBIADE/SGK/SARJ/SARJANLIK tiplerine izin verir — TEVKIFATIADE listede YOKTUR. Bu fixture 4.1.5 öncesinde 'auto-ok' damgasıyla GİB'in reddedeceği XML üretiyordu; çıktı canlı pakete (şematron 2026-08-04) sorulup temiz döndüğü için review=schematron-verified. ⚠️ AYRI KUSUR: tevkifat kodu '650' (\"Diğer\", kütüphanenin TEK dinamik-yüzde kodu) canlı pakette WithholdingTaxTotalCheck ile REDDEDİLİYOR. Tek değişkenli kanıt: aynı belgede 650→603 yapıldığında şematron temiz geçiyor. Bu fixture kütüphane davranışını (dinamik yüzde hesabı) pinler, GİB geçerliliğini DEĞİL."
+}
