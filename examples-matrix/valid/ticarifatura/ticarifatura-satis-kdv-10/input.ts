@@ -28,7 +28,7 @@ export const input: SimpleInvoiceInput = {
       name: 'Gıda ürünü',
       quantity: 10,
       price: 100,
-      unitCode: 'Kg',
+      unitCode: 'KGM',
       kdvPercent: 10,
     },
   ],

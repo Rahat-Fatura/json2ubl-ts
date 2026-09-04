@@ -88,7 +88,7 @@
   </cac:LegalMonetaryTotal>
   <cac:InvoiceLine>
     <cbc:ID>1</cbc:ID>
-    <cbc:InvoicedQuantity unitCode="Kg">10.00</cbc:InvoicedQuantity>
+    <cbc:InvoicedQuantity unitCode="KGM">10.00</cbc:InvoicedQuantity>
     <cbc:LineExtensionAmount currencyID="TRY">1000.00</cbc:LineExtensionAmount>
     <cac:TaxTotal>
       <cbc:TaxAmount currencyID="TRY">100.00</cbc:TaxAmount>

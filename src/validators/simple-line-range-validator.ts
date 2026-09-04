@@ -24,6 +24,35 @@ export function validateSimpleLineRanges(input: SimpleInvoiceInput): ValidationE
   const errors: ValidationError[] = [];
 
   input.lines.forEach((line, i) => {
+    /* 🔴 4.2.0 — BİRİM KODU FAIL-OPEN'DI.
+     *
+     * `resolveUnitCode()` tanımadığı değeri OLDUĞU GİBİ döndürür ve serileştirici
+     * onu XML'e yazar; `isValidUnitCode()` ise var olduğu hâlde HİÇBİR
+     * doğrulayıcıdan çağrılmıyordu. Sonuç: uydurma birim sessizce belgeye
+     * giriyor ve GİB kapıda reddediyor.
+     *
+     * Canlı kanıt (kaplama seferi): konaklama vergisi fixture'ları `'Gece'`
+     * kullanıyordu — bu değer birim listesinde HİÇ YOK, `isValidUnitCode('Gece')`
+     * false, buna rağmen 4 profilde belge üretiliyor ve
+     * `GeneralUnitCodeCheck :: Geçersiz unitCode niteliği : 'Gece'` ile
+     * reddediliyordu. Doğrusu `'DAY'` (Gün).
+     *
+     * Kontrol `resolveUnitCode` SONRASI yapılır: kullanıcı "Adet" gibi ad
+     * yazdığında koda çözülür ve geçerli sayılır. configManager üzerinden
+     * okunur ki enjekte edilen özel birimler reddedilmesin. */
+    if (line.unitCode !== undefined && line.unitCode !== null && line.unitCode !== '') {
+      const cozulen = configManager.resolveUnitCode(line.unitCode);
+      if (!configManager.isValidUnitCode(cozulen)) {
+        errors.push({
+          code: 'INVALID_VALUE',
+          message: `Geçersiz birim kodu '${line.unitCode}' (lines[${i}].unitCode) — GİB birim listesinde yok`,
+          path: `lines[${i}].unitCode`,
+          expected: 'GİB birim kod listesindeki bir değer (ör. C62, KGM, DAY)',
+          actual: String(line.unitCode),
+        });
+      }
+    }
+
     // B-NEW-01 — kdvPercent [0, 100]
     if (line.kdvPercent < 0 || line.kdvPercent > 100) {
       errors.push({
@@ -68,7 +97,7 @@ export function validateSimpleLineRanges(input: SimpleInvoiceInput): ValidationE
           code: 'INVALID_VALUE',
           message: `Geçersiz tevkifat kodu: ${line.withholdingTaxCode}. Tanımlı kodlar için withholding-config.ts dosyasına bakınız.`,
           path: `lines[${i}].withholdingTaxCode`,
-          expected: 'WithholdingTaxType listesinden (601-627, 650, 801-825)',
+          expected: 'WithholdingTaxType listesinden (601-627, 801-825)',
           actual: line.withholdingTaxCode,
         });
       } else if (whDef.dynamicPercent) {

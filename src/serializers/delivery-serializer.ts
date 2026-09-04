@@ -162,11 +162,22 @@ function serializeShipment(shipment: DeliveryInput['shipment'], indent: string):
           // CustomsDeclaration — IHRACKAYITLI + 702 için (B-14, Schematron satır 322/451)
           // Sequence: ID → ValidityPeriod → ApplicableTransportMeans → IssuerParty
           if (thu.customsDeclarations) {
-            for (const cd of thu.customsDeclarations) {
+            for (const [cdIndex, cd] of thu.customsDeclarations.entries()) {
               thuLines.push(`${i3}<cac:CustomsDeclaration>`);
-              if (isNonEmpty(cd.id)) {
-                thuLines.push(`${i3}  ${cbcOptionalTag('ID', cd.id)}`);
-              }
+              /* 🔴 `cbc:ID` KOŞULSUZ yazılır — UBL `CustomsDeclarationType` onu ZORUNLU
+               * kılar (minOccurs=1). Eskiden yalnız `cd.id` doluysa yazılıyordu; İHRAÇ
+               * KAYITLI akışında mapper `alicidibsatirkod`tan yalnız `issuerParty`
+               * ürettiği için ID hiç gelmiyor ve belge XSD'den düşüyordu:
+               *   «"IssuerParty" elementi bu konumda geçersiz. Beklenen: ID.»
+               * Bu, ihraç kayıtlı satışın TAMAMINI kesilemez yapıyordu (kaplama seferi,
+               * 6 profil × IHRACKAYITLI).
+               *
+               * Şematron bu alanın DEĞERİNİ denetlemez (yalnız IssuerParty altındaki
+               * ALICIDIBSATIRKOD'a bakar), dolayısıyla iş verisi uydurmak gerekmez.
+               * Konum sırası yazılır — `Shipment/ID`'de zaten uygulanan emsalin aynısı. */
+              thuLines.push(
+                `${i3}  ${cbcRequiredTag('ID', isNonEmpty(cd.id) ? cd.id : String(cdIndex + 1), 'CustomsDeclaration')}`,
+              );
               if (cd.issuerParty?.partyIdentifications?.length) {
                 thuLines.push(`${i3}  <cac:IssuerParty>`);
                 for (const pi of cd.issuerParty.partyIdentifications) {
@@ -175,6 +186,20 @@ function serializeShipment(shipment: DeliveryInput['shipment'], indent: string):
                     `${i3}      ${cbcRequiredTag('ID', pi.id, 'CustomsDeclaration/IssuerParty/PartyIdentification', { schemeID: pi.schemeID })}`,
                   );
                   thuLines.push(`${i3}    </cac:PartyIdentification>`);
+                }
+                /* 🔴 UBL-TR `PartyType` bu bağlamda ÜÇÜNÜ birden ister:
+                 * PartyIdentification + PartyName + PostalAddress. Yalnız kimlik
+                 * yazılan belge «"IssuerParty" elementinin içeriği eksik» ile
+                 * XSD'den düşer (canlı ölçüm). Ad ve adres alıcıdan gelir —
+                 * ALICIDIBSATIRKOD zaten alıcının kodudur. */
+                if (isNonEmpty(cd.issuerParty.name)) {
+                  thuLines.push(`${i3}    <cac:PartyName>`);
+                  thuLines.push(`${i3}      ${cbcRequiredTag('Name', cd.issuerParty.name, 'CustomsDeclaration/IssuerParty/PartyName')}`);
+                  thuLines.push(`${i3}    </cac:PartyName>`);
+                }
+                if (cd.issuerParty.postalAddress) {
+                  const adres = serializeAddress(cd.issuerParty.postalAddress, 'PostalAddress', `${i3}    `);
+                  if (adres) thuLines.push(adres);
                 }
                 thuLines.push(`${i3}  </cac:IssuerParty>`);
               }

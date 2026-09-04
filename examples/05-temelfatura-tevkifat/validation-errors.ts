@@ -32,12 +32,12 @@ export const invalidCases: InvalidCase[] = [
     validationLevel: 'basic',
   },
   {
-    description: '(pre-check) Kod 650 dinamik oran için withholdingTaxPercent eksik',
+    description: '(pre-check) Kod 650 4.2.0’da KALDIRILDI — artık geçersiz kod olarak reddedilir',
     input: mutate((i) => {
       i.lines[0].withholdingTaxCode = '650';
       delete i.lines[0].withholdingTaxPercent;
     }),
-    expectedErrorMessage: "Tevkifat kodu 650 için 'withholdingTaxPercent' zorunlu",
+    expectedErrorMessage: 'Geçersiz tevkifat kodu: 650',
     validationLevel: 'basic',
   },
   {

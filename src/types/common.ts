@@ -398,6 +398,13 @@ export interface CustomsDeclarationInput {
 
 export interface CustomsDeclarationIssuerPartyInput {
   partyIdentifications?: PartyIdentificationInput[];
+  /**
+   * UBL-TR `PartyType` bu bağlamda PartyIdentification + PartyName + PostalAddress
+   * ÜÇÜNÜ birden zorunlu kılar (canlı XSD ile ölçüldü). Yalnız kimlik yazılan belge
+   * «"IssuerParty" elementinin içeriği eksik» diye reddedilir.
+   */
+  name?: string;
+  postalAddress?: AddressInput;
 }
 
 /** Taraf kimliği (schemeID'li) — CustomsDeclaration IssuerParty için */

@@ -45,7 +45,11 @@ export const WITHHOLDING_TAX_DEFINITIONS: ReadonlyArray<WithholdingTaxDefinition
   { code: '625', name: 'Ticari Reklam Hizmetleri', percent: 30 },
   { code: '626', name: 'Diğer Teslimler', percent: 20 },
   { code: '627', name: 'Demir-Çelik Ürünlerinin Teslimi', percent: 50 },
-  { code: '650', name: 'Diğer', percent: 0, dynamicPercent: true },
+  /* 🔴 '650' ("Diğer", tek dynamicPercent kodu) 4.2.0'da ÇIKARILDI: canlı GİB
+   * paketi `WithholdingTaxTotalCheck` ile reddediyor. Şematron kodu ve oranı
+   * BİRLİKTE (`concat(',',TaxTypeCode,Percent,',')`) sabit listede arar; serbest
+   * oranlı bir tevkifat kodu bu tasarımda mümkün değildir. Kaplama seferinde 53
+   * kodun tamamı tek tek denendi, yalnız bu düştü. */
   { code: '801', name: 'Yapım İşleri ile Mühendislik-Mimarlık ve Etüt-Proje Hizmetleri (Tam)', percent: 100 },
   { code: '802', name: 'Etüt, Plan-Proje, Danışmanlık, Denetim ve Benzeri Hizmetler (Tam)', percent: 100 },
   { code: '803', name: 'Makine, Teçhizat, Demirbaş ve Taşıtlara Ait Tadil, Bakım ve Onarım Hizmetleri (Tam)', percent: 100 },

@@ -10,22 +10,27 @@ import {
 } from '../../src/config/constants';
 
 describe('withholding-config', () => {
-  describe('M3 — 650 dinamik tevkifat', () => {
-    it('650 entry tanımlı', () => {
-      const def = WITHHOLDING_TAX_MAP.get('650');
-      expect(def).toBeDefined();
-      expect(def?.name).toBe('Diğer');
-      expect(def?.percent).toBe(0);
-      expect(def?.dynamicPercent).toBe(true);
+    /* 🔴 4.2.0 — TEVKİFAT KODU '650' KALDIRILDI. Bu bloğu geri açmayın.
+     *
+     * '650' ("Diğer") kütüphanenin tek `dynamicPercent` kodu idi: oranı kullanıcı
+     * belirliyordu. Canlı GİB paketi (şematron 2026-08-04) bunu reddediyor —
+     * `WithholdingTaxTotalCheck` kodu ve oranı BİRLİKTE
+     * (`concat(',',TaxTypeCode,Percent,',')`) sabit kod listesinde arar, dolayısıyla
+     * serbest oranlı bir tevkifat kodu bu tasarımda mümkün DEĞİLDİR.
+     *
+     * Kaplama seferinde 53 kodun tamamı tek tek denendi; 52'si temiz, yalnız bu
+     * düştü. Testler artık kodun YOKLUĞUNU pinliyor. */
+  describe('650 KALDIRILDI (4.2.0) — GİB serbest oranlı tevkifat kodu kabul etmez', () => {
+    it('650 tanımı YOK', () => {
+      expect(WITHHOLDING_TAX_MAP.get('650')).toBeUndefined();
     });
 
-    it('isValidWithholdingTaxCode(650) true', () => {
-      expect(isValidWithholdingTaxCode('650')).toBe(true);
+    it('isValidWithholdingTaxCode(650) false', () => {
+      expect(isValidWithholdingTaxCode('650')).toBe(false);
     });
 
-    it('diğer 6xx/8xx kodlar sabit (dynamicPercent yok)', () => {
-      expect(WITHHOLDING_TAX_MAP.get('601')?.dynamicPercent).toBeUndefined();
-      expect(WITHHOLDING_TAX_MAP.get('801')?.dynamicPercent).toBeUndefined();
+    it('hiçbir kod dynamicPercent taşımaz', () => {
+      expect(WITHHOLDING_TAX_DEFINITIONS.filter(d => d.dynamicPercent)).toEqual([]);
     });
   });
 
@@ -42,9 +47,9 @@ describe('withholding-config', () => {
       }
     });
 
-    it('Set boyutu = config boyutu (53 kod, 650 dahil)', () => {
+    it('Set boyutu = config boyutu (52 kod — 650 4.2.0’da çıkarıldı)', () => {
       expect(WITHHOLDING_TAX_TYPE_CODES.size).toBe(WITHHOLDING_TAX_DEFINITIONS.length);
-      expect(WITHHOLDING_TAX_DEFINITIONS).toHaveLength(53);
+      expect(WITHHOLDING_TAX_DEFINITIONS).toHaveLength(52);
     });
   });
 
@@ -53,10 +58,10 @@ describe('withholding-config', () => {
       expect(WITHHOLDING_TAX_TYPE_WITH_PERCENT.has('60140')).toBe(true);
     });
 
-    it('650 için 65000-65099 tam aralık', () => {
-      expect(WITHHOLDING_TAX_TYPE_WITH_PERCENT.has('65000')).toBe(true);
-      expect(WITHHOLDING_TAX_TYPE_WITH_PERCENT.has('65025')).toBe(true);
-      expect(WITHHOLDING_TAX_TYPE_WITH_PERCENT.has('65099')).toBe(true);
+    it('650 aralığı ARTIK ÜRETİLMİYOR (kod kaldırıldı)', () => {
+      expect(WITHHOLDING_TAX_TYPE_WITH_PERCENT.has('65000')).toBe(false);
+      expect(WITHHOLDING_TAX_TYPE_WITH_PERCENT.has('65050')).toBe(false);
+      expect(WITHHOLDING_TAX_TYPE_WITH_PERCENT.has('65099')).toBe(false);
     });
 
     it('8xx tam tevkifat için code+100 formatı', () => {

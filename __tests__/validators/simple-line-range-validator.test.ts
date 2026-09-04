@@ -122,27 +122,28 @@ describe('simple-line-range-validator (B-NEW-01, 02, 03)', () => {
       expect(err?.actual).toBe('999');
     });
 
-    it('650 dinamik kod + percent eksik → MISSING_FIELD', () => {
+    /* 4.2.0: '650' kaldırıldı; bu üç senaryo artık "geçersiz kod" davranışını pinliyor. */
+    it('650 artık GEÇERSİZ KOD olarak reddedilir (percent’ten bağımsız)', () => {
       const errs = validateSimpleLineRanges(baseInput({
         lines: [{ name: 'X', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
           withholdingTaxCode: '650' /* withholdingTaxPercent yok */ }],
       }));
-      const err = errs.find(e => e.path === 'lines[0].withholdingTaxPercent');
-      expect(err?.code).toBe('MISSING_FIELD');
+      const err = errs.find(e => e.path === 'lines[0].withholdingTaxCode');
+      expect(err?.code).toBe('INVALID_VALUE');
       expect(err?.message).toContain('650');
     });
 
-    it('650 dinamik + percent=150 → INVALID_VALUE (range)', () => {
+    it('650 + percent=150 → yine geçersiz kod', () => {
       const errs = validateSimpleLineRanges(baseInput({
         lines: [{ name: 'X', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
           withholdingTaxCode: '650', withholdingTaxPercent: 150 }],
       }));
-      const err = errs.find(e => e.path === 'lines[0].withholdingTaxPercent');
+      const err = errs.find(e => e.path === 'lines[0].withholdingTaxCode');
       expect(err?.code).toBe('INVALID_VALUE');
-      expect(err?.actual).toBe('150');
+      expect(err?.actual).toBe('650');
     });
 
-    it('603 sabit kod + percent verilmiş → INVALID_VALUE (sadece 650 için)', () => {
+    it('603 sabit kod + percent verilmiş → INVALID_VALUE (sabit oranlı koda oran verilemez)', () => {
       const errs = validateSimpleLineRanges(baseInput({
         lines: [{ name: 'X', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
           withholdingTaxCode: '603', withholdingTaxPercent: 99 }],
@@ -160,12 +161,12 @@ describe('simple-line-range-validator (B-NEW-01, 02, 03)', () => {
       expect(errs.filter(e => e.path?.includes('withholding'))).toHaveLength(0);
     });
 
-    it('650 + percent=50 → pas (geçerli dinamik)', () => {
+    it('650 + percent=50 → ARTIK PAS DEĞİL, reddedilir', () => {
       const errs = validateSimpleLineRanges(baseInput({
         lines: [{ name: 'X', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
           withholdingTaxCode: '650', withholdingTaxPercent: 50 }],
       }));
-      expect(errs.filter(e => e.path?.includes('withholding'))).toHaveLength(0);
+      expect(errs.filter(e => e.path === 'lines[0].withholdingTaxCode')).toHaveLength(1);
     });
   });
 

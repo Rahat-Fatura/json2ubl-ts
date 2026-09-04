@@ -40,8 +40,8 @@ describe('M7 — constants.ts config türetme simetrisi', () => {
       expect(WITHHOLDING_TAX_TYPE_CODES.size).toBe(WITHHOLDING_TAX_DEFINITIONS.length);
     });
 
-    it('650 (dinamik) dahil', () => {
-      expect(WITHHOLDING_TAX_TYPE_CODES.has('650')).toBe(true);
+    it('650 DAHİL DEĞİL — 4.2.0’da çıkarıldı (GİB serbest oran kabul etmiyor)', () => {
+      expect(WITHHOLDING_TAX_TYPE_CODES.has('650')).toBe(false);
     });
   });
 
@@ -104,10 +104,10 @@ describe('M7 — constants.ts config türetme simetrisi', () => {
   });
 
   describe('WITHHOLDING_TAX_TYPE_WITH_PERCENT — B-04 regenerate', () => {
-    it('650 dinamik range 65000-65099 tam', () => {
+    it('650 aralığı HİÇ üretilmiyor (kod 4.2.0’da kaldırıldı)', () => {
       for (let p = 0; p < 100; p++) {
         const combo = `650${String(p).padStart(2, '0')}`;
-        expect(WITHHOLDING_TAX_TYPE_WITH_PERCENT.has(combo)).toBe(true);
+        expect(WITHHOLDING_TAX_TYPE_WITH_PERCENT.has(combo)).toBe(false);
       }
     });
 

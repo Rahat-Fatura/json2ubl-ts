@@ -5,7 +5,7 @@ import type { SimpleInvoiceInput } from '../../src';
  *
  * - Çoklu KDV oranları (%1, %10, %20)
  * - Satır iskonto (AllowanceCharge)
- * - Tevkifat kodu 650 dinamik oran (M3/B-95)
+ * - Tevkifat kodu 626 (Diğer Teslimler, %20)
  * - EUR + ExchangeRate (yabancı para)
  * - Notlar, OrderReference
  * - PaymentMeans + IBAN
@@ -22,7 +22,7 @@ export const input: SimpleInvoiceInput = {
 
   notes: [
     'Showcase — tüm feature\'ları tek faturada gösteren örnek.',
-    '3 farklı KDV oranı + 650 dinamik tevkifat + iskonto + EUR.',
+    '3 farklı KDV oranı + 626 tevkifat + iskonto + EUR.',
   ],
 
   orderReference: {
@@ -61,8 +61,7 @@ export const input: SimpleInvoiceInput = {
     {
       name: 'İndirimli KDV Kalemi (%10)',
       quantity: 10, price: 50, unitCode: 'Adet', kdvPercent: 10,
-      withholdingTaxCode: '650',
-      withholdingTaxPercent: 30, // dinamik
+      withholdingTaxCode: '626', // dinamik
     },
     {
       name: 'Standart KDV Kalemi (%20)',

@@ -12,6 +12,7 @@
 
 import type { SimpleLineInput, SimpleInvoiceInput } from './simple-types';
 import { WITHHOLDING_ALLOWED_TYPES } from '../config/constants';
+import { configManager } from './config-manager';
 import type { InvoiceTypeCode } from '../types/enums';
 
 // ─── Type/Profile Flags (extract from deriveFieldVisibility) ─────────────────
@@ -128,9 +129,14 @@ export function deriveLineFieldVisibility(
      * de `WITHHOLDING_ALLOWED_TYPES`'tan okuyor. */
     showWithholdingTaxSelector: flags.canCarryWithholding,
 
+    /* 4.2.0: '650' dizgisine çakılıydı; o kod kaldırılınca ölü kalırdı. Artık
+     * kodun KENDİ `dynamicPercent` niteliğinden okunuyor — bugün hiçbir kodda
+     * yok (bayrak daima false), GİB ileride serbest oranlı bir kod tanımlarsa
+     * kendiliğinden çalışır. */
     showWithholdingPercentInput:
       flags.canCarryWithholding
-      && line.withholdingTaxCode === '650',
+      && !!line.withholdingTaxCode
+      && configManager.getWithholdingTax(line.withholdingTaxCode)?.dynamicPercent === true,
 
     showLineDelivery: flags.isIhracat || flags.isIhracKayitli,
 

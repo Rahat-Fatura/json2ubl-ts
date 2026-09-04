@@ -73,13 +73,15 @@ describe('deriveLineFieldVisibility kuralları', () => {
     expect(v.showWithholdingTaxSelector).toBe(true);
   });
 
-  it('showWithholdingPercentInput: 650 dinamik kod ile birlikte', () => {
+  /* 4.2.0: '650' kaldırıldı → dinamik yüzde girişi ARTIK HİÇBİR KODDA açılmaz.
+   * Bayrak yerinde duruyor (tüketici API'si kırılmasın) ama daima false. */
+  it('showWithholdingPercentInput: 650 kalktığı için artık açılmaz', () => {
     const v = deriveLineFieldVisibility(
       { ...baseLine, withholdingTaxCode: '650' },
       { type: 'TEVKIFAT', profile: 'TICARIFATURA' },
       0,
     );
-    expect(v.showWithholdingPercentInput).toBe(true);
+    expect(v.showWithholdingPercentInput).toBe(false);
   });
 
   it('showWithholdingPercentInput: false for sabit kod (601 vs 650)', () => {
@@ -153,9 +155,11 @@ describe('InvoiceSession lineFields array senkron (Sprint 8h.5)', () => {
 
   it('addLine sonrası lineFields uzar', () => {
     const session = new InvoiceSession({ initialInput: { type: 'TEVKIFAT' } });
-    session.addLine({ ...baseLine, withholdingTaxCode: '650', withholdingTaxPercent: 10 });
+    session.addLine({ ...baseLine, withholdingTaxCode: '603' });
     expect(session.uiState.lineFields).toHaveLength(1);
-    expect(session.uiState.lineFields[0].showWithholdingPercentInput).toBe(true);
+    // 4.2.0: dinamik-yüzde bayrağı ('650' kalktı) daima false → dizinin senkronu
+    // TEVKIFAT'ta gerçekten değişen bayrakla ölçülür.
+    expect(session.uiState.lineFields[0].showWithholdingTaxSelector).toBe(true);
   });
 
   it('removeLine sonrası lineFields kısalır', () => {
@@ -169,11 +173,11 @@ describe('InvoiceSession lineFields array senkron (Sprint 8h.5)', () => {
 
   it('updateLine sonrası lineFields[i] re-derive', () => {
     const session = new InvoiceSession({ initialInput: { type: 'TEVKIFAT' }, autoCalculate: false });
-    session.addLine({ ...baseLine, withholdingTaxCode: '601' });
-    expect(session.uiState.lineFields[0].showWithholdingPercentInput).toBe(false);
-    session.updateLine(0, { withholdingTaxCode: '650' });
+    session.addLine({ ...baseLine, kdvPercent: 20 });
+    expect(session.uiState.lineFields[0].showKdvExemptionCodeSelector).toBe(false);
+    session.updateLine(0, { kdvPercent: 0 });
     // autoCalculate=false → calculate çağrılmaz, lineFields visibility kuralı yine de değişir
-    expect(session.uiState.lineFields[0].showWithholdingPercentInput).toBe(true);
+    expect(session.uiState.lineFields[0].showKdvExemptionCodeSelector).toBe(true);
   });
 
   it('setLines sonrası lineFields tamamen yeniden derive', () => {

@@ -40,7 +40,7 @@ export const input: SimpleInvoiceInput = {
       name: 'Domates — Standart Kalite',
       quantity: 500,
       price: 20,
-      unitCode: 'KG', // Kilogram
+      unitCode: 'KGM', // Kilogram
       kdvPercent: 10,
       additionalItemIdentifications: [
         { schemeId: 'KUNYENO', value: 'KUN-2026-042-DOM001' },

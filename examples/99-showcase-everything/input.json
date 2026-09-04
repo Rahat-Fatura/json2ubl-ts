@@ -8,7 +8,7 @@
   "exchangeRate": 36.75,
   "notes": [
     "Showcase — tüm feature'ları tek faturada gösteren örnek.",
-    "3 farklı KDV oranı + 650 dinamik tevkifat + iskonto + EUR."
+    "3 farklı KDV oranı + 626 tevkifat + iskonto + EUR."
   ],
   "orderReference": {
     "id": "PO-SHOWCASE-2026-001",
@@ -67,8 +67,7 @@
       "price": 50,
       "unitCode": "Adet",
       "kdvPercent": 10,
-      "withholdingTaxCode": "650",
-      "withholdingTaxPercent": 30
+      "withholdingTaxCode": "626"
     },
     {
       "name": "Standart KDV Kalemi (%20)",

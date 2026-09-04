@@ -30,7 +30,7 @@
       "quantity": 1,
       "price": 5000,
       "unitCode": "Adet",
-      "kdvPercent": 0
+      "kdvPercent": 1
     }
   ]
 }

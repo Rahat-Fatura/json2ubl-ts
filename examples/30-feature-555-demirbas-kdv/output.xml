@@ -16,7 +16,7 @@
   <cbc:IssueDate>2026-04-23</cbc:IssueDate>
   <cbc:IssueTime>10:00:00</cbc:IssueTime>
   <cbc:InvoiceTypeCode>SATIS</cbc:InvoiceTypeCode>
-  <cbc:Note>YAZIYLA:#BEŞ BİN TÜRK LIRASI#</cbc:Note>
+  <cbc:Note>YAZIYLA:#BEŞ BİN ELLİ TÜRK LIRASI#</cbc:Note>
   <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
   <cbc:LineCountNumeric>1</cbc:LineCountNumeric>
   <cac:AccountingSupplierParty>
@@ -68,11 +68,11 @@
     </cac:Party>
   </cac:AccountingCustomerParty>
   <cac:TaxTotal>
-    <cbc:TaxAmount currencyID="TRY">0.00</cbc:TaxAmount>
+    <cbc:TaxAmount currencyID="TRY">50.00</cbc:TaxAmount>
     <cac:TaxSubtotal>
       <cbc:TaxableAmount currencyID="TRY">5000.00</cbc:TaxableAmount>
-      <cbc:TaxAmount currencyID="TRY">0.00</cbc:TaxAmount>
-      <cbc:Percent>0.00</cbc:Percent>
+      <cbc:TaxAmount currencyID="TRY">50.00</cbc:TaxAmount>
+      <cbc:Percent>1.00</cbc:Percent>
             <cac:TaxCategory>
         <cbc:TaxExemptionReasonCode>555</cbc:TaxExemptionReasonCode>
         <cbc:TaxExemptionReason>KDV Oran Kontrolüne Tabi Olmayan Satışlar</cbc:TaxExemptionReason>
@@ -86,23 +86,21 @@
   <cac:LegalMonetaryTotal>
     <cbc:LineExtensionAmount currencyID="TRY">5000.00</cbc:LineExtensionAmount>
     <cbc:TaxExclusiveAmount currencyID="TRY">5000.00</cbc:TaxExclusiveAmount>
-    <cbc:TaxInclusiveAmount currencyID="TRY">5000.00</cbc:TaxInclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="TRY">5050.00</cbc:TaxInclusiveAmount>
     <cbc:AllowanceTotalAmount currencyID="TRY">0.00</cbc:AllowanceTotalAmount>
-    <cbc:PayableAmount currencyID="TRY">5000.00</cbc:PayableAmount>
+    <cbc:PayableAmount currencyID="TRY">5050.00</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
   <cac:InvoiceLine>
     <cbc:ID>1</cbc:ID>
     <cbc:InvoicedQuantity unitCode="C62">1.00</cbc:InvoicedQuantity>
     <cbc:LineExtensionAmount currencyID="TRY">5000.00</cbc:LineExtensionAmount>
     <cac:TaxTotal>
-      <cbc:TaxAmount currencyID="TRY">0.00</cbc:TaxAmount>
+      <cbc:TaxAmount currencyID="TRY">50.00</cbc:TaxAmount>
       <cac:TaxSubtotal>
         <cbc:TaxableAmount currencyID="TRY">5000.00</cbc:TaxableAmount>
-        <cbc:TaxAmount currencyID="TRY">0.00</cbc:TaxAmount>
-        <cbc:Percent>0.00</cbc:Percent>
+        <cbc:TaxAmount currencyID="TRY">50.00</cbc:TaxAmount>
+        <cbc:Percent>1.00</cbc:Percent>
                 <cac:TaxCategory>
-          <cbc:TaxExemptionReasonCode>555</cbc:TaxExemptionReasonCode>
-          <cbc:TaxExemptionReason>KDV Oran Kontrolüne Tabi Olmayan Satışlar</cbc:TaxExemptionReason>
                     <cac:TaxScheme>
             <cbc:Name>KDV</cbc:Name>
             <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>

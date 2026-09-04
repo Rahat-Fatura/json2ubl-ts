@@ -16,9 +16,9 @@
   <cbc:IssueDate>2026-04-23</cbc:IssueDate>
   <cbc:IssueTime>10:00:00</cbc:IssueTime>
   <cbc:InvoiceTypeCode>TEVKIFAT</cbc:InvoiceTypeCode>
-  <cbc:Note>YAZIYLA:#BİN DOKUZ YÜZ YİRMİ ALTI AVRO DOKSAN SENT#</cbc:Note>
+  <cbc:Note>YAZIYLA:#BİN DOKUZ YÜZ OTUZ BİR AVRO DOKSAN SENT#</cbc:Note>
   <cbc:Note>Showcase — tüm feature&apos;ları tek faturada gösteren örnek.</cbc:Note>
-  <cbc:Note>3 farklı KDV oranı + 650 dinamik tevkifat + iskonto + EUR.</cbc:Note>
+  <cbc:Note>3 farklı KDV oranı + 626 tevkifat + iskonto + EUR.</cbc:Note>
   <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
   <cbc:LineCountNumeric>3</cbc:LineCountNumeric>
   <cac:OrderReference>
@@ -141,15 +141,15 @@
     </cac:TaxSubtotal>
   </cac:TaxTotal>
   <cac:WithholdingTaxTotal>
-    <cbc:TaxAmount currencyID="EUR">15.00</cbc:TaxAmount>
+    <cbc:TaxAmount currencyID="EUR">10.00</cbc:TaxAmount>
     <cac:TaxSubtotal>
       <cbc:TaxableAmount currencyID="EUR">50.00</cbc:TaxableAmount>
-      <cbc:TaxAmount currencyID="EUR">15.00</cbc:TaxAmount>
-      <cbc:Percent>30</cbc:Percent>
+      <cbc:TaxAmount currencyID="EUR">10.00</cbc:TaxAmount>
+      <cbc:Percent>20</cbc:Percent>
             <cac:TaxCategory>
                 <cac:TaxScheme>
-          <cbc:Name>Diğer</cbc:Name>
-          <cbc:TaxTypeCode>650</cbc:TaxTypeCode>
+          <cbc:Name>Diğer Teslimler</cbc:Name>
+          <cbc:TaxTypeCode>626</cbc:TaxTypeCode>
         </cac:TaxScheme>
       </cac:TaxCategory>
     </cac:TaxSubtotal>
@@ -159,7 +159,7 @@
     <cbc:TaxExclusiveAmount currencyID="EUR">1690.00</cbc:TaxExclusiveAmount>
     <cbc:TaxInclusiveAmount currencyID="EUR">1941.90</cbc:TaxInclusiveAmount>
     <cbc:AllowanceTotalAmount currencyID="EUR">10.00</cbc:AllowanceTotalAmount>
-    <cbc:PayableAmount currencyID="EUR">1926.90</cbc:PayableAmount>
+    <cbc:PayableAmount currencyID="EUR">1931.90</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
   <cac:InvoiceLine>
     <cbc:ID>1</cbc:ID>
@@ -211,15 +211,15 @@
       </cac:TaxSubtotal>
     </cac:TaxTotal>
     <cac:WithholdingTaxTotal>
-      <cbc:TaxAmount currencyID="EUR">15.00</cbc:TaxAmount>
+      <cbc:TaxAmount currencyID="EUR">10.00</cbc:TaxAmount>
       <cac:TaxSubtotal>
         <cbc:TaxableAmount currencyID="EUR">50.00</cbc:TaxableAmount>
-        <cbc:TaxAmount currencyID="EUR">15.00</cbc:TaxAmount>
-        <cbc:Percent>30</cbc:Percent>
+        <cbc:TaxAmount currencyID="EUR">10.00</cbc:TaxAmount>
+        <cbc:Percent>20</cbc:Percent>
                 <cac:TaxCategory>
                     <cac:TaxScheme>
-            <cbc:Name>Diğer</cbc:Name>
-            <cbc:TaxTypeCode>650</cbc:TaxTypeCode>
+            <cbc:Name>Diğer Teslimler</cbc:Name>
+            <cbc:TaxTypeCode>626</cbc:TaxTypeCode>
           </cac:TaxScheme>
         </cac:TaxCategory>
       </cac:TaxSubtotal>

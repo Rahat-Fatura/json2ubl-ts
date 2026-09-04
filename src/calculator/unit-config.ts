@@ -10,6 +10,10 @@ export interface UnitDefinition {
   name: string;
 }
 
+/* 🔴 'AFF' (Afif Birim Fiyatı) ve 'AKQ' (Atv Birim Fiyatı) 4.2.0'da ÇIKARILDI:
+ * canlı GİB paketi (şematron 2026-08-04) ikisini de `GeneralUnitCodeCheck` ile
+ * reddediyor. Kaplama seferinde 79 birimin tamamı tek tek denenerek bulundu —
+ * kalan 77'si temiz. Geri eklemeyin; önce canlı şematrona sorun. */
 export const UNIT_DEFINITIONS: ReadonlyArray<UnitDefinition> = [
   { code: 'C62', name: 'Adet' },
   { code: 'KGM', name: 'Kilogram' },
@@ -38,11 +42,9 @@ export const UNIT_DEFINITIONS: ReadonlyArray<UnitDefinition> = [
   { code: 'SET', name: 'Set' },
   { code: 'CCT', name: 'Ton Başına Taşıma Kapasitesi' },
   { code: 'CPR', name: 'Adet-Çift' },
-  { code: 'AFF', name: 'Afif Birim Fiyatı' },
   { code: 'HUR', name: 'Saat' },
   { code: 'T3', name: 'Bin Adet' },
   { code: 'AYR', name: 'Altın Ayarı' },
-  { code: 'AKQ', name: 'Atv Birim Fiyatı' },
   { code: 'KNI', name: 'Azotun Kilogram' },
   { code: 'BAS', name: 'Baş' },
   { code: 'TWH', name: 'Terawatt Saat' },

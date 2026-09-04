@@ -25,7 +25,7 @@ export const input: SimpleInvoiceInput = {
   },
 
   lines: [
-    { name: 'Demirbaş Ofis Mobilyası', quantity: 1, price: 5000, unitCode: 'Adet', kdvPercent: 0 },
+    { name: 'Demirbaş Ofis Mobilyası', quantity: 1, price: 5000, unitCode: 'Adet', kdvPercent: 1 },
   ],
 };
 

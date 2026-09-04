@@ -25,6 +25,7 @@ import type { ValidationError } from '../errors/ubl-build-error';
 import { validateManualExemption } from '../validators/manual-exemption-validator';
 import { validateSgkInput } from '../validators/sgk-input-validator';
 import { validateSimpleLineRanges } from '../validators/simple-line-range-validator';
+import { validateProfileRequirements } from '../validators/profile-requirement-validator';
 import { validatePhantomKdv } from '../validators/phantom-kdv-validator';
 import { validateOnlineSaleShipment } from '../validators/online-sale-validator';
 import { UblBuildError } from '../errors/ubl-build-error';
@@ -76,6 +77,7 @@ export class SimpleInvoiceBuilder {
         ...validateSimpleLineRanges(input),
         ...validateManualExemption(input),
         ...validateSgkInput(input),
+        ...validateProfileRequirements(input),
         ...validatePhantomKdv(input),
       ];
 

@@ -2,6 +2,79 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.2.0] — 2026-09-04
+
+MimForge kaplama seferinin (534 önizleme, 73/73 profil×tip çifti) kütüphane
+tarafındaki bulguları. İhracat profilleri (`IHRACAT`, `YOLCUBERABERFATURA`)
+bilinçli olarak KAPSAM DIŞI — onlara ayrı bir ekran gelecek.
+
+### Fixed
+
+- **İHRAÇ KAYITLI faturanın TAMAMI XSD'den düşüyordu.** İki eksik birden:
+
+  1. `cac:CustomsDeclaration`, UBL'in zorunlu kıldığı `cbc:ID` olmadan doğrudan
+     `cac:IssuerParty` yazıyordu → «"IssuerParty" elementi bu konumda geçersiz.
+     Beklenen: ID.»
+  2. ID eklendikten sonra ikinci kat çıktı: UBL-TR `PartyType` bu bağlamda
+     **PartyIdentification + PartyName + PostalAddress** üçünü birden ister;
+     yalnız kimlik yazılan belge «"IssuerParty" elementinin içeriği eksik» ile
+     reddediliyordu.
+
+  `IssuerParty` artık ad ve adresi **alıcıdan** türetiyor — "Alıcı DİB Satır
+  Kodu" zaten alıcıya aittir, veri uydurulmaz. Etkilenen: TEMELFATURA,
+  TICARIFATURA, KAMU, ILAC_TIBBICIHAZ, IDIS, EARSIVFATURA × `IHRACKAYITLI`.
+  Canlı şematronla doğrulandı.
+
+- **Birim kodu FAIL-OPEN'dı.** `resolveUnitCode()` tanımadığı değeri olduğu gibi
+  döndürüyor, serileştirici XML'e yazıyordu; `isValidUnitCode()` var olduğu hâlde
+  hiçbir doğrulayıcıdan çağrılmıyordu. Uydurma birim sessizce belgeye giriyor,
+  GİB kapıda reddediyordu. Artık `validateSimpleLineRanges` kontrol ediyor.
+
+  Canlı kanıt: konaklama vergisi fixture'ları listede HİÇ OLMAYAN `'Gece'`
+  birimini kullanıyordu (doğrusu `'DAY'`); ayrıca `'Kg'`/`'KG'` yazan üç fixture
+  vardı (doğrusu `'KGM'`).
+
+### Added
+
+- **`profile-requirement-validator`** — GİB şematronunda VAR ama oturum doğrulama
+  boru hattında OLMAYAN üç kural simple-input katmanına taşındı; artık
+  `InvoiceSession.validate()` (dolayısıyla tüketici arayüzü) belge kurulurken
+  uyarır, kullanıcı reddi GİB kapısında öğrenmez:
+
+  | kural | ne ister |
+  |---|---|
+  | `EnerjiESURaporIDCheck` | YALNIZ `SARJ` — `schemeId="ESURaporID"` ek belgesi |
+  | `YatirimTesvikItemInstanceCheck` | YTB harcama tipi `01` — kalemde marka + model |
+  | `DemirbasKDVTaxExemptionCheck` | `555` kodu KDV `0` ile kullanılamaz |
+
+  Üçüncüsü kütüphanenin KENDİ `30-feature-555-demirbas-kdv` örneğini kırdı: o
+  örnek `kdvPercent: 0` ile GİB'in reddettiği belge üretiyordu (düzeltildi).
+  Birincisi ilk yazımda `SARJANLIK`'ı da kapsıyordu; `enerji-sarjanlik-baseline`
+  fixture'ı anında kırıldı — şematron o kuralı yalnız `SARJ`'a koyar.
+
+### Removed
+
+- **`AFF` ve `AKQ` birim kodları** — canlı GİB paketi ikisini de
+  `GeneralUnitCodeCheck` ile reddediyor. 79 birimin tamamı tek tek denendi;
+  kalan 77'si temiz.
+
+- **Tevkifat kodu `650` ("Diğer")** ve onunla birlikte **dinamik-yüzde tevkifat
+  özelliği**. Şematron kodu ve oranı BİRLİKTE
+  (`concat(',',TaxTypeCode,Percent,',')`) sabit listede arar; serbest oranlı bir
+  tevkifat kodu bu tasarımda mümkün değildir. 53 kodun tamamı tek tek denendi,
+  yalnız bu düştü.
+
+  `showWithholdingPercentInput` artık `'650'` dizgisine değil kodun kendi
+  `dynamicPercent` niteliğine bakıyor: bugün daima `false`, GİB ileride serbest
+  oranlı bir kod tanımlarsa kendiliğinden çalışır.
+
+### Breaking
+
+- `WITHHOLDING_TAX_DEFINITIONS` 53 → **52** kod, `UNIT_DEFINITIONS` 79 → **77**.
+  `'650'`, `'AFF'`, `'AKQ'` kullanan girdiler artık `INVALID_VALUE` alır.
+- Geçersiz `unitCode` artık `validationLevel: 'basic' | 'strict'` altında hata
+  üretir (önceden sessizce geçiyordu).
+
 ## [4.1.6] — 2026-09-04
 
 ### Fixed

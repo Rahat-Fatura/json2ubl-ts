@@ -451,7 +451,7 @@ function buildLines(
 ): InvoiceLineInput[] {
   return simple.lines.map((line, index) => {
     const cl = calc.calculatedLines[index];
-    return buildSingleLine(line, cl, calc);
+    return buildSingleLine(line, cl, calc, simple.customer);
   });
 }
 
@@ -459,6 +459,8 @@ function buildSingleLine(
   line: SimpleInvoiceInput['lines'][number],
   cl: CalculatedLine,
   calc: CalculatedDocument,
+  /** İHRAÇ KAYITLI gümrük beyannamesinin IssuerParty'si alıcıdır (bkz. aşağıda). */
+  customer?: SimpleInvoiceInput['customer'],
 ): InvoiceLineInput {
   // Satır bazı istisna kodu belge seviyesine tercih edilir (B-NEW-11 / M11).
   const lineExemptionCode = line.kdvExemptionCode ?? calc.taxExemptionReason.kdv;
@@ -611,6 +613,9 @@ function buildSingleLine(
           quantity: del.packageQuantity,
         }]
         : undefined,
+      /* IssuerParty = ALICI. "Alıcı DİB Satır Kodu" zaten alıcıya ait olduğundan
+       * ad ve adres faturanın `customer` bloğundan türetilir — veri uydurulmaz.
+       * Üçü birlikte zorunludur (UBL-TR PartyType, canlı XSD ile ölçüldü). */
       customsDeclarations: del.alicidibsatirkod
         ? [{
           issuerParty: {
@@ -618,6 +623,16 @@ function buildSingleLine(
               id: del.alicidibsatirkod,
               schemeID: 'ALICIDIBSATIRKOD',
             }],
+            name: customer?.name,
+            postalAddress: customer
+              ? {
+                streetName: customer.address,
+                citySubdivisionName: customer.district ?? '',
+                cityName: customer.city ?? '',
+                postalZone: customer.zipCode,
+                country: customer.country ?? 'Türkiye',
+              }
+              : undefined,
           },
         }]
         : undefined,

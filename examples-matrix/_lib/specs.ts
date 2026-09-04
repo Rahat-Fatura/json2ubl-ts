@@ -768,7 +768,7 @@ export const validSpecs: ValidSpec[] = [
           name: 'Konaklama — 2 gece',
           quantity: 2,
           price: 500,
-          unitCode: 'Gece',
+          unitCode: 'DAY',
           kdvPercent: 20,
         },
       ],
@@ -860,79 +860,7 @@ export const validSpecs: ValidSpec[] = [
     },
   },
 
-  // TEMELFATURA+TEVKIFAT 650 dinamik stopaj %50
-  {
-    kind: 'invoice',
-    variantSlug: 'dinamik-650',
-    profile: 'TEMELFATURA',
-    type: 'TEVKIFAT',
-    notes: 'TEVKIFAT + 650 dinamik kod, kullanıcı belirlediği %50 oran',
-    dimensions: {
-      kdvBreakdown: [20],
-      currency: 'TRY',
-      exchangeRate: false,
-      exemptionCodes: [],
-      withholdingCodes: ['650'],
-      allowanceCharge: { line: false, document: false },
-      lineCount: 1,
-      paymentMeans: false,
-      reducedKdvGate: false,
-      phantomKdv: false,
-      specialIdentifiers: [],
-    },
-    input: {
-      id: 'MTX2026000000015',
-      uuid: 'a1000015-0001-4000-8001-000000000015',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'TEMELFATURA',
-      type: 'TEVKIFAT',
-      currencyCode: 'TRY',
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [
-        {
-          name: 'Dinamik tevkifatlı hizmet',
-          quantity: 1,
-          price: 1000,
-          unitCode: 'Adet',
-          kdvPercent: 20,
-          withholdingTaxCode: '650',
-          withholdingTaxPercent: 50,
-        },
-      ],
-    },
-  },
 
-  // TEMELFATURA+TEVKIFATIADE 650 dinamik varyantı — Sprint 8f.4
-  {
-    kind: 'invoice',
-    variantSlug: 'dinamik-650',
-    profile: 'TEMELFATURA',
-    type: 'TEVKIFATIADE',
-    notes: 'TEVKIFATIADE + 650 dinamik kod %50 — iade+tevkifat kombinasyonunda dinamik yüzde',
-    dimensions: {
-      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: ['650'], allowanceCharge: { line: false, document: false },
-      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: [],
-    },
-    input: {
-      id: 'MTX2026000000909',
-      uuid: 'a1000909-0001-4000-8001-000000000909',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'TEMELFATURA', type: 'TEVKIFATIADE', currencyCode: 'TRY',
-      billingReference: { id: 'MTX2026000000015', issueDate: '2026-04-24' },
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [
-        {
-          name: 'Dinamik tevkifat iade — %50',
-          quantity: 1, price: 1000, unitCode: 'Adet',
-          kdvPercent: 20, withholdingTaxCode: '650', withholdingTaxPercent: 50,
-        },
-      ],
-    },
-  },
 
   // TEMELFATURA+SATIS USD döviz
   {
@@ -1083,7 +1011,7 @@ export const validSpecs: ValidSpec[] = [
       profile: 'TEMELFATURA', type: 'SATIS', currencyCode: 'TRY',
       sender: { ...STANDARD_SENDER },
       customer: { ...STANDARD_CUSTOMER },
-      lines: [{ name: 'Temel gıda ürünü', quantity: 10, price: 100, unitCode: 'Kg', kdvPercent: 10 }],
+      lines: [{ name: 'Temel gıda ürünü', quantity: 10, price: 100, unitCode: 'KGM', kdvPercent: 10 }],
     },
   },
   // 2. TEMELFATURA+SATIS %1 KDV
@@ -1125,7 +1053,7 @@ export const validSpecs: ValidSpec[] = [
       sender: { ...STANDARD_SENDER },
       customer: { ...STANDARD_CUSTOMER },
       lines: [
-        { name: 'İade gıda', quantity: 5, price: 50, unitCode: 'Kg', kdvPercent: 10 },
+        { name: 'İade gıda', quantity: 5, price: 50, unitCode: 'KGM', kdvPercent: 10 },
         { name: 'İade hizmet', quantity: 1, price: 500, unitCode: 'Adet', kdvPercent: 20 },
       ],
     },
@@ -1469,7 +1397,7 @@ export const validSpecs: ValidSpec[] = [
       profile: 'TICARIFATURA', type: 'KONAKLAMAVERGISI', currencyCode: 'TRY',
       sender: { ...STANDARD_SENDER },
       customer: { ...STANDARD_CUSTOMER },
-      lines: [{ name: 'Konaklama — 3 gece', quantity: 3, price: 500, unitCode: 'Gece', kdvPercent: 20 }],
+      lines: [{ name: 'Konaklama — 3 gece', quantity: 3, price: 500, unitCode: 'DAY', kdvPercent: 20 }],
     },
   },
 
@@ -1676,7 +1604,7 @@ export const validSpecs: ValidSpec[] = [
       customer: { ...STANDARD_CUSTOMER, taxNumber: '1460415308', name: 'T.C. Kamu Kurumu' },
       buyerCustomer: { ...KAMU_BUYER_CUSTOMER },
       paymentMeans: { ...KAMU_PAYMENT_MEANS },
-      lines: [{ name: 'Konaklama — kamu görevlisi', quantity: 2, price: 500, unitCode: 'Gece', kdvPercent: 20 }],
+      lines: [{ name: 'Konaklama — kamu görevlisi', quantity: 2, price: 500, unitCode: 'DAY', kdvPercent: 20 }],
     },
   },
 
@@ -1697,7 +1625,7 @@ export const validSpecs: ValidSpec[] = [
       profile: 'TICARIFATURA', type: 'SATIS', currencyCode: 'TRY',
       sender: { ...STANDARD_SENDER },
       customer: { ...STANDARD_CUSTOMER },
-      lines: [{ name: 'Gıda ürünü', quantity: 10, price: 100, unitCode: 'Kg', kdvPercent: 10 }],
+      lines: [{ name: 'Gıda ürünü', quantity: 10, price: 100, unitCode: 'KGM', kdvPercent: 10 }],
     },
   },
   {
@@ -2078,7 +2006,7 @@ export const validSpecs: ValidSpec[] = [
       profile: 'EARSIVFATURA', type: 'KONAKLAMAVERGISI', currencyCode: 'TRY',
       sender: { ...STANDARD_SENDER },
       customer: { ...STANDARD_CUSTOMER },
-      lines: [{ name: 'Konaklama — e-arşiv', quantity: 2, price: 500, unitCode: 'Gece', kdvPercent: 20 }],
+      lines: [{ name: 'Konaklama — e-arşiv', quantity: 2, price: 500, unitCode: 'DAY', kdvPercent: 20 }],
     },
   },
   // Sprint 8g.4 — EARSIVFATURA × TEKNOLOJIDESTEK baseline (B-NEW-v2-07)
@@ -2130,7 +2058,7 @@ export const validSpecs: ValidSpec[] = [
       sender: { ...STANDARD_SENDER },
       customer: { ...STANDARD_CUSTOMER },
       lines: [
-        { name: 'Gıda', quantity: 5, price: 50, unitCode: 'Kg', kdvPercent: 10 },
+        { name: 'Gıda', quantity: 5, price: 50, unitCode: 'KGM', kdvPercent: 10 },
         { name: 'Elektronik', quantity: 1, price: 2000, unitCode: 'Adet', kdvPercent: 20 },
       ],
     },
@@ -2157,25 +2085,6 @@ export const validSpecs: ValidSpec[] = [
         { name: 'İade ürün B', quantity: 2, price: 300, unitCode: 'Adet', kdvPercent: 20 },
         { name: 'İade ürün C', quantity: 3, price: 100, unitCode: 'Adet', kdvPercent: 20 },
       ],
-    },
-  },
-  {
-    kind: 'invoice', variantSlug: 'dinamik-650', profile: 'EARSIVFATURA', type: 'TEVKIFAT',
-    notes: 'EARSIVFATURA+TEVKIFAT 650 dinamik %30',
-    dimensions: {
-      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: ['650'], allowanceCharge: { line: false, document: false },
-      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: [],
-    },
-    input: {
-      id: 'MTX2026000000943',
-      uuid: 'a1000943-0001-4000-8001-000000000943',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'EARSIVFATURA', type: 'TEVKIFAT', currencyCode: 'TRY',
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [{ name: 'Dinamik tevkifat', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '650', withholdingTaxPercent: 30 }],
     },
   },
   {
@@ -3155,30 +3064,6 @@ export const validSpecs: ValidSpec[] = [
         { name: 'Yazılım destek', quantity: 1, price: 800, unitCode: 'Adet', kdvPercent: 20,
           itemClassificationCode: '04' },
       ],
-    },
-  },
-  {
-    kind: 'invoice', variantSlug: 'dinamik-650', profile: 'YATIRIMTESVIK', type: 'TEVKIFAT',
-    notes: 'YATIRIMTESVIK+TEVKIFAT 650 dinamik %40',
-    dimensions: {
-      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: ['650'], allowanceCharge: { line: false, document: false },
-      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: ['ytbNo'],
-    },
-    input: {
-      id: 'MTX2026000000953',
-      uuid: 'a1000953-0001-4000-8001-000000000953',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'YATIRIMTESVIK', type: 'TEVKIFAT', currencyCode: 'TRY',
-      ytbNo: '123456', ytbIssueDate: '2026-01-15',
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [{
-        name: 'Dinamik tevkifatlı hizmet', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20,
-        withholdingTaxCode: '650', withholdingTaxPercent: 40,
-        itemClassificationCode: '03',
-      }],
     },
   },
   {

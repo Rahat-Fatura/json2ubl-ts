@@ -88,7 +88,7 @@
   </cac:LegalMonetaryTotal>
   <cac:InvoiceLine>
     <cbc:ID>1</cbc:ID>
-    <cbc:InvoicedQuantity unitCode="Gece">2.00</cbc:InvoicedQuantity>
+    <cbc:InvoicedQuantity unitCode="DAY">2.00</cbc:InvoicedQuantity>
     <cbc:LineExtensionAmount currencyID="TRY">1000.00</cbc:LineExtensionAmount>
     <cac:TaxTotal>
       <cbc:TaxAmount currencyID="TRY">200.00</cbc:TaxAmount>

@@ -28,7 +28,7 @@
       "name": "Domates — Standart Kalite",
       "quantity": 500,
       "price": 20,
-      "unitCode": "KG",
+      "unitCode": "KGM",
       "kdvPercent": 10,
       "additionalItemIdentifications": [
         {
