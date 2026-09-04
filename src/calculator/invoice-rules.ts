@@ -19,6 +19,25 @@ import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 /** Schematron IADEInvioceCheck: BillingReference zorunlu olan IADE grubu tipleri */
 const IADE_GROUP = ['IADE', 'TEVKIFATIADE', 'YTBIADE', 'YTBTEVKIFATIADE'];
 
+/**
+ * Schematron `GeneralWithholdingTaxTotalCheck`: `cac:WithholdingTaxTotal` varken
+ * fatura tipinin alabileceği değerler.
+ *
+ * Satırda `withholdingTaxCode` verilmesi belgede `cac:WithholdingTaxTotal`
+ * ÜRETİR — dolayısıyla tevkifatlı satır ile fatura tipi bu listede kesişmek
+ * zorundadır, yoksa GİB kapıda reddeder.
+ *
+ * ⚠️ `constants.WITHHOLDING_ALLOWED_TYPES` bu listeden GENİŞTİR (TEVKIFATIADE ve
+ * YTBTEVKIFATIADE'yi de içerir); şematron paketi 20260701'de o iki tip assert'i
+ * GEÇMİYOR. Buradaki dizi şematron metninin birebir karşılığıdır — daraltma
+ * bilinçlidir, constants'a hizalanmamalıdır.
+ *
+ * @see schematrons/UBL-TR_Common_Schematron.xml — GeneralWithholdingTaxTotalCheck
+ */
+const WITHHOLDING_TOTAL_ALLOWED_TYPES = [
+  'TEVKIFAT', 'YTBTEVKIFAT', 'IADE', 'YTBIADE', 'SGK', 'SARJ', 'SARJANLIK',
+];
+
 // ─── Alıcı Mükellefiyet Durumu ──────────────────────────────────────────────
 
 /**
@@ -437,6 +456,21 @@ export function validateInvoiceState(state: {
   // TEVKIFAT → en az bir satırda tevkifat kodu olmalı
   if (state.type === 'TEVKIFAT' && !state.hasWithholdingLines) {
     warnings.push({ field: 'lines', message: 'Tevkifat faturalarında en az bir satırda tevkifat kodu bulunmalıdır.', severity: 'warning' });
+  }
+
+  // B-30 paraleli (ters yön): tevkifatlı satır varken tip izinli olmalı.
+  // type-validators.ts'teki B-30 aynı kuralı InvoiceInput katmanında uyguluyor
+  // ama YALNIZ validationLevel='strict' altında çalışıyor; session/UI katmanı
+  // bu kombinasyonu 4.1.2'ye kadar SESSİZ geçiriyordu (SATIS + tevkifat kodu →
+  // 0 uyarı, belge WithholdingTaxTotal ile üretiliyor, GİB reddediyor).
+  if (state.hasWithholdingLines && !WITHHOLDING_TOTAL_ALLOWED_TYPES.includes(state.type)) {
+    warnings.push({
+      field: 'lines.withholdingTaxCode',
+      message: `Fatura tipi '${state.type}' iken satırlarda tevkifat kodu kullanılamaz; `
+        + 'fatura tipini TEVKIFAT yapın veya tevkifat kodunu kaldırın. '
+        + `İzinli tipler: ${WITHHOLDING_TOTAL_ALLOWED_TYPES.join(', ')}.`,
+      severity: 'error',
+    });
   }
 
   // YATIRIMTESVIK → ytbNo zorunlu (6 haneli numerik)

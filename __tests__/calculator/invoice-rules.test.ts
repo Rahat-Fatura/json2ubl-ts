@@ -52,13 +52,34 @@ describe('invoice-rules — matris tekleştirme (Sprint 1, M1/M2/M8)', () => {
     });
   });
 
-  describe('B-02 — HKS profili HKSSATIS/HKSKOMISYONCU tipleriyle çalışır', () => {
-    it('HKS için helper HKSSATIS ve HKSKOMISYONCU döndürür; SATIS/KOMISYONCU içermez', () => {
+  describe('B-02 — HKS profili GİB kapsamındaki tiplerle çalışır', () => {
+    /* Eskiden burada `SATIS içermez` iddiası vardı. O iddia YANLIŞTI: şematron
+     * HKS profiline tip kısıtı KOYMUYOR (kısıt yalnız ENERJI, ILAC_TIBBICIHAZ,
+     * YATIRIMTESVIK, IDIS profillerinde ve IADE/TEKNOLOJIDESTEK tiplerinde var).
+     * Sahada `ProfileID=HKS + InvoiceTypeCode=SATIS` kesilen gerçek faturalar
+     * şematrondan 0 ihlalle geçiyor; kütüphane onları üretemiyordu.
+     * Dört tip canlı şematronla tek tek doğrulandı (paket 20260701). */
+    it('HKS: HKSSATIS/HKSKOMISYONCU + şematronun izin verdiği dört tip', () => {
       const types = getAllowedTypesForProfile('HKS');
       expect(types).toContain('HKSSATIS');
       expect(types).toContain('HKSKOMISYONCU');
-      expect(types).not.toContain('SATIS');
-      expect(types).not.toContain('KOMISYONCU');
+      expect(types).toContain('SATIS');
+      expect(types).toContain('ISTISNA');
+      expect(types).toContain('TEVKIFAT');
+      expect(types).toContain('TEVKIFATIADE');
+    });
+
+    /* 🔴 IADE, şematronun AÇIKÇA reddettiği tek tip: InvoiceTypeCodeCheck —
+     * "Fatura tipi IADE iken profil sadece TEMELFATURA, EARSIVFATURA,
+     * ILAC_TIBBICIHAZ, YATIRIMTESVIK, IDIS veya KAMU olabilir". Ölçüldü. */
+    it('HKS + IADE şematronda yasak — matrise girmemeli', () => {
+      expect(getAllowedTypesForProfile('HKS')).not.toContain('IADE');
+    });
+
+    /* Sıra sözleşmesi: `resolveTypeForProfile` boş girdide allowed[0] seçer.
+     * Yeni tipler SONA eklendi, bu yüzden HKS'in varsayılanı HKSSATIS kalmalı. */
+    it('HKS varsayılan tipi HKSSATIS kalır (sıra korunur)', () => {
+      expect(getAllowedTypesForProfile('HKS')[0]).toBe('HKSSATIS');
     });
   });
 

@@ -241,7 +241,7 @@ export const SessionPaths = {
   lineTaxPercent: (i: number, ti: number) => `lines[${i}].taxes[${ti}].percent` as `lines[${number}].taxes[${number}].percent`,
 
   /**
-   * KDV tevkifat kodu (ör: "602") — opsiyonel, verilirse fatura tipi TEVKIFAT olur
+   * KDV tevkifat kodu (ör: "602") — opsiyonel. Belgede `cac:WithholdingTaxTotal` ÜRETİR; bu yüzden fatura tipi şu küme içinde olmak zorundadır (Schematron `GeneralWithholdingTaxTotalCheck`): TEVKIFAT, YTBTEVKIFAT, IADE, YTBIADE, SGK, SARJ, SARJANLIK. ⚠️ Tip OTOMATİK ZORLANMAZ. `type` verilmediyse otomatik tespit TEVKIFAT'a düşer; `type` AÇIKÇA verildiyse kullanıcı seçimi korunur (B-41) ve uyumsuz kombinasyon doğrulamada hata olarak bildirilir — sessizce düzeltilmez.
    * Expected type: string | undefined
    */
   lineWithholdingTaxCode: (i: number) => `lines[${i}].withholdingTaxCode` as `lines[${number}].withholdingTaxCode`,

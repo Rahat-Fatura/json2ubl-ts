@@ -46,6 +46,7 @@ import { validateSimpleLineRanges } from '../validators/simple-line-range-valida
 import { validateManualExemption } from '../validators/manual-exemption-validator';
 import { validatePhantomKdv } from '../validators/phantom-kdv-validator';
 import { validateSgkInput } from '../validators/sgk-input-validator';
+import { validateHksKunyeNo } from '../validators/hks-kunyeno-validator';
 import { validateCrossMatrix } from '../validators/cross-validators';
 import type { Suggestion } from './suggestion-types';
 import { runSuggestionEngine, diffSuggestions } from './suggestion-engine';
@@ -1049,14 +1050,19 @@ export class InvoiceSession extends EventEmitter {
       ...b78Params,
     });
 
-    // Sprint 8h.7: 5 validator pipeline (D-3 deterministic)
+    // Sprint 8h.7: 6 validator pipeline (D-3 deterministic)
     const errors: ValidationError[] = [];
 
-    // 4 simple-input validator (pure, throw atmaz)
+    // 5 simple-input validator (pure, throw atmaz)
     errors.push(...validateSimpleLineRanges(this._input));
     errors.push(...validateManualExemption(this._input));
     errors.push(...validatePhantomKdv(this._input));
     errors.push(...validateSgkInput(this._input));
+    // HKS profilinde her kalemde 19 karakterli KUNYENO (Schematron HKSInvioceCheck).
+    // SimpleInvoiceBuilder'a BİLEREK eklenmedi: orada InvoiceInput katmanı
+    // (validateByProfile → validateHks) aynı kuralı strict'te zaten uyguluyor;
+    // 'basic'e eklemek bugün hatasız XML alan tüketicileri throw'a düşürürdü.
+    errors.push(...validateHksKunyeNo(this._input));
 
     // validateCrossMatrix InvoiceInput ister; cache'li mapper (D-3).
     // Mapper içinde calculator throw edebilir (örn. 650 percent eksik) — bunu

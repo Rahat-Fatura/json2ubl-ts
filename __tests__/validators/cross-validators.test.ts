@@ -56,8 +56,21 @@ describe('§4 Çapraz Matris Validasyonu', () => {
       expect(errors).toHaveLength(0);
     });
 
-    it('SATIS izin verilmez', () => {
+    /* Şematron HKS'e tip kısıtı koymuyor; sahadaki gerçek faturalar HKS+SATIS
+     * ve 0 ihlalle geçiyor. Eskiden burada `izin verilmez` iddiası vardı. */
+    it('SATIS izin verilir', () => {
       const errors = validateCrossMatrix(createMinimalInput(InvoiceProfileId.HKS, InvoiceTypeCode.SATIS));
+      expect(errors).toHaveLength(0);
+    });
+
+    it('TEVKIFAT izin verilir', () => {
+      const errors = validateCrossMatrix(createMinimalInput(InvoiceProfileId.HKS, InvoiceTypeCode.TEVKIFAT));
+      expect(errors).toHaveLength(0);
+    });
+
+    /* 🔴 IADE şematronun açıkça reddettiği tek tip (InvoiceTypeCodeCheck). */
+    it('IADE izin verilmez', () => {
+      const errors = validateCrossMatrix(createMinimalInput(InvoiceProfileId.HKS, InvoiceTypeCode.IADE));
       expect(errors.some(e => e.code === 'CROSS_MATRIX')).toBe(true);
     });
   });

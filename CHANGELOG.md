@@ -2,6 +2,61 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.1.3] — 2026-09-04
+
+> ### HKS faturası kesilemiyordu; iki doğrulama kuralı UI yüzeyine hiç ulaşmıyordu
+>
+> Tüm kararlar **canlı GİB şematronuyla** ölçüldü (paket 20260701) — gerçek bir HKS
+> faturası üzerinde tip değiştirilerek. Değişiklik **geriye uyumludur**: 32
+> otomatik-çözüm noktasının hiçbiri değişmedi.
+
+### Fixed
+
+- **HKS profili yalnız HKSSATIS/HKSKOMISYONCU kabul ediyordu — GİB'den KATI.**
+  Şematron `ProfileID`/`InvoiceTypeCode` çiftini yalnız ENERJI, ILAC_TIBBICIHAZ,
+  YATIRIMTESVIK, IDIS profilleri ile `IADE`/`TEKNOLOJIDESTEK` tipleri için
+  kısıtlıyor; **HKS hiçbirinde geçmiyor**. Sahada `HKS + SATIS` kesilen gerçek
+  faturalar 0 ihlalle geçiyor, kütüphane onları üretemiyordu.
+
+  Eklenen tipler (her biri canlı şematronla tek tek doğrulandı):
+  `SATIS` · `ISTISNA` · `TEVKIFAT` · `TEVKIFATIADE`
+
+  🔴 **`IADE` BİLEREK EKLENMEDİ** — `InvoiceTypeCodeCheck` reddediyor: *"Fatura tipi
+  IADE iken profil sadece TEMELFATURA, EARSIVFATURA, ILAC_TIBBICIHAZ, YATIRIMTESVIK,
+  IDIS veya KAMU olabilir"*. Ölçüldü.
+
+  ⚠️ **Sıra korundu**: yeni tipler sona eklendi, `resolveTypeForProfile` boş girdide
+  `allowed[0]`'ı seçtiği için HKS'in varsayılan tipi `HKSSATIS` kaldı.
+
+- **Tevkifat–fatura tipi uyumsuzluğu SESSİZDİ.** `SATIS` tipli faturanın satırına
+  tevkifat kodu verilince kütüphane **sıfır uyarıyla** `cac:WithholdingTaxTotal`
+  üretiyordu; GİB `GeneralWithholdingTaxTotalCheck` ile reddediyor. Artık
+  `validateInvoiceState` hata veriyor. (Kural strict-katmanda vardı ama session/UI
+  yüzeyine hiç ulaşmıyordu.)
+
+- **HKS'te KUNYENO kısıtı yoktu.** GİB'in HKS için TEK gerçek şartı
+  (`HKSInvioceCheck`): her `cac:InvoiceLine` 19 karakterli `KUNYENO` taşımalı.
+  Eksik KUNYENO'lu belge sessizce üretiliyordu. Yeni `hks-kunyeno-validator`
+  hangi satırın eksik olduğunu söyleyerek hata veriyor.
+
+### Ölçüm
+
+```
+HKS + SATIS/ISTISNA/TEVKIFAT/TEVKIFATIADE → şematron 0 ihlal
+HKS + IADE                                 → InvoiceTypeCodeCheck (eklenmedi)
+32 otomatik-çözüm noktası                  → hiçbiri değişmedi
+uçtan uca: HKS+TEVKIFAT+WithholdingTaxTotal+KUNYENO → validSchematron TRUE
+```
+
+Test paketi: **102 dosya / 2207 test**, tamamı geçiyor.
+
+### Bilinen açık
+
+`WITHHOLDING_ALLOWED_TYPES` 9 tip sayıyor; şematron 7 sayıyor (`TEVKIFATIADE` ve
+`YTBTEVKIFATIADE` fazladan). Canlı doğrulandı: `TEVKIFATIADE + WithholdingTaxTotal`
+→ `GeneralWithholdingTaxTotalCheck` reddi. `examples-matrix/valid/**` altındaki 9
+senaryo bu kombinasyonu üretiyor. Ayrı iş kalemi — davranış değişikliği kararı gerektiriyor.
+
 ## [4.1.2] — 2026-09-04
 
 > ### 🔴 0 KDV'li fatura GİB kapısında REDDEDİLİYORDU

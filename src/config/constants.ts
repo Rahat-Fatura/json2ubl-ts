@@ -32,8 +32,36 @@ export const PROFILE_TYPE_MATRIX: Record<InvoiceProfileId, ReadonlySet<InvoiceTy
     InvoiceTypeCode.IHRACKAYITLI, InvoiceTypeCode.SGK, InvoiceTypeCode.KOMISYONCU,
     InvoiceTypeCode.KONAKLAMAVERGISI,
   ]),
+  /**
+   * HKS (Hal Kayıt Sistemi) — GİB'in tip kısıtı KOYMADIĞI tek profil.
+   *
+   * Şematron `ProfileID`/`InvoiceTypeCode` çiftini yalnız şu profiller için
+   * kısıtlıyor: ENERJI (↔SARJ/SARJANLIK), ILAC_TIBBICIHAZ, YATIRIMTESVIK, IDIS,
+   * artı `TEKNOLOJIDESTEK`→EARSIVFATURA ve `IADE` tipi için profil listesi.
+   * HKS bu kuralların HİÇBİRİNDE geçmiyor — GİB'in HKS için tek şartı
+   * `HKSInvioceCheck`: her kalemde 19 karakterli KUNYENO.
+   *
+   * Eskiden burada yalnız HKSSATIS/HKSKOMISYONCU vardı ve bu, GİB'den KATI bir
+   * kısıttı: sahada `ProfileID=HKS` + `InvoiceTypeCode=SATIS` kesilen gerçek
+   * faturalar var ve şematrondan 0 ihlalle geçiyorlar. Kütüphane bu belgeleri
+   * üretemiyordu.
+   *
+   * Aşağıdaki dört tip CANLI ŞEMATRONLA tek tek doğrulandı (paket 20260701,
+   * gerçek bir HKS faturası üzerinde tip değiştirilerek):
+   *   SATIS ✓   ISTISNA ✓   TEVKIFAT ✓   TEVKIFATIADE ✓
+   *
+   * 🔴 IADE BİLEREK YOK: şematron `InvoiceTypeCodeCheck` ile reddediyor —
+   * "Fatura tipi IADE iken profil sadece TEMELFATURA, EARSIVFATURA,
+   * ILAC_TIBBICIHAZ, YATIRIMTESVIK, IDIS veya KAMU olabilir". Ölçüldü, reddedildi.
+   *
+   * ⚠️ SIRA KORUNUYOR: HKSSATIS ilk elemandır ve `resolveTypeForProfile` boş
+   * girdide `allowed[0]`'ı seçer — yeni tipler SONA eklendiği için HKS'in
+   * varsayılan tipi HKSSATIS olarak kalır.
+   */
   [InvoiceProfileId.HKS]: new Set([
     InvoiceTypeCode.HKSSATIS, InvoiceTypeCode.HKSKOMISYONCU,
+    InvoiceTypeCode.SATIS, InvoiceTypeCode.ISTISNA,
+    InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE,
   ]),
   [InvoiceProfileId.ENERJI]: new Set([
     InvoiceTypeCode.SARJ, InvoiceTypeCode.SARJANLIK,
