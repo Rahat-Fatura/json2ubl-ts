@@ -13,6 +13,8 @@ import {
 import { InvoiceSession } from '../../src/calculator/invoice-session';
 import { SessionPaths } from '../../src/calculator/session-paths.generated';
 import type { SimpleLineInput } from '../../src/calculator/simple-types';
+import { deriveFieldVisibility } from '../../src/calculator/invoice-rules';
+import { InvoiceTypeCode } from '../../src/types/enums';
 
 const baseLine: SimpleLineInput = {
   name: 'Demo',
@@ -247,5 +249,58 @@ describe('LineFieldVisibility doc-level vs line-level kombinasyon', () => {
     expect(keys).toContain('showKdvExemptionCodeSelector');
     expect(keys).toContain('showWithholdingTaxSelector');
     expect(keys).toContain('showProductTraceId');
+  });
+});
+
+/**
+ * 🔴 4.1.6 REGRESYON KAPANI — bu bloğu silmeyin.
+ *
+ * 4.1.5'te tevkifat izin kuralı BELGE seviyesinde düzeltildi ama SATIR
+ * seviyesindeki kopyası (`line-field-visibility.ts`) gözden kaçtı. Sonuç canlıda
+ * şöyle göründü: tip `IADE` seçilince tevkifat sütunu geliyor ama **hücreler
+ * tıklanamıyordu** — başlık belge seviyesinden, hücre satır seviyesinden
+ * besleniyor ve ikisi farklı şey söylüyordu.
+ *
+ * Bu dosyanın başlık yorumu "iki seviye aynı kaynaktan çalışır, duplikasyon yok"
+ * diyordu; tevkifat kuralında DOĞRU DEĞİLDİ. Aşağıdaki test o iddiayı artık
+ * ölçüyor: tek bir tipte bile ayrışma olursa kırmızıya döner.
+ */
+describe('belge ↔ satır seviyesi tevkifat kapısı AYNI olmalı (4.1.6)', () => {
+  it('TÜM fatura tiplerinde iki seviye hemfikir', () => {
+    const ayrisan: string[] = [];
+    for (const type of Object.values(InvoiceTypeCode)) {
+      const doc = deriveFieldVisibility(type, 'TEMELFATURA').showWithholdingTaxSelector;
+      const satir = deriveLineFieldVisibility(baseLine, {
+        type, profile: 'TEMELFATURA',
+      } as never).showWithholdingTaxSelector;
+      if (doc !== satir) ayrisan.push(`${type}: belge=${doc} satır=${satir}`);
+    }
+    expect(ayrisan, `ayrışan tipler:\n${ayrisan.join('\n')}`).toEqual([]);
+  });
+
+  it('IADE: satır seviyesi de tevkifata İZİN VERİR (canlı bulunan kusur)', () => {
+    const v = deriveLineFieldVisibility(baseLine, {
+      type: 'IADE', profile: 'TEMELFATURA',
+    } as never);
+    expect(v.showWithholdingTaxSelector).toBe(true);
+  });
+
+  it('TEVKIFATIADE: satır seviyesi de tevkifatı REDDEDER (GİB kabul etmiyor)', () => {
+    const v = deriveLineFieldVisibility(baseLine, {
+      type: 'TEVKIFATIADE', profile: 'TEMELFATURA',
+    } as never);
+    expect(v.showWithholdingTaxSelector).toBe(false);
+  });
+
+  it('InvoiceSession: tip IADE\'ye çevrilince mevcut satırlar da açılır', () => {
+    const session = new InvoiceSession({ initialInput: { type: 'SATIS' } });
+    session.addLine(baseLine);
+    session.addLine(baseLine);
+    expect(session.uiState.lineFields[0].showWithholdingTaxSelector).toBe(false);
+
+    session.update(SessionPaths.type, 'IADE');
+
+    expect(session.uiState.lineFields[0].showWithholdingTaxSelector).toBe(true);
+    expect(session.uiState.lineFields[1].showWithholdingTaxSelector).toBe(true);
   });
 });

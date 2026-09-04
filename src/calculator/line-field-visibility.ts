@@ -11,13 +11,28 @@
  */
 
 import type { SimpleLineInput, SimpleInvoiceInput } from './simple-types';
+import { WITHHOLDING_ALLOWED_TYPES } from '../config/constants';
+import type { InvoiceTypeCode } from '../types/enums';
 
 // ─── Type/Profile Flags (extract from deriveFieldVisibility) ─────────────────
 
 export interface TypeProfileFlags {
   isIade: boolean;
   isTevkifat: boolean;
+  /**
+   * ⚠️ TEVKİFAT İZNİNİ BU BAYRAK BELİRLEMEZ — `canCarryWithholding` belirler.
+   * GİB, `TEVKIFATIADE`/`YTBTEVKIFATIADE` tiplerinde `cac:WithholdingTaxTotal`
+   * KABUL ETMEZ (bkz. `canCarryWithholding`). Bayrak yalnız "tip adı iade-tevkifat
+   * mı" sorusunu yanıtlar; geriye uyum için duruyor.
+   */
   isTevkifatIade: boolean;
+  /**
+   * Satırda tevkifat kodu verilebilir mi? — şematronun izinli tip listesi.
+   *
+   * Kaynak: `WITHHOLDING_ALLOWED_TYPES` (`GeneralWithholdingTaxTotalCheck`):
+   * TEVKIFAT, YTBTEVKIFAT, IADE, YTBIADE, SGK, SARJ, SARJANLIK.
+   */
+  canCarryWithholding: boolean;
   isIstisna: boolean;
   isIhracKayitli: boolean;
   isOzelMatrah: boolean;
@@ -42,6 +57,7 @@ export function deriveTypeProfileFlags(type: string, profile: string): TypeProfi
     isIade: type === 'IADE' || type === 'YTBIADE' || type === 'TEVKIFATIADE' || type === 'YTBTEVKIFATIADE',
     isTevkifat: type === 'TEVKIFAT' || type === 'YTBTEVKIFAT',
     isTevkifatIade: type === 'TEVKIFATIADE' || type === 'YTBTEVKIFATIADE',
+    canCarryWithholding: WITHHOLDING_ALLOWED_TYPES.has(type as InvoiceTypeCode),
     isIstisna: type === 'ISTISNA' || type === 'YTBISTISNA',
     isIhracKayitli: type === 'IHRACKAYITLI',
     isOzelMatrah: type === 'OZELMATRAH',
@@ -100,10 +116,20 @@ export function deriveLineFieldVisibility(
       && !flags.isYatirimTesvik
       && !flags.isOzelMatrah,
 
-    showWithholdingTaxSelector: flags.isTevkifat || flags.isTevkifatIade,
+    /* 🔴 4.1.6 — 4.1.5'te ATLANMIŞ İKİNCİ KAPI.
+     *
+     * Buradaki kural `isTevkifat || isTevkifatIade` idi: doc-level'da düzeltilen
+     * aynı yanlış inancın satır seviyesindeki kopyası. Sonucu canlı görüldü:
+     * tip IADE'de sütun başlığı geliyor (doc-level izin veriyor) ama HÜCRELER
+     * DÜZENLENEMİYORDU (satır seviyesi hâlâ hayır diyordu).
+     *
+     * Bu dosyanın başlığı "doc-level ve line-level aynı kaynaktan çalışır,
+     * duplikasyon yok" diyor — tevkifat kuralında bu DOĞRU DEĞİLDİ. Artık ikisi
+     * de `WITHHOLDING_ALLOWED_TYPES`'tan okuyor. */
+    showWithholdingTaxSelector: flags.canCarryWithholding,
 
     showWithholdingPercentInput:
-      (flags.isTevkifat || flags.isTevkifatIade)
+      flags.canCarryWithholding
       && line.withholdingTaxCode === '650',
 
     showLineDelivery: flags.isIhracat || flags.isIhracKayitli,

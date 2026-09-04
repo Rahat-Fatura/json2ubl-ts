@@ -2,6 +2,39 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.1.6] — 2026-09-04
+
+### Fixed
+
+- **4.1.5 tevkifat düzeltmesi YARIM KALMIŞTI: sütun geliyordu ama hücreler
+  tıklanamıyordu.**
+
+  Tevkifat izin kuralı kütüphanede İKİ yerde yaşıyordu ve 4.1.5 yalnız birini
+  düzeltti:
+
+  | seviye | dosya | 4.1.5 sonrası |
+  |---|---|---|
+  | belge | `invoice-rules.ts` · `deriveFieldVisibility` | ✅ düzeltildi |
+  | satır | `line-field-visibility.ts` · `deriveLineFieldVisibility` | ❌ eski inanç |
+
+  Satır seviyesi hâlâ `isTevkifat || isTevkifatIade` diyordu. Portalda sütun
+  BAŞLIĞI belge seviyesinden, HÜCRE ise satır seviyesinden beslendiği için tip
+  `IADE`'de sütun görünüyor ama düzenlenemiyordu (canlı görüldü).
+
+  İronik olarak `line-field-visibility.ts`'in kendi başlık yorumu şunu iddia
+  ediyordu: *"Type/profile flag türetimleri ortak — duplikasyon yok."* Tevkifat
+  kuralında bu doğru değildi.
+
+  Artık iki seviye de `WITHHOLDING_ALLOWED_TYPES`'tan okuyor
+  (`TypeProfileFlags.canCarryWithholding`). `isTevkifatIade` geriye uyum için
+  duruyor ama artık tevkifat iznini BELİRLEMİYOR — JSDoc'ta yazılı.
+
+### Added
+
+- **Ayrışma kapanı**: `TÜM fatura tiplerinde iki seviye hemfikir` testi, 20 tipin
+  her birinde belge ve satır kapılarını karşılaştırır. Tek bir tipte ayrışma
+  kırmızıya döner — bu kusurun üçüncü kez dönmesini engeller.
+
 ## [4.1.5] — 2026-09-04
 
 ### Fixed
