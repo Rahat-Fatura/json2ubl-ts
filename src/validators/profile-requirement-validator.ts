@@ -8,6 +8,8 @@
  * - `EnerjiESURaporIDCheck`         — YALNIZ SARJ'da ESURaporID ek belgesi
  * - `YatirimTesvikItemInstanceCheck` — YTB harcama tipi 01'de marka + model
  * - `DemirbasKDVTaxExemptionCheck`   — 555 kodu KDV 0 ile kullanılamaz
+ * - KAMU profili                    — alıcı kurum (buyerCustomer) ve VKN/TCKN'si
+ * - Fatura numarası deseni          — doluysa GİB biçimine uymalı
  *
  * `InvoiceInput` katmanındaki `enerji-validator` aynı ESU kuralını zaten
  * uyguluyor; bu dosya onu SİMPLE girdiye taşır ki oturum (ve dolayısıyla portal
@@ -16,7 +18,7 @@
 
 import type { SimpleInvoiceInput } from '../calculator/simple-types';
 import type { ValidationError } from '../errors/ubl-build-error';
-import { DEMIRBAS_KDV_EXEMPTION_CODES } from '../config/constants';
+import { DEMIRBAS_KDV_EXEMPTION_CODES, INVOICE_ID_REGEX } from '../config/constants';
 
 /* ⚠️ YALNIZ 'SARJ'. Şematron `EnerjiESURaporIDCheck` SARJANLIK'ı KAPSAMAZ —
  * kural ilk yazımda ikisini birden alıyordu ve `enerji-sarjanlik-baseline`
@@ -70,6 +72,46 @@ export function validateProfileRequirements(input: SimpleInvoiceInput): Validati
         });
       }
     });
+  }
+
+  // ── Fatura numarası deseni (doluysa)
+  /* `InvoiceBuilder` bu deseni strict'te zaten uyguluyor ama oturum doğrulaması
+   * görmüyordu; portalın "elle seri" girişinde (`series-template-row.tsx`)
+   * kullanıcı bozuk numara yazınca hiçbir uyarı çıkmıyordu. GİB tarafı da
+   * numarasız-doğrulama profilinde bu kontrolü bastırdığı için çift kör noktaydı.
+   *
+   * ⚠️ BOŞ numara HATA DEĞİLDİR: portal numarayı mimkit serisinden gönderim
+   * anında ayırır; taslak aşamasında numarasız belge meşrudur. */
+  if (!bos(input.id) && !INVOICE_ID_REGEX.test(String(input.id))) {
+    errors.push({
+      code: 'INVALID_FORMAT',
+      message: 'Fatura numarası GİB biçimine uymuyor: 3 harf/rakam + yıl (20XX) + 9 rakam.',
+      path: 'id',
+      expected: String(INVOICE_ID_REGEX.source),
+      actual: String(input.id),
+    });
+  }
+
+  // ── KAMU → alıcı kurum + VKN
+  /* `profile-validators.ts` bu kuralı InvoiceInput katmanında zaten uyguluyor,
+   * ama orası YALNIZ `SimpleInvoiceBuilder` strict yolunda çalışır. Oturum
+   * doğrulamasında yoktu → portal sessiz kalıyordu ve GİB de yakalamıyordu
+   * (kaplama seferi K4-031: iki taraflı kör nokta). */
+  if (profil === 'KAMU') {
+    const bc = input.buyerCustomer as { name?: string; taxNumber?: string } | undefined;
+    if (!bc) {
+      errors.push({
+        code: 'PROFILE_REQUIREMENT',
+        message: 'Kamu faturalarında alıcı kurum (buyerCustomer) zorunludur.',
+        path: 'buyerCustomer',
+      });
+    } else if (bos(bc.taxNumber)) {
+      errors.push({
+        code: 'PROFILE_REQUIREMENT',
+        message: 'Kamu faturalarında alıcı kurumun VKN/TCKN bilgisi zorunludur.',
+        path: 'buyerCustomer.taxNumber',
+      });
+    }
   }
 
   // ── 555 (demirbaş KDV) → KDV 0 YASAK

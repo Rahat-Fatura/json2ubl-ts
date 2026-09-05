@@ -46,6 +46,8 @@ bilinçli olarak KAPSAM DIŞI — onlara ayrı bir ekran gelecek.
   | `EnerjiESURaporIDCheck` | YALNIZ `SARJ` — `schemeId="ESURaporID"` ek belgesi |
   | `YatirimTesvikItemInstanceCheck` | YTB harcama tipi `01` — kalemde marka + model |
   | `DemirbasKDVTaxExemptionCheck` | `555` kodu KDV `0` ile kullanılamaz |
+  | KAMU profili | alıcı kurum (`buyerCustomer`) ve VKN/TCKN'si |
+  | Fatura numarası deseni | DOLUYSA `^[A-Z0-9]{3}20[0-9]{2}[0-9]{9}$` (boş numara meşrudur) |
 
   Üçüncüsü kütüphanenin KENDİ `30-feature-555-demirbas-kdv` örneğini kırdı: o
   örnek `kdvPercent: 0` ile GİB'in reddettiği belge üretiyordu (düzeltildi).
