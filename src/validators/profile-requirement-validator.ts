@@ -10,6 +10,11 @@
  * - `DemirbasKDVTaxExemptionCheck`   — 555 kodu KDV 0 ile kullanılamaz
  * - KAMU profili                    — alıcı kurum (buyerCustomer) ve VKN/TCKN'si
  * - Fatura numarası deseni          — doluysa GİB biçimine uymalı
+ * - `EnerjiPartyIdentificationPlakaCheck`  — SARJ/SARJANLIK'ta alıcıda PLAKA
+ * - `EnerjiInvoicePeriodCheck`             — SARJ/SARJANLIK'ta dönem + saatleri
+ * - `EnerjiItemInstanceSerialIDCheck`      — SARJANLIK'ta kalemde seri no
+ * - `YatirimTesvikCommodityClassificationCheck` — YTB'de harcama tipi
+ * - `YatirimTesvikContractDocumentReferenceIDCheck` — YTB'de 6 haneli YTB no
  *
  * `InvoiceInput` katmanındaki `enerji-validator` aynı ESU kuralını zaten
  * uyguluyor; bu dosya onu SİMPLE girdiye taşır ki oturum (ve dolayısıyla portal
@@ -132,6 +137,80 @@ export function validateProfileRequirements(input: SimpleInvoiceInput): Validati
       });
     }
   });
+
+  // ── ENERJİ: alıcıda PLAKA, fatura dönemi (saatli), SARJANLIK'ta kalem seri no
+  if (tip === 'SARJ' || tip === 'SARJANLIK') {
+    const kimlikler = (input.customer?.identifications ?? []) as Array<{ schemeId?: string; value?: string }>;
+    const plaka = kimlikler.find(k => k.schemeId === 'PLAKA');
+    if (!plaka || bos(plaka.value)) {
+      errors.push({
+        code: 'PROFILE_REQUIREMENT',
+        message: 'Şarj faturalarında alıcıda PLAKA kimliği zorunludur.',
+        path: 'customer.identifications',
+        expected: "schemeId='PLAKA' taşıyan bir kimlik",
+      });
+    } else if (!/^[A-Z0-9_-]{1,50}$/.test(String(plaka.value).trim())) {
+      errors.push({
+        code: 'INVALID_FORMAT',
+        message: 'PLAKA değeri yalnız büyük harf, rakam, tire ve alt çizgi içerebilir (en çok 50 karakter).',
+        path: 'customer.identifications',
+        actual: String(plaka.value),
+      });
+    }
+
+    /* Şematron yalnız dönemin VARLIĞINI değil, başlangıç/bitiş SAATLERİNİ de arar. */
+    const d = input.invoicePeriod as
+      { startDate?: string; startTime?: string; endDate?: string; endTime?: string } | undefined;
+    const eksik = !d || bos(d.startDate) || bos(d.startTime) || bos(d.endDate) || bos(d.endTime);
+    if (eksik) {
+      errors.push({
+        code: 'PROFILE_REQUIREMENT',
+        message: 'Şarj faturalarında fatura dönemi başlangıç/bitiş tarih VE saatleriyle birlikte zorunludur.',
+        path: 'invoicePeriod',
+        expected: 'startDate + startTime + endDate + endTime',
+      });
+    }
+
+    if (tip === 'SARJANLIK') {
+      input.lines.forEach((line, i) => {
+        if (bos(line.serialId)) {
+          errors.push({
+            code: 'PROFILE_REQUIREMENT',
+            message: 'Şarj anlık faturalarında her kalemde seri numarası zorunludur.',
+            path: `lines[${i}].serialId`,
+          });
+        }
+      });
+    }
+  }
+
+  // ── YATIRIM TEŞVİK: harcama tipi + 6 haneli YTB numarası
+  if (ytbKapsam) {
+    input.lines.forEach((line, i) => {
+      if (bos(line.itemClassificationCode)) {
+        errors.push({
+          code: 'PROFILE_REQUIREMENT',
+          message: 'Yatırım teşvik faturasında kalem harcama tipi zorunludur.',
+          path: `lines[${i}].itemClassificationCode`,
+        });
+      }
+    });
+    if (bos(input.ytbNo)) {
+      errors.push({
+        code: 'PROFILE_REQUIREMENT',
+        message: 'Yatırım teşvik faturasında 6 haneli teşvik belge numarası zorunludur.',
+        path: 'ytbNo',
+        expected: '6 haneli numara',
+      });
+    } else if (!/^\d{6}$/.test(String(input.ytbNo).trim())) {
+      errors.push({
+        code: 'INVALID_FORMAT',
+        message: 'Yatırım teşvik belge numarası 6 haneli olmalıdır.',
+        path: 'ytbNo',
+        actual: String(input.ytbNo),
+      });
+    }
+  }
 
   return errors;
 }

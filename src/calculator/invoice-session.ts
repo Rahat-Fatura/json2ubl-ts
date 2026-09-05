@@ -44,6 +44,7 @@ import { deriveLineFieldVisibility } from './line-field-visibility';
 import type { ValidationError } from '../errors/ubl-build-error';
 import { validateSimpleLineRanges } from '../validators/simple-line-range-validator';
 import { validateProfileRequirements } from '../validators/profile-requirement-validator';
+import { validateSimpleFormats } from '../validators/simple-format-validator';
 import { validateManualExemption } from '../validators/manual-exemption-validator';
 import { validatePhantomKdv } from '../validators/phantom-kdv-validator';
 import { validateSgkInput } from '../validators/sgk-input-validator';
@@ -1108,6 +1109,7 @@ export class InvoiceSession extends EventEmitter {
     errors.push(...validatePhantomKdv(this._input));
     errors.push(...validateSgkInput(this._input));
     errors.push(...validateProfileRequirements(this._input));
+    errors.push(...validateSimpleFormats(this._input));
     // HKS profilinde her kalemde 19 karakterli KUNYENO (Schematron HKSInvioceCheck).
     // SimpleInvoiceBuilder'a BİLEREK eklenmedi: orada InvoiceInput katmanı
     // (validateByProfile → validateHks) aynı kuralı strict'te zaten uyguluyor;

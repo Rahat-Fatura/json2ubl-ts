@@ -2,6 +2,44 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.3.0] — 2026-09-05
+
+### Added
+
+- **GİB'in reddettiği kurallar oturum doğrulamasına taşındı — kullanıcı artık
+  önizlemeye basmadan uyarılıyor.**
+
+  Kaplama seferi ölçtü: GİB'in reddettiği 41 senaryonun **12'sinde** tüketici
+  arayüzü SESSİZDİ. Kurallar kütüphanede vardı ama `InvoiceInput` katmanındaydı;
+  oradan yalnız `SimpleInvoiceBuilder`'ın strict yolu geçer, `InvoiceSession`
+  görmez. Portal önizlemeyi `validationLevel:'none'` ile kurduğu için hiçbir
+  kapıya takılmıyorlardı.
+
+  Yeni `simple-format-validator` (biçim + çekirdek zorunluluk):
+
+  | alan | kural |
+  |---|---|
+  | `uuid` | zorunlu + 8-4-4-4-12 biçimi |
+  | `datetime` | ISO 8601 (`YYYY-MM-DDTHH:mm:ss`) |
+  | `sender`/`customer.taxNumber` | doluysa 10 (VKN) veya 11 (TCKN) hane |
+  | `sender`/`customer.city`, `.district` | zorunlu — UBL `PostalAddress` şart koşar, eksikse `buildXml` FIRLATIR |
+
+  `profile-requirement-validator` genişletildi:
+
+  | kural | ne ister |
+  |---|---|
+  | `EnerjiPartyIdentificationPlakaCheck` | SARJ/SARJANLIK — alıcıda `PLAKA` kimliği (biçim denetimli) |
+  | `EnerjiInvoicePeriodCheck` | SARJ/SARJANLIK — dönem, başlangıç/bitiş **saatleriyle** |
+  | `EnerjiItemInstanceSerialIDCheck` | SARJANLIK — her kalemde seri numarası |
+  | `YatirimTesvikCommodityClassificationCheck` | YTB — kalemde harcama tipi |
+  | `YatirimTesvikContractDocumentReferenceIDCheck` | YTB — 6 haneli teşvik belge numarası |
+
+  Sonuç: **41 GİB reddinin 40'ında** portal önceden uyarıyor (kalan 1 ihracat,
+  kapsam dışı). Hatalı senaryoların tamamına bakıldığında koruma **46/47**.
+
+  Tüm kurallar "doluysa doğru olmalı" biçimindedir; boş taslak alanı hata
+  üretmez (istisna: `uuid`, portal onu mount'ta yazar).
+
 ## [4.2.0] — 2026-09-04
 
 MimForge kaplama seferinin (534 önizleme, 73/73 profil×tip çifti) kütüphane
