@@ -6,7 +6,9 @@
  * sorunsuz kuruyor, reddi GİB kapısında öğreniyordu (MimForge kaplama seferi).
  *
  * - `EnerjiESURaporIDCheck`         — YALNIZ SARJ'da ESURaporID ek belgesi
- * - `YatirimTesvikItemInstanceCheck` — YTB harcama tipi 01'de marka + model
+ * - `YatirimTesvikItemInstanceCheck` — YTB harcama tipi 01'de Makine Adı
+ *                                     (`ModelName`) + Makine Teçhizat Sıra No
+ *                                     (`ProductTraceID`) + Makine ID (`SerialID`)
  * - `DemirbasKDVTaxExemptionCheck`   — 555 kodu KDV 0 ile kullanılamaz
  * - KAMU profili                    — alıcı kurum (buyerCustomer) ve VKN/TCKN'si
  * - Fatura numarası deseni          — doluysa GİB biçimine uymalı
@@ -23,15 +25,50 @@
 
 import type { SimpleInvoiceInput } from '../calculator/simple-types';
 import type { ValidationError } from '../errors/ubl-build-error';
-import { DEMIRBAS_KDV_EXEMPTION_CODES, INVOICE_ID_REGEX } from '../config/constants';
+import {
+  DEMIRBAS_KDV_EXEMPTION_CODES,
+  INVOICE_ID_REGEX,
+  YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES,
+} from '../config/constants';
 
 /* ⚠️ YALNIZ 'SARJ'. Şematron `EnerjiESURaporIDCheck` SARJANLIK'ı KAPSAMAZ —
  * kural ilk yazımda ikisini birden alıyordu ve `enerji-sarjanlik-baseline`
  * fixture'ı bunu anında kırdı. */
 const ENERJI_TYPES = new Set(['SARJ']);
 
+/* Şematron `$YatirimTesvikEArsivInvoiceTypeCodeList` (UBL-TR_Codelist.xml:67) —
+ * BEŞ tipin tamamı: YTBSATIS, YTBIADE, YTBISTISNA, YTBTEVKIFAT, YTBTEVKIFATIADE.
+ *
+ * ⚠️ `YTBTEVKIFATIADE` portalın ÜRETİM seçim listesinden çıkarıldı ama okuma
+ * (ingest) yolunda hâlâ gelebilir; şematron onu kapsadığı için burada da
+ * kapsanmak ZORUNDA — aksi halde gelen belgeyi sessizce geçirirdik. */
+const YTB_EARSIV_TYPES: ReadonlySet<string> = YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES;
+
 function bos(v: unknown): boolean {
   return v === undefined || v === null || String(v).trim() === '';
+}
+
+/**
+ * Yatırım teşvik şematron kapsamı — üç kural (`YatirimTesvikItemInstanceCheck`,
+ * `YatirimTesvikCommodityClassificationCheck`,
+ * `YatirimTesvikContractDocumentReferenceIDCheck`) AYNI koşulu paylaşır:
+ *
+ *   ProfileID = 'YATIRIMTESVIK'  VEYA
+ *   (ProfileID = 'EARSIVFATURA' VE InvoiceTypeCode ∈ $YatirimTesvikEArsivInvoiceTypeCodeList)
+ *
+ * ⚠️ Eski kod `tip.startsWith('YTB')` diyordu. İki kusuru vardı: profil koşulunu
+ * hiç aramıyordu ve önek eşleşmesi olduğu için listede olmayan (ileride eklenecek)
+ * bir YTB* tipini de sessizce kapsıyordu. Artık liste birebir şematrondan gelir.
+ *
+ * Profil BOŞ geldiğinde tipten türetiriz: YTB* tipleri GİB'de yalnız EARSIVFATURA
+ * altında yaşar, dolayısıyla profilsiz gelen bir YTBSATIS da bu kapsamdadır.
+ * (Oturum yolu `resolveProfileForType` ile profili zaten doldurur; bu dal yalnız
+ * `SimpleInvoiceBuilder`'a HAM girdi veren çağıranlar için bir emniyet ağıdır.)
+ */
+function isYatirimTesvikScope(profil: string, tip: string): boolean {
+  if (profil === 'YATIRIMTESVIK') return true;
+  if (!YTB_EARSIV_TYPES.has(tip)) return false;
+  return profil === 'EARSIVFATURA' || profil === '';
 }
 
 export function validateProfileRequirements(input: SimpleInvoiceInput): ValidationError[] {
@@ -55,25 +92,48 @@ export function validateProfileRequirements(input: SimpleInvoiceInput): Validati
     }
   }
 
-  // ── Yatırım teşvik, harcama tipi 01 → kalemde marka + model
-  const ytbKapsam = profil === 'YATIRIMTESVIK' || tip.startsWith('YTB');
+  // ── Yatırım teşvik, harcama tipi 01 → Makine Adı + Makine Teçhizat Sıra No + Makine ID
+  /* Şematron `YatirimTesvikItemInstanceCheck` (UBL-TR_Common_Schematron.xml:491-493)
+   * ÜÇ alanın da boş olmamasını ister:
+   *   cac:Item/cbc:ModelName                        → GİB dilinde «Makine Adı»
+   *   cac:Item/cac:ItemInstance/cbc:ProductTraceID  → «Makine Teçhizat Sıra No»
+   *   cac:Item/cac:ItemInstance/cbc:SerialID        → «Makine ID»
+   * GİB ret metni: "Yatırım Teşvik Faturasında Harcama Tipi 01 için Makine Adı,
+   * Makine Teçhizat Sıra No ve Makine ID alanları belirtilmelidir."
+   *
+   * 🔴 `cbc:BrandName` (Marka) bu kuralda HİÇ GEÇMEZ. Eski kod tam tersini
+   * yapıyordu: markayı zorunlu sayıyor (YANLIŞ POZİTİF — GİB istemiyor), sıra no
+   * ile makine ID'ye ise hiç bakmıyordu (YANLIŞ NEGATİF — kullanıcı eksiği ancak
+   * GİB kapıda reddedince öğreniyordu).
+   *
+   * Mesajlar GİB'in ret metnindeki adlandırmayı BİREBİR kullanır ki kullanıcı
+   * ekrandaki etiketle GİB hatasını eşleştirebilsin. */
+  const ytbKapsam = isYatirimTesvikScope(profil, tip);
   if (ytbKapsam) {
     input.lines.forEach((line, i) => {
       if (line.itemClassificationCode !== '01') return;
-      if (bos(line.brand)) {
-        errors.push({
-          code: 'MISSING_FIELD',
-          message:
-            'Yatırım teşvik harcama tipi 01 için kalem markası zorunludur (YatirimTesvikItemInstanceCheck).',
-          path: `lines[${i}].brand`,
-        });
-      }
       if (bos(line.model)) {
         errors.push({
           code: 'MISSING_FIELD',
           message:
-            'Yatırım teşvik harcama tipi 01 için kalem modeli zorunludur (YatirimTesvikItemInstanceCheck).',
+            'Yatırım Teşvik Faturasında Harcama Tipi 01 için Makine Adı zorunludur (YatirimTesvikItemInstanceCheck).',
           path: `lines[${i}].model`,
+        });
+      }
+      if (bos(line.productTraceId)) {
+        errors.push({
+          code: 'MISSING_FIELD',
+          message:
+            'Yatırım Teşvik Faturasında Harcama Tipi 01 için Makine Teçhizat Sıra No zorunludur (YatirimTesvikItemInstanceCheck).',
+          path: `lines[${i}].productTraceId`,
+        });
+      }
+      if (bos(line.serialId)) {
+        errors.push({
+          code: 'MISSING_FIELD',
+          message:
+            'Yatırım Teşvik Faturasında Harcama Tipi 01 için Makine ID zorunludur (YatirimTesvikItemInstanceCheck).',
+          path: `lines[${i}].serialId`,
         });
       }
     });

@@ -2,6 +2,226 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.4.2] — 2026-09-05
+
+### Fixed
+
+- **YTB harcama tipi 01 zorunluluğu YANLIŞ alanları arıyordu
+  (`YatirimTesvikItemInstanceCheck`).**
+
+  `src/validators/profile-requirement-validator.ts` simple-input katmanında
+  kuralı marka + model olarak uyguluyordu. Şematronun
+  (`schematrons/UBL-TR_Common_Schematron.xml:491-493`) istediği ÜÇ alan şunlar:
+
+  | Şematron yolu | GİB ret metnindeki ad | simple alan |
+  |---|---|---|
+  | `cac:Item/cbc:ModelName` | Makine Adı | `model` |
+  | `cac:Item/cac:ItemInstance/cbc:ProductTraceID` | Makine Teçhizat Sıra No | `productTraceId` |
+  | `cac:Item/cac:ItemInstance/cbc:SerialID` | Makine ID | `serialId` |
+
+  🔴 `cbc:BrandName` (Marka) kuralda **HİÇ GEÇMİYOR**. Sonuç iki yönlü hataydı:
+  marka boşken uydurma hata veriyorduk (yanlış pozitif) ve sıra no + makine ID
+  eksikken hiç uyarmıyorduk (yanlış negatif) — kullanıcı eksiği ancak GİB
+  kapıda «Yatırım Teşvik Faturasında Harcama Tipi 01 için Makine Adı, Makine
+  Teçhizat Sıra No ve Makine ID alanları belirtilmelidir.» reddiyle öğreniyordu.
+
+  Hata mesajları artık GİB'in ret metnindeki adlandırmayı birebir kullanır;
+  yollar (`lines[i].model`, `lines[i].productTraceId`, `lines[i].serialId`)
+  doğrudan simple alanlarını gösterir ki tüketici (portal) alanı bulup
+  odaklayabilsin.
+
+- **YTB kapsam koşulu şematronla hizalandı.** `tip.startsWith('YTB')` yerine
+  şematron değişkeni `$YatirimTesvikEArsivInvoiceTypeCodeList` esas alındı
+  (mevcut `YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES` sabiti — 5 tipin tamamı,
+  `YTBTEVKIFATIADE` dahil). Önek eşleşmesi hem profil koşulunu (`EARSIVFATURA`)
+  atlıyor hem de listede olmayan YTB* tiplerini sessizce kapsıyordu. Kapsam
+  `YatirimTesvikCommodityClassificationCheck` ve
+  `YatirimTesvikContractDocumentReferenceIDCheck` ile paylaşıldığı için bu
+  düzeltme üç kuralı birden hizalar.
+
+### Tests
+
+- `__tests__/validators/profile-requirement-ytb-item-instance.test.ts` (18 test):
+  üç alanın her birinin eksikliği ayrı ayrı, üçü birden, satır indeksi
+  korunumu, harcama tipi 02 kapsam dışı, 5 YTB e-Arşiv tipi kapsam içi,
+  liste dışı YTB* önekinin kapsam dışı olması ve **marka boşken hata
+  VERİLMEDİĞİNİ** kanıtlayan regresyon testi.
+
+## [4.4.1] — 2026-09-05
+
+### Fixed
+
+- **`InvoiceSession` YAPICISI türetilmiş durumu kurmuyordu — `update()` yolundan
+  farklı bir `uiState` üretiyordu.**
+
+  Yapıcı profil/tip uzlaşmasını KENDİ elleriyle yapıyordu
+  (`profile ?? 'TICARIFATURA'`, `type ?? 'SATIS'`), `update('profile'|'type', …)`
+  yolu ise `resolveTypeForProfile` / `resolveProfileForType` çözücülerini
+  çağırıyordu. İki ayrı kopya, iki ayrı gerçek:
+
+  | Girdi | Yapıcı (eski) | `update()` |
+  |---|---|---|
+  | `{ type: 'SARJ' }` | profil `TICARIFATURA` (SARJ o profilde YOK) | `ENERJI` ✓ |
+  | `{ type: 'TEKNOLOJIDESTEK' }` | `TICARIFATURA` | `EARSIVFATURA` ✓ |
+  | `{ type: 'YTBSATIS' / 'HKSSATIS' / … }` | `TICARIFATURA` | `EARSIVFATURA` ✓ |
+  | `{ type: 'IADE' }` | `TICARIFATURA` (IADE kabul etmez) | `TEMELFATURA` ✓ |
+  | `{ profile: 'ENERJI' }` | tip `SATIS` (ENERJI'de YOK) | `SARJ` ✓ |
+  | `{ profile: 'YOLCUBERABERFATURA' / 'OZELFATURA' }` | tip `SATIS` | `ISTISNA` ✓ |
+
+  Kayıtlı bir taslak her zaman YAPICIDAN açıldığı için (`replaceSession`)
+  tüketici yanlış profil/tip çifti ve yanlış `allowedTypes` görüyordu.
+
+  Uzlaşma artık TEK fonksiyonda: `resolveInitialProfileType()`
+  (`src/calculator/invoice-rules.ts`, dışa aktarıldı). Boş oturumun varsayılan
+  çiftinden başlayıp verilen alana tek bir `update()` uygulanmış gibi çözer —
+  yani iki yol aynı ilkelleri kullanır. Beyan edilmiş profil+tip çifti
+  UYUMSUZ OLSA BİLE korunur; sessiz düzeltme `validateCrossMatrix`'in
+  `CROSS_MATRIX` hatasını yutardı.
+
+- **`uiState.warnings` yapıcıdan sonra BOŞ kalıyordu.** Aynı desenin ikinci yüzü:
+  `update()` yolu `onChanged() → validate()` ile uyarıları dolduruyordu, yapıcı
+  hiç doldurmuyordu. Doğrulama boru hattının saf çekirdeği `_computeValidation()`
+  olarak ayrıldı; `validate()` ile yapıcı ONU ortak kullanır. Yapıcı olay
+  YAYINLAMAZ ve öneri hattını çalıştırmaz — `_lastSuggestions` erken dolarsa ilk
+  `suggestion` diff'i sessizce yutulurdu (T-4 kontratı korundu).
+
+- **`updateUIState()` uyarıları siliyordu.** `deriveUIState` uyarı üretmez, bu
+  yüzden her çağrı `warnings`'i `[]`'a çekiyordu. `session.calculate()` doğrudan
+  çağrıldığında ardından `validate()` gelmediği için uyarılar kayboluyordu.
+  Artık mevcut anlık görüntüden taşınır.
+
+- **`calculate()` KULLANICININ SEÇTİĞİ PROFİLİ eziyordu.** Tip açıkça
+  seçilmediğinde `resolveInvoiceType` satırlardan tip türetir; tevkifat yoksa
+  `SATIS` döner. Profil `ENERJI` (tipler `SARJ`/`SARJANLIK`) iken bu benimseniyor,
+  ardından `resolveProfileForType` profili `TEMELFATURA`'ya çeviriyordu. Artık
+  türetilen tip mevcut profilin kümesinde değilse benimsenmez — otomatik tespit
+  profilin ALTINDA çalışır, yerine değil. B-41'in tevkifat tespiti korundu.
+
+### Added
+
+- `resolveInitialProfileType()` + `ResolvedProfileType` dışa aktarıldı.
+- `__tests__/calculator/invoice-session-constructor-parity.test.ts` (54 test):
+  erişilebilir TÜM profiller ve TÜM tipler için "yapıcı yolu ≡ `update()` yolu"
+  paritesi — `allowedTypes` değil, `uiState`'in TAMAMI karşılaştırılır.
+
+### Notes
+
+- Yapıcı ile `update()` arasında BİLEREK korunan tek fark: `update()` bir
+  ETKİLEŞİM kapısıdır ve `isExport`/`liability` zarfını `path-error`
+  (`PROFILE_EXPORT_MISMATCH`, `PROFILE_LIABILITY_MISMATCH`) ile uygular; yapıcı
+  SADIK OKUMA yoludur, beyan edileni korur ki doğrulayıcılar raporlayabilsin.
+  `IHRACAT` yalnız `isExport: true` ile kurulur.
+
+## [4.4.0] — 2026-09-05
+
+### Changed
+
+- **HKS iki düzleme ayrıldı: e-Fatura (`HKS`) ve e-Arşiv (`EARSIVFATURA`).**
+
+  Hal faturasının tipi kesildiği düzleme göre değişir; kütüphane bunu tek düzlem
+  sanıyordu ve ikisini de yanlış yere koyuyordu:
+
+  | Düzlem | ProfileID | InvoiceTypeCode |
+  |---|---|---|
+  | e-Fatura | `HKS` | `SATIS` / `KOMISYONCU` (+ `ISTISNA`, `TEVKIFAT`) |
+  | e-Arşiv | `EARSIVFATURA` | `HKSSATIS` / `HKSKOMISYONCU` |
+
+  `PROFILE_TYPE_MATRIX` değişiklikleri:
+  - `HKS` = `SATIS`, `ISTISNA`, `TEVKIFAT`, `KOMISYONCU` (bu SIRAYLA —
+    `resolveTypeForProfile` boş girdide `allowed[0]`'ı seçer; varsayılan tip
+    `HKSSATIS`'ten `SATIS`'e döndü).
+  - `HKSSATIS`/`HKSKOMISYONCU` → `EARSIVFATURA` kümesine taşındı. Orada HİÇ
+    yoklardı: HKS'in e-Arşiv düzlemi bugüne kadar **hiç erişilemiyordu**.
+  - `KOMISYONCU` `HKS`'e YENİ eklendi: e-Fatura düzleminde komisyoncu faturası
+    hiç kesilemiyordu. GİB kısıtı değil, kütüphane boşluğuydu.
+
+  Şematron HKS'e tip kısıtı **koymuyor** — tek kural `HKSInvioceCheck` (her
+  kalemde 19 karakterli `KUNYENO`). Beş kombinasyon da canlı şematronla
+  doğrulandı (xslt-service :8081, paket 20260701): `HKS+SATIS`,
+  `HKS+KOMISYONCU`, `HKS+TEVKIFAT`, `EARSIVFATURA+HKSSATIS`,
+  `EARSIVFATURA+HKSKOMISYONCU` — beşi de 0 ihlal.
+
+### Removed
+
+- **`TEVKIFATIADE` ve `YTBTEVKIFATIADE` seçim listelerinden çıkarıldı —
+  ÜRETİMDE SUNULMUYOR, GELEN BELGEDE TANINIYOR.**
+
+  İkisi de `PROFILE_TYPE_MATRIX`'in TÜM profillerinden kaldırıldı
+  (`TEMELFATURA`, `TICARIFATURA`, `KAMU`, `ILAC_TIBBICIHAZ`, `YATIRIMTESVIK`,
+  `IDIS`, `EARSIVFATURA`, `HKS`). Gerekçe iki ölçüme dayanır:
+
+  1. Şematronda **ayırt edici kuralları yok**: onları anan üç kural
+     (`IADEInvioceCheck`, `YatirimTesvikKDVCheck`, `YatirimTesvikLineKDVCheck`)
+     hep `IADE`/`YTBIADE` ile aynı VEYA-grubuna koyar.
+  2. `WITHHOLDING_ALLOWED_TYPES`'ta değiller → **tevkifat toplamı taşıyamazlar**
+     (`GeneralWithholdingTaxTotalCheck`). Tevkifat taşıyamayan bir "tevkifat
+     iadesi", `IADE`'nin adı farklı bir kopyasıdır.
+
+  🔴 **Enum ve okuma yolu KORUNDU**: `InvoiceTypeCode.TEVKIFATIADE` /
+  `.YTBTEVKIFATIADE` duruyor; `IADE_GROUP`, `IADE_GROUP_TYPES`, `isIade`
+  türetmeleri, `billingReference` zorunluluğu ve `CODE_351_FORBIDDEN_TYPES`
+  aynen kaldı. Başka entegratörden bu tiplerle gelen fatura okunur/gösterilir.
+
+  Tevkifatlı iadenin doğru yapısı (4.1.5'ten beri): tip `IADE` + kalemde
+  tevkifat kodu.
+
+- **`examples-matrix/_lib/specs.ts`'ten 9 ölü senaryo kaydı silindi.** 4.1.5'te
+  bu fixture'ların klasörleri silinmişti (GİB'in reddettiği XML üretiyorlardı)
+  ama spec kayıtları unutulmuştu; `matrix:scaffold` idempotent olduğu için
+  eksik klasörü **yazar** — yani kayıtlar silinmiş fixture'ları her an geri
+  getirebilirdi.
+
+### Added
+
+- **HKS künye kuralı satır-bazlı: satır başına TAM BİR `KUNYENO`.**
+
+  Şematron `HKSInvioceCheck` satır-bazlı DEĞİL, SAYIM-bazlıdır:
+  `count(geçerli KUNYENO) = count(cac:InvoiceLine)`. Bu bir deliktir — 1. satırda
+  iki künye + 2. satırda hiç künye olan belge `2 = 2` verir ve **şematrondan
+  geçer**, oysa 2. satır künyesizdir. Canlı sonda doğrulandı: böyle bir belge
+  0 ihlalle yeşil döndü.
+
+  `hks-kunyeno-validator` artık satır başına tam bir künye arar (0 → hata,
+  2+ → hata). Şematronu geçen belgelerin ALT kümesini üretiriz; tersi GİB'de
+  reddedilecek belge üretirdi.
+
+- **`hks-owner-validator` — HKS mal sahibi alanları (UYARI seviyesi).**
+
+  `MALSAHIBIADSOYADUNVAN` + `MALSAHIBIVKNTCKN` birlikte bulunmalı (biri var
+  diğeri yoksa uyarı) ve VKN/TCKN 10 veya 11 hane sayısal olmalı.
+
+  🔴 **Bilinçli olarak UYARI, hata değil**: bu bir gözlemdir, yazılı GİB kuralı
+  değil. Şematronda `MALSAHIBI*` geçen tek bir assert yok; VKN/TCKN uzunluk
+  kuralları yalnız `PartyIdentification`'a bakar ve
+  `$AdditionalItemIdentificationIDType` kod listesi hiçbir assert tarafından
+  kullanılmıyor (schemeID serbest). Kural hata yapılsaydı GİB'in kabul ettiği
+  geçerli belgeler üretilemez hâle gelirdi.
+
+  Kapsam: `HKS` + (`SATIS`/`ISTISNA`/`TEVKIFAT`) ve `EARSIVFATURA` + `HKSSATIS`.
+  Komisyoncu tipleri kapsam DIŞI — orada mal sahibi ilişkisi faturanın
+  taraflarıyla kurulur, kalem kimliğiyle değil.
+
+  Uyarılar `InvoiceSession.validate()`'in kural-tabanlı uyarı dizisine katılır
+  (`severity:'warning'`), hata köprüsüne DEĞİL — belge kurulumunu bloke etmez.
+
+- **Fixture'lar** (hepsi canlı şematronla doğrulandı, `review:'schematron-verified'`):
+  `hks-satis-baseline`, `hks-komisyoncu-baseline`, `hks-satis-coklu-kunye`
+  (üçü eski `hks-hkssatis-*`/`hks-hkskomisyoncu-*` yerine),
+  `hks-satis-malsahibi` (künye + mal sahibi üçlüsü, gerçek üretim belgesinin
+  şekli) ve `earsivfatura-hkssatis-baseline` (e-Arşiv düzlemi).
+
+  `examples/23-hks-satis` de e-Fatura düzlemine (`SATIS`) taşındı.
+
+### Fixed
+
+- **`isHks` alan-görünürlük bayrağı e-Arşiv düzlemini de kapsıyor.** Bayrak
+  yalnız `profile === 'HKS'`'e bakıyordu; e-Arşiv düzlemi açılınca
+  `EARSIVFATURA + HKSSATIS/HKSKOMISYONCU` belgelerinde kalem kimlik alanı
+  (`showAdditionalItemIdentifications`) HİÇ görünmeyecek, kullanıcı künyeyi
+  girecek yeri bulamayacaktı. ⚠️ Bu bir GÖRÜNÜRLÜK genişlemesidir; künye
+  ZORUNLULUĞU hâlâ yalnız `ProfileID=HKS`'tedir (şematron kuralı profile
+  bağlıdır) ve `hks-kunyeno-validator` bunu değiştirmez.
+
 ## [4.3.0] — 2026-09-05
 
 ### Added
