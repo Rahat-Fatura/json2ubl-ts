@@ -7,10 +7,10 @@
   ],
   "description": "HKS satırında KUNYENO kimliği eksik",
   "profileContext": "HKS",
-  "typeContext": "HKSSATIS",
+  "typeContext": "SATIS",
   "validationLevel": "strict",
   "isMultiError": false,
-  "generatedAt": "2026-04-24T14:22:41.145Z",
+  "generatedAt": "2026-09-05T08:41:03.391Z",
   "generatedBy": "examples-matrix/scaffold.ts",
   "review": "auto-ok"
 }

@@ -25,7 +25,8 @@ function baseInput(overrides: Partial<SimpleInvoiceInput> = {}): SimpleInvoiceIn
     uuid: 'e1a2b3c4-0000-4000-8000-000000000001',
     datetime: '2026-04-24T10:00:00',
     profile: 'HKS',
-    type: 'HKSSATIS',
+    // 4.4.0: HKS'in e-FATURA düzleminde tip SATIS'tir (HKSSATIS e-Arşiv düzlemi).
+    type: 'SATIS',
     currencyCode: 'TRY',
     sender: { taxNumber: '1234567890', name: 'X', taxOffice: 'Y', address: 'A', district: 'B', city: 'C' },
     customer: { taxNumber: '9876543210', name: 'X', taxOffice: 'Y', address: 'A', district: 'B', city: 'C' },
@@ -85,6 +86,82 @@ describe('hks-kunyeno-validator — HKSInvioceCheck', () => {
     it('baş/son boşluk uzunluğa sayılmaz (normalize-space)', () => {
       const errs = validateHksKunyeNo(baseInput({
         lines: [line({ additionalItemIdentifications: [{ schemeId: 'KUNYENO', value: `  ${VALID_KUNYENO}  ` }] })],
+      }));
+      expect(errs).toHaveLength(0);
+    });
+  });
+
+  /**
+   * 4.4.0 — SATIR BAŞINA TAM BİR KÜNYE.
+   *
+   * Şematron `HKSInvioceCheck` satır-bazlı DEĞİL, SAYIM-bazlıdır:
+   *   count(geçerli KUNYENO) = count(cac:InvoiceLine)
+   * Yani 1. satırda iki künye + 2. satırda hiç → 2 = 2 → ŞEMATRON GEÇER, oysa
+   * 2. satır künyesizdir. Canlı sonda doğrulandı (xslt-service :8081): böyle bir
+   * belge 0 ihlalle yeşil döndü. Bu doğrulayıcı deliği kapatır.
+   */
+  describe('Satır başına TAM BİR künye (şematronun sayım deliği)', () => {
+    it('bir satırda İKİ KUNYENO → hata (şematron bunu YAKALAMAZ)', () => {
+      const errs = validateHksKunyeNo(baseInput({
+        lines: [line({
+          additionalItemIdentifications: [
+            { schemeId: 'KUNYENO', value: VALID_KUNYENO },
+            { schemeId: 'KUNYENO', value: 'KUN-2026-042-DOM002' },
+          ],
+        })],
+      }));
+      expect(errs).toHaveLength(1);
+      expect(errs[0].code).toBe('PROFILE_REQUIREMENT');
+      expect(errs[0].path).toBe('lines[0].additionalItemIdentifications');
+      expect(errs[0].message).toContain('YALNIZ BİR');
+      // Kaç adet geldiğini söylemeli — kullanıcı hangi satırı düzelteceğini bilsin
+      expect(errs[0].message).toContain('2 adet');
+      expect(errs[0].message).toContain('satır 1');
+    });
+
+    /* Sayım deliğinin tam senaryosu: belge genelinde 2 künye / 2 satır (şematron
+     * geçer) ama künyelerin ikisi de 1. satırda. İKİ hata bekleriz: 1. satır
+     * "yalnız bir", 2. satır "zorunludur". */
+    it('1. satırda iki, 2. satırda hiç → İKİ hata (şematron sayımı tutuyor olsa da)', () => {
+      const errs = validateHksKunyeNo(baseInput({
+        lines: [
+          line({
+            name: 'Domates',
+            additionalItemIdentifications: [
+              { schemeId: 'KUNYENO', value: VALID_KUNYENO },
+              { schemeId: 'KUNYENO', value: 'KUN-2026-042-DOM002' },
+            ],
+          }),
+          line({ name: 'Biber' }),
+        ],
+      }));
+      expect(errs).toHaveLength(2);
+      expect(errs[0].message).toContain('YALNIZ BİR');
+      expect(errs[1].message).toContain('zorunludur');
+      expect(errs[1].message).toContain('Biber');
+    });
+
+    it('boş değerli ikinci KUNYENO sayılmaz → hata yok', () => {
+      const errs = validateHksKunyeNo(baseInput({
+        lines: [line({
+          additionalItemIdentifications: [
+            { schemeId: 'KUNYENO', value: VALID_KUNYENO },
+            { schemeId: 'KUNYENO', value: '  ' },
+          ],
+        })],
+      }));
+      expect(errs).toHaveLength(0);
+    });
+
+    it('KUNYENO + başka schemeId birlikte → hata yok', () => {
+      const errs = validateHksKunyeNo(baseInput({
+        lines: [line({
+          additionalItemIdentifications: [
+            { schemeId: 'KUNYENO', value: VALID_KUNYENO },
+            { schemeId: 'MALSAHIBIADSOYADUNVAN', value: 'Ahmet Yılmaz' },
+            { schemeId: 'MALSAHIBIVKNTCKN', value: '12345678901' },
+          ],
+        })],
       }));
       expect(errs).toHaveLength(0);
     });

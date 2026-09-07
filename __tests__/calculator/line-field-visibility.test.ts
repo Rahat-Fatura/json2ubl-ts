@@ -145,6 +145,24 @@ describe('deriveLineFieldVisibility kuralları', () => {
     const v = deriveLineFieldVisibility(baseLine, { type: 'TEKNOLOJIDESTEK', profile: 'EARSIVFATURA' }, 0);
     expect(v.showAdditionalItemIdentifications).toBe(true);
   });
+
+  /* 4.4.0 — HKS'in İKİ DÜZLEMİ. Kalem kimlik alanı (künye + mal sahibi) her iki
+   * düzlemde de görünmeli; yalnız profile bakılsaydı e-Arşiv düzleminde
+   * kullanıcı künyeyi girecek yeri bulamazdı. */
+  it('showAdditionalItemIdentifications: HKS profili (e-Fatura düzlemi)', () => {
+    const v = deriveLineFieldVisibility(baseLine, { type: 'SATIS', profile: 'HKS' }, 0);
+    expect(v.showAdditionalItemIdentifications).toBe(true);
+  });
+
+  it('showAdditionalItemIdentifications: EARSIVFATURA + HKSSATIS (e-Arşiv düzlemi)', () => {
+    const v = deriveLineFieldVisibility(baseLine, { type: 'HKSSATIS', profile: 'EARSIVFATURA' }, 0);
+    expect(v.showAdditionalItemIdentifications).toBe(true);
+  });
+
+  it('showAdditionalItemIdentifications: EARSIVFATURA + SATIS → kapalı', () => {
+    const v = deriveLineFieldVisibility(baseLine, { type: 'SATIS', profile: 'EARSIVFATURA' }, 0);
+    expect(v.showAdditionalItemIdentifications).toBe(false);
+  });
 });
 
 describe('InvoiceSession lineFields array senkron (Sprint 8h.5)', () => {

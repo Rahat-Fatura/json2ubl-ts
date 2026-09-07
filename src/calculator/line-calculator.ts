@@ -208,7 +208,21 @@ export function calculateLine(
   let type: 'SATIS' | 'ISTISNA' | 'TEVKIFAT';
   if (withholdingObject.taxSubtotals.length > 0) {
     type = 'TEVKIFAT';
-  } else if (line.kdvPercent === 0 || kdvSubtotal.amount === 0) {
+  } else if (line.kdvPercent === 0) {
+    /* 🔴 `|| kdvSubtotal.amount === 0` KALDIRILDI.
+     *
+     * İstisnayı belirleyen KDV ORANIDIR, hesaplanan tutar değil. Eski koşul
+     * "oran %20 ama tutar 0" satırlarını da istisna sayıyordu ve iki yerde
+     * yanlış belge üretiyordu:
+     *
+     *   • Portalda kalem adı yazılıp fiyat henüz girilmemişken (tutar 0) fatura
+     *     SATIŞ'tan İSTİSNA'ya dönüyor ve istisna kodu istiyordu. İkinci kalem
+     *     doluyken görünmüyordu, çünkü {SATIS, ISTISNA} karışımı SATIŞ'a çözülür.
+     *   • %100 iskontolu ya da bedelsiz ama KDV oranı olan gerçek bir satır da
+     *     istisna sayılıyordu — bu canlı veride yanlış belge demektir.
+     *
+     * GİB tarafında istisna, kod + sıfır oran ile beyan edilir; sıfır tutarla
+     * değil. Oran 0 ise kod zorunluluğunu `manual-exemption-validator` uygular. */
     type = 'ISTISNA';
   } else {
     type = 'SATIS';

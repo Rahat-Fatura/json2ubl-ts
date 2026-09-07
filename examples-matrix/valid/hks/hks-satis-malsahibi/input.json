@@ -1,0 +1,68 @@
+{
+  "id": "MTX2026000000065",
+  "uuid": "a1000065-0001-4000-8001-000000000065",
+  "datetime": "2026-04-24T10:00:00",
+  "profile": "HKS",
+  "type": "SATIS",
+  "currencyCode": "TRY",
+  "sender": {
+    "taxNumber": "1234567890",
+    "name": "Matrix Hal Tedarik A.Ş.",
+    "taxOffice": "Beşiktaş",
+    "address": "Hal Kompleksi Blok 7",
+    "district": "Bayrampaşa",
+    "city": "İstanbul"
+  },
+  "customer": {
+    "taxNumber": "9876543210",
+    "name": "Matrix Market Zinciri Ltd.",
+    "taxOffice": "Kadıköy",
+    "address": "Bağdat Cad. No:100",
+    "district": "Kadıköy",
+    "city": "İstanbul"
+  },
+  "lines": [
+    {
+      "name": "Salatalık — 1. sınıf",
+      "quantity": 300,
+      "price": 18,
+      "unitCode": "KGM",
+      "kdvPercent": 10,
+      "additionalItemIdentifications": [
+        {
+          "schemeId": "KUNYENO",
+          "value": "KUN-2026-MTX65-SAL1"
+        },
+        {
+          "schemeId": "MALSAHIBIADSOYADUNVAN",
+          "value": "Ahmet Yılmaz"
+        },
+        {
+          "schemeId": "MALSAHIBIVKNTCKN",
+          "value": "12345678901"
+        }
+      ]
+    },
+    {
+      "name": "Patlıcan — 1. sınıf",
+      "quantity": 150,
+      "price": 26,
+      "unitCode": "KGM",
+      "kdvPercent": 10,
+      "additionalItemIdentifications": [
+        {
+          "schemeId": "KUNYENO",
+          "value": "KUN-2026-MTX65-PAT1"
+        },
+        {
+          "schemeId": "MALSAHIBIADSOYADUNVAN",
+          "value": "Yılmaz Tarım Ltd. Şti."
+        },
+        {
+          "schemeId": "MALSAHIBIVKNTCKN",
+          "value": "1234567890"
+        }
+      ]
+    }
+  ]
+}

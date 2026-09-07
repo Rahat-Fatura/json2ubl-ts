@@ -360,66 +360,21 @@ export const validSpecs: ValidSpec[] = [
     },
   },
 
-  // TEMELFATURA+TEVKIFATIADE baseline — Sprint 8f.1'de Bug #1 fix sonrası reaktive edildi.
-  // BillingReference (iade semantiği) + withholdingTaxCode (tevkifat semantiği) birlikte.
-  {
-    kind: 'invoice',
-    variantSlug: 'baseline',
-    profile: 'TEMELFATURA',
-    type: 'TEVKIFATIADE',
-    notes: 'Baseline — TEMELFATURA+TEVKIFATIADE, kod 603 %70 (iade+tevkifat kombinasyonu)',
-    dimensions: {
-      kdvBreakdown: [20],
-      currency: 'TRY',
-      exchangeRate: false,
-      exemptionCodes: [],
-      withholdingCodes: ['603'],
-      allowanceCharge: { line: false, document: false },
-      lineCount: 1,
-      paymentMeans: false,
-      reducedKdvGate: false,
-      phantomKdv: false,
-      specialIdentifiers: [],
-    },
-    input: {
-      id: 'MTX2026000000901',
-      uuid: 'a1000901-0001-4000-8001-000000000901',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'TEMELFATURA',
-      type: 'TEVKIFATIADE',
-      currencyCode: 'TRY',
-      billingReference: {
-        id: 'MTX2026000000005',
-        issueDate: '2026-04-24',
-      },
-      sender: {
-        taxNumber: '1234567890',
-        name: 'Matrix Test Satıcı A.Ş.',
-        taxOffice: 'Beşiktaş',
-        address: 'Levent Mah. No:42',
-        district: 'Beşiktaş',
-        city: 'İstanbul',
-      },
-      customer: {
-        taxNumber: '9876543210',
-        name: 'Matrix Test Alıcı Ltd.',
-        taxOffice: 'Kadıköy',
-        address: 'Bağdat Cad. No:100',
-        district: 'Kadıköy',
-        city: 'İstanbul',
-      },
-      lines: [
-        {
-          name: 'Bakım-onarım iade — %70 tevkifat',
-          quantity: 1,
-          price: 1000,
-          unitCode: 'Adet',
-          kdvPercent: 20,
-          withholdingTaxCode: '603',
-        },
-      ],
-    },
-  },
+  /* 🔴 `TEVKIFATIADE` / `YTBTEVKIFATIADE` SENARYOLARI KALDIRILDI (9 spec).
+   *
+   * İki gerekçe üst üste bindi:
+   *   1. 4.1.5'te bu fixture'ların klasörleri silinmişti (GİB'in reddettiği XML
+   *      üretiyorlardı — `GeneralWithholdingTaxTotalCheck`) ama spec kayıtları
+   *      burada UNUTULDU. `matrix:scaffold` idempotenttir: eksik klasörü YAZAR —
+   *      yani bu kayıtlar silinmiş fixture'ları her an geri getirebilirdi.
+   *   2. 4.4.0'da ikisi de `PROFILE_TYPE_MATRIX`'ten çıkarıldı: ÜRETİMDE
+   *      SUNULMUYORLAR (gelen belgede tanınmaya devam ederler). Artık
+   *      `validateCrossMatrix` bu kombinasyonları REDDEDER; spec'ler kalsaydı
+   *      scaffold kırılırdı.
+   *
+   * Sahadaki doğru karşılıkları ZATEN VAR ve yeşil: `*-iade-tevkifatli-*`
+   * (tip `IADE`/`YTBIADE` + kalemde tevkifat kodu).
+   */
 
   // TEMELFATURA+ISTISNA baseline — 213 (gemi/uçak yakıt/bakım istisnası)
   {
@@ -1233,30 +1188,6 @@ export const validSpecs: ValidSpec[] = [
       lines: [{ name: 'Tekstil ürünü', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '620' }],
     },
   },
-  // TICARIFATURA+TEVKIFATIADE — Sprint 8f.4 (Bug #1 fix sonrası)
-  {
-    kind: 'invoice',
-    variantSlug: 'baseline',
-    profile: 'TICARIFATURA',
-    type: 'TEVKIFATIADE',
-    notes: 'Baseline — TICARIFATURA+TEVKIFATIADE, kod 620 %50 (tekstil iade+tevkifat)',
-    dimensions: {
-      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: ['620'], allowanceCharge: { line: false, document: false },
-      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: [],
-    },
-    input: {
-      id: 'MTX2026000000902',
-      uuid: 'a1000902-0001-4000-8001-000000000902',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'TICARIFATURA', type: 'TEVKIFATIADE', currencyCode: 'TRY',
-      billingReference: { id: 'MTX2026000000021', issueDate: '2026-04-24' },
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [{ name: 'Tekstil iade — %50 tevkifat', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '620' }],
-    },
-  },
   {
     kind: 'invoice',
     variantSlug: 'baseline',
@@ -1445,29 +1376,6 @@ export const validSpecs: ValidSpec[] = [
       buyerCustomer: { ...KAMU_BUYER_CUSTOMER },
       paymentMeans: { ...KAMU_PAYMENT_MEANS },
       lines: [{ name: 'Tevkifatlı kamu hizmeti', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603' }],
-    },
-  },
-  // KAMU+TEVKIFATIADE — Sprint 8f.4 (Bug #1 fix sonrası)
-  {
-    kind: 'invoice', variantSlug: 'baseline', profile: 'KAMU', type: 'TEVKIFATIADE',
-    notes: 'Baseline — KAMU+TEVKIFATIADE, kod 603 %70 (kamu iade+tevkifat)',
-    dimensions: {
-      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: ['603'], allowanceCharge: { line: false, document: false },
-      lineCount: 1, paymentMeans: true, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: ['buyerCustomer', 'iban'],
-    },
-    input: {
-      id: 'MTX2026000000903',
-      uuid: 'a1000903-0001-4000-8001-000000000903',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'KAMU', type: 'TEVKIFATIADE', currencyCode: 'TRY',
-      billingReference: { id: 'MTX2026000000031', issueDate: '2026-04-24' },
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER, taxNumber: '1460415308', name: 'T.C. Kamu Kurumu' },
-      buyerCustomer: { ...KAMU_BUYER_CUSTOMER },
-      paymentMeans: { ...KAMU_PAYMENT_MEANS },
-      lines: [{ name: 'Kamu hizmet iade — tevkifatlı', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603' }],
     },
   },
   {
@@ -1863,27 +1771,6 @@ export const validSpecs: ValidSpec[] = [
       lines: [{ name: 'E-arşiv tevkifat', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603' }],
     },
   },
-  // EARSIVFATURA+TEVKIFATIADE — Sprint 8f.4 (Bug #1 fix sonrası)
-  {
-    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'TEVKIFATIADE',
-    notes: 'Baseline — EARSIVFATURA+TEVKIFATIADE, kod 603 %70',
-    dimensions: {
-      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: ['603'], allowanceCharge: { line: false, document: false },
-      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: [],
-    },
-    input: {
-      id: 'MTX2026000000904',
-      uuid: 'a1000904-0001-4000-8001-000000000904',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'EARSIVFATURA', type: 'TEVKIFATIADE', currencyCode: 'TRY',
-      billingReference: { id: 'MTX2026000000042', issueDate: '2026-04-24' },
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [{ name: 'E-arşiv iade — tevkifatlı', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603' }],
-    },
-  },
   {
     kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'ISTISNA',
     notes: 'Baseline — EARSIVFATURA+ISTISNA, kod 213',
@@ -2277,57 +2164,6 @@ export const validSpecs: ValidSpec[] = [
       }],
     },
   },
-  // EARSIVFATURA+YTBTEVKIFATIADE — Sprint 8f.4 (Bug #1 fix sonrası)
-  // YTB tipleri → YATIRIMTESVIK kuralları (ytbNo + itemClassificationCode) zorunlu
-  {
-    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'YTBTEVKIFATIADE',
-    notes: 'Baseline — EARSIVFATURA+YTBTEVKIFATIADE, ytbNo + kod 603 + itemClassificationCode 03',
-    dimensions: {
-      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: ['603'], allowanceCharge: { line: false, document: false },
-      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: ['ytbNo'],
-    },
-    input: {
-      id: 'MTX2026000000908',
-      uuid: 'a1000908-0001-4000-8001-000000000908',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'EARSIVFATURA', type: 'YTBTEVKIFATIADE', currencyCode: 'TRY',
-      ytbNo: '123456', ytbIssueDate: '2026-01-15',
-      billingReference: { id: 'MTX2026000000049', issueDate: '2026-04-24' },
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [{
-        name: 'YTB iade — tevkifatlı (hizmet)', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603',
-        itemClassificationCode: '03',
-      }],
-    },
-  },
-  // Varyant: EARSIVFATURA+YTBTEVKIFATIADE+620 %50 tekstil (farklı kod)
-  {
-    kind: 'invoice', variantSlug: 'kod-620-tekstil', profile: 'EARSIVFATURA', type: 'YTBTEVKIFATIADE',
-    notes: 'Varyant — EARSIVFATURA+YTBTEVKIFATIADE, kod 620 %50 tekstil',
-    dimensions: {
-      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: ['620'], allowanceCharge: { line: false, document: false },
-      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: ['ytbNo'],
-    },
-    input: {
-      id: 'MTX2026000000910',
-      uuid: 'a1000910-0001-4000-8001-000000000910',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'EARSIVFATURA', type: 'YTBTEVKIFATIADE', currencyCode: 'TRY',
-      ytbNo: '123456', ytbIssueDate: '2026-01-15',
-      billingReference: { id: 'MTX2026000000049', issueDate: '2026-04-24' },
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [{
-        name: 'YTB tekstil iade — %50 tevkifat', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '620',
-        itemClassificationCode: '03',
-      }],
-    },
-  },
 
   // ═════════════════════════════════════════════════════════════════════
   // IHRACAT + YOLCUBERABERFATURA + OZELFATURA + HKS + ENERJI (8 baseline)
@@ -2425,9 +2261,14 @@ export const validSpecs: ValidSpec[] = [
       lines: [{ name: 'Özel fatura satır', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0 }],
     },
   },
+  /* HKS — e-FATURA DÜZLEMİ: profil HKS + tip SATIS/KOMISYONCU.
+   * Bu üç senaryo 4.4.0'a kadar `HKSSATIS`/`HKSKOMISYONCU` tipleriyle duruyordu;
+   * o tipler e-ARŞİV düzlemine ait (aşağıdaki `earsivfatura-hkssatis-*`). Canlı
+   * şematron ikisini de kabul eder — ayrım GİB'in kapı açma biçimindedir. */
   {
-    kind: 'invoice', variantSlug: 'baseline', profile: 'HKS', type: 'HKSSATIS',
-    notes: 'Baseline — HKS+HKSSATIS, KUNYENO 19-char per line',
+    kind: 'invoice', variantSlug: 'baseline', profile: 'HKS', type: 'SATIS',
+    notes: 'Baseline — HKS+SATIS (e-Fatura düzlemi), KUNYENO 19-char per line',
+    review: 'schematron-verified',
     dimensions: {
       kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
       withholdingCodes: [], allowanceCharge: { line: false, document: false },
@@ -2438,7 +2279,7 @@ export const validSpecs: ValidSpec[] = [
       id: 'MTX2026000000063',
       uuid: 'a1000063-0001-4000-8001-000000000063',
       datetime: '2026-04-24T10:00:00',
-      profile: 'HKS', type: 'HKSSATIS', currencyCode: 'TRY',
+      profile: 'HKS', type: 'SATIS', currencyCode: 'TRY',
       sender: { ...STANDARD_SENDER, name: 'Matrix Sebze Meyve Tic.', address: 'Hal Kompleksi Blok 5', district: 'Bayrampaşa' },
       customer: { ...STANDARD_CUSTOMER, name: 'Matrix Market Zinciri Ltd.' },
       lines: [{
@@ -2448,8 +2289,9 @@ export const validSpecs: ValidSpec[] = [
     },
   },
   {
-    kind: 'invoice', variantSlug: 'baseline', profile: 'HKS', type: 'HKSKOMISYONCU',
-    notes: 'Baseline — HKS+HKSKOMISYONCU, komisyoncu satış',
+    kind: 'invoice', variantSlug: 'baseline', profile: 'HKS', type: 'KOMISYONCU',
+    notes: 'Baseline — HKS+KOMISYONCU (e-Fatura düzlemi), komisyoncu satış',
+    review: 'schematron-verified',
     dimensions: {
       kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
       withholdingCodes: [], allowanceCharge: { line: false, document: false },
@@ -2460,12 +2302,84 @@ export const validSpecs: ValidSpec[] = [
       id: 'MTX2026000000064',
       uuid: 'a1000064-0001-4000-8001-000000000064',
       datetime: '2026-04-24T10:00:00',
-      profile: 'HKS', type: 'HKSKOMISYONCU', currencyCode: 'TRY',
+      profile: 'HKS', type: 'KOMISYONCU', currencyCode: 'TRY',
       sender: { ...STANDARD_SENDER, name: 'Matrix Komisyoncu Hal' },
       customer: { ...STANDARD_CUSTOMER },
       lines: [{
         name: 'Biber — Komisyon satış', quantity: 200, price: 15, unitCode: 'KGM', kdvPercent: 10,
         additionalItemIdentifications: [{ schemeId: 'KUNYENO', value: 'KUN-2026-MTX64-BIB1' }],
+      }],
+    },
+  },
+  /* HKS — MAL SAHİBİ ÜÇLÜSÜ: gerçek hal faturasının şekli. Kalem hem künyeyi
+   * hem malın sahibini taşır (`MALSAHIBIADSOYADUNVAN` + `MALSAHIBIVKNTCKN`).
+   * İkisi de UBL-TR kod listesinde YOK, ama listeyi kullanan hiçbir assert de
+   * yok → canlı şematron (paket 20260701) belgeyi 0 ihlalle geçirir. Kütüphane
+   * bu ikiliyi UYARI seviyesinde denetler (hks-owner-validator), hata değil. */
+  {
+    kind: 'invoice', variantSlug: 'malsahibi', profile: 'HKS', type: 'SATIS',
+    notes: 'HKS+SATIS — KUNYENO + MALSAHIBIADSOYADUNVAN + MALSAHIBIVKNTCKN üçlüsü',
+    review: 'schematron-verified',
+    dimensions: {
+      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 2, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['kunyeno', 'malsahibi'],
+    },
+    input: {
+      id: 'MTX2026000000065',
+      uuid: 'a1000065-0001-4000-8001-000000000065',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'HKS', type: 'SATIS', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER, name: 'Matrix Hal Tedarik A.Ş.', address: 'Hal Kompleksi Blok 7', district: 'Bayrampaşa' },
+      customer: { ...STANDARD_CUSTOMER, name: 'Matrix Market Zinciri Ltd.' },
+      lines: [
+        {
+          name: 'Salatalık — 1. sınıf', quantity: 300, price: 18, unitCode: 'KGM', kdvPercent: 10,
+          additionalItemIdentifications: [
+            { schemeId: 'KUNYENO', value: 'KUN-2026-MTX65-SAL1' },
+            { schemeId: 'MALSAHIBIADSOYADUNVAN', value: 'Ahmet Yılmaz' },
+            { schemeId: 'MALSAHIBIVKNTCKN', value: '12345678901' },
+          ],
+        },
+        {
+          name: 'Patlıcan — 1. sınıf', quantity: 150, price: 26, unitCode: 'KGM', kdvPercent: 10,
+          additionalItemIdentifications: [
+            { schemeId: 'KUNYENO', value: 'KUN-2026-MTX65-PAT1' },
+            { schemeId: 'MALSAHIBIADSOYADUNVAN', value: 'Yılmaz Tarım Ltd. Şti.' },
+            { schemeId: 'MALSAHIBIVKNTCKN', value: '1234567890' },
+          ],
+        },
+      ],
+    },
+  },
+  /* HKS'in e-ARŞİV DÜZLEMİ: profil EARSIVFATURA + tip HKSSATIS. 4.4.0'a kadar
+   * bu kombinasyon matriste HİÇ YOKTU (tipler HKS profiline yazılıydı) → düzlem
+   * erişilemezdi. Canlı şematronla doğrulandı (type=earchive). */
+  {
+    kind: 'invoice', variantSlug: 'baseline', profile: 'EARSIVFATURA', type: 'HKSSATIS',
+    notes: 'Baseline — EARSIVFATURA+HKSSATIS (HKS e-Arşiv düzlemi)',
+    review: 'schematron-verified',
+    dimensions: {
+      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: false },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['kunyeno', 'malsahibi'],
+    },
+    input: {
+      id: 'MTX2026000000066',
+      uuid: 'a1000066-0001-4000-8001-000000000066',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'EARSIVFATURA', type: 'HKSSATIS', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER, name: 'Matrix Hal e-Arşiv A.Ş.', address: 'Hal Kompleksi Blok 9', district: 'Bayrampaşa' },
+      customer: { ...STANDARD_CUSTOMER, name: 'Matrix Nihai Tüketici' },
+      lines: [{
+        name: 'Kabak — 1. sınıf', quantity: 100, price: 22, unitCode: 'KGM', kdvPercent: 10,
+        additionalItemIdentifications: [
+          { schemeId: 'KUNYENO', value: 'KUN-2026-MTX66-KAB1' },
+          { schemeId: 'MALSAHIBIADSOYADUNVAN', value: 'Mehmet Demir' },
+          { schemeId: 'MALSAHIBIVKNTCKN', value: '98765432101' },
+        ],
       }],
     },
   },
@@ -2622,8 +2536,9 @@ export const validSpecs: ValidSpec[] = [
     },
   },
   {
-    kind: 'invoice', variantSlug: 'coklu-kunye', profile: 'HKS', type: 'HKSSATIS',
-    notes: 'HKS — 2 satır farklı KUNYENO',
+    kind: 'invoice', variantSlug: 'coklu-kunye', profile: 'HKS', type: 'SATIS',
+    notes: 'HKS+SATIS — 2 satır farklı KUNYENO (satır başına TAM BİR künye)',
+    review: 'schematron-verified',
     dimensions: {
       kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
       withholdingCodes: [], allowanceCharge: { line: false, document: false },
@@ -2634,7 +2549,7 @@ export const validSpecs: ValidSpec[] = [
       id: 'MTX2026000000984',
       uuid: 'a1000984-0001-4000-8001-000000000984',
       datetime: '2026-04-24T10:00:00',
-      profile: 'HKS', type: 'HKSSATIS', currencyCode: 'TRY',
+      profile: 'HKS', type: 'SATIS', currencyCode: 'TRY',
       sender: { ...STANDARD_SENDER, name: 'Matrix HKS Tedarikçi' },
       customer: { ...STANDARD_CUSTOMER },
       lines: [
@@ -2737,30 +2652,6 @@ export const validSpecs: ValidSpec[] = [
       lines: [{
         name: 'Tevkifatlı ilaç', quantity: 10, price: 50, unitCode: 'Adet', kdvPercent: 10, withholdingTaxCode: '603',
         additionalItemIdentifications: [{ schemeId: 'ILAC', value: 'ILAC-MTX-072' }],
-      }],
-    },
-  },
-  // ILAC_TIBBICIHAZ+TEVKIFATIADE — Sprint 8f.4
-  {
-    kind: 'invoice', variantSlug: 'baseline', profile: 'ILAC_TIBBICIHAZ', type: 'TEVKIFATIADE',
-    notes: 'Baseline — ILAC_TIBBICIHAZ+TEVKIFATIADE, kod 603',
-    dimensions: {
-      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: ['603'], allowanceCharge: { line: false, document: false },
-      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: ['ilac'],
-    },
-    input: {
-      id: 'MTX2026000000905',
-      uuid: 'a1000905-0001-4000-8001-000000000905',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'ILAC_TIBBICIHAZ', type: 'TEVKIFATIADE', currencyCode: 'TRY',
-      billingReference: { id: 'MTX2026000000072', issueDate: '2026-04-24' },
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [{
-        name: 'İlaç iade — tevkifatlı', quantity: 10, price: 50, unitCode: 'Adet', kdvPercent: 10, withholdingTaxCode: '603',
-        additionalItemIdentifications: [{ schemeId: 'ILAC', value: 'ILAC-MTX-905' }],
       }],
     },
   },
@@ -2988,32 +2879,6 @@ export const validSpecs: ValidSpec[] = [
       }],
     },
   },
-  // YATIRIMTESVIK+TEVKIFATIADE — Sprint 8f.4
-  {
-    kind: 'invoice', variantSlug: 'baseline', profile: 'YATIRIMTESVIK', type: 'TEVKIFATIADE',
-    notes: 'Baseline — YATIRIMTESVIK+TEVKIFATIADE, kod 603, ytbNo + kod 01',
-    dimensions: {
-      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: ['603'], allowanceCharge: { line: false, document: false },
-      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: ['ytbNo'],
-    },
-    input: {
-      id: 'MTX2026000000906',
-      uuid: 'a1000906-0001-4000-8001-000000000906',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'YATIRIMTESVIK', type: 'TEVKIFATIADE', currencyCode: 'TRY',
-      ytbNo: '123456', ytbIssueDate: '2026-01-15',
-      billingReference: { id: 'MTX2026000000079', issueDate: '2026-04-24' },
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [{
-        name: 'Teşvikli iade — tevkifatlı', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603',
-        itemClassificationCode: '01',
-        productTraceId: 'IADE-MTX-906', serialId: 'SN-IADE-906', brand: 'Matrix', model: 'MTX-IADE',
-      }],
-    },
-  },
 
   // ─── Sprint 8f.8: YATIRIMTESVIK genişletme (+4) ───
   {
@@ -3196,33 +3061,6 @@ export const validSpecs: ValidSpec[] = [
       lines: [{
         name: 'IDIS tevkifat', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603',
         additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'ID0000083' }],
-      }],
-    },
-  },
-  // IDIS+TEVKIFATIADE — Sprint 8f.4
-  {
-    kind: 'invoice', variantSlug: 'baseline', profile: 'IDIS', type: 'TEVKIFATIADE',
-    notes: 'Baseline — IDIS+TEVKIFATIADE',
-    dimensions: {
-      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: ['603'], allowanceCharge: { line: false, document: false },
-      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: ['sevkiyatNo'],
-    },
-    input: {
-      id: 'MTX2026000000907',
-      uuid: 'a1000907-0001-4000-8001-000000000907',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'IDIS', type: 'TEVKIFATIADE', currencyCode: 'TRY',
-      billingReference: { id: 'MTX2026000000083', issueDate: '2026-04-24' },
-      sender: {
-        ...STANDARD_SENDER,
-        identifications: [{ schemeId: 'SEVKIYATNO', value: 'SE-0000907' }],
-      },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [{
-        name: 'IDIS iade — tevkifatlı', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, withholdingTaxCode: '603',
-        additionalItemIdentifications: [{ schemeId: 'ETIKETNO', value: 'ID0000907' }],
       }],
     },
   },
@@ -4089,12 +3927,15 @@ export const invalidSpecs: InvalidSpec[] = [
     kind: 'invalid-invoice', variantSlug: 'hks-kunyeno-eksik',
     primaryCode: 'PROFILE_REQUIREMENT',
     description: 'HKS satırında KUNYENO kimliği eksik',
-    profileContext: 'HKS', typeContext: 'HKSSATIS',
+    // 4.4.0'da tip HKSSATIS→SATIS: HKSSATIS artık e-ARŞİV düzlemine ait, HKS
+    // profilinde CROSS_MATRIX üretirdi ve senaryo KUNYENO yerine YANLIŞ hatayı
+    // ölçerdi. Ölçülmek istenen tek şey künyenin eksikliğidir.
+    profileContext: 'HKS', typeContext: 'SATIS',
     expectedErrors: [{ code: 'PROFILE_REQUIREMENT', messageIncludes: 'KUNYENO' }],
     validationLevel: 'strict', isMultiError: false,
     input: {
       ...baseInvoiceInput('MTX2026000000207', 'b1000207-0001-4000-8001-000000000207'),
-      profile: 'HKS', type: 'HKSSATIS',
+      profile: 'HKS', type: 'SATIS',
       lines: [{ name: 'HKS ürün', quantity: 1, price: 500, unitCode: 'Adet', kdvPercent: 20 }],
     },
   },

@@ -15,7 +15,7 @@
   <cbc:UUID>a1000064-0001-4000-8001-000000000064</cbc:UUID>
   <cbc:IssueDate>2026-04-24</cbc:IssueDate>
   <cbc:IssueTime>10:00:00</cbc:IssueTime>
-  <cbc:InvoiceTypeCode>HKSKOMISYONCU</cbc:InvoiceTypeCode>
+  <cbc:InvoiceTypeCode>KOMISYONCU</cbc:InvoiceTypeCode>
   <cbc:Note>YAZIYLA:#ÜÇ BİN ÜÇ YÜZ TÜRK LIRASI#</cbc:Note>
   <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
   <cbc:LineCountNumeric>1</cbc:LineCountNumeric>

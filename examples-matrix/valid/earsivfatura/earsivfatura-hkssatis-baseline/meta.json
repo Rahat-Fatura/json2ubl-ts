@@ -1,7 +1,7 @@
 {
-  "id": "hks-hkssatis-baseline",
+  "id": "earsivfatura-hkssatis-baseline",
   "kind": "invoice",
-  "profile": "HKS",
+  "profile": "EARSIVFATURA",
   "type": "HKSSATIS",
   "variantSlug": "baseline",
   "dimensions": {
@@ -21,11 +21,12 @@
     "reducedKdvGate": false,
     "phantomKdv": false,
     "specialIdentifiers": [
-      "kunyeno"
+      "kunyeno",
+      "malsahibi"
     ]
   },
-  "generatedAt": "2026-04-24T12:57:22.330Z",
+  "generatedAt": "2026-09-05T08:40:07.412Z",
   "generatedBy": "examples-matrix/scaffold.ts",
-  "review": "auto-ok",
-  "notes": "Baseline — HKS+HKSSATIS, KUNYENO 19-char per line"
+  "review": "schematron-verified",
+  "notes": "Baseline — EARSIVFATURA+HKSSATIS (HKS e-Arşiv düzlemi)"
 }

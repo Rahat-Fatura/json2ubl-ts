@@ -9,16 +9,41 @@ import { derivedSet } from './derived-config';
 // §4 PROFİL × TİP ÇAPRAZ MATRİSİ
 // ============================================================
 
-/** Her profil için izin verilen InvoiceTypeCode'lar */
+/**
+ * Her profil için ÜRETİMDE SUNULAN InvoiceTypeCode'lar.
+ *
+ * 🔴 Bu matris bir SEÇİM listesidir — "GİB'in tanıdığı tipler" listesi DEĞİL.
+ * `getAllowedTypesForProfile` (tip seçici), `resolveTypeForProfile` (profil
+ * değişince tip düşürme) ve `validateCrossMatrix` (üretim kapısı) hep buradan
+ * beslenir. Bir tipin burada OLMAMASI, o tipin okuma/ayrıştırma yolundan
+ * kaldırıldığı anlamına GELMEZ.
+ *
+ * ── `TEVKIFATIADE` / `YTBTEVKIFATIADE`: üretimde SUNULMAZ, gelen belgede TANINIR
+ * İkisi de her profilden ÇIKARILDI. Gerekçe (ölçülmüş, varsayım değil):
+ *   1. Şematronda AYIRT EDİCİ kuralları YOK. Onları anan üç kural
+ *      (`IADEInvioceCheck` Common:361-362, `YatirimTesvikKDVCheck` Common:495-496,
+ *      `YatirimTesvikLineKDVCheck` Common:499-501) hep `IADE`/`YTBIADE` ile aynı
+ *      VEYA-grubuna koyar — yani "tevkifatlı iade" ayrı bir davranış üretmez.
+ *   2. `WITHHOLDING_ALLOWED_TYPES`'ta DEĞİLLER (aşağıya bak): tevkifat toplamı
+ *      TAŞIYAMAZLAR. Tevkifat taşıyamayan bir "tevkifat iadesi" tipi, `IADE`nin
+ *      adı farklı bir kopyasından ibarettir; kullanıcıya iki isim sunmak,
+ *      birinin GİB'de reddedileceği izlenimini gizler.
+ * 🔴 ENUM'DAN VE OKUMA YOLUNDAN ÇIKARILMADILAR: `InvoiceTypeCode.TEVKIFATIADE`
+ * ve `.YTBTEVKIFATIADE` duruyor; `IADE_GROUP` (invoice-rules.ts), `isIade`
+ * türetmeleri, `billingReference` zorunluluğu, `IADE_GROUP_TYPES` ve
+ * `KDV_ZERO_EXEMPTION_EXCLUDED_TYPES` aynen korundu. BAŞKA bir entegratörden
+ * bu tiplerle GELEN fatura okunabilir/gösterilebilir kalmalı — yalnız BİZ
+ * üretirken sunmuyoruz.
+ */
 export const PROFILE_TYPE_MATRIX: Record<InvoiceProfileId, ReadonlySet<InvoiceTypeCode>> = {
   [InvoiceProfileId.TEMELFATURA]: new Set([
     InvoiceTypeCode.SATIS, InvoiceTypeCode.IADE, InvoiceTypeCode.TEVKIFAT,
-    InvoiceTypeCode.TEVKIFATIADE, InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH,
+    InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH,
     InvoiceTypeCode.IHRACKAYITLI, InvoiceTypeCode.SGK, InvoiceTypeCode.KOMISYONCU,
     InvoiceTypeCode.KONAKLAMAVERGISI,
   ]),
   [InvoiceProfileId.TICARIFATURA]: new Set([
-    InvoiceTypeCode.SATIS, InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE,
+    InvoiceTypeCode.SATIS, InvoiceTypeCode.TEVKIFAT,
     InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH, InvoiceTypeCode.IHRACKAYITLI,
     InvoiceTypeCode.SGK, InvoiceTypeCode.KOMISYONCU, InvoiceTypeCode.KONAKLAMAVERGISI,
   ]),
@@ -28,63 +53,77 @@ export const PROFILE_TYPE_MATRIX: Record<InvoiceProfileId, ReadonlySet<InvoiceTy
   [InvoiceProfileId.KAMU]: new Set([
     // Sprint 9: IADE, Schematron 20260701 `IADEInvioceCheck` ile KAMU profiline eklendi.
     InvoiceTypeCode.SATIS, InvoiceTypeCode.IADE, InvoiceTypeCode.TEVKIFAT,
-    InvoiceTypeCode.TEVKIFATIADE, InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH,
+    InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH,
     InvoiceTypeCode.IHRACKAYITLI, InvoiceTypeCode.SGK, InvoiceTypeCode.KOMISYONCU,
     InvoiceTypeCode.KONAKLAMAVERGISI,
   ]),
   /**
-   * HKS (Hal Kayıt Sistemi) — GİB'in tip kısıtı KOYMADIĞI tek profil.
+   * HKS (Hal Kayıt Sistemi) — GİB tip KISITI KOYMUYOR, ama İKİ DÜZLEM VAR.
    *
-   * Şematron `ProfileID`/`InvoiceTypeCode` çiftini yalnız şu profiller için
-   * kısıtlıyor: ENERJI (↔SARJ/SARJANLIK), ILAC_TIBBICIHAZ, YATIRIMTESVIK, IDIS,
-   * artı `TEKNOLOJIDESTEK`→EARSIVFATURA ve `IADE` tipi için profil listesi.
-   * HKS bu kuralların HİÇBİRİNDE geçmiyor — GİB'in HKS için tek şartı
-   * `HKSInvioceCheck`: her kalemde 19 karakterli KUNYENO.
+   * ── Şematron gerçeği
+   * `ProfileID`/`InvoiceTypeCode` çiftini yalnız şu profiller için kısıtlıyor:
+   * ENERJI (↔SARJ/SARJANLIK), ILAC_TIBBICIHAZ, YATIRIMTESVIK, IDIS, artı
+   * `TEKNOLOJIDESTEK`→EARSIVFATURA ve `IADE` tipi için profil listesi. HKS bu
+   * kuralların HİÇBİRİNDE geçmiyor — GİB'in HKS için TEK belge şartı
+   * `HKSInvioceCheck` (Common:357-359): her kalemde 19 karakterli KUNYENO.
    *
-   * Eskiden burada yalnız HKSSATIS/HKSKOMISYONCU vardı ve bu, GİB'den KATI bir
-   * kısıttı: sahada `ProfileID=HKS` + `InvoiceTypeCode=SATIS` kesilen gerçek
-   * faturalar var ve şematrondan 0 ihlalle geçiyorlar. Kütüphane bu belgeleri
-   * üretemiyordu.
+   * ── 🔑 İKİ DÜZLEM (bu matrisin buradaki asıl bilgisi)
+   * Şematron kısıtlamasa da hal faturası İKİ AYRI DÜZLEMDE kesilir ve tip adı
+   * düzleme göre DEĞİŞİR — GİB'in referans XSLT'si kapıyı böyle açar:
+   *   • e-Fatura düzlemi : `ProfileID=HKS`          + tip `SATIS` / `KOMISYONCU`
+   *   • e-Arşiv düzlemi  : `ProfileID=EARSIVFATURA` + tip `HKSSATIS` / `HKSKOMISYONCU`
+   * `HKSSATIS`/`HKSKOMISYONCU` bu yüzden buradan ÇIKARILDI ve EARSIVFATURA
+   * kümesine TAŞINDI (orada hiç yoklardı — e-Arşiv HKS düzlemi erişilemezdi).
+   * Beşi de canlı şematrondan 0 ihlalle geçti (paket 20260701, gerçek bir HKS
+   * faturası üzerinde profil/tip değiştirilerek):
+   *   HKS+SATIS ✓  HKS+KOMISYONCU ✓  HKS+TEVKIFAT ✓
+   *   EARSIVFATURA+HKSSATIS ✓  EARSIVFATURA+HKSKOMISYONCU ✓
    *
-   * Aşağıdaki dört tip CANLI ŞEMATRONLA tek tek doğrulandı (paket 20260701,
-   * gerçek bir HKS faturası üzerinde tip değiştirilerek):
-   *   SATIS ✓   ISTISNA ✓   TEVKIFAT ✓   TEVKIFATIADE ✓
+   * `KOMISYONCU` buraya YENİ girdi: e-Fatura düzleminde komisyoncu faturası
+   * hiç kesilemiyordu (gerçek bir boşluktu, GİB kısıtı değil).
    *
    * 🔴 IADE BİLEREK YOK: şematron `InvoiceTypeCodeCheck` ile reddediyor —
    * "Fatura tipi IADE iken profil sadece TEMELFATURA, EARSIVFATURA,
    * ILAC_TIBBICIHAZ, YATIRIMTESVIK, IDIS veya KAMU olabilir". Ölçüldü, reddedildi.
+   * `TEVKIFATIADE` de yok — gerekçesi matrisin başındaki blokta.
    *
-   * ⚠️ SIRA KORUNUYOR: HKSSATIS ilk elemandır ve `resolveTypeForProfile` boş
-   * girdide `allowed[0]`'ı seçer — yeni tipler SONA eklendiği için HKS'in
-   * varsayılan tipi HKSSATIS olarak kalır.
+   * 🔑 SIRA KRİTİK: `resolveTypeForProfile` boş girdide `allowed[0]`'ı seçer,
+   * yani BU KÜMENİN İLK ELEMANI HKS'in varsayılan tipidir. Eskiden `HKSSATIS`
+   * idi; artık `SATIS`. Sıra değiştirilirse varsayılan sessizce kayar —
+   * `SATIS` başta kalmalı.
    */
   [InvoiceProfileId.HKS]: new Set([
-    InvoiceTypeCode.HKSSATIS, InvoiceTypeCode.HKSKOMISYONCU,
     InvoiceTypeCode.SATIS, InvoiceTypeCode.ISTISNA,
-    InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE,
+    InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.KOMISYONCU,
   ]),
   [InvoiceProfileId.ENERJI]: new Set([
     InvoiceTypeCode.SARJ, InvoiceTypeCode.SARJANLIK,
   ]),
   [InvoiceProfileId.ILAC_TIBBICIHAZ]: new Set([
     InvoiceTypeCode.SATIS, InvoiceTypeCode.ISTISNA, InvoiceTypeCode.TEVKIFAT,
-    InvoiceTypeCode.TEVKIFATIADE, InvoiceTypeCode.IADE, InvoiceTypeCode.IHRACKAYITLI,
+    InvoiceTypeCode.IADE, InvoiceTypeCode.IHRACKAYITLI,
   ]),
   [InvoiceProfileId.YATIRIMTESVIK]: new Set([
     InvoiceTypeCode.SATIS, InvoiceTypeCode.ISTISNA, InvoiceTypeCode.IADE,
-    InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE,
+    InvoiceTypeCode.TEVKIFAT,
   ]),
   [InvoiceProfileId.IDIS]: new Set([
     InvoiceTypeCode.SATIS, InvoiceTypeCode.ISTISNA, InvoiceTypeCode.IADE,
-    InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.TEVKIFATIADE, InvoiceTypeCode.IHRACKAYITLI,
+    InvoiceTypeCode.TEVKIFAT, InvoiceTypeCode.IHRACKAYITLI,
   ]),
+  /*
+   * ⚠️ SIRA: `SATIS` ilk eleman olarak KALMALI — e-Arşiv'in varsayılan tipidir
+   * (`resolveTypeForProfile` → `allowed[0]`). HKS düzlemi tipleri SONA eklendi.
+   */
   [InvoiceProfileId.EARSIVFATURA]: new Set([
     InvoiceTypeCode.SATIS, InvoiceTypeCode.IADE, InvoiceTypeCode.TEVKIFAT,
-    InvoiceTypeCode.TEVKIFATIADE, InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH,
+    InvoiceTypeCode.ISTISNA, InvoiceTypeCode.OZELMATRAH,
     InvoiceTypeCode.IHRACKAYITLI, InvoiceTypeCode.SGK, InvoiceTypeCode.KOMISYONCU,
     InvoiceTypeCode.KONAKLAMAVERGISI, InvoiceTypeCode.TEKNOLOJIDESTEK,
     InvoiceTypeCode.YTBSATIS, InvoiceTypeCode.YTBIADE, InvoiceTypeCode.YTBISTISNA,
-    InvoiceTypeCode.YTBTEVKIFAT, InvoiceTypeCode.YTBTEVKIFATIADE,
+    InvoiceTypeCode.YTBTEVKIFAT,
+    // HKS'in e-Arşiv düzlemi — bkz. HKS bloğundaki "İKİ DÜZLEM" notu.
+    InvoiceTypeCode.HKSSATIS, InvoiceTypeCode.HKSKOMISYONCU,
   ]),
 };
 
@@ -92,7 +131,14 @@ export const PROFILE_TYPE_MATRIX: Record<InvoiceProfileId, ReadonlySet<InvoiceTy
 // §2 TİP-BAZLI GRUPLAR
 // ============================================================
 
-/** İade grubu: BillingReference zorunlu */
+/**
+ * İade grubu: BillingReference zorunlu.
+ *
+ * ⚠️ `TEVKIFATIADE`/`YTBTEVKIFATIADE` burada BİLEREK DURUYOR: bu bir DAVRANIŞ
+ * kümesidir, seçim listesi değil. İkisi `PROFILE_TYPE_MATRIX`'ten çıkarıldı
+ * (üretimde sunulmaz) ama GELEN belgede tanınır — o belgenin `BillingReference`
+ * zorunluluğu da tanınmalı, yoksa okuma yolu sessizce eksik doğrular.
+ */
 export const IADE_GROUP_TYPES = new Set<InvoiceTypeCode>([
   InvoiceTypeCode.IADE, InvoiceTypeCode.TEVKIFATIADE,
   InvoiceTypeCode.YTBIADE, InvoiceTypeCode.YTBTEVKIFATIADE,

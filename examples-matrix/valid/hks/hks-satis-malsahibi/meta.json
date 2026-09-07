@@ -1,0 +1,32 @@
+{
+  "id": "hks-satis-malsahibi",
+  "kind": "invoice",
+  "profile": "HKS",
+  "type": "SATIS",
+  "variantSlug": "malsahibi",
+  "dimensions": {
+    "kdvBreakdown": [
+      10
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 2,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "kunyeno",
+      "malsahibi"
+    ]
+  },
+  "generatedAt": "2026-09-05T08:40:07.412Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "schematron-verified",
+  "notes": "HKS+SATIS — KUNYENO + MALSAHIBIADSOYADUNVAN + MALSAHIBIVKNTCKN üçlüsü"
+}

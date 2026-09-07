@@ -293,12 +293,25 @@ describe('document-calculator', () => {
       expect(result.type).toBe('SATIS');
     });
 
-    it('B-T06: HKS profili HKSSATIS tipi ile override çalışmalı', () => {
+    /* 4.4.0: tip HKSSATIS→KOMISYONCU. `HKSSATIS` HKS'in e-ARŞİV düzlemine ait;
+     * bu senaryo e-FATURA düzlemini ölçüyor. Hesaplayıcı çapraz matrise bakmaz
+     * (override'ı olduğu gibi taşır), ama testin HKS+HKSSATIS demesi artık
+     * `validateCrossMatrix`'in reddettiği bir belgeyi meşru gösterirdi. */
+    it('B-T06: HKS profili KOMISYONCU tipi ile override çalışmalı', () => {
       const result = calculateDocument(makeInput({
         profile: 'HKS',
-        type: 'HKSSATIS',
+        type: 'KOMISYONCU',
       }));
       expect(result.profile).toBe('HKS');
+      expect(result.type).toBe('KOMISYONCU');
+    });
+
+    it('B-T06: EARSIVFATURA profili HKSSATIS tipi ile override çalışmalı (e-Arşiv düzlemi)', () => {
+      const result = calculateDocument(makeInput({
+        profile: 'EARSIVFATURA',
+        type: 'HKSSATIS',
+      }));
+      expect(result.profile).toBe('EARSIVFATURA');
       expect(result.type).toBe('HKSSATIS');
     });
 

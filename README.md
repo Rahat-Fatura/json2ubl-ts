@@ -366,7 +366,7 @@ Migration disiplini: Mimsoft form akışı tek mutate noktasından (`update`) ge
 ```typescript
 interface LineFieldVisibility {
   showKdvExemptionCodeSelector: boolean;        // line.kdvPercent === 0 + non-self-exemption
-  showWithholdingTaxSelector: boolean;          // type=TEVKIFAT|TEVKIFATIADE
+  showWithholdingTaxSelector: boolean;          // WITHHOLDING_ALLOWED_TYPES (TEVKIFAT/YTBTEVKIFAT/IADE/YTBIADE/SGK/SARJ/SARJANLIK)
   showWithholdingPercentInput: boolean;         // withholdingTaxCode === '650' (dinamik)
   showLineDelivery: boolean;                    // IHRACAT veya IHRACKAYITLI
   showCommodityClassification: boolean;         // IHRACKAYITLI + line.kdvExemptionCode === '702'
@@ -608,19 +608,49 @@ const xml = builder.build({
 
 ## 5. Profil × Tip Uyumluluk Matrisi
 
+> **Bu tablo bir SEÇİM listesidir** — "GİB'in tanıdığı tipler" listesi değil.
+> `PROFILE_TYPE_MATRIX` (`src/config/constants.ts`) tek kaynaktır; üretim kapısı
+> `validateCrossMatrix`. Bir tipin burada olmaması, o tipin OKUNAMAYACAĞI anlamına
+> gelmez (bkz. `TEVKIFATIADE` notu).
+
 | Profil | İzin Verilen Tipler |
 |--------|-------------------|
-| TEMELFATURA | SATIS, IADE, ISTISNA, IHRACKAYITLI, OZELMATRAH, TEVKIFAT, SGK, KOMISYONCU, KONAKLAMAVERGISI |
-| TICARIFATURA | SATIS, IADE, ISTISNA, IHRACKAYITLI, OZELMATRAH, TEVKIFAT, SGK, KOMISYONCU, KONAKLAMAVERGISI |
-| EARSIVFATURA | Tüm standart + TEKNOLOJIDESTEK + HKSSATIS/HKSKOMISYONCU + YTB* |
-| IHRACAT | SATIS, ISTISNA, IHRACKAYITLI |
-| YOLCUBERABERFATURA | SATIS, ISTISNA |
-| KAMU | SATIS, **IADE**, ISTISNA, TEVKIFAT, TEVKIFATIADE, IHRACKAYITLI, OZELMATRAH, SGK, KOMISYONCU, KONAKLAMAVERGISI |
-| HKS | SATIS, KOMISYONCU |
-| ILAC_TIBBICIHAZ | SATIS, ISTISNA, TEVKIFAT, TEVKIFATIADE, IADE, IHRACKAYITLI |
-| YATIRIMTESVIK | SATIS, ISTISNA, IADE, TEVKIFAT, TEVKIFATIADE |
+| TEMELFATURA | SATIS, IADE, TEVKIFAT, ISTISNA, OZELMATRAH, IHRACKAYITLI, SGK, KOMISYONCU, KONAKLAMAVERGISI |
+| TICARIFATURA | SATIS, TEVKIFAT, ISTISNA, OZELMATRAH, IHRACKAYITLI, SGK, KOMISYONCU, KONAKLAMAVERGISI |
+| EARSIVFATURA | Tüm standart + TEKNOLOJIDESTEK + YTBSATIS/YTBIADE/YTBISTISNA/YTBTEVKIFAT + **HKSSATIS/HKSKOMISYONCU** |
+| IHRACAT | ISTISNA |
+| YOLCUBERABERFATURA | ISTISNA |
+| OZELFATURA | ISTISNA |
+| KAMU | SATIS, **IADE**, TEVKIFAT, ISTISNA, OZELMATRAH, IHRACKAYITLI, SGK, KOMISYONCU, KONAKLAMAVERGISI |
+| HKS | **SATIS**, ISTISNA, TEVKIFAT, **KOMISYONCU** |
+| ILAC_TIBBICIHAZ | SATIS, ISTISNA, TEVKIFAT, IADE, IHRACKAYITLI |
+| YATIRIMTESVIK | SATIS, ISTISNA, IADE, TEVKIFAT |
 | ENERJI | SARJ, SARJANLIK |
-| IDIS | SATIS, ISTISNA, IADE, TEVKIFAT, TEVKIFATIADE, IHRACKAYITLI |
+| IDIS | SATIS, ISTISNA, IADE, TEVKIFAT, IHRACKAYITLI |
+
+### HKS'in iki düzlemi (v4.4.0)
+
+Hal faturası iki ayrı düzlemde kesilir ve **tip adı düzleme göre değişir**:
+
+| Düzlem | ProfileID | InvoiceTypeCode |
+|---|---|---|
+| e-Fatura | `HKS` | `SATIS` / `KOMISYONCU` (+ `ISTISNA`, `TEVKIFAT`) |
+| e-Arşiv | `EARSIVFATURA` | `HKSSATIS` / `HKSKOMISYONCU` |
+
+Şematron bu ayrımı **kısıtlamaz** (HKS için tek kural `HKSInvioceCheck`: her
+kalemde 19 karakterli `KUNYENO`); ayrım GİB'in kapıyı açma biçimidir. Beş
+kombinasyon da canlı şematronla doğrulandı.
+
+### `TEVKIFATIADE` / `YTBTEVKIFATIADE` — üretimde sunulmaz, gelen belgede tanınır
+
+v4.4.0'da her iki tip de `PROFILE_TYPE_MATRIX`'ten çıkarıldı: şematronda ayırt
+edici kuralları yok (hep `IADE`/`YTBIADE` ile aynı VEYA-grubunda) ve
+`GeneralWithholdingTaxTotalCheck` gereği tevkifat toplamı taşıyamazlar — yani
+`IADE`'nin adı farklı kopyasından ibaretler. **Enum değerleri, `IADE` grubu
+davranışı ve `billingReference` zorunluluğu KORUNDU**: başka bir entegratörden
+bu tiplerle gelen fatura okunabilir/gösterilebilir kalır.
+
+Tevkifatlı iadenin doğru yapısı: tip `IADE` + kalemde tevkifat kodu.
 
 ### Senaryo-Bazlı Zorunluluklar
 

@@ -46,6 +46,20 @@ export interface TypeProfileFlags {
   isIlacTibbi: boolean;
   isYolcuBeraber: boolean;
   isIdis: boolean;
+  /**
+   * HKS düzlemi — kalemde künye/mal sahibi kimlikleri beklenir.
+   *
+   * İKİ DÜZLEMİ birden kapsar (4.4.0):
+   *   • e-Fatura : `ProfileID=HKS`          (şematron `HKSInvioceCheck` burada
+   *     19 karakterli KUNYENO'yu ŞART KOŞAR)
+   *   • e-Arşiv  : tip `HKSSATIS`/`HKSKOMISYONCU` (`ProfileID=EARSIVFATURA`)
+   *
+   * ⚠️ Bu bir ALAN GÖRÜNÜRLÜĞÜ bayrağıdır, künye ZORUNLULUĞU değil: zorunluluk
+   * yalnız `ProfileID=HKS`'te vardır ve `hks-kunyeno-validator` onu profile
+   * bakarak uygular. e-Arşiv düzleminde alanı GÖSTERMEK gerekir (kullanıcı
+   * künyeyi girebilsin), ZORUNLU KILMAK gerekmez.
+   */
+  isHks: boolean;
 }
 
 /**
@@ -54,6 +68,10 @@ export interface TypeProfileFlags {
  * aynı kaynaktan çalışır → kural duplikasyonu yok.
  */
 export function deriveTypeProfileFlags(type: string, profile: string): TypeProfileFlags {
+  /* ⚠️ `TEVKIFATIADE`/`YTBTEVKIFATIADE` bayrakları KORUNDU: ÜRETİMDE SUNULMAZLAR
+   * (`PROFILE_TYPE_MATRIX`'ten çıkarıldılar) ama GELEN BELGEDE TANINIRLAR.
+   * Bayrakları silmek, o tiplerle gelen bir faturayı görüntülerken iade/tevkifat
+   * alanlarını kapatırdı — okuma yolu bozulurdu. */
   return {
     isIade: type === 'IADE' || type === 'YTBIADE' || type === 'TEVKIFATIADE' || type === 'YTBTEVKIFATIADE',
     isTevkifat: type === 'TEVKIFAT' || type === 'YTBTEVKIFAT',
@@ -71,6 +89,10 @@ export function deriveTypeProfileFlags(type: string, profile: string): TypeProfi
     isIlacTibbi: profile === 'ILAC_TIBBICIHAZ',
     isYolcuBeraber: profile === 'YOLCUBERABERFATURA',
     isIdis: profile === 'IDIS',
+    /* İKİ DÜZLEM: e-Fatura'da profil HKS, e-Arşiv'de tip HKSSATIS/HKSKOMISYONCU.
+     * Yalnız profile bakılsaydı e-Arşiv düzleminde kalem kimlik alanı HİÇ
+     * görünmez, kullanıcı künyeyi girecek yeri bulamazdı. */
+    isHks: profile === 'HKS' || type === 'HKSSATIS' || type === 'HKSKOMISYONCU',
   };
 }
 
@@ -146,8 +168,14 @@ export function deriveLineFieldVisibility(
     showAlicidibsatirkod:
       flags.isIhracKayitli && line.kdvExemptionCode === '702',
 
+    /* 🔴 HKS EKLENDİ (A1). Şematron `HKSInvioceCheck` her kalemde 19 karakterli
+     * KUNYENO şart koşar, ama bu bayrak HKS'i kapsamadığı için tüketici arayüzü
+     * kimlik alanını HİÇ göstermiyordu: kullanıcı "KUNYENO zorunludur" hatasını
+     * görüyor, dolduracak alan bulamıyordu (portal alan denetimi, 2026-09-05).
+     * 4.4.0: `isHks` HKS'in e-ARŞİV düzlemini de kapsar (tip HKSSATIS/
+     * HKSKOMISYONCU) — orada da künye ve mal sahibi kimlikleri kaleme yazılır. */
     showAdditionalItemIdentifications:
-      flags.isTeknolojiDestek || flags.isIlacTibbi || flags.isIdis,
+      flags.isTeknolojiDestek || flags.isIlacTibbi || flags.isIdis || flags.isHks,
 
     showItemClassificationCode: flags.isYatirimTesvik,
 

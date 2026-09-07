@@ -110,7 +110,15 @@ const CODE_555_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceType
 // ACIK-SORULAR.md #12 + Soru 2 cevabı
 // ============================================================
 
-/** 351 için izinli tipler — ISTISNA olmayan tüm ana tipler + SGK */
+/**
+ * 351 için izinli tipler — ISTISNA olmayan tüm ana tipler + SGK.
+ *
+ * ⚠️ Bu bir DOĞRULAMA listesidir, seçim listesi DEĞİL: "bu tipte 351 kodu
+ * kullanılabilir mi?" sorusunu cevaplar. Bu yüzden `PROFILE_TYPE_MATRIX`'ten
+ * çıkarılan/oraya taşınan tipler burada aynen kalır — `HKSSATIS`/`HKSKOMISYONCU`
+ * artık e-Arşiv düzleminde kesiliyor (ve `SATIS`/`KOMISYONCU` zaten listede),
+ * gelen belgelerde de ikisi görülebilir.
+ */
 const CODE_351_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTypeCode>([
   InvoiceTypeCode.SATIS,
   InvoiceTypeCode.TEVKIFAT,
@@ -129,6 +137,9 @@ const CODE_351_ALLOWED_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceType
  * - ISTISNA, YTBISTISNA: istisna türevli tipler zaten kendi kodlarını taşır
  * - IADE, YTBIADE, TEVKIFATIADE, YTBTEVKIFATIADE: iade türevleri (kendi kodları)
  * - IHRACKAYITLI: 701-704 kullanmalı, 351 semantiğine ters
+ *
+ * ⚠️ `TEVKIFATIADE`/`YTBTEVKIFATIADE` burada KORUNDU: üretimde sunulmuyorlar
+ * ama gelen belgede tanınıyorlar — o belgede 351 görülürse yine reddedilmeli.
  */
 const CODE_351_FORBIDDEN_TYPES: ReadonlySet<InvoiceTypeCode> = new Set<InvoiceTypeCode>([
   InvoiceTypeCode.ISTISNA,

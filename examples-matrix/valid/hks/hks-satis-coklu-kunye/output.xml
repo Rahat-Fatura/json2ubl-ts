@@ -10,35 +10,34 @@
   <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
   <cbc:CustomizationID>TR1.2</cbc:CustomizationID>
   <cbc:ProfileID>HKS</cbc:ProfileID>
-  <cbc:ID>EXA2026000000023</cbc:ID>
+  <cbc:ID>MTX2026000000984</cbc:ID>
   <cbc:CopyIndicator>false</cbc:CopyIndicator>
-  <cbc:UUID>e1a2b3c4-0023-4000-8023-000000000023</cbc:UUID>
-  <cbc:IssueDate>2026-04-23</cbc:IssueDate>
-  <cbc:IssueTime>13:00:00</cbc:IssueTime>
+  <cbc:UUID>a1000984-0001-4000-8001-000000000984</cbc:UUID>
+  <cbc:IssueDate>2026-04-24</cbc:IssueDate>
+  <cbc:IssueTime>10:00:00</cbc:IssueTime>
   <cbc:InvoiceTypeCode>SATIS</cbc:InvoiceTypeCode>
-  <cbc:Note>YAZIYLA:#ON BİR BİN TÜRK LIRASI#</cbc:Note>
+  <cbc:Note>YAZIYLA:#BİN DÖRT YÜZ KIRK TÜRK LIRASI#</cbc:Note>
   <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
-  <cbc:LineCountNumeric>1</cbc:LineCountNumeric>
+  <cbc:LineCountNumeric>2</cbc:LineCountNumeric>
   <cac:AccountingSupplierParty>
     <cac:Party>
       <cac:PartyIdentification>
         <cbc:ID schemeID="VKN">1234567890</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
-        <cbc:Name>Doğa Sebze Meyve Tic. A.Ş.</cbc:Name>
+        <cbc:Name>Matrix HKS Tedarikçi</cbc:Name>
       </cac:PartyName>
       <cac:PostalAddress>
-        <cbc:StreetName>Anadolu Hal Kompleksi Blok 5</cbc:StreetName>
-        <cbc:CitySubdivisionName>Bayrampaşa</cbc:CitySubdivisionName>
+        <cbc:StreetName>Levent Mah. No:42</cbc:StreetName>
+        <cbc:CitySubdivisionName>Beşiktaş</cbc:CitySubdivisionName>
         <cbc:CityName>İstanbul</cbc:CityName>
-        <cbc:PostalZone>34055</cbc:PostalZone>
         <cac:Country>
           <cbc:Name>Türkiye</cbc:Name>
         </cac:Country>
       </cac:PostalAddress>
       <cac:PartyTaxScheme>
         <cac:TaxScheme>
-          <cbc:Name>Fatih</cbc:Name>
+          <cbc:Name>Beşiktaş</cbc:Name>
         </cac:TaxScheme>
       </cac:PartyTaxScheme>
     </cac:Party>
@@ -49,13 +48,12 @@
         <cbc:ID schemeID="VKN">9876543210</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
-        <cbc:Name>Yeşil Market Zinciri Ltd. Şti.</cbc:Name>
+        <cbc:Name>Matrix Test Alıcı Ltd.</cbc:Name>
       </cac:PartyName>
       <cac:PostalAddress>
-        <cbc:StreetName>Bağdat Caddesi No:456</cbc:StreetName>
+        <cbc:StreetName>Bağdat Cad. No:100</cbc:StreetName>
         <cbc:CitySubdivisionName>Kadıköy</cbc:CitySubdivisionName>
         <cbc:CityName>İstanbul</cbc:CityName>
-        <cbc:PostalZone>34710</cbc:PostalZone>
         <cac:Country>
           <cbc:Name>Türkiye</cbc:Name>
         </cac:Country>
@@ -68,11 +66,11 @@
     </cac:Party>
   </cac:AccountingCustomerParty>
   <cac:TaxTotal>
-    <cbc:TaxAmount currencyID="TRY">1000.00</cbc:TaxAmount>
+    <cbc:TaxAmount currencyID="TRY">240.00</cbc:TaxAmount>
     <cac:TaxSubtotal>
-      <cbc:TaxableAmount currencyID="TRY">10000.00</cbc:TaxableAmount>
-      <cbc:TaxAmount currencyID="TRY">1000.00</cbc:TaxAmount>
-      <cbc:Percent>10.00</cbc:Percent>
+      <cbc:TaxableAmount currencyID="TRY">1200.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="TRY">240.00</cbc:TaxAmount>
+      <cbc:Percent>20.00</cbc:Percent>
             <cac:TaxCategory>
                 <cac:TaxScheme>
           <cbc:Name>KDV</cbc:Name>
@@ -82,22 +80,22 @@
     </cac:TaxSubtotal>
   </cac:TaxTotal>
   <cac:LegalMonetaryTotal>
-    <cbc:LineExtensionAmount currencyID="TRY">10000.00</cbc:LineExtensionAmount>
-    <cbc:TaxExclusiveAmount currencyID="TRY">10000.00</cbc:TaxExclusiveAmount>
-    <cbc:TaxInclusiveAmount currencyID="TRY">11000.00</cbc:TaxInclusiveAmount>
+    <cbc:LineExtensionAmount currencyID="TRY">1200.00</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="TRY">1200.00</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="TRY">1440.00</cbc:TaxInclusiveAmount>
     <cbc:AllowanceTotalAmount currencyID="TRY">0.00</cbc:AllowanceTotalAmount>
-    <cbc:PayableAmount currencyID="TRY">11000.00</cbc:PayableAmount>
+    <cbc:PayableAmount currencyID="TRY">1440.00</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
   <cac:InvoiceLine>
     <cbc:ID>1</cbc:ID>
-    <cbc:InvoicedQuantity unitCode="KGM">500.00</cbc:InvoicedQuantity>
-    <cbc:LineExtensionAmount currencyID="TRY">10000.00</cbc:LineExtensionAmount>
+    <cbc:InvoicedQuantity unitCode="C62">1.00</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="TRY">500.00</cbc:LineExtensionAmount>
     <cac:TaxTotal>
-      <cbc:TaxAmount currencyID="TRY">1000.00</cbc:TaxAmount>
+      <cbc:TaxAmount currencyID="TRY">100.00</cbc:TaxAmount>
       <cac:TaxSubtotal>
-        <cbc:TaxableAmount currencyID="TRY">10000.00</cbc:TaxableAmount>
-        <cbc:TaxAmount currencyID="TRY">1000.00</cbc:TaxAmount>
-        <cbc:Percent>10.00</cbc:Percent>
+        <cbc:TaxableAmount currencyID="TRY">500.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="TRY">100.00</cbc:TaxAmount>
+        <cbc:Percent>20.00</cbc:Percent>
                 <cac:TaxCategory>
                     <cac:TaxScheme>
             <cbc:Name>KDV</cbc:Name>
@@ -107,13 +105,41 @@
       </cac:TaxSubtotal>
     </cac:TaxTotal>
     <cac:Item>
-      <cbc:Name>Domates — Standart Kalite</cbc:Name>
+      <cbc:Name>HKS ürün A</cbc:Name>
       <cac:AdditionalItemIdentification>
-        <cbc:ID schemeID="KUNYENO">KUN-2026-042-DOM001</cbc:ID>
+        <cbc:ID schemeID="KUNYENO">HKS2026A0001AAA0001</cbc:ID>
       </cac:AdditionalItemIdentification>
     </cac:Item>
     <cac:Price>
-      <cbc:PriceAmount currencyID="TRY">20.00</cbc:PriceAmount>
+      <cbc:PriceAmount currencyID="TRY">500.00</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>2</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">1.00</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="TRY">700.00</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="TRY">140.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="TRY">700.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="TRY">140.00</cbc:TaxAmount>
+        <cbc:Percent>20.00</cbc:Percent>
+                <cac:TaxCategory>
+                    <cac:TaxScheme>
+            <cbc:Name>KDV</cbc:Name>
+            <cbc:TaxTypeCode>0015</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Name>HKS ürün B</cbc:Name>
+      <cac:AdditionalItemIdentification>
+        <cbc:ID schemeID="KUNYENO">HKS2026B0002BBB0001</cbc:ID>
+      </cac:AdditionalItemIdentification>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="TRY">700.00</cbc:PriceAmount>
     </cac:Price>
   </cac:InvoiceLine>
 </Invoice>

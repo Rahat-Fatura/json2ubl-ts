@@ -1,0 +1,31 @@
+{
+  "id": "hks-satis-coklu-kunye",
+  "kind": "invoice",
+  "profile": "HKS",
+  "type": "SATIS",
+  "variantSlug": "coklu-kunye",
+  "dimensions": {
+    "kdvBreakdown": [
+      20
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": false
+    },
+    "lineCount": 2,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "kunyeNo"
+    ]
+  },
+  "generatedAt": "2026-09-05T08:40:07.413Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "schematron-verified",
+  "notes": "HKS+SATIS — 2 satır farklı KUNYENO (satır başına TAM BİR künye)"
+}

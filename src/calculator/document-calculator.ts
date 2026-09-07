@@ -104,8 +104,49 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
     if (!typesArray.includes(line.type)) typesArray.push(line.type);
   }
 
+  /* 2a-bis. TİP TESPİTİ için doldurulmamış satırları AYIKLA (C2).
+   *
+   * Portalda "Yeni Satır"a basıldığında adı ve fiyatı boş bir kalem oluşuyor.
+   * Tutarı 0 olduğu için satır tipi ISTISNA çıkıyor ve tip tespiti faturayı
+   * SATIŞ'tan İSTİSNA'ya çeviriyor, ardından istisna kodunu zorunlu kılıyordu.
+   * Kullanıcı yalnızca satır eklemişti; fiyatı yazınca tip geri dönüyordu.
+   *
+   * Ayıklama BİLEREK dar: satır ancak HEM adı HEM fiyatı boşsa "henüz
+   * doldurulmamış" sayılır. Bedelsiz (fiyat 0) ama adı olan kalem gerçek bir
+   * satırdır ve tespite girmeye devam eder. Hiç dolu satır yoksa eski davranış
+   * korunur — boş faturada tip değişmez.
+   *
+   * ⚠️ Yalnız TİP TESPİTİNİ etkiler. `typesArray` istisna-kodu çözümünde
+   * (`resolveExemptionReason`) olduğu gibi kullanılır. */
+  const doluIndeksler = input.lines
+    .map((l, i) => ({ l, i }))
+    .filter(({ l }) => {
+      const adBos = !l.name || String(l.name).trim() === '';
+      const fiyatBos = l.price === undefined || l.price === null || Number(l.price) === 0;
+      return !(adBos && fiyatBos);
+    })
+    .map(({ i }) => i);
+
+  /* 🔴 HİÇ dolu satır yoksa tip tespiti satırlara HİÇ BAKMAZ.
+   *
+   * İlk düzeltmede bu durumda eski davranışa düşülüyordu ve tam da en sık görülen
+   * hâl kırılıyordu: portalda "Yeni Satır"a basınca TEK satır oluşuyor, o da boş
+   * olduğu için `doluIndeksler` boş kalıyor, tam liste kullanılıyor ve fatura
+   * SATIŞ'tan İSTİSNA'ya dönüyordu. (İki kalemden biri doluyken süzgeç çalıştığı
+   * için kusur "yalnız ilk kalemde oluyor" gibi görünüyordu.)
+   *
+   * Boş dizi verilince `resolveInvoiceType` satır ipuçlarını atlar ve varsayılan
+   * SATIŞ'a düşer; kullanıcının açık tip seçimi (B-41) ve belge seviyesi istisna
+   * kodu yine öncelikli kalır. */
+  const tipTespitTipleri: string[] =
+    doluIndeksler.length === 0
+      ? []
+      : doluIndeksler.length < calculatedLines.length
+        ? [...new Set(doluIndeksler.map((i) => calculatedLines[i].type))]
+        : typesArray;
+
   // 2b. Fatura tipi + profil tespiti (phantom kararı için gerekli)
-  const calculatedType = resolveInvoiceType(input, typesArray);
+  const calculatedType = resolveInvoiceType(input, tipTespitTipleri);
   const calculatedProfile = resolveProfile(input, calculatedType);
 
   // 2c. M12 Phantom KDV post-marking — YATIRIMTESVIK+ISTISNA veya EARSIV+YTBISTISNA ise

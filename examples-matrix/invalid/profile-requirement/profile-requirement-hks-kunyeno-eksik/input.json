@@ -3,7 +3,7 @@
   "uuid": "b1000207-0001-4000-8001-000000000207",
   "datetime": "2026-04-24T10:00:00",
   "profile": "HKS",
-  "type": "HKSSATIS",
+  "type": "SATIS",
   "currencyCode": "TRY",
   "sender": {
     "taxNumber": "1234567890",

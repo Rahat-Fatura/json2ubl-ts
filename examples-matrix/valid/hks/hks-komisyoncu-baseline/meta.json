@@ -1,12 +1,12 @@
 {
-  "id": "hks-hkssatis-coklu-kunye",
+  "id": "hks-komisyoncu-baseline",
   "kind": "invoice",
   "profile": "HKS",
-  "type": "HKSSATIS",
-  "variantSlug": "coklu-kunye",
+  "type": "KOMISYONCU",
+  "variantSlug": "baseline",
   "dimensions": {
     "kdvBreakdown": [
-      20
+      10
     ],
     "currency": "TRY",
     "exchangeRate": false,
@@ -16,16 +16,16 @@
       "line": false,
       "document": false
     },
-    "lineCount": 2,
+    "lineCount": 1,
     "paymentMeans": false,
     "reducedKdvGate": false,
     "phantomKdv": false,
     "specialIdentifiers": [
-      "kunyeNo"
+      "kunyeno"
     ]
   },
-  "generatedAt": "2026-04-24T14:19:38.259Z",
+  "generatedAt": "2026-09-05T08:40:07.412Z",
   "generatedBy": "examples-matrix/scaffold.ts",
-  "review": "auto-ok",
-  "notes": "HKS — 2 satır farklı KUNYENO"
+  "review": "schematron-verified",
+  "notes": "Baseline — HKS+KOMISYONCU (e-Fatura düzlemi), komisyoncu satış"
 }

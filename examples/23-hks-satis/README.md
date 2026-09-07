@@ -1,6 +1,6 @@
-# 23 — HKS + HKSSATIS (Hal Kayıt Sistemi)
+# 23 — HKS + SATIS (Hal Kayıt Sistemi)
 
-**Profile:** HKS · **Type:** HKSSATIS · **CustomizationID:** TR1.2
+**Profile:** HKS · **Type:** SATIS · **CustomizationID:** TR1.2
 
 ## Amaç
 

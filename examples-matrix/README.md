@@ -6,11 +6,11 @@ Sprint 8e (Publish Öncesi Kapsam Doğrulama) + Sprint 8f (Bug hotfix + kapsam g
 
 ## 📊 Özet (Dashboard)
 
-- **15 profil** × **18 tip** — PROFILE_TYPE_MATRIX'te **73 kombinasyon** tanımlı
-- **122 valid senaryo** (115 invoice + 7 despatch)
+- **15 profil** × **17 tip** — PROFILE_TYPE_MATRIX'te **65 kombinasyon** tanımlı
+- **120 valid senaryo** (113 invoice + 7 despatch)
 - **47 invalid senaryo** — 19 farklı error code kapsıyor
-- **Coverage:** 61/73 kombinasyon (%83.6)
-- **Toplam:** 169 senaryo
+- **Coverage:** 62/65 kombinasyon (%95.4)
+- **Toplam:** 167 senaryo
 
 ## Kullanım
 
@@ -29,37 +29,28 @@ npx tsx examples-matrix/find.ts --has-withholding --currency=USD
 
 ## Profil × Tip Pivot Tablosu
 
-| Profil \ Tip | HKSKOMISYONCU | HKSSATIS | IADE | IHRACKAYITLI | ISTISNA | KOMISYONCU | KONAKLAMAVERGISI | OZELMATRAH | SARJ | SARJANLIK | SATIS | SGK | TEKNOLOJIDESTEK | TEVKIFAT | YTBIADE | YTBISTISNA | YTBSATIS | YTBTEVKIFAT | **Toplam** |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| EARSIVFATURA | — | — | 3 | 1 | 2 | 1 | 1 | 1 | — | — | 3 | 1 | 1 | 2 | 3 | 2 | 2 | 1 | **24** |
-| ENERJI | — | — | — | — | — | — | — | — | 2 | 1 | — | — | — | — | — | — | — | — | **3** |
-| HKS | 1 | 2 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | **3** |
-| IDIS | — | — | 2 | 2 | 1 | — | — | — | — | — | 2 | — | — | 1 | — | — | — | — | **8** |
-| IHRACAT | — | — | — | — | 3 | — | — | — | — | — | — | — | — | — | — | — | — | — | **3** |
-| ILAC_TIBBICIHAZ | — | — | 2 | 1 | 1 | — | — | — | — | — | 3 | — | — | 1 | — | — | — | — | **8** |
-| KAMU | — | — | 1 | 1 | 2 | 1 | 1 | 1 | — | — | 3 | 1 | — | 2 | — | — | — | — | **13** |
-| OZELFATURA | — | — | — | — | 1 | — | — | — | — | — | — | — | — | — | — | — | — | — | **1** |
-| TEMELFATURA | — | — | 4 | 2 | 4 | 1 | 1 | 1 | — | — | 9 | 2 | — | 3 | — | — | — | — | **27** |
-| TICARIFATURA | — | — | — | 1 | 2 | 1 | 1 | 2 | — | — | 3 | 1 | — | 2 | — | — | — | — | **13** |
-| YATIRIMTESVIK | — | — | 3 | — | 2 | — | — | — | — | — | 3 | — | — | 2 | — | — | — | — | **10** |
-| YOLCUBERABERFATURA | — | — | — | — | 2 | — | — | — | — | — | — | — | — | — | — | — | — | — | **2** |
+| Profil \ Tip | HKSSATIS | IADE | IHRACKAYITLI | ISTISNA | KOMISYONCU | KONAKLAMAVERGISI | OZELMATRAH | SARJ | SARJANLIK | SATIS | SGK | TEKNOLOJIDESTEK | TEVKIFAT | YTBIADE | YTBISTISNA | YTBSATIS | YTBTEVKIFAT | **Toplam** |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| EARSIVFATURA | 1 | 3 | 1 | 2 | 1 | 1 | 1 | — | — | 3 | 1 | 1 | 1 | 3 | 2 | 2 | 1 | **24** |
+| ENERJI | — | — | — | — | — | — | — | 2 | 1 | — | — | — | — | — | — | — | — | **3** |
+| HKS | — | — | — | — | 1 | — | — | — | — | 3 | — | — | — | — | — | — | — | **4** |
+| IDIS | — | 2 | 2 | 1 | — | — | — | — | — | 2 | — | — | 1 | — | — | — | — | **8** |
+| IHRACAT | — | — | — | 3 | — | — | — | — | — | — | — | — | — | — | — | — | — | **3** |
+| ILAC_TIBBICIHAZ | — | 2 | 1 | 1 | — | — | — | — | — | 3 | — | — | 1 | — | — | — | — | **8** |
+| KAMU | — | 1 | 1 | 2 | 1 | 1 | 1 | — | — | 3 | 1 | — | 2 | — | — | — | — | **13** |
+| OZELFATURA | — | — | — | 1 | — | — | — | — | — | — | — | — | — | — | — | — | — | **1** |
+| TEMELFATURA | — | 3 | 2 | 4 | 1 | 1 | 1 | — | — | 9 | 2 | — | 2 | — | — | — | — | **25** |
+| TICARIFATURA | — | — | 1 | 2 | 1 | 1 | 2 | — | — | 3 | 1 | — | 2 | — | — | — | — | **13** |
+| YATIRIMTESVIK | — | 3 | — | 2 | — | — | — | — | — | 3 | — | — | 1 | — | — | — | — | **9** |
+| YOLCUBERABERFATURA | — | — | — | 2 | — | — | — | — | — | — | — | — | — | — | — | — | — | **2** |
 
 ## Coverage Gap Report
 
-⚠️ **12 kombinasyon kapsamsız** (PROFILE_TYPE_MATRIX'te izinli ama senaryo yok):
+⚠️ **3 kombinasyon kapsamsız** (PROFILE_TYPE_MATRIX'te izinli ama senaryo yok):
 
-- TEMELFATURA × TEVKIFATIADE
-- TICARIFATURA × TEVKIFATIADE
-- KAMU × TEVKIFATIADE
-- HKS × SATIS
 - HKS × ISTISNA
 - HKS × TEVKIFAT
-- HKS × TEVKIFATIADE
-- ILAC_TIBBICIHAZ × TEVKIFATIADE
-- YATIRIMTESVIK × TEVKIFATIADE
-- IDIS × TEVKIFATIADE
-- EARSIVFATURA × TEVKIFATIADE
-- EARSIVFATURA × YTBTEVKIFATIADE
+- EARSIVFATURA × HKSKOMISYONCU
 
 ## Kod Dağılımları
 
@@ -109,6 +100,7 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 
 | ID | Tip | Slug | KDV | Döviz | Özellikler | Notlar |
 |---|---|---|---|---|---|---|
+| [earsivfatura-hkssatis-baseline](valid/earsivfatura/earsivfatura-hkssatis-baseline/) | HKSSATIS | baseline | 10 | TRY | kunyeno, malsahibi | Baseline — EARSIVFATURA+HKSSATIS (HKS e-Arşiv düzlemi) |
 | [earsivfatura-iade-baseline](valid/earsivfatura/earsivfatura-iade-baseline/) | IADE | baseline | 20 | TRY | billingReference | Baseline — EARSIVFATURA+IADE, billingReference |
 | [earsivfatura-iade-coklu-satir](valid/earsivfatura/earsivfatura-iade-coklu-satir/) | IADE | coklu-satir | 20 | TRY | — | EARSIVFATURA+IADE 3 satır |
 | [earsivfatura-iade-tevkifatli-baseline](valid/earsivfatura/earsivfatura-iade-tevkifatli-baseline/) | IADE | iade-tevkifatli-baseline | 20 | TRY | — | Baseline — EARSIVFATURA+IADE, kod 603 %70 (tevkifatlı iade: tip IADE + kalemde tevkifat kodu) |
@@ -124,7 +116,6 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 | [earsivfatura-sgk-baseline](valid/earsivfatura/earsivfatura-sgk-baseline/) | SGK | baseline | 20 | TRY | sgk | Baseline — EARSIVFATURA+SGK, MAL_HIZMET |
 | [earsivfatura-teknolojidestek-baseline](valid/earsivfatura/earsivfatura-teknolojidestek-baseline/) | TEKNOLOJIDESTEK | baseline | 20 | TRY | tckn, telefon-imei | EARSIVFATURA+TEKNOLOJIDESTEK baseline — TCKN müşteri + IMEI (TELEFON scheme) |
 | [earsivfatura-tevkifat-baseline](valid/earsivfatura/earsivfatura-tevkifat-baseline/) | TEVKIFAT | baseline | 20 | TRY | — | Baseline — EARSIVFATURA+TEVKIFAT |
-| [earsivfatura-tevkifat-dinamik-650](valid/earsivfatura/earsivfatura-tevkifat-dinamik-650/) | TEVKIFAT | dinamik-650 | 20 | TRY | — | EARSIVFATURA+TEVKIFAT 650 dinamik %30 |
 | [earsivfatura-ytbiade-baseline](valid/earsivfatura/earsivfatura-ytbiade-baseline/) | YTBIADE | baseline | 20 | TRY | ytbNo | EARSIVFATURA+YTBIADE baseline (ytbNo + billingReference + kod 03) |
 | [earsivfatura-ytbiade-tevkifatli-baseline](valid/earsivfatura/earsivfatura-ytbiade-tevkifatli-baseline/) | YTBIADE | ytbiade-tevkifatli-baseline | 20 | TRY | ytbNo | Baseline — EARSIVFATURA+YTBIADE, ytbNo + kod 603 + itemClassificationCode 03 (tevkifatlı iade: tip YTBIADE + kalemde tevkifat kodu) |
 | [earsivfatura-ytbiade-tevkifatli-kod-620-tekstil](valid/earsivfatura/earsivfatura-ytbiade-tevkifatli-kod-620-tekstil/) | YTBIADE | ytbiade-tevkifatli-kod-620-tekstil | 20 | TRY | ytbNo | Varyant — EARSIVFATURA+YTBIADE, kod 620 %50 tekstil (tevkifatlı iade: tip YTBIADE + kalemde tevkifat kodu) |
@@ -142,13 +133,14 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 | [enerji-sarj-coklu-sarj](valid/enerji/enerji-sarj-coklu-sarj/) | SARJ | coklu-sarj | 20 | TRY | — | ENERJI+SARJ 3 şarj noktası tek faturada |
 | [enerji-sarjanlik-baseline](valid/enerji/enerji-sarjanlik-baseline/) | SARJANLIK | baseline | 20 | TRY | — | Baseline — ENERJI+SARJANLIK, operatörden anlık satış |
 
-### HKS (3)
+### HKS (4)
 
 | ID | Tip | Slug | KDV | Döviz | Özellikler | Notlar |
 |---|---|---|---|---|---|---|
-| [hks-hkskomisyoncu-baseline](valid/hks/hks-hkskomisyoncu-baseline/) | HKSKOMISYONCU | baseline | 10 | TRY | kunyeno | Baseline — HKS+HKSKOMISYONCU, komisyoncu satış |
-| [hks-hkssatis-baseline](valid/hks/hks-hkssatis-baseline/) | HKSSATIS | baseline | 10 | TRY | kunyeno | Baseline — HKS+HKSSATIS, KUNYENO 19-char per line |
-| [hks-hkssatis-coklu-kunye](valid/hks/hks-hkssatis-coklu-kunye/) | HKSSATIS | coklu-kunye | 20 | TRY | kunyeNo | HKS — 2 satır farklı KUNYENO |
+| [hks-komisyoncu-baseline](valid/hks/hks-komisyoncu-baseline/) | KOMISYONCU | baseline | 10 | TRY | kunyeno | Baseline — HKS+KOMISYONCU (e-Fatura düzlemi), komisyoncu satış |
+| [hks-satis-baseline](valid/hks/hks-satis-baseline/) | SATIS | baseline | 10 | TRY | kunyeno | Baseline — HKS+SATIS (e-Fatura düzlemi), KUNYENO 19-char per line |
+| [hks-satis-coklu-kunye](valid/hks/hks-satis-coklu-kunye/) | SATIS | coklu-kunye | 20 | TRY | kunyeNo | HKS+SATIS — 2 satır farklı KUNYENO (satır başına TAM BİR künye) |
+| [hks-satis-malsahibi](valid/hks/hks-satis-malsahibi/) | SATIS | malsahibi | 10 | TRY | kunyeno, malsahibi | HKS+SATIS — KUNYENO + MALSAHIBIADSOYADUNVAN + MALSAHIBIVKNTCKN üçlüsü |
 
 ### HKSIRSALIYE (1)
 
@@ -221,14 +213,13 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 |---|---|---|---|---|---|---|
 | [ozelfatura-istisna-baseline](valid/ozelfatura/ozelfatura-istisna-baseline/) | ISTISNA | baseline | 0 | TRY | — | Baseline — OZELFATURA+ISTISNA (genel istisna profili) |
 
-### TEMELFATURA (27)
+### TEMELFATURA (25)
 
 | ID | Tip | Slug | KDV | Döviz | Özellikler | Notlar |
 |---|---|---|---|---|---|---|
 | [temelfatura-iade-baseline](valid/temelfatura/temelfatura-iade-baseline/) | IADE | baseline | 20 | TRY | billingReference | Baseline — TEMELFATURA+IADE, orijinal faturaya referans (BillingReference zorunlu) |
 | [temelfatura-iade-coklu-kdv](valid/temelfatura/temelfatura-iade-coklu-kdv/) | IADE | coklu-kdv | 10,20 | TRY | — | IADE çoklu KDV (%10 + %20) — satır bazında farklı oran |
 | [temelfatura-iade-tevkifatli-baseline](valid/temelfatura/temelfatura-iade-tevkifatli-baseline/) | IADE | iade-tevkifatli-baseline | 20 | TRY | — | Baseline — TEMELFATURA+IADE, kod 603 %70 (tevkifatlı iade: tip IADE + kalemde tevkifat kodu) |
-| [temelfatura-iade-tevkifatli-dinamik-650](valid/temelfatura/temelfatura-iade-tevkifatli-dinamik-650/) | IADE | iade-tevkifatli-dinamik-650 | 20 | TRY | — | Varyant — TEMELFATURA+IADE, 650 dinamik kod %50 (tevkifatlı iade: tip IADE + kalemde tevkifat kodu) |
 | [temelfatura-ihrackayitli-baseline](valid/temelfatura/temelfatura-ihrackayitli-baseline/) | IHRACKAYITLI | baseline | 0 | TRY | gtip, alicidibkod | Baseline — TEMELFATURA+IHRACKAYITLI, kod 702 (DİİB) + GTİP 12 hane + ALICIDIBKOD 11 hane |
 | [temelfatura-ihrackayitli-ihrac-701](valid/temelfatura/temelfatura-ihrackayitli-ihrac-701/) | IHRACKAYITLI | ihrac-701 | 0 | TRY | gtip, alicidibkod | IHRACKAYITLI — kod 701 (DİİB dışı) + GTİP, KDV=0 (701 kodu KDV 0 zorunlu) |
 | [temelfatura-istisna-baseline](valid/temelfatura/temelfatura-istisna-baseline/) | ISTISNA | baseline | 0 | TRY | — | Baseline — TEMELFATURA+ISTISNA, kod 213 (deniz/hava taşıtları için yapılan tadil) |
@@ -250,7 +241,6 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 | [temelfatura-sgk-baseline](valid/temelfatura/temelfatura-sgk-baseline/) | SGK | baseline | 20 | TRY | sgk | Baseline — TEMELFATURA+SGK, SAGLIK_ECZ (eczane reçetesi) |
 | [temelfatura-sgk-sgk-coklu-satir](valid/temelfatura/temelfatura-sgk-sgk-coklu-satir/) | SGK | sgk-coklu-satir | 10 | TRY | sgk | SGK — 2 satır (farklı medikal hizmet kodları) |
 | [temelfatura-tevkifat-baseline](valid/temelfatura/temelfatura-tevkifat-baseline/) | TEVKIFAT | baseline | 20 | TRY | — | Baseline — TEMELFATURA+TEVKIFAT, kod 603 (%70 bakım-onarım) |
-| [temelfatura-tevkifat-dinamik-650](valid/temelfatura/temelfatura-tevkifat-dinamik-650/) | TEVKIFAT | dinamik-650 | 20 | TRY | — | TEVKIFAT + 650 dinamik kod, kullanıcı belirlediği %50 oran |
 | [temelfatura-tevkifat-tam-tevkifat-801](valid/temelfatura/temelfatura-tevkifat-tam-tevkifat-801/) | TEVKIFAT | tam-tevkifat-801 | 20 | TRY | — | Tam tevkifat — kod 801 %100 (örn. yolcu taşıma, özel sektör→kamu) |
 
 ### TEMELIRSALIYE (4)
@@ -280,7 +270,7 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 | [ticarifatura-tevkifat-baseline](valid/ticarifatura/ticarifatura-tevkifat-baseline/) | TEVKIFAT | baseline | 20 | TRY | — | Baseline — TICARIFATURA+TEVKIFAT, kod 620 (%50 tekstil) |
 | [ticarifatura-tevkifat-tevkifat-603](valid/ticarifatura/ticarifatura-tevkifat-tevkifat-603/) | TEVKIFAT | tevkifat-603 | 20 | TRY | — | TICARIFATURA+TEVKIFAT kod 603 %70 (bakım-onarım) |
 
-### YATIRIMTESVIK (10)
+### YATIRIMTESVIK (9)
 
 | ID | Tip | Slug | KDV | Döviz | Özellikler | Notlar |
 |---|---|---|---|---|---|---|
@@ -293,7 +283,6 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 | [yatirimtesvik-satis-coklu-satir](valid/yatirimtesvik/yatirimtesvik-satis-coklu-satir/) | SATIS | coklu-satir | 20 | TRY | ytbNo | YATIRIMTESVIK+SATIS 3 satır makine parçaları |
 | [yatirimtesvik-satis-kod-04-gayrimaddi](valid/yatirimtesvik/yatirimtesvik-satis-kod-04-gayrimaddi/) | SATIS | kod-04-gayrimaddi | 20 | TRY | ytbNo | YATIRIMTESVIK+SATIS, harcama tipi 04 (gayrimaddi hak) |
 | [yatirimtesvik-tevkifat-baseline](valid/yatirimtesvik/yatirimtesvik-tevkifat-baseline/) | TEVKIFAT | baseline | 20 | TRY | ytbNo | Baseline — YATIRIMTESVIK+TEVKIFAT |
-| [yatirimtesvik-tevkifat-dinamik-650](valid/yatirimtesvik/yatirimtesvik-tevkifat-dinamik-650/) | TEVKIFAT | dinamik-650 | 20 | TRY | ytbNo | YATIRIMTESVIK+TEVKIFAT 650 dinamik %40 |
 
 ### YOLCUBERABERFATURA (2)
 
@@ -389,7 +378,7 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 
 | ID | Profil bağlamı | Tip bağlamı | Multi-error | Açıklama |
 |---|---|---|---|---|
-| [profile-requirement-hks-kunyeno-eksik](invalid/profile-requirement/profile-requirement-hks-kunyeno-eksik/) | HKS | HKSSATIS | No | HKS satırında KUNYENO kimliği eksik |
+| [profile-requirement-hks-kunyeno-eksik](invalid/profile-requirement/profile-requirement-hks-kunyeno-eksik/) | HKS | SATIS | No | HKS satırında KUNYENO kimliği eksik |
 | [profile-requirement-idis-sevkiyatno-eksik](invalid/profile-requirement/profile-requirement-idis-sevkiyatno-eksik/) | IDIS | SATIS | No | IDIS profilinde supplier SEVKIYATNO kimliği eksik |
 | [profile-requirement-ihracat-buyercustomer-eksik](invalid/profile-requirement/profile-requirement-ihracat-buyercustomer-eksik/) | IHRACAT | ISTISNA | Yes | IHRACAT profilinde buyerCustomer eksik |
 | [profile-requirement-ihracat-delivery-eksik](invalid/profile-requirement/profile-requirement-ihracat-delivery-eksik/) | IHRACAT | ISTISNA | No | IHRACAT satırında delivery (GTİP + INCOTERMS) eksik |

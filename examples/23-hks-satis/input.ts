@@ -5,14 +5,19 @@ import type { SimpleInvoiceInput } from '../../src';
  * alım-satım için özel profil. Ticari Aracıların/Komisyoncuların
  * TaxTypeCode `9944` (Hal Rüsumu) + ürün izlenebilirliği.
  *
- * `HKSSATIS` tipi — hal içinde doğrudan satış (komisyoncu değil).
+ * `SATIS` tipi — hal içinde doğrudan satış (komisyoncu değil).
+ *
+ * ⚠️ 4.4.0'a kadar burada `HKSSATIS` yazıyordu. O tip HKS'in e-ARŞİV
+ * düzlemine aittir (`ProfileID=EARSIVFATURA` + `HKSSATIS`); e-Fatura
+ * düzleminde hal satışının tipi `SATIS`'tir. İkisi de canlı şematrondan
+ * geçer — ayrım GİB'in kapıyı açma biçimidir, şematron kısıtı değil.
  */
 export const input: SimpleInvoiceInput = {
   id: 'EXA2026000000023',
   uuid: 'e1a2b3c4-0023-4000-8023-000000000023',
   datetime: '2026-04-23T13:00:00',
   profile: 'HKS',
-  type: 'HKSSATIS',
+  type: 'SATIS',
   currencyCode: 'TRY',
 
   sender: {

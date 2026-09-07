@@ -640,14 +640,38 @@ function buildSingleLine(
 
     const shipmentNeeded = del.gtipNo || del.transportModeCode || thuNeeded;
 
+    /* 🔴 BOŞ TESLİMAT ADRESİ ARTIK YAZILMIYOR.
+     *
+     * Eski kod `del.deliveryAddress`i koşulsuz okuyup her zaman bir
+     * `cac:DeliveryAddress` üretiyordu. İki ayrı kırılma çıkarıyordu:
+     *
+     *   • Alan hiç verilmemişse `.address` okuması ÇÖKÜYORDU
+     *     («Cannot read properties of undefined»), hata da kullanıcıya anlamsız
+     *     bir satır olarak yansıyordu.
+     *   • Portalda GTİP + Alıcı DİB kodu girilip adres boş bırakıldığında
+     *     (tamamen meşru) boş bir adres bloğu yazılıyor ve UBL zorunlu
+     *     `cbc:CitySubdivisionName` yüzünden belge KURULAMIYORDU.
+     *
+     * Adres GİB tarafında zorunlu DEĞİL: aynı fatura DeliveryAddress bloğu
+     * çıkarılarak canlı şematrona soruldu, temiz geçti. Dolayısıyla blok yalnız
+     * gerçekten içerik varsa yazılır. */
+    const adres = del.deliveryAddress;
+    const adresDolu =
+      !!adres &&
+      [adres.address, adres.district, adres.city, adres.zipCode].some(
+        (v) => v !== undefined && v !== null && String(v).trim() !== '',
+      );
+
     result.delivery = {
-      deliveryAddress: {
-        streetName: del.deliveryAddress.address,
-        citySubdivisionName: del.deliveryAddress.district,
-        cityName: del.deliveryAddress.city,
-        postalZone: del.deliveryAddress.zipCode,
-        country: del.deliveryAddress.country ?? 'Türkiye',
-      },
+      deliveryAddress: adresDolu
+        ? {
+          streetName: adres.address,
+          citySubdivisionName: adres.district,
+          cityName: adres.city,
+          postalZone: adres.zipCode,
+          country: adres.country ?? 'Türkiye',
+        }
+        : undefined,
       deliveryTerms: del.deliveryTermCode
         ? { id: del.deliveryTermCode }
         : undefined,

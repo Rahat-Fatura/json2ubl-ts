@@ -1,8 +1,8 @@
 {
-  "id": "hks-hkskomisyoncu-baseline",
+  "id": "hks-satis-baseline",
   "kind": "invoice",
   "profile": "HKS",
-  "type": "HKSKOMISYONCU",
+  "type": "SATIS",
   "variantSlug": "baseline",
   "dimensions": {
     "kdvBreakdown": [
@@ -24,8 +24,8 @@
       "kunyeno"
     ]
   },
-  "generatedAt": "2026-04-24T12:57:22.331Z",
+  "generatedAt": "2026-09-05T08:40:07.409Z",
   "generatedBy": "examples-matrix/scaffold.ts",
-  "review": "auto-ok",
-  "notes": "Baseline — HKS+HKSKOMISYONCU, komisyoncu satış"
+  "review": "schematron-verified",
+  "notes": "Baseline — HKS+SATIS (e-Fatura düzlemi), KUNYENO 19-char per line"
 }
