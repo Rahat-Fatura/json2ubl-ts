@@ -493,8 +493,19 @@ export const UUID_REGEX = /^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F
 /** Tarih formatı: YYYY-MM-DD */
 export const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Saat formatı: HH:mm:ss */
+/** Saat formatı: HH:mm:ss — XML'e YAZILAN biçim (XSD `xs:time` bunu ister). */
 export const TIME_REGEX = /^\d{2}:\d{2}:\d{2}$/;
+
+/**
+ * Saat GİRDİ formatı: `HH:mm` veya `HH:mm:ss` (opsiyonel saniye kesri + saat dilimi).
+ *
+ * Neden ayrı bir desen: portalın saat girişi (`<input type="time">`) varsayılan olarak
+ * `HH:mm` üretir — saniyesiz. Kullanıcıyı ":00" yazmaya zorlamak yerine girdiyi kabul
+ * edip serileştirmede `normalizeTime` ile saniyeyi tamamlıyoruz. Yani DOĞRULAMA bu
+ * gevşek deseni, XML'e YAZMA ise `TIME_REGEX` biçimini kullanır.
+ */
+export const TIME_INPUT_REGEX =
+  /^(\d|[01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?$/;
 
 /** Decimal format: max 15 önce, max 2 sonra */
 export const DECIMAL_REGEX = /^-?\d{1,15}(\.\d{1,2})?$/;

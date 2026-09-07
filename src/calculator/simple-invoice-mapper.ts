@@ -36,7 +36,7 @@ import type {
   AdditionalItemIdInput,
   DeliveryInput,
 } from '../types/common';
-import { isNonEmpty } from '../utils/formatters';
+import { isNonEmpty, normalizeTime } from '../utils/formatters';
 import { canBuildCarrierParty } from '../validators/online-sale-validator';
 
 // ─── Ana Dönüşüm Fonksiyonu ────────────────────────────────────────────────────
@@ -129,7 +129,10 @@ function buildInvoiceInput(
   }
 
   // Ek doküman referansları (XSLT dahil)
-  const additionalDocs = buildAdditionalDocuments(simple, calc);
+  // `issueDate` GEÇİLİYOR: eskiden her ek belge tarihini `simple.datetime?.substring(...)`
+  // ile kendi hesaplıyordu ve `datetime` verilmeyince UNDEFINED kalıyordu — GİB XSD'si
+  // `cbc:IssueDate`'i zorunlu tuttuğu için SGK faturaları reddediliyordu (2026-09-07).
+  const additionalDocs = buildAdditionalDocuments(simple, calc, issueDate);
   if (additionalDocs.length > 0) {
     result.additionalDocuments = additionalDocs;
   }
@@ -150,8 +153,9 @@ function buildInvoiceInput(
   }
 
   // ContractDocumentReference (YATIRIMTESVIK — YTBNO)
+  // Teşvik belgesi tarihi girilmediyse faturanın tarihi yedek: XSD IssueDate 1..1.
   if (simple.ytbNo) {
-    result.contractReference = buildContractReference(simple);
+    result.contractReference = buildContractReference(simple, issueDate);
   }
 
   // Fatura dönemi
@@ -726,9 +730,17 @@ function buildOrderReference(simple: SimpleInvoiceInput): OrderReferenceInput {
 
 // ─── Ek Dokümanlar ──────────────────────────────────────────────────────────────
 
+/**
+ * `cac:AdditionalDocumentReference` listesini kurar.
+ *
+ * @param documentIssueDate Faturanın kendi `IssueDate`'i. Ek belgelerin tarihi bundan
+ *   türetilir — UBL-TR şemasında `cbc:IssueDate` ZORUNLUDUR ve `simple.datetime`
+ *   verilmeyen çağrılarda eski kod tarihi düşürüp belgeyi şema-geçersiz bırakıyordu.
+ */
 function buildAdditionalDocuments(
   simple: SimpleInvoiceInput,
   calc: CalculatedDocument,
+  documentIssueDate: string,
 ): AdditionalDocumentInput[] {
   const docs: AdditionalDocumentInput[] = [];
 
@@ -736,7 +748,7 @@ function buildAdditionalDocuments(
   if (simple.xsltTemplate) {
     docs.push({
       id: calc.uuid,
-      issueDate: simple.datetime?.substring(0, 10),
+      issueDate: documentIssueDate,
       attachment: {
         embeddedBinaryObject: {
           content: simple.xsltTemplate,
@@ -753,14 +765,14 @@ function buildAdditionalDocuments(
   if (simple.eArchiveInfo && simple.eArchiveInfo.sendType !== 'KAGIT') {
     docs.push({
       id: simple.eArchiveInfo.sendType,
-      issueDate: simple.datetime?.substring(0, 10),
+      issueDate: documentIssueDate,
       documentTypeCode: 'EXT_SEND_METHOD',
     });
   }
 
   // Online satış referansları
   if (simple.onlineSale?.isOnlineSale) {
-    const issueDate = simple.datetime?.substring(0, 10);
+    const issueDate = documentIssueDate;
     docs.push(
       { id: '.', issueDate, documentTypeCode: 'EXT_IS_ONLINE_SALE' },
       { id: simple.onlineSale.storeUrl, issueDate, documentTypeCode: 'EXT_ONLINE_STORE_URL' },
@@ -771,7 +783,7 @@ function buildAdditionalDocuments(
 
   // SGK referansları
   if (simple.sgk) {
-    const issueDate = simple.datetime?.substring(0, 10);
+    const issueDate = documentIssueDate;
     docs.push(
       { id: '.', issueDate, documentTypeCode: 'DOSYA_NO', documentType: simple.sgk.documentNo, documentDescription: 'Döküm No' },
       { id: '.', issueDate, documentTypeCode: 'MUKELLEF_ADI', documentType: simple.sgk.companyName, documentDescription: `${configManager.getExemption(simple.sgk.type)?.name ?? simple.sgk.type} Adı` },
@@ -785,7 +797,9 @@ function buildAdditionalDocuments(
       const mapped: AdditionalDocumentInput = {
         id: doc.id,
         schemeId: doc.schemeId,
-        issueDate: doc.issueDate,
+        // Kullanıcı tarih vermediyse belgenin tarihi: SARJ'ın ESURaporID referansı
+        // tam olarak böyle tarihsiz geliyor ve GİB «içeriği eksik: IssueDate» diyordu.
+        issueDate: doc.issueDate ?? documentIssueDate,
         documentTypeCode: doc.documentTypeCode,
         documentType: doc.documentType,
         documentDescription: doc.documentDescription,
@@ -889,21 +903,32 @@ function buildTaxRepresentative(
 
 // ─── Sözleşme Referansı (YATIRIMTESVIK) ──────────────────────────────────────────
 
-function buildContractReference(simple: SimpleInvoiceInput): ContractReferenceInput {
+function buildContractReference(
+  simple: SimpleInvoiceInput,
+  documentIssueDate: string,
+): ContractReferenceInput {
   return {
     id: simple.ytbNo!,
     schemeId: 'YTBNO',
-    issueDate: simple.ytbIssueDate,
+    // `ytbIssueDate` girilmediyse fatura tarihi: XSD `cbc:IssueDate` 1..1
+    // (canlı ölçüm: `examples/14-yatirimtesvik-iade` tarihsiz olduğu için reddediliyordu).
+    issueDate: simple.ytbIssueDate ?? documentIssueDate,
   };
 }
 
 // ─── Dönem ──────────────────────────────────────────────────────────────────────
 
+/**
+ * Fatura dönemi. Saatler BURADA `HH:mm:ss`e tamamlanır (serileştirici de aynısını
+ * yapar; burada da yapılmasının sebebi `InvoiceInput` katmanındaki doğrulayıcıların
+ * — `validateEnerjiInvoicePeriod` — tel biçimini görmesi). Portalın saat girişi
+ * `HH:mm` ürettiği için SARJ/SARJANLIK faturaları GİB XSD'sinden dönüyordu.
+ */
 function buildPeriod(simple: SimpleInvoiceInput): PeriodInput {
   return {
     startDate: simple.invoicePeriod!.startDate,
-    startTime: simple.invoicePeriod!.startTime,
+    startTime: normalizeTime(simple.invoicePeriod!.startTime),
     endDate: simple.invoicePeriod!.endDate,
-    endTime: simple.invoicePeriod!.endTime,
+    endTime: normalizeTime(simple.invoicePeriod!.endTime),
   };
 }

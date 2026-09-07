@@ -38,6 +38,15 @@ export interface TypeProfileFlags {
   isIhracKayitli: boolean;
   isOzelMatrah: boolean;
   isSgk: boolean;
+  /**
+   * Şarj ANLIK faturası (`InvoiceTypeCode=SARJANLIK`).
+   *
+   * Şematron `EnerjiItemInstanceSerialIDCheck` bu tipte HER KALEMDE
+   * `cac:Item/cac:ItemInstance/cbc:SerialID` şart koşar. Bayrak alan görünürlüğü
+   * içindir: kural olmadan kullanıcı "seri numarası zorunludur" hatasını görüyor
+   * ama dolduracak alanı bulamıyordu (canlı portal testi, 2026-09-07).
+   */
+  isSarjAnlik: boolean;
   isTeknolojiDestek: boolean;
   isIhracat: boolean;
   isKamu: boolean;
@@ -81,6 +90,7 @@ export function deriveTypeProfileFlags(type: string, profile: string): TypeProfi
     isIhracKayitli: type === 'IHRACKAYITLI',
     isOzelMatrah: type === 'OZELMATRAH',
     isSgk: type === 'SGK',
+    isSarjAnlik: type === 'SARJANLIK',
     isTeknolojiDestek: type === 'TEKNOLOJIDESTEK',
     isIhracat: profile === 'IHRACAT',
     isKamu: profile === 'KAMU',
@@ -117,7 +127,15 @@ export interface LineFieldVisibility {
   showItemClassificationCode: boolean;
   /** profile=YATIRIMTESVIK + line.itemClassificationCode='01' (makine bilgisi, B-NEW-09). */
   showProductTraceId: boolean;
-  /** profile=YATIRIMTESVIK + line.itemClassificationCode='01' (makine bilgisi, B-NEW-09). */
+  /**
+   * Kalem seri numarası (`cac:Item/cac:ItemInstance/cbc:SerialID`) girilebilsin mi?
+   *
+   * İKİ AYRI kural bu tek alanı ister:
+   *  • YATIRIMTESVIK + `itemClassificationCode='01'` → GİB dilinde «Makine ID»
+   *    (`YatirimTesvikItemInstanceCheck`, B-NEW-09) — SATIR BAZINDA, yalnız 01 kalemde.
+   *  • `SARJANLIK` → her kalemde ESU/şarj ünitesi seri numarası
+   *    (`EnerjiItemInstanceSerialIDCheck`) — tip bazında, TÜM kalemlerde.
+   */
   showSerialId: boolean;
 }
 
@@ -182,7 +200,14 @@ export function deriveLineFieldVisibility(
     showProductTraceId:
       flags.isYatirimTesvik && line.itemClassificationCode === '01',
 
+    /* 🔴 SARJANLIK EKLENDİ (4.5.0). Şematron `EnerjiItemInstanceSerialIDCheck` her
+     * kalemde SerialID şart koşuyor ve kütüphane de "Şarj anlık faturalarında her
+     * kalemde seri numarası zorunludur" uyarısını veriyordu — ama bu bayrak yalnız
+     * YATIRIMTESVIK'i kapsadığı için portalda girilecek alan HİÇ görünmüyordu
+     * (kullanıcı çıkmaza giriyordu, canlı test 2026-09-07). Aynı kusur sınıfı HKS'te
+     * de yaşanmıştı (bkz. `showAdditionalItemIdentifications`). */
     showSerialId:
-      flags.isYatirimTesvik && line.itemClassificationCode === '01',
+      (flags.isYatirimTesvik && line.itemClassificationCode === '01')
+      || flags.isSarjAnlik,
   };
 }

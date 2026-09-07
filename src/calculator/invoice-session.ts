@@ -49,6 +49,7 @@ import { validateManualExemption } from '../validators/manual-exemption-validato
 import { validatePhantomKdv } from '../validators/phantom-kdv-validator';
 import { validateSgkInput } from '../validators/sgk-input-validator';
 import { validateHksKunyeNo } from '../validators/hks-kunyeno-validator';
+import { validateIlacTibbiCihazItemId } from '../validators/ilac-tibbicihaz-validator';
 import { validateHksOwnerFields } from '../validators/hks-owner-validator';
 import { validateCrossMatrix } from '../validators/cross-validators';
 import type { Suggestion } from './suggestion-types';
@@ -1155,6 +1156,11 @@ export class InvoiceSession extends EventEmitter {
     // (validateByProfile → validateHks) aynı kuralı strict'te zaten uyguluyor;
     // 'basic'e eklemek bugün hatasız XML alan tüketicileri throw'a düşürürdü.
     errors.push(...validateHksKunyeNo(this._input));
+    // ILAC_TIBBICIHAZ profilinde her kalemde ILAC/TIBBICIHAZ/DIGER kimliği
+    // (Schematron IlacTibbiCihazAdditionalItemIdentificationCheck). KUNYENO ile
+    // AYNI gerekçeyle SimpleInvoiceBuilder'a eklenmedi: InvoiceInput katmanı
+    // (validateByProfile → validateIlacTibbiCihaz) kuralı strict'te zaten uyguluyor.
+    errors.push(...validateIlacTibbiCihazItemId(this._input));
 
     // validateCrossMatrix InvoiceInput ister; cache'li mapper (D-3).
     // Mapper içinde calculator throw edebilir (örn. 650 percent eksik) — bunu

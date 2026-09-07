@@ -157,7 +157,15 @@ export interface SimpleLineInput {
     itemClassificationCode?: string;
     /** Makine Teçhizat sıra no — YATIRIMTESVIK Kod 01 için zorunlu */
     productTraceId?: string;
-    /** Makine ID — YATIRIMTESVIK Kod 01 için zorunlu */
+    /**
+     * Kalem seri numarası → `cac:InvoiceLine/cac:Item/cac:ItemInstance/cbc:SerialID`.
+     *
+     * İKİ ayrı kural bu tek alanı ister:
+     *  - YATIRIMTESVIK + `itemClassificationCode='01'` → GİB dilinde «Makine ID»
+     *    (`YatirimTesvikItemInstanceCheck`) — YALNIZ 01 harcama tipli kalemde.
+     *  - `SARJANLIK` (şarj anlık) → HER kalemde ESU/şarj ünitesi seri numarası
+     *    (`EnerjiItemInstanceSerialIDCheck`).
+     */
     serialId?: string;
 
     // ─── Özel tanımlayıcılar (TEKNOLOJIDESTEK vb.) ────────────────────────────

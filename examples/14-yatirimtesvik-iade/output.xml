@@ -28,6 +28,7 @@
   </cac:BillingReference>
   <cac:ContractDocumentReference>
     <cbc:ID schemeID="YTBNO">123456</cbc:ID>
+    <cbc:IssueDate>2026-04-23</cbc:IssueDate>
   </cac:ContractDocumentReference>
   <cac:AccountingSupplierParty>
     <cac:Party>

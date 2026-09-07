@@ -506,6 +506,14 @@ export const PAYMENT_MEANS_SEQ = [
 
 // ─── DocumentReference ────────────────────────────────────────────────────
 // B-32 fix: IssueDate required (DocumentReference verildiyse)
+//
+// 🔴 4.5.0 NOTU — «DocumentTypeCode bu konumda geçersiz, beklenen: IssueDate» hatası
+// bu diziden GELMEZ. Sıra burada UBL `DocumentReferenceType`'a birebir uygundur ve
+// `emitInOrder` de dizinin sırasını izler. GİB'in bu mesajı gerçekte EKSİK ELEMAN
+// demektir: UBL-TR şeması `cbc:IssueDate`'i 1..1'e daraltmıştır, tarih atlanınca
+// doğrulayıcı bir sonraki elemanı (DocumentTypeCode) "yanlış konumda" sayar.
+// Düzeltme `reference-serializer.ts`tedir (IssueDate zorunlu + belge tarihi yedeği);
+// burada değiştirilecek bir sıra YOKTUR — SGK'ya özel yama yapılmadı.
 export const DOCUMENT_REFERENCE_SEQ = [
   'ID',
   'CopyIndicator',

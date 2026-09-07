@@ -73,9 +73,10 @@ export function serializeDespatch(
   }
 
   // 13. AdditionalDocumentReference (MATBUDAN için zorunlu)
+  //     IssueDate XSD'de 1..1 — verilmediyse irsaliyenin kendi tarihine düşülür.
   if (input.additionalDocuments) {
     for (const doc of input.additionalDocuments) {
-      parts.push(serializeAdditionalDocument(doc, ind));
+      parts.push(serializeAdditionalDocument(doc, ind, input.issueDate));
     }
   }
 

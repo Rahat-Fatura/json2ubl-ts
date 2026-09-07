@@ -22,9 +22,13 @@ export const invalidCases: InvalidCase[] = [
     expectedErrors: [{ code: 'MISSING_FIELD' }],
   },
   {
-    description: '(not-caught) ILAC barkodu eksik',
+    // Şematron `IlacTibbiCihazAdditionalItemIdentificationCheck`; canlı ölçümde
+    // (xslt-service :8081, type=efatura) kimliksiz belge TAM 1 ihlal veriyor.
+    // strict katmanı bunu zaten yakalıyordu; kural artık InvoiceSession
+    // (portal/UI) akışında da görünür — bkz. ilac-tibbicihaz-validator.
+    description: '(profile requirement) ILAC_TIBBICIHAZ + kalem kimliği eksik',
     input: mutate((i) => { delete i.lines[0].additionalItemIdentifications; }),
-    notCaughtYet: 'ILAC_TIBBICIHAZ profili satırda ILAC/TIBBICIHAZ barkodu zorunluluğu simple-input\'ta eksik.',
+    expectedErrors: [{ code: 'PROFILE_REQUIREMENT' }],
   },
   {
     description: '(format bozuk) KDV oranı negatif',

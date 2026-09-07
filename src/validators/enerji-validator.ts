@@ -29,7 +29,7 @@ import {
   ESU_RAPOR_ISSUE_DATE_REGEX,
   UUID_REGEX,
   DATE_REGEX,
-  TIME_REGEX,
+  TIME_INPUT_REGEX,
 } from '../config/constants';
 import type { InvoiceInput } from '../types/invoice-input';
 import type { ValidationError } from '../errors/ubl-build-error';
@@ -119,12 +119,16 @@ export function validateEnerjiInvoicePeriod(input: InvoiceInput): ValidationErro
       });
       return;
     }
-    if (!TIME_REGEX.test(value!)) {
+    /* 4.5.0: `HH:mm` ARTIK HATA DEĞİL. Saat girişi (portalda `<input type="time">`)
+     * saniyesiz üretiyor; kullanıcıyı ":00" yazmaya zorlamak yerine serileştirme
+     * `normalizeTime` ile saniyeyi tamamlıyor. Doğrulama bu yüzden GİRDİ desenine
+     * (`TIME_INPUT_REGEX`) bakar — "15:0" gibi gerçekten bozuk değer hâlâ yakalanır. */
+    if (!TIME_INPUT_REGEX.test(value!)) {
       errors.push({
         code: 'ENERJI_INVOICE_PERIOD_INVALID',
-        message: `InvoicePeriod.${field} HH:mm:ss formatında olmalıdır`,
+        message: `InvoicePeriod.${field} HH:mm veya HH:mm:ss formatında olmalıdır`,
         path: `invoicePeriod.${field}`,
-        expected: 'HH:mm:ss',
+        expected: 'HH:mm veya HH:mm:ss',
         actual: value,
       });
     }

@@ -5,7 +5,8 @@
  * doğrulama boru hattında YOKTU. Sonuç: portal kullanıcısı eksik belgeyi
  * sorunsuz kuruyor, reddi GİB kapısında öğreniyordu (MimForge kaplama seferi).
  *
- * - `EnerjiESURaporIDCheck`         — YALNIZ SARJ'da ESURaporID ek belgesi
+ * - `EnerjiESURaporIDCheck`         — YALNIZ SARJ'da ESURaporID ek belgesi (GUID + tarih biçimi dahil)
+ * - `IADEInvioceCheck`              — IADE ailesinde referans fatura numarası deseni
  * - `YatirimTesvikItemInstanceCheck` — YTB harcama tipi 01'de Makine Adı
  *                                     (`ModelName`) + Makine Teçhizat Sıra No
  *                                     (`ProductTraceID`) + Makine ID (`SerialID`)
@@ -25,9 +26,14 @@
 
 import type { SimpleInvoiceInput } from '../calculator/simple-types';
 import type { ValidationError } from '../errors/ubl-build-error';
+import type { InvoiceTypeCode } from '../types/enums';
 import {
   DEMIRBAS_KDV_EXEMPTION_CODES,
+  ESU_RAPOR_ID_SCHEME_ID,
+  ESU_RAPOR_ISSUE_DATE_REGEX,
+  IADE_GROUP_TYPES,
   INVOICE_ID_REGEX,
+  UUID_REGEX,
   YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES,
 } from '../config/constants';
 
@@ -77,17 +83,51 @@ export function validateProfileRequirements(input: SimpleInvoiceInput): Validati
   const profil = input.profile ?? '';
 
   // ── SARJ → ESURaporID ek belgesi (SARJANLIK hariç)
+  /* Şematron `EnerjiESURaporIDCheck` yalnız VARLIK değil BİÇİM de arar: cbc:ID geçerli
+   * GUID, cbc:IssueDate `20xx-AA-GG`. Eski kod sadece `schemeId === 'ESURaporID'`
+   * kontrolü yapıyordu; kullanıcı ID'yi serbest metin yazıp tarihi boş bırakınca
+   * oturum "temiz" diyor, GİB kapıda reddediyordu (canlı portal testi 2026-09-07).
+   *
+   * ⚠️ `issueDate` BOŞSA hata YOKTUR: mapper belge tarihine düşer (`buildAdditionalDocuments`).
+   * Burada yalnız DOLU-ama-BOZUK tarih hata üretir — kullanıcıyı olmayan bir alanı
+   * doldurmaya zorlamayız. */
   if (ENERJI_TYPES.has(tip)) {
-    const varMi = (input.additionalDocuments ?? []).some(
-      d => (d as { schemeId?: string }).schemeId === 'ESURaporID',
+    const esuBelgeleri = (input.additionalDocuments ?? []).filter(
+      d => (d as { schemeId?: string }).schemeId === ESU_RAPOR_ID_SCHEME_ID,
     );
-    if (!varMi) {
+    if (esuBelgeleri.length === 0) {
       errors.push({
         code: 'MISSING_FIELD',
         message:
           'SARJ faturalarında schemeID="ESURaporID" olan bir ek belge zorunludur (EnerjiESURaporIDCheck).',
         path: 'additionalDocuments',
-        expected: 'schemeId="ESURaporID" taşıyan en az bir ek belge',
+        expected: `schemeId="${ESU_RAPOR_ID_SCHEME_ID}" taşıyan en az bir ek belge`,
+      });
+    } else {
+      esuBelgeleri.forEach(belge => {
+        const sira = (input.additionalDocuments ?? []).indexOf(belge);
+        const kimlik = String(belge.id ?? '').trim();
+        if (!UUID_REGEX.test(kimlik)) {
+          errors.push({
+            code: 'INVALID_FORMAT',
+            message:
+              'ESU rapor numarası GUID biçiminde olmalıdır ' +
+              '(ör: 3f2504e0-4f89-41d3-9a0c-0305e82c3301).',
+            path: `additionalDocuments[${sira}].id`,
+            expected: '8-4-4-4-12 onaltılık GUID',
+            actual: kimlik,
+          });
+        }
+        const tarih = String(belge.issueDate ?? '').trim();
+        if (tarih !== '' && !ESU_RAPOR_ISSUE_DATE_REGEX.test(tarih)) {
+          errors.push({
+            code: 'INVALID_FORMAT',
+            message: 'ESU rapor tarihi YYYY-AA-GG biçiminde olmalıdır (ör: 2026-04-23).',
+            path: `additionalDocuments[${sira}].issueDate`,
+            expected: 'YYYY-AA-GG',
+            actual: tarih,
+          });
+        }
       });
     }
   }
@@ -155,6 +195,30 @@ export function validateProfileRequirements(input: SimpleInvoiceInput): Validati
       expected: String(INVOICE_ID_REGEX.source),
       actual: String(input.id),
     });
+  }
+
+  // ── IADE ailesi → referans fatura numarası GİB fatura-no deseninde olmalı
+  /* Şematron `IADEInvioceCheck` yalnız UZUNLUĞA bakar (`string-length(...) = 16`), bu
+   * yüzden "abc-2026-00000002" gibi 16-17 karakterli ama desensiz bir değer GİB'e kadar
+   * gidip orada reddoluyordu. Desen kontrolü bizde: 3 hane alfanümerik seri + 4 hane yıl
+   * + 9 hane sıra. Kaynak TEK: `INVOICE_ID_REGEX` (belgenin kendi numarası ile aynı
+   * kural — iade edilen de sonuçta bir e-Fatura numarasıdır), ikinci desen YAZILMADI.
+   *
+   * ⚠️ BOŞ referans burada hata değildir: onu `invoice-rules.validateInvoiceState`
+   * ("İade faturalarında iade edilen fatura referansı zorunludur") zaten söylüyor. */
+  if (IADE_GROUP_TYPES.has(tip as InvoiceTypeCode)) {
+    const referansNo = String(input.billingReference?.id ?? '').trim();
+    if (referansNo !== '' && !INVOICE_ID_REGEX.test(referansNo)) {
+      errors.push({
+        code: 'INVALID_FORMAT',
+        message:
+          'İade edilen fatura numarası GİB biçimine uymuyor: 3 hane seri (harf/rakam) + ' +
+          '4 hane yıl + 9 hane sıra, toplam 16 karakter (ör: ABC2026000000002).',
+        path: 'billingReference.id',
+        expected: 'ABC2026000000002 biçimi (16 karakter)',
+        actual: referansNo,
+      });
+    }
   }
 
   // ── KAMU → alıcı kurum + VKN

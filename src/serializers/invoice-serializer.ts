@@ -36,6 +36,7 @@ import {
     formatAmountInWordsNote,
     isAmountInWordsNote,
 } from "../utils/amount-in-words";
+import { normalizeTime } from "../utils/formatters";
 
 /**
  * Invoice JSON → tam UBL-TR XML string (§1.10 sırasında)
@@ -86,9 +87,9 @@ export function serializeInvoice(
     // 8. IssueDate
     parts.push(`${ind}${cbcOptionalTag("IssueDate", input.issueDate)}`);
 
-    // 9. IssueTime (opsiyonel)
+    // 9. IssueTime (opsiyonel) — `HH:mm` gelirse saniye tamamlanır (XSD `xs:time`)
     if (input.issueTime) {
-        parts.push(`${ind}${cbcOptionalTag("IssueTime", input.issueTime)}`);
+        parts.push(`${ind}${cbcOptionalTag("IssueTime", normalizeTime(input.issueTime))}`);
     }
 
     // 10. InvoiceTypeCode
@@ -203,14 +204,15 @@ export function serializeInvoice(
     }
 
     // 26. ContractDocumentReference (opsiyonel — YATIRIMTESVIK için zorunlu)
+    //     Referans tarihi verilmediyse faturanın tarihine düşülür (XSD IssueDate 1..1).
     if (input.contractReference) {
-        parts.push(serializeContractReference(input.contractReference, ind));
+        parts.push(serializeContractReference(input.contractReference, ind, input.issueDate));
     }
 
-    // 27. AdditionalDocumentReference (opsiyonel)
+    // 27. AdditionalDocumentReference (opsiyonel) — aynı IssueDate yedeği
     if (input.additionalDocuments) {
         for (const doc of input.additionalDocuments) {
-            parts.push(serializeAdditionalDocument(doc, ind));
+            parts.push(serializeAdditionalDocument(doc, ind, input.issueDate));
         }
     }
 

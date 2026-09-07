@@ -58,6 +58,32 @@ export function formatDate(date: Date | string): string {
   return `${y}-${m}-${d}`;
 }
 
+/**
+ * Saat değerini XSD `xs:time` biçimine (`HH:mm:ss`) tamamlar.
+ *
+ * Neden gerekli: portalın saat girişi (`<input type="time">`) saniyesiz `HH:mm` üretir.
+ * Bu değer XML'e olduğu gibi yazıldığında GİB XSD'si «"00:00" değeri saat (hh:mm:ss)
+ * formatına uygun değil» diyerek belgeyi reddediyordu (canlı portal testi, 2026-09-07).
+ * Kullanıcıyı ":00" yazmaya zorlamak yerine eksik saniyeyi BURADA tamamlıyoruz.
+ *
+ * - `9:05`      → `09:05:00`  (tek haneli saat de doldurulur)
+ * - `00:00`     → `00:00:00`
+ * - `15:00:00`  → `15:00:00`  (değişmez)
+ * - `15:00:00+03:00` / `15:00:00Z` → saat dilimi KORUNUR
+ * - Tanınmayan biçim → OLDUĞU GİBİ döner: sessizce bozmayız, doğrulayıcı söyler.
+ */
+export function normalizeTime(value: string | undefined | null): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const trimmed = value.trim();
+  if (trimmed === '') return trimmed;
+
+  const m = /^(\d{1,2}):(\d{2})(?::(\d{2})(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?$/.exec(trimmed);
+  if (!m) return trimmed;
+
+  const [, hh, mm, ss, frac, zone] = m;
+  return `${hh.padStart(2, '0')}:${mm}:${ss ?? '00'}${frac ?? ''}${zone ?? ''}`;
+}
+
 /** XML özel karakterlerini escape eder */
 export function escapeXml(text: string): string {
   return text

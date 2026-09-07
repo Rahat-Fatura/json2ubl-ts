@@ -68,7 +68,9 @@ describe('Sprint 9 — AdditionalDocumentReference schemeID', () => {
   });
 
   it('boş string schemeId attribute üretmiyor', () => {
-    const xml = serializeAdditionalDocument({ id: 'DOC-1', schemeId: '' });
+    // 4.5.0: IssueDate artık zorunlu — bu testin konusu schemeID attribute'u olduğu
+    // için tarih fixture'a eklendi (tarihsiz çağrı ayrı testte ele alınıyor).
+    const xml = serializeAdditionalDocument({ id: 'DOC-1', schemeId: '', issueDate: '2026-01-01' });
     expect(xml).not.toContain('schemeID');
   });
 });

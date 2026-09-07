@@ -2,6 +2,118 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.5.0] — 2026-09-07
+
+Beşi de kullanıcının **canlı portal testinde** çıkan kusurlar; hepsi
+xslt-service (`:8081`, `profile=unnumbered-invoice`, `type=efatura`) üstünde
+ÖNCE/SONRA ölçülerek doğrulandı.
+
+### Fixed
+
+- **`DocumentReference` bloklarında `cbc:IssueDate` düşüyordu — SGK, ESURaporID,
+  YTB hepsi tek kökten.**
+
+  UBL-TR şeması `DocumentReferenceType/cbc:IssueDate`'i **1..1**'e daraltır
+  (standart UBL 2.1'de 0..1'dir). Tarih yazılmayınca GİB doğrulayıcısı iki
+  farklı mesaj veriyordu ve ikisi de aynı kusurun yüzüydü:
+
+  | Durum | GİB mesajı | Görüldüğü yer |
+  |---|---|---|
+  | Tarihten sonra başka eleman VAR | «"DocumentTypeCode" elementi bu konumda geçersiz. Bu noktada beklenen: IssueDate.» | SGK'nın üç ek belgesi (3 hata) |
+  | Tarihten sonra eleman YOK | «"AdditionalDocumentReference" elementinin içeriği eksik. Zorunlu element(ler): IssueDate.» | SARJ'ın ESURaporID belgesi |
+  | Aynısı sözleşme referansında | «"ContractDocumentReference" elementinin içeriği eksik…» | `ytbIssueDate` verilmeyen YTB faturaları |
+
+  🔴 Bu bir **SIRA** hatası DEĞİLDİR: `DOCUMENT_REFERENCE_SEQ` dizisi zaten UBL
+  sırasındaydı (`ID → CopyIndicator → UUID → IssueDate → DocumentTypeCode …`) ve
+  `emitInOrder` diziyi izliyor. Mesaj yanıltıcı; kök neden eksik elemandı.
+  `xsd-sequence.ts`e bu yanılgıyı bir daha yaşamamak için not düşüldü.
+
+  Düzeltme TEK yerde: `serializeAdditionalDocument` ve
+  `serializeContractReference` artık `IssueDate`'i **zorunlu** yazar ve
+  çağırandan bir `fallbackIssueDate` alır (belgenin kendi `IssueDate`'i).
+  Mapper tarafında da her üretilen ek belge (SGK / EXT_* / e-Arşiv gönderim
+  tipi / XSLT şablonu) ve kullanıcının verdiği tarihsiz ek belgeler belge
+  tarihine düşer; `simple.datetime` verilmeyen çağrılarda tarih artık
+  kaybolmuyor. Tarih hiçbir yerden bulunamazsa serileştirici **fırlatır** —
+  sessizce şema-geçersiz XML üretmez.
+
+- **SARJ/SARJANLIK dönemi saatleri `HH:mm` yazılıyordu (XSD `xs:time` reddi).**
+
+  Portalın saat girişi (`<input type="time">`) saniyesiz üretiyor; değer XML'e
+  olduğu gibi geçiyordu → «"00:00" değeri saat (hh:mm:ss) formatına uygun
+  değil» + şematron `EnerjiInvoicePeriodCheck`. Yeni `normalizeTime`
+  (`src/utils/formatters.ts`) saniyeyi tamamlar; `serializePeriod` ve
+  `cbc:IssueTime` bu yoldan geçer, mapper da `InvoiceInput` katmanındaki
+  doğrulayıcılar tel biçimini görsün diye aynı normalizasyonu uygular.
+  Kullanıcı `HH:mm` yazmaya devam edebilir — zorlanmaz.
+
+- **SARJANLIK kalem seri numarası için girilecek alan görünmüyordu.**
+
+  Şematron `EnerjiItemInstanceSerialIDCheck` her kalemde
+  `cac:Item/cac:ItemInstance/cbc:SerialID` ister ve kütüphane bunu zaten
+  uyarıyordu; ama `showSerialId` görünürlük bayrağı yalnız YATIRIMTESVIK'i
+  kapsadığı için tüketici arayüzü alanı hiç göstermiyordu — kullanıcı hatayı
+  görüyor, dolduracak yeri bulamıyordu (HKS'te yaşanan kusurun aynısı).
+  `deriveTypeProfileFlags`'e `isSarjAnlik` eklendi; `showSerialId` artık
+  «YATIRIMTESVIK + harcama tipi 01» **veya** «SARJANLIK» ile açılıyor.
+  Alan (`SimpleLineInput.serialId`) ve yol (`SessionPaths.lineSerialId(i)` →
+  `lines[i].serialId`) zaten vardı, yalnız görünürlük eksikti.
+
+### Added
+
+- **IADE ailesinde referans fatura numarası DESEN denetimi.** Şematron
+  `IADEInvioceCheck` yalnız uzunluğa bakıyor (16 karakter), bu yüzden
+  `abc-2026-00000002` gibi desensiz değerler GİB kapısına kadar gidiyordu.
+  `validateProfileRequirements` artık `INVOICE_ID_REGEX` (TEK kaynak — ikinci
+  desen yazılmadı) ile 3 hane seri + 4 hane yıl + 9 hane sıra kontrolü yapar;
+  mesaj Türkçe ve örnekli: «…(ör: ABC2026000000002)». Boş referans burada hata
+  değildir (taslak meşrudur; "zorunludur" uyarısı `invoice-rules`ta).
+
+- **ESURaporID biçim denetimi oturum katmanında.** SARJ'da `schemeID=ESURaporID`
+  ek belgesinin `cbc:ID`'si GUID, `cbc:IssueDate`'i `20xx-AA-GG` olmalı
+  (`EnerjiESURaporIDCheck`). Eskiden yalnız VARLIK kontrol ediliyordu.
+
+- `TIME_INPUT_REGEX` (`src/config/constants.ts`) — saat GİRDİ deseni
+  (`HH:mm` veya `HH:mm:ss`, saat/dakika/saniye aralıkları denetimli).
+  `TIME_REGEX` XML'e yazılan tel biçimi olarak kalır.
+
+### Changed
+
+- `validateEnerjiInvoicePeriod` artık `HH:mm` girdiyi **hata saymaz** (çıktı
+  zaten normalize ediliyor); `24:00`, `15:0` gibi gerçekten geçersiz değerler
+  yakalanmaya devam eder.
+- `examples/14-yatirimtesvik-iade/output.xml` — `ContractDocumentReference`
+  artık `IssueDate` taşıyor (canlı XSD hatası bu örnekte de vardı).
+
+### Tests
+
+Madde başına ayrı dosya (47 yeni test):
+
+- `__tests__/serializers/document-reference-issue-date.test.ts` — yedek tarih,
+  eleman sırası, tarihsiz+yedeksiz çağrının fırlatması, `datetime`'sız SGK
+  faturasının uçtan uca üç ek belgesinin de tarihli çıkması.
+- `__tests__/serializers/enerji-time-format.test.ts` — `normalizeTime` tablosu,
+  dönem serileştirmesi, uçtan uca SARJ, ESURaporID GUID/tarih denetimi.
+- `__tests__/calculator/sarjanlik-serial-id.test.ts` — görünürlük matrisi,
+  `SessionPaths.lineSerialId` yolu, `cbc:SerialID` XML çıktısı, kuralın
+  gevşetilmediğinin kanıtı.
+- `__tests__/validators/iade-billing-reference-format.test.ts` — desen
+  tablosu, 4 IADE tipi kapsamı, IADE dışı tipin kapsam dışılığı, boş referans.
+- `__tests__/validators/ytb-line-scoped-requirements.test.ts` — **regresyon
+  kalkanı**: YTB harcama tipi 01 zorunlulukları belge geneline yayılmaz
+  («1 makine + 1 yazılım» senaryosu). Kütüphane tarafı zaten doğruydu.
+
+### Canlı şematron ölçümü (xslt-service :8081)
+
+| Senaryo | ÖNCE (XSD + şematron) | SONRA |
+|---|---|---|
+| SGK (`datetime` yok) | 3 + 0 = **3** | **0** |
+| SARJ (`HH:mm` + tarihsiz ESURaporID) | 5 + 2 = **7** | **0** |
+| SARJANLIK (seri no boş) | 4 + 2 = **6** | **1** (yalnız seri no — artık portalda girilebilir) |
+| SARJANLIK (seri no dolu) | 4 + 1 = **5** | **0** |
+| IADE (desensiz referans) | 0 + 1 = **1** | **1** (GİB haklı) — fark: kütüphane artık GİB'e gitmeden söylüyor |
+| IADE (desenli referans) | — | **0** |
+
 ## [4.4.2] — 2026-09-05
 
 ### Fixed

@@ -1,6 +1,6 @@
 import { cbcOptionalTag, cbcOptionalAmountTag, cbcRequiredTag, joinLines } from '../utils/xml-helpers';
 import type { AllowanceChargeInput, PeriodInput } from '../types/common';
-import { formatDecimalRange } from '../utils/formatters';
+import { formatDecimalRange, normalizeTime } from '../utils/formatters';
 import { ALLOWANCE_CHARGE_SEQ, PERIOD_SEQ, emitInOrder } from './xsd-sequence';
 
 /**
@@ -36,13 +36,20 @@ export function serializeAllowanceCharge(ac: AllowanceChargeInput, currencyCode:
   return [`${indent}<cac:AllowanceCharge>`, body, `${indent}</cac:AllowanceCharge>`].join('\n');
 }
 
-/** InvoicePeriod → XML fragment. Sequence: PERIOD_SEQ. */
+/**
+ * InvoicePeriod → XML fragment. Sequence: PERIOD_SEQ.
+ *
+ * Saatler `normalizeTime` ile `HH:mm:ss`e tamamlanır: XSD `xs:time` saniyesiz değeri
+ * kabul etmiyor ve portalın saat girişi saniyesiz üretiyor (SARJ/SARJANLIK canlı reddi,
+ * 2026-09-07). Normalizasyon SERİLEŞTİRME kapısında yapılır ki hangi yoldan gelirse
+ * gelsin (`SimpleInvoiceBuilder` ya da doğrudan `InvoiceBuilder`) XML doğru çıksın.
+ */
 export function serializePeriod(period: PeriodInput, indent: string = ''): string {
   const inner = emitInOrder(PERIOD_SEQ, {
     StartDate: () => cbcOptionalTag('StartDate', period.startDate),
-    StartTime: () => cbcOptionalTag('StartTime', period.startTime),
+    StartTime: () => cbcOptionalTag('StartTime', normalizeTime(period.startTime)),
     EndDate: () => cbcOptionalTag('EndDate', period.endDate),
-    EndTime: () => cbcOptionalTag('EndTime', period.endTime),
+    EndTime: () => cbcOptionalTag('EndTime', normalizeTime(period.endTime)),
     Description: () => cbcOptionalTag('Description', period.description),
   });
   if (inner.length === 0) return '';

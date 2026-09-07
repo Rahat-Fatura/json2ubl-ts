@@ -12,6 +12,28 @@ import {
 } from './xsd-sequence';
 
 /**
+ * UBL-TR'de `DocumentReferenceType` altında `cbc:IssueDate` **ZORUNLUDUR**.
+ *
+ * Standart UBL 2.1'de bu alan 0..1'dir; GİB paketindeki şema onu daraltıp 1..1 yapar.
+ * Sonuç canlı portal testinde şöyle göründü (2026-09-07):
+ *   • Ardından başka eleman VARSA → «"DocumentTypeCode" elementi bu konumda geçersiz.
+ *     Bu noktada beklenen: IssueDate.»  (SGK'nın üç ek belgesi — sıra hatası GİBİ okunur
+ *     ama gerçekte EKSİK ELEMAN hatasıdır; `DOCUMENT_REFERENCE_SEQ` sırası zaten doğruydu)
+ *   • Ardından eleman YOKSA → «"AdditionalDocumentReference" elementinin içeriği eksik.
+ *     Zorunlu element(ler): IssueDate.»  (SARJ'ın ESURaporID belgesi)
+ *
+ * Bu yüzden tarih artık ZORUNLU yazılır; çağıran vermediyse belgenin kendi
+ * `IssueDate`'ine düşülür (`fallbackIssueDate`). Böylece kural TEK YERDE durur ve
+ * SGK/ESURaporID/YTB/e-Arşiv EXT_* ek belgelerinin HEPSİ birden düzelir.
+ */
+function resolveReferenceIssueDate(
+  issueDate: string | undefined,
+  fallbackIssueDate: string | undefined,
+): string | undefined {
+  return isNonEmpty(issueDate) ? issueDate : fallbackIssueDate;
+}
+
+/**
  * BillingReference → XML fragment.
  * Sequence: BILLING_REFERENCE_SEQ. Inner InvoiceDocumentReference DOCUMENT_REFERENCE_SEQ.
  * B-32 fix: IssueDate required (invoiceDocumentReference).
@@ -40,17 +62,29 @@ export function serializeOrderReference(or: OrderReferenceInput, indent: string 
 
 /**
  * ContractDocumentReference → XML fragment (§3.10 YATIRIMTESVIK).
- * DocumentReference-like; ancak `ContractReferenceInput.issueDate` opsiyonel kaldı
- * (Sprint 3 kapsamında değil; B-32 downstream).
+ *
+ * 4.5.0: `IssueDate` artık ZORUNLU yazılır. Eskiden opsiyoneldi ve `ytbIssueDate`
+ * verilmeyen YTB faturaları XSD'den «"ContractDocumentReference" elementinin içeriği
+ * eksik. Zorunlu element(ler): IssueDate.» ile dönüyordu (canlı ölçüm: `examples/
+ * 14-yatirimtesvik-iade`). Teşvik belgesinin KENDİ tarihi bilinmiyorsa faturanın
+ * tarihine düşülür — belge asla şema-geçersiz çıkmaz.
  */
-export function serializeContractReference(cr: ContractReferenceInput, indent: string = ''): string {
+export function serializeContractReference(
+  cr: ContractReferenceInput,
+  indent: string = '',
+  fallbackIssueDate?: string,
+): string {
   const attrs: Record<string, string> = {};
   if (isNonEmpty(cr.schemeId)) {
     attrs.schemeID = cr.schemeId;
   }
   const inner = emitInOrder(DOCUMENT_REFERENCE_SEQ, {
     ID: () => cbcRequiredTag('ID', cr.id, 'ContractDocumentReference', Object.keys(attrs).length > 0 ? attrs : undefined),
-    IssueDate: () => cbcOptionalTag('IssueDate', cr.issueDate),
+    IssueDate: () => cbcRequiredTag(
+      'IssueDate',
+      resolveReferenceIssueDate(cr.issueDate, fallbackIssueDate),
+      'ContractDocumentReference',
+    ),
   });
   const body = joinLines(inner.map(s => indent + '  ' + s));
   return [`${indent}<cac:ContractDocumentReference>`, body, `${indent}</cac:ContractDocumentReference>`].join('\n');
@@ -79,9 +113,17 @@ function serializeDocumentReferenceBody(ref: DocumentReferenceInput, tagName: st
 
 /**
  * AdditionalDocumentReference → XML fragment.
- * `AdditionalDocumentInput.issueDate` opsiyonel kalır (Sprint 3 kapsamında B-32 downstream sadece).
+ *
+ * 4.5.0: `IssueDate` ZORUNLU yazılır (bkz. `resolveReferenceIssueDate` başlığı).
+ * Tarih verilmediyse `fallbackIssueDate` (belgenin kendi `IssueDate`'i) kullanılır;
+ * bu SGK'nın üç ek belgesini, SARJ'ın ESURaporID belgesini ve e-Arşiv EXT_*
+ * bayraklarını TEK HAMLEDE düzeltir.
  */
-export function serializeAdditionalDocument(doc: AdditionalDocumentInput, indent: string = ''): string {
+export function serializeAdditionalDocument(
+  doc: AdditionalDocumentInput,
+  indent: string = '',
+  fallbackIssueDate?: string,
+): string {
   const i2 = indent + '  ';
   const i3 = indent + '    ';
   const i4 = indent + '      ';
@@ -110,7 +152,11 @@ export function serializeAdditionalDocument(doc: AdditionalDocumentInput, indent
     // Sprint 9: schemeID — SARJ faturalarında ESURaporID taşıyıcısı
     ID: () => cbcRequiredTag('ID', doc.id, 'AdditionalDocumentReference',
       isNonEmpty(doc.schemeId) ? { schemeID: doc.schemeId! } : undefined),
-    IssueDate: () => cbcOptionalTag('IssueDate', doc.issueDate),
+    IssueDate: () => cbcRequiredTag(
+      'IssueDate',
+      resolveReferenceIssueDate(doc.issueDate, fallbackIssueDate),
+      'AdditionalDocumentReference',
+    ),
     DocumentTypeCode: () => cbcOptionalTag('DocumentTypeCode', doc.documentTypeCode),
     DocumentType: () => cbcOptionalTag('DocumentType', doc.documentType),
     DocumentDescription: () => cbcOptionalTag('DocumentDescription', doc.documentDescription),
