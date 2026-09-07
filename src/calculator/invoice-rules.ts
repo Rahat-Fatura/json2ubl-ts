@@ -16,7 +16,15 @@ import { PROFILE_TYPE_MATRIX, WITHHOLDING_ALLOWED_TYPES } from '../config/consta
 import { TAX_EXEMPTION_MATRIX } from '../validators/cross-check-matrix';
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 
-/** Schematron IADEInvioceCheck: BillingReference zorunlu olan IADE grubu tipleri */
+/**
+ * Schematron IADEInvioceCheck: BillingReference zorunlu olan IADE grubu tipleri.
+ *
+ * ⚠️ `TEVKIFATIADE`/`YTBTEVKIFATIADE` burada BİLEREK DURUYOR. İkisi
+ * `PROFILE_TYPE_MATRIX`'ten çıkarıldı — ÜRETİMDE SUNULMAZLAR — ama GELEN
+ * BELGEDE TANINIRLAR: başka bir entegratörün bu tiplerle gönderdiği faturayı
+ * okurken de "iade" davranışı (BillingReference zorunluluğu, alan görünürlüğü)
+ * geçerlidir. Seçim listesi ile davranış listesi AYRI şeylerdir.
+ */
 const IADE_GROUP = ['IADE', 'TEVKIFATIADE', 'YTBIADE', 'YTBTEVKIFATIADE'];
 
 /**
@@ -299,10 +307,68 @@ export function resolveTypeForProfile(
   return allowed[0] ?? 'SATIS';
 }
 
+/** `resolveInitialProfileType` sonucu — uzlaştırılmış profil/tip çifti. */
+export interface ResolvedProfileType {
+  profile: string;
+  type: string;
+}
+
+/**
+ * Bir oturumun AÇILIŞ profil/tip çiftini uzlaştırır (yapıcı yolu).
+ *
+ * 🔑 Niçin ayrı bir fonksiyon: `InvoiceSession` yapıcısı bu kararı KENDİ
+ * içinde `profile ?? 'TICARIFATURA'` / `type ?? 'SATIS'` diye elle veriyordu.
+ * `update('profile'|'type', …)` yolu ise `resolveTypeForProfile` /
+ * `resolveProfileForType` çağırıyordu. İki ayrı kopya = iki ayrı gerçek:
+ * `new InvoiceSession({ initialInput: { type: 'SARJ' } })` profili
+ * `TICARIFATURA` bırakıyordu (SARJ o profilde YOK), oysa
+ * `update('type','SARJ')` doğru şekilde `ENERJI`'ye geçiyordu. Kayıtlı bir
+ * taslak yapıcıdan açıldığı için kullanıcı YANLIŞ kapsam görüyordu.
+ * Artık iki yol da aynı ilkel çözücüleri kullanır.
+ *
+ * Kurallar:
+ *  - `isExport` → M10 kimliği: profil IHRACAT, tip ISTISNA (kilitli).
+ *  - Hiçbiri verilmedi → mükellefiyet varsayılanı + o profilin ilk tipi.
+ *  - Yalnız biri verildi → BOŞ OTURUMUN varsayılan çiftinden başlanıp o alana
+ *    tek bir `update()` uygulanmış gibi çözülür. Varsayılandan başlamak şart:
+ *    doğrudan `resolveProfileForType(undefined, 'SATIS')` `allowed[0]` yani
+ *    TEMELFATURA döndürür ve kütüphanenin varsayılan profili (TICARIFATURA)
+ *    sessizce kayardı.
+ *  - İkisi de verildi → **AYNEN KORUNUR**, uyumsuz olsa bile. Beyan edilmiş
+ *    çift kullanıcı verisidir; sessizce düzeltmek yuvarlak-gidiş-dönüşü bozar
+ *    ve `validateCrossMatrix`'in CROSS_MATRIX hatasını yutardı (bkz.
+ *    examples-matrix/invalid/cross-matrix). `update()` etkileşimli düzeltmedir,
+ *    yapıcı ise sadık okumadır — bu ayrım BİLEREKtir.
+ */
+export function resolveInitialProfileType(
+  profile: string | undefined,
+  type: string | undefined,
+  liability?: CustomerLiability,
+  isExport?: boolean,
+): ResolvedProfileType {
+  // M10: ihracat oturumunda profil/tip sabittir, girdi ne olursa olsun.
+  if (isExport) return { profile: 'IHRACAT', type: 'ISTISNA' };
+
+  // İkisi de beyan edilmişse dokunma (bkz. yukarıdaki gerekçe).
+  if (profile && type) return { profile, type };
+
+  // Boş oturumun çifti — `update()` yolunun başladığı nokta.
+  const defaultProfile = liability === 'earchive' ? 'EARSIVFATURA' : 'TICARIFATURA';
+  const defaultType = resolveTypeForProfile(undefined, defaultProfile, liability);
+
+  if (profile) return { profile, type: resolveTypeForProfile(defaultType, profile, liability) };
+  if (type) return { profile: resolveProfileForType(defaultProfile, type, liability, isExport), type };
+
+  return { profile: defaultProfile, type: defaultType };
+}
+
 /**
  * Tip ve profile göre alan görünürlüklerini hesaplar.
  */
 export function deriveFieldVisibility(type: string, profile: string, currencyCode?: string): FieldVisibility {
+  /* ⚠️ `TEVKIFATIADE`/`YTBTEVKIFATIADE` KORUNDU: üretimde sunulmazlar
+   * (`PROFILE_TYPE_MATRIX`'ten çıktılar) ama gelen belgede tanınırlar —
+   * o belge görüntülenirken de iade alanları açılmalı. */
   const isIade = type === 'IADE' || type === 'YTBIADE' || type === 'TEVKIFATIADE' || type === 'YTBTEVKIFATIADE';
   /* 🔴 B-79 KARARI TERSİNE ÇEVRİLDİ (şematronla ölçüldü).
    *

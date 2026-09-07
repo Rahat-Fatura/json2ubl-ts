@@ -33,7 +33,7 @@ import type { SimpleInvoiceInput, SimpleLineInput, SimplePartyIdentification } f
 import type { CalculatedDocument } from './document-calculator';
 import { calculateDocument } from './document-calculator';
 import type { InvoiceUIState, ValidationWarning, FieldVisibility, CustomerLiability } from './invoice-rules';
-import { deriveUIState, resolveProfileForType, resolveTypeForProfile, validateInvoiceState, getAvailableExemptions, getAllowedProfilesForType, getAllowedTypesForProfile } from './invoice-rules';
+import { deriveUIState, resolveProfileForType, resolveTypeForProfile, resolveInitialProfileType, validateInvoiceState, getAvailableExemptions, getAllowedProfilesForType, getAllowedTypesForProfile } from './invoice-rules';
 import type { InvoiceInput } from '../types/invoice-input';
 import { mapSimpleToInvoiceInput } from './simple-invoice-mapper';
 import { SimpleInvoiceBuilder } from './simple-invoice-builder';
@@ -49,6 +49,7 @@ import { validateManualExemption } from '../validators/manual-exemption-validato
 import { validatePhantomKdv } from '../validators/phantom-kdv-validator';
 import { validateSgkInput } from '../validators/sgk-input-validator';
 import { validateHksKunyeNo } from '../validators/hks-kunyeno-validator';
+import { validateHksOwnerFields } from '../validators/hks-owner-validator';
 import { validateCrossMatrix } from '../validators/cross-validators';
 import type { Suggestion } from './suggestion-types';
 import { runSuggestionEngine, diffSuggestions } from './suggestion-engine';
@@ -274,7 +275,8 @@ export interface InvoiceSession extends InvoiceSessionUpdateOverloads {}
 export class InvoiceSession extends EventEmitter {
   private _input: SimpleInvoiceInput;
   private _calculation: CalculatedDocument | null = null;
-  private _uiState: InvoiceUIState;
+  /** Yapıcıda `updateUIState()` tarafından kurulur (ilk çağrıda undefined olabilir). */
+  private _uiState!: InvoiceUIState;
   private _autoCalculate: boolean;
   private _liability?: CustomerLiability;
   /** Tip KULLANICI tarafından mı seçildi (yapıcı varsayılanı DEĞİL). Bkz. yapıcıdaki not. */
@@ -293,14 +295,19 @@ export class InvoiceSession extends EventEmitter {
     this._isExport = options?.isExport ?? false;
     this._allowReducedKdvRate = options?.allowReducedKdvRate ?? false;
 
-    // M10: İhracat session'ı ise profil IHRACAT + tip ISTISNA zorlanır (M2 identity)
-    const initialProfile = this._isExport
-      ? 'IHRACAT'
-      : options?.initialInput?.profile;
-
-    const initialType = this._isExport
-      ? 'ISTISNA'
-      : options?.initialInput?.type;
+    /* Profil/tip uzlaşması TEK NOKTADAN (`resolveInitialProfileType`).
+     *
+     * M10 ihracat kilidi (profil IHRACAT + tip ISTISNA) de o fonksiyonun
+     * içinde; burada ayrıca zorlanmaz. Eskiden bu blok profili
+     * `?? 'TICARIFATURA'`, tipi `?? 'SATIS'` diye ELLE dolduruyordu — yani
+     * `update()` yolundaki `resolveTypeForProfile` / `resolveProfileForType`
+     * kapsam hesabının İKİNCİ, EKSİK bir kopyasıydı. Bkz. invoice-rules.ts. */
+    const resolved = resolveInitialProfileType(
+      options?.initialInput?.profile,
+      options?.initialInput?.type,
+      this._liability,
+      this._isExport,
+    );
 
     // Boş başlangıç input'u
     this._input = {
@@ -308,16 +315,9 @@ export class InvoiceSession extends EventEmitter {
       customer: options?.initialInput?.customer ?? { taxNumber: '', name: '', address: '', district: '', city: '' },
       lines: options?.initialInput?.lines ?? [],
       ...options?.initialInput,
-      profile: initialProfile,
-      type: initialType,
+      profile: resolved.profile,
+      type: resolved.type,
     };
-
-    // Liability'ye göre varsayılan profili belirle
-    const effectiveProfile = this._input.profile
-      ?? (this._liability === 'earchive' ? 'EARSIVFATURA' : 'TICARIFATURA');
-    const effectiveType = this._input.type ?? 'SATIS';
-    this._input.profile = effectiveProfile;
-    this._input.type = effectiveType;
 
     /* Tip AÇIKÇA mı seçildi, yoksa varsayılan mı?
      *
@@ -335,18 +335,20 @@ export class InvoiceSession extends EventEmitter {
      * istediği ikincisidir. */
     this._typeExplicit = options?.initialInput?.type !== undefined;
 
-    this._uiState = deriveUIState(
-      effectiveType,
-      effectiveProfile,
-      this._input.currencyCode,
-      this._liability,
-      this._isExport,
-    );
+    /* Türetilmiş uiState'i `update()` yolunun kullandığı AYNI metotla kur.
+     * Yapıcının kendi `deriveUIState(...) + lineFields` kopyası vardı; ikinci
+     * kopya olduğu için `updateUIState()`'e eklenen her yeni türetim yapıcıda
+     * eksik kalıyordu. `updateUIState` ilk çağrıda `_uiState` henüz yokken de
+     * çalışır (görünürlük diff'i atlanır — yapıcıda dinleyici de yoktur). */
+    this.updateUIState();
 
-    // Sprint 8h.5: Initial lineFields senkron
-    this._uiState.lineFields = this._input.lines.map((line, idx) =>
-      deriveLineFieldVisibility(line, this._input, idx)
-    );
+    /* `warnings` de türetilmiş bir alandır ve yapıcı onu KURMUYORDU: `update()`
+     * yolu `onChanged() → validate()` ile doldurduğu için aynı girdi iki yolda
+     * iki farklı uiState üretiyordu (kayıtlı taslak açılınca uyarılar boş).
+     * Burada olay YAYINLAMADAN ve öneri hattını ÇALIŞTIRMADAN hesaplanır:
+     * yapıcıda henüz dinleyici yok, `_lastSuggestions`'ı erkenden doldurmak ise
+     * ilk `suggestion` diff'ini sessizce yutardı (T-4 kontratı). */
+    this._uiState = { ...this._uiState, warnings: this._computeValidation().warnings };
   }
 
   // ─── Getter'lar ─────────────────────────────────────────────────────────
@@ -982,8 +984,21 @@ export class InvoiceSession extends EventEmitter {
       this.emit('calculated', this._calculation);
 
       /* Türetilen tip varsayılandan farklıysa BENİMSE. Eskiden buradaki koşul
-       * `!this._input.type` idi; yapıcı tipi hep doldurduğu için ÖLÜ DALDI. */
-      if (!this._typeExplicit && this._calculation.type !== this._input.type) {
+       * `!this._input.type` idi; yapıcı tipi hep doldurduğu için ÖLÜ DALDI.
+       *
+       * 🔑 Kapsam koruması: türetilen tip MEVCUT PROFİLİN kümesinde değilse
+       * benimsenmez. `resolveInvoiceType` satır içeriğinden tip türetir ve
+       * tevkifat yoksa 'SATIS' döner; profil ENERJI iken (tipler SARJ /
+       * SARJANLIK) bunu benimsemek tipi SATIS'a, ardından
+       * `resolveProfileForType`'ı da profili TEMELFATURA'ya çevirmeye zorluyor
+       * ve KULLANICININ SEÇTİĞİ PROFİL sessizce siliniyordu. Otomatik tespit
+       * profilin altında çalışır, profilin yerine değil. */
+      const derivedFitsProfile = getAllowedTypesForProfile(
+        this._input.profile ?? 'TICARIFATURA',
+        this._liability,
+      ).includes(this._calculation.type);
+
+      if (!this._typeExplicit && this._calculation.type !== this._input.type && derivedFitsProfile) {
         const previousType = this._input.type;
         const previousProfile = this._input.profile;
         const newType = this._calculation.type;
@@ -1080,6 +1095,25 @@ export class InvoiceSession extends EventEmitter {
    * deriveB78Params() üzerinden otomatik geçiriliyor (önceden eksikti).
    */
   validate(): ValidationWarning[] {
+    const { warnings, errors } = this._computeValidation();
+    this._uiState = { ...this._uiState, warnings };
+
+    this.emit('validation-error', errors);
+    this.emit('warnings', warnings);
+    this._runSuggestionPipeline();
+    return warnings;
+  }
+
+  /**
+   * Doğrulama boru hattının SAF çekirdeği — state yazmaz, olay yayınlamaz.
+   *
+   * `validate()` ile yapıcı bunu ORTAK kullanır. Ayrılmasının sebebi: yapıcı da
+   * `uiState.warnings`'i doldurmak zorunda (yoksa `update()` yolundan farklı bir
+   * uiState üretir) ama yapıcıda olay yayınlamak ve öneri diff'ini tüketmek
+   * yanlış olurdu — henüz dinleyici yok, `_lastSuggestions` erken dolarsa ilk
+   * `suggestion` emisyonu kaybolur.
+   */
+  private _computeValidation(): { warnings: ValidationWarning[]; errors: ValidationError[] } {
     const b78Params = this.deriveB78Params();
 
     // Rules-based check (mevcut + B-78 parametreleri ile, Sprint 8h.6)
@@ -1099,6 +1133,12 @@ export class InvoiceSession extends EventEmitter {
       hasSevkiyatNo: !!this._input.sender?.identifications?.some(id => id.schemeId === 'SEVKIYATNO'),
       ...b78Params,
     });
+
+    /* HKS mal sahibi alanları — UYARI seviyesi, kural-tabanlı uyarı dizisine katılır.
+     * Aşağıdaki `errors` boru hattına BİLEREK girmiyor: oradaki köprü her
+     * ValidationError'ı `severity:'error'` yapar ve belgeyi bloke ederdi.
+     * Bu kural bir gözlemdir, yazılı GİB kuralı değil (bkz. hks-owner-validator). */
+    warnings.push(...validateHksOwnerFields(this._input));
 
     // Sprint 8h.7: 6 validator pipeline (D-3 deterministic)
     const errors: ValidationError[] = [];
@@ -1137,13 +1177,7 @@ export class InvoiceSession extends EventEmitter {
       code: e.code,
     }));
 
-    const all = [...warnings, ...bridged];
-    this._uiState = { ...this._uiState, warnings: all };
-
-    this.emit('validation-error', errors);
-    this.emit('warnings', all);
-    this._runSuggestionPipeline();
-    return all;
+    return { warnings: [...warnings, ...bridged], errors };
   }
 
   /**
@@ -1215,7 +1249,10 @@ export class InvoiceSession extends EventEmitter {
   private updateUIState(): void {
     const type = this._input.type ?? this._calculation?.type ?? 'SATIS';
     const profile = this._input.profile ?? this._calculation?.profile ?? 'TICARIFATURA';
-    const previousFields = this._uiState.fields;
+    /* Yapıcıdan gelen İLK çağrıda önceki state yoktur (`_uiState` henüz
+     * atanmadı). O turda diff atlanır: "önceki" diye bir şey yok, ayrıca
+     * yapıcıda dinleyici de bağlanmamıştır. */
+    const previousFields: FieldVisibility | undefined = this._uiState?.fields;
     const newUIState = deriveUIState(type, profile, this._input.currencyCode, this._liability, this._isExport);
 
     // Sprint 8h.5: doc-level değişim → tüm lineFields re-derive
@@ -1223,8 +1260,14 @@ export class InvoiceSession extends EventEmitter {
       deriveLineFieldVisibility(line, this._input, idx)
     );
 
+    /* Uyarılar `deriveUIState` tarafından üretilmez (o saf bir kapsam
+     * hesabıdır); mevcut anlık görüntüden TAŞINIR. Taşınmazsa her
+     * `updateUIState()` uyarıları siler ve `validate()` çağrılana kadar
+     * uiState eksik kalırdı — yapıcı/`update()` asimetrisinin ikinci yüzü. */
+    newUIState.warnings = this._uiState?.warnings ?? [];
+
     // Sprint 8h.4: doc-level FieldVisibility diff → field-activated/field-deactivated
-    this._emitFieldVisibilityDiff(previousFields, newUIState.fields);
+    if (previousFields) this._emitFieldVisibilityDiff(previousFields, newUIState.fields);
 
     this._uiState = newUIState;
     this.emit('ui-state-changed', this._uiState);

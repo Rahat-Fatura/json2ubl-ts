@@ -52,21 +52,40 @@ describe('invoice-rules — matris tekleştirme (Sprint 1, M1/M2/M8)', () => {
     });
   });
 
-  describe('B-02 — HKS profili GİB kapsamındaki tiplerle çalışır', () => {
-    /* Eskiden burada `SATIS içermez` iddiası vardı. O iddia YANLIŞTI: şematron
-     * HKS profiline tip kısıtı KOYMUYOR (kısıt yalnız ENERJI, ILAC_TIBBICIHAZ,
-     * YATIRIMTESVIK, IDIS profillerinde ve IADE/TEKNOLOJIDESTEK tiplerinde var).
-     * Sahada `ProfileID=HKS + InvoiceTypeCode=SATIS` kesilen gerçek faturalar
-     * şematrondan 0 ihlalle geçiyor; kütüphane onları üretemiyordu.
-     * Dört tip canlı şematronla tek tek doğrulandı (paket 20260701). */
-    it('HKS: HKSSATIS/HKSKOMISYONCU + şematronun izin verdiği dört tip', () => {
+  describe('B-02 — HKS iki düzlem: e-Fatura (HKS) ve e-Arşiv (EARSIVFATURA)', () => {
+    /* Şematron HKS profiline tip KISITI KOYMUYOR (kısıt yalnız ENERJI,
+     * ILAC_TIBBICIHAZ, YATIRIMTESVIK, IDIS profillerinde ve IADE/TEKNOLOJIDESTEK
+     * tiplerinde var). Ama hal faturası İKİ DÜZLEMDE kesilir ve tip adı düzleme
+     * göre değişir:
+     *   e-Fatura : HKS          + SATIS / KOMISYONCU
+     *   e-Arşiv  : EARSIVFATURA + HKSSATIS / HKSKOMISYONCU
+     * Beşi de canlı şematronla doğrulandı (paket 20260701, xslt-service :8081). */
+    it('HKS e-Fatura düzleminin dört tipini sunar', () => {
       const types = getAllowedTypesForProfile('HKS');
+      expect(types).toEqual(['SATIS', 'ISTISNA', 'TEVKIFAT', 'KOMISYONCU']);
+    });
+
+    it('HKS, e-Arşiv düzleminin tiplerini SUNMAZ', () => {
+      const types = getAllowedTypesForProfile('HKS');
+      expect(types).not.toContain('HKSSATIS');
+      expect(types).not.toContain('HKSKOMISYONCU');
+    });
+
+    it('EARSIVFATURA, HKS e-Arşiv düzleminin tiplerini sunar', () => {
+      const types = getAllowedTypesForProfile('EARSIVFATURA');
       expect(types).toContain('HKSSATIS');
       expect(types).toContain('HKSKOMISYONCU');
-      expect(types).toContain('SATIS');
-      expect(types).toContain('ISTISNA');
-      expect(types).toContain('TEVKIFAT');
-      expect(types).toContain('TEVKIFATIADE');
+    });
+
+    it('HKSSATIS/HKSKOMISYONCU yalnız EARSIVFATURA profiline eşlenir', () => {
+      expect(getAllowedProfilesForType('HKSSATIS')).toEqual(['EARSIVFATURA']);
+      expect(getAllowedProfilesForType('HKSKOMISYONCU')).toEqual(['EARSIVFATURA']);
+    });
+
+    /* KOMISYONCU 4.4.0'da HKS'e YENİ girdi: e-Fatura düzleminde komisyoncu
+     * faturası hiç kesilemiyordu — GİB kısıtı değil, kütüphane boşluğuydu. */
+    it('HKS + KOMISYONCU artık kesilebilir (4.4.0 boşluk kapandı)', () => {
+      expect(getAllowedTypesForProfile('HKS')).toContain('KOMISYONCU');
     });
 
     /* 🔴 IADE, şematronun AÇIKÇA reddettiği tek tip: InvoiceTypeCodeCheck —
@@ -76,10 +95,62 @@ describe('invoice-rules — matris tekleştirme (Sprint 1, M1/M2/M8)', () => {
       expect(getAllowedTypesForProfile('HKS')).not.toContain('IADE');
     });
 
-    /* Sıra sözleşmesi: `resolveTypeForProfile` boş girdide allowed[0] seçer.
-     * Yeni tipler SONA eklendi, bu yüzden HKS'in varsayılanı HKSSATIS kalmalı. */
-    it('HKS varsayılan tipi HKSSATIS kalır (sıra korunur)', () => {
-      expect(getAllowedTypesForProfile('HKS')[0]).toBe('HKSSATIS');
+    /* 🔑 Sıra sözleşmesi: `resolveTypeForProfile` boş girdide allowed[0] seçer.
+     * 4.4.0'a kadar bu HKSSATIS'ti; düzlem ayrımından sonra SATIS olmalı. */
+    it('HKS varsayılan tipi SATIS (sıra sözleşmesi)', () => {
+      expect(getAllowedTypesForProfile('HKS')[0]).toBe('SATIS');
+    });
+
+    it('EARSIVFATURA varsayılanı SATIS kalır (HKS tipleri SONA eklendi)', () => {
+      expect(getAllowedTypesForProfile('EARSIVFATURA')[0]).toBe('SATIS');
+    });
+  });
+
+  /**
+   * `TEVKIFATIADE` / `YTBTEVKIFATIADE` — ÜRETİMDE SUNULMAZ, GELEN BELGEDE TANINIR.
+   *
+   * Şematronda ayırt edici kuralları yok (`IADEInvioceCheck`,
+   * `YatirimTesvikKDVCheck`, `YatirimTesvikLineKDVCheck` üçü de onları
+   * IADE/YTBIADE ile aynı VEYA-grubuna koyar) ve tevkifat toplamı taşıyamazlar
+   * (`GeneralWithholdingTaxTotalCheck`). Seçim listelerinden çıkarıldılar; enum
+   * ve davranış (iade) türetmeleri KORUNDU.
+   */
+  describe('4.4.0 — TEVKIFATIADE/YTBTEVKIFATIADE üretimden çıkarıldı', () => {
+    it('hiçbir profil TEVKIFATIADE sunmaz', () => {
+      for (const profile of Object.keys(PROFILE_TYPE_MATRIX) as InvoiceProfileId[]) {
+        expect(getAllowedTypesForProfile(profile), profile).not.toContain('TEVKIFATIADE');
+        expect(PROFILE_TYPE_MATRIX[profile].has(InvoiceTypeCode.TEVKIFATIADE), profile).toBe(false);
+      }
+    });
+
+    it('hiçbir profil YTBTEVKIFATIADE sunmaz', () => {
+      for (const profile of Object.keys(PROFILE_TYPE_MATRIX) as InvoiceProfileId[]) {
+        expect(getAllowedTypesForProfile(profile), profile).not.toContain('YTBTEVKIFATIADE');
+        expect(PROFILE_TYPE_MATRIX[profile].has(InvoiceTypeCode.YTBTEVKIFATIADE), profile).toBe(false);
+      }
+    });
+
+    /* ⚠️ `getAllowedProfilesForType` BOŞ DÖNMEZ: matriste karşılığı olmayan her
+     * tip için jenerik `['TEMELFATURA','TICARIFATURA']` yedeğine düşer (satır
+     * `TYPE_PROFILE_MAP[type] ?? [...]`). Bu yedek BU DEĞİŞİKLİKLE GELMEDİ,
+     * bilinmeyen tipler için zaten vardı ve okuma yolunda işe yarar: gelen
+     * TEVKIFATIADE belgesi bir profile oturtulabilsin. ÜRETİMİ AÇMAZ — kapı
+     * `validateCrossMatrix`'tir ve o REDDEDER (bkz. cross-validators.test.ts). */
+    it('profil önerisi jenerik yedeğe düşer, üretim kapısı yine de kapalıdır', () => {
+      expect(getAllowedProfilesForType('TEVKIFATIADE')).toEqual(['TEMELFATURA', 'TICARIFATURA']);
+      expect(getAllowedProfilesForType('YTBTEVKIFATIADE')).toEqual(['TEMELFATURA', 'TICARIFATURA']);
+    });
+
+    /* OKUMA YOLU: gelen belgede tip hâlâ tanınmalı — enum değeri duruyor ve
+     * iade davranışı (alan görünürlüğü) türetiliyor. */
+    it('enum değerleri KORUNDU (gelen belgede tanınır)', () => {
+      expect(InvoiceTypeCode.TEVKIFATIADE).toBe('TEVKIFATIADE');
+      expect(InvoiceTypeCode.YTBTEVKIFATIADE).toBe('YTBTEVKIFATIADE');
+    });
+
+    it('iade davranışı KORUNDU: billingReference alanı görünür', () => {
+      expect(deriveFieldVisibility('TEVKIFATIADE', 'TEMELFATURA').showBillingReference).toBe(true);
+      expect(deriveFieldVisibility('YTBTEVKIFATIADE', 'EARSIVFATURA').showBillingReference).toBe(true);
     });
   });
 

@@ -94,6 +94,7 @@ export {
     getAllowedTypesForProfile,
     resolveProfileForType,
     resolveTypeForProfile,
+    resolveInitialProfileType,
     deriveFieldVisibility,
     deriveUIState,
     getAvailableExemptions,
@@ -107,6 +108,7 @@ export type {
     ValidationWarning,
     InvoiceUIState,
     CustomerLiability,
+    ResolvedProfileType,
 } from "./invoice-rules";
 
 // Konfigürasyon verileri (statik embed — varsayılan değerler)
