@@ -34,47 +34,22 @@ import {
   IADE_GROUP_TYPES,
   INVOICE_ID_REGEX,
   UUID_REGEX,
-  YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES,
 } from '../config/constants';
+/* 🔑 4.5.2 — kapsam yüklemi ARTIK BURADA TANIMLI DEĞİL.
+ *
+ * Aynı kural görünürlük tarafında (`line-field-visibility` / `invoice-rules`)
+ * ikinci kez yazılmıştı ve orada e-Arşiv düzlemi UNUTULMUŞTU: doğrulayıcı
+ * "zorunlu" diyor, alan hiç açılmıyordu. İki kopya kalmasın diye yüklem
+ * `config/schematron-scopes`e taşındı; her iki taraf oradan okur. */
+import { isYatirimTesvikScope } from '../config/schematron-scopes';
 
 /* ⚠️ YALNIZ 'SARJ'. Şematron `EnerjiESURaporIDCheck` SARJANLIK'ı KAPSAMAZ —
  * kural ilk yazımda ikisini birden alıyordu ve `enerji-sarjanlik-baseline`
  * fixture'ı bunu anında kırdı. */
 const ENERJI_TYPES = new Set(['SARJ']);
 
-/* Şematron `$YatirimTesvikEArsivInvoiceTypeCodeList` (UBL-TR_Codelist.xml:67) —
- * BEŞ tipin tamamı: YTBSATIS, YTBIADE, YTBISTISNA, YTBTEVKIFAT, YTBTEVKIFATIADE.
- *
- * ⚠️ `YTBTEVKIFATIADE` portalın ÜRETİM seçim listesinden çıkarıldı ama okuma
- * (ingest) yolunda hâlâ gelebilir; şematron onu kapsadığı için burada da
- * kapsanmak ZORUNDA — aksi halde gelen belgeyi sessizce geçirirdik. */
-const YTB_EARSIV_TYPES: ReadonlySet<string> = YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES;
-
 function bos(v: unknown): boolean {
   return v === undefined || v === null || String(v).trim() === '';
-}
-
-/**
- * Yatırım teşvik şematron kapsamı — üç kural (`YatirimTesvikItemInstanceCheck`,
- * `YatirimTesvikCommodityClassificationCheck`,
- * `YatirimTesvikContractDocumentReferenceIDCheck`) AYNI koşulu paylaşır:
- *
- *   ProfileID = 'YATIRIMTESVIK'  VEYA
- *   (ProfileID = 'EARSIVFATURA' VE InvoiceTypeCode ∈ $YatirimTesvikEArsivInvoiceTypeCodeList)
- *
- * ⚠️ Eski kod `tip.startsWith('YTB')` diyordu. İki kusuru vardı: profil koşulunu
- * hiç aramıyordu ve önek eşleşmesi olduğu için listede olmayan (ileride eklenecek)
- * bir YTB* tipini de sessizce kapsıyordu. Artık liste birebir şematrondan gelir.
- *
- * Profil BOŞ geldiğinde tipten türetiriz: YTB* tipleri GİB'de yalnız EARSIVFATURA
- * altında yaşar, dolayısıyla profilsiz gelen bir YTBSATIS da bu kapsamdadır.
- * (Oturum yolu `resolveProfileForType` ile profili zaten doldurur; bu dal yalnız
- * `SimpleInvoiceBuilder`'a HAM girdi veren çağıranlar için bir emniyet ağıdır.)
- */
-function isYatirimTesvikScope(profil: string, tip: string): boolean {
-  if (profil === 'YATIRIMTESVIK') return true;
-  if (!YTB_EARSIV_TYPES.has(tip)) return false;
-  return profil === 'EARSIVFATURA' || profil === '';
 }
 
 export function validateProfileRequirements(input: SimpleInvoiceInput): ValidationError[] {

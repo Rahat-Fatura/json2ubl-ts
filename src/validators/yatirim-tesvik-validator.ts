@@ -22,20 +22,20 @@
  * ```
  *
  * ## Kapsam
+ * `isYatirimTesvikKdvScope` (`config/schematron-scopes`) — TEK KAYNAK:
  * - `ProfileID === 'YATIRIMTESVIK'` **VEYA**
- * - `ProfileID === 'EARSIVFATURA'` **AND** `InvoiceTypeCode ∈ YATIRIM_TESVIK_EARSIV_TYPES`
+ * - `ProfileID === 'EARSIVFATURA'` **AND** `InvoiceTypeCode ∈ $YatirimTesvikEArsivInvoiceTypeCodeList`
  * - **HARİÇ:** `InvoiceTypeCode ∈ YATIRIM_TESVIK_IADE_TYPES`
  *
  * Kapsam dışındaki belgeler 0 hata döndürür.
  */
 
-import { InvoiceTypeCode, InvoiceProfileId } from '../types/enums';
+import { InvoiceProfileId } from '../types/enums';
 import {
-  YATIRIM_TESVIK_IADE_TYPES,
-  YATIRIM_TESVIK_EARSIV_TYPES,
   YATIRIM_TESVIK_ONLY_EXEMPTION_CODES,
   YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES,
 } from '../config/constants';
+import { isYatirimTesvikKdvScope } from '../config/schematron-scopes';
 import type { InvoiceInput } from '../types/invoice-input';
 import type { ValidationError } from '../errors/ubl-build-error';
 
@@ -45,20 +45,15 @@ const KDV_TAX_TYPE_CODE = '0015';
 /** Harcama Tipi kodları — B-08 satır seviyesi ek kural (Schematron satır 490) */
 const HARCAMA_TIPI_REQUIRES_KDV_AMOUNT: ReadonlySet<string> = new Set(['03', '04']);
 
-/**
- * Yatırım Teşvik kontrolünün bu belge için geçerli olup olmadığını belirler.
- */
-export function isYatirimTesvikScope(
-  profile: InvoiceProfileId,
-  type: InvoiceTypeCode,
-): boolean {
-  if (YATIRIM_TESVIK_IADE_TYPES.has(type)) return false;
-  if (profile === InvoiceProfileId.YATIRIMTESVIK) return true;
-  if (profile === InvoiceProfileId.EARSIVFATURA && YATIRIM_TESVIK_EARSIV_TYPES.has(type)) {
-    return true;
-  }
-  return false;
-}
+/* 🔑 4.5.2 — YEREL `isYatirimTesvikScope` KALDIRILDI.
+ *
+ * Gövdesi `config/schematron-scopes` → `isYatirimTesvikKdvScope`e taşındı ve adı
+ * anlamıyla eşitlendi. Eski ad TUZAKTI: aynı isimli ama FARKLI anlamlı ikinci bir
+ * yüklem `profile-requirement-validator` içinde yaşıyordu (o İADE ailesini
+ * elemez). "Aynı isim, farklı kapsam" tam olarak bu paketi üç kez vuran
+ * ayrışmanın kaynağıdır. Buradaki tek fark İADE elemesidir:
+ * `YatirimTesvikKDVCheck` / `...LineKDVCheck` kendi metinlerinde
+ * `IADE/TEVKIFATIADE/YTBIADE/YTBTEVKIFATIADE` tiplerini HARİÇ tutar. */
 
 /**
  * Belge seviyesi — YatirimTesvikKDVCheck (Schematron satır 483-485).
@@ -67,7 +62,7 @@ export function isYatirimTesvikScope(
  * subtotal'lar `taxAmount > 0 AND percent > 0` olmalı VE en az bir KDV subtotal olmalı.
  */
 export function validateYatirimTesvikKdvDocument(input: InvoiceInput): ValidationError[] {
-  if (!isYatirimTesvikScope(input.profileId, input.invoiceTypeCode)) return [];
+  if (!isYatirimTesvikKdvScope(input.profileId, input.invoiceTypeCode)) return [];
 
   const kdvSubtotals = input.taxTotals.flatMap(tt =>
     tt.taxSubtotals.filter(ts => ts.taxTypeCode === KDV_TAX_TYPE_CODE),
@@ -98,7 +93,7 @@ export function validateYatirimTesvikKdvDocument(input: InvoiceInput): Validatio
  *          KDV `taxAmount > 0` olmalı (percent kontrolü yok).
  */
 export function validateYatirimTesvikKdvLine(input: InvoiceInput): ValidationError[] {
-  if (!isYatirimTesvikScope(input.profileId, input.invoiceTypeCode)) return [];
+  if (!isYatirimTesvikKdvScope(input.profileId, input.invoiceTypeCode)) return [];
 
   const errors: ValidationError[] = [];
 
@@ -165,6 +160,10 @@ export function validateYatirimTesvikKdvLine(input: InvoiceInput): ValidationErr
  * @see schematrons/UBL-TR_Common_Schematron.xml — TaxExemptionReasonCodeCheck
  */
 export function validateYatirimTesvikExemptionScope(input: InvoiceInput): ValidationError[] {
+  /* ⚠️ BİLEREK `isYatirimTesvikScope` DEĞİL. `TaxExemptionReasonCodeCheck`
+   * (Common:318) diğer YTB kurallarından FARKLI bir koşul yazar: e-Arşiv dalında
+   * `ProfileID='EARSIVFATURA'` ARAMAZ, yalnız `InvoiceTypeCode`'un listede olmasına
+   * bakar. Ortak yükleme bağlamak burada kapsamı DARALTIRDI. Kural kural okundu. */
   const inScope =
     input.profileId === InvoiceProfileId.YATIRIMTESVIK ||
     YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES.has(input.invoiceTypeCode);

@@ -4,8 +4,8 @@ import { InvoiceProfileId } from '../types/enums';
 import {
   TR_IBAN_REGEX, SEVKIYAT_NO_REGEX, ETIKET_NO_REGEX,
   DELIVERY_TERM_CODES, TRANSPORT_MODE_CODES, YTB_ITEM_CLASSIFICATION_CODES,
-  YTB_GROUP_TYPES,
 } from '../config/constants';
+import { isYatirimTesvikScope } from '../config/schematron-scopes';
 import { profileRequirement, invalidFormat, yatirimTesvikRequiresYtbNo } from './validation-result';
 import { isNonEmpty, isNumeric, hasLength } from '../utils/formatters';
 
@@ -374,8 +374,12 @@ function validateIdis(input: InvoiceInput): ValidationError[] {
 function validateEarsiv(input: InvoiceInput): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  // YTB tipleri kullanılıyorsa YATIRIMTESVIK kuralları uygulanır
-  if (YTB_GROUP_TYPES.has(input.invoiceTypeCode)) {
+  /* YTB tipleri kullanılıyorsa YATIRIMTESVIK kuralları uygulanır.
+   * Kapsam yüklemi TEK KAYNAK (`config/schematron-scopes`, 4.5.2): burada zaten
+   * EARSIVFATURA dalındayız, dolayısıyla yüklem tip listesine indirgenir — ama
+   * listeyi elle tekrarlamak yerine ortak yüklemi çağırmak, liste değiştiğinde
+   * bu dalın sessizce eskimesini engeller. */
+  if (isYatirimTesvikScope(input.profileId, input.invoiceTypeCode)) {
     errors.push(...validateYatirimTesvikRules(input, `EARSIV+${input.invoiceTypeCode}`));
   }
 

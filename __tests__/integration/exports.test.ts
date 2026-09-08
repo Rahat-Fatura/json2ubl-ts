@@ -238,3 +238,31 @@ describe('Kod listesi export\'ları (4.5.1)', () => {
     }
   });
 });
+
+/**
+ * 4.5.2 — ŞEMATRON KAPSAM YÜKLEMLERİ.
+ *
+ * Görünürlük bayrakları (`showYatirimTesvikNo`, `showItemClassificationCode`,
+ * `showProductTraceId`, `showSerialId`) HANGİ belgede açılır sorusunun cevabı bu
+ * yüklemlerdir ve başka genel erişimcisi yoktur — tüketici koşulu elle
+ * aynalamak zorunda kalıyordu. Ayna eskirse kütüphane ile tüketici sessizce
+ * ayrışır (bu paketi üç kez vuran kusur sınıfı).
+ */
+describe('Şematron kapsam yüklemi export\'ları (4.5.2)', () => {
+  it('üçü de paket yüzeyinde ADIYLA duruyor', () => {
+    for (const name of [
+      'isYatirimTesvikScope',
+      'isYatirimTesvikKdvScope',
+      'isYatirimTesvikIstisnaScope',
+    ]) {
+      expect(Object.keys(publicApi)).toContain(name);
+      expect(typeof (publicApi as Record<string, unknown>)[name]).toBe('function');
+    }
+  });
+
+  it('e-Arşiv YTB düzlemini kapsar — bayrakların açılma koşulu', () => {
+    expect(publicApi.isYatirimTesvikScope('EARSIVFATURA', 'YTBSATIS')).toBe(true);
+    expect(publicApi.isYatirimTesvikScope('YATIRIMTESVIK', 'SATIS')).toBe(true);
+    expect(publicApi.isYatirimTesvikScope('EARSIVFATURA', 'SATIS')).toBe(false);
+  });
+});

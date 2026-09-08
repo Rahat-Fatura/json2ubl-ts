@@ -12,6 +12,7 @@
 
 import type { SimpleLineInput, SimpleInvoiceInput } from './simple-types';
 import { WITHHOLDING_ALLOWED_TYPES } from '../config/constants';
+import { isYatirimTesvikScope } from '../config/schematron-scopes';
 import { configManager } from './config-manager';
 import type { InvoiceTypeCode } from '../types/enums';
 
@@ -51,6 +52,19 @@ export interface TypeProfileFlags {
   isIhracat: boolean;
   isKamu: boolean;
   isEarsiv: boolean;
+  /**
+   * Yatırım teşvik düzlemi — kalemde harcama tipi + makine bilgileri beklenir.
+   *
+   * İKİ DÜZLEMİ birden kapsar (4.5.2):
+   *   • e-Fatura : `ProfileID=YATIRIMTESVIK`
+   *   • e-Arşiv  : `ProfileID=EARSIVFATURA` + tip ∈ `$YatirimTesvikEArsivInvoiceTypeCodeList`
+   *     (YTBSATIS, YTBIADE, YTBISTISNA, YTBTEVKIFAT, YTBTEVKIFATIADE)
+   *
+   * Kapsam yüklemi TEK KAYNAKTAN gelir (`config/schematron-scopes`); doğrulayıcı
+   * (`profile-requirement-validator`) da aynı fonksiyonu çağırır. Eskiden burada
+   * `profile === 'YATIRIMTESVIK'` yazıyordu ve e-Arşiv YTB belgelerinde
+   * doğrulayıcı "zorunlu" derken alanların HİÇBİRİ açılmıyordu.
+   */
   isYatirimTesvik: boolean;
   isIlacTibbi: boolean;
   isYolcuBeraber: boolean;
@@ -95,7 +109,13 @@ export function deriveTypeProfileFlags(type: string, profile: string): TypeProfi
     isIhracat: profile === 'IHRACAT',
     isKamu: profile === 'KAMU',
     isEarsiv: profile === 'EARSIVFATURA',
-    isYatirimTesvik: profile === 'YATIRIMTESVIK',
+    /* İKİ DÜZLEM: e-Fatura'da profil YATIRIMTESVIK, e-Arşiv'de tip YTB*.
+     * Yalnız profile bakılsaydı e-Arşiv YTB belgelerinde harcama tipi, makine
+     * adı, makine teçhizat sıra no ve makine ID alanlarının HİÇBİRİ açılmaz;
+     * kullanıcı GİB'in "zorunludur" hatasını görüp dolduracak yer bulamazdı
+     * (canlı portal bildirimi, 2026-09-08). Aynı kusur sınıfı HKS (4.4.0) ve
+     * SARJANLIK (4.5.0) alanlarında da yaşandı — bkz. `schematron-scopes`. */
+    isYatirimTesvik: isYatirimTesvikScope(profile, type),
     isIlacTibbi: profile === 'ILAC_TIBBICIHAZ',
     isYolcuBeraber: profile === 'YOLCUBERABERFATURA',
     isIdis: profile === 'IDIS',
@@ -134,16 +154,22 @@ export interface LineFieldVisibility {
   showSaticidibsatirkod: boolean;
   /** profile=EARSIVFATURA + type ∈ {TEKNOLOJIDESTEK, ILACTIBBI} ise IMEI/seri dropdown (B-NEW-06/07). */
   showAdditionalItemIdentifications: boolean;
-  /** profile=YATIRIMTESVIK ise harcama tipi (01-04) dropdown (M3). */
+  /**
+   * Yatırım teşvik kapsamında harcama tipi (01-04) seçici (M3).
+   *
+   * Kapsam = e-Fatura `YATIRIMTESVIK` **veya** e-Arşiv `EARSIVFATURA`+`YTB*` tipi
+   * (`YatirimTesvikCommodityClassificationCheck` / `...ItemClassificationCodeCheck`).
+   */
   showItemClassificationCode: boolean;
-  /** profile=YATIRIMTESVIK + line.itemClassificationCode='01' (makine bilgisi, B-NEW-09). */
+  /** Yatırım teşvik kapsamı + line.itemClassificationCode='01' (makine bilgisi, B-NEW-09). */
   showProductTraceId: boolean;
   /**
    * Kalem seri numarası (`cac:Item/cac:ItemInstance/cbc:SerialID`) girilebilsin mi?
    *
    * İKİ AYRI kural bu tek alanı ister:
-   *  • YATIRIMTESVIK + `itemClassificationCode='01'` → GİB dilinde «Makine ID»
-   *    (`YatirimTesvikItemInstanceCheck`, B-NEW-09) — SATIR BAZINDA, yalnız 01 kalemde.
+   *  • Yatırım teşvik kapsamı (İKİ DÜZLEM) + `itemClassificationCode='01'` → GİB
+   *    dilinde «Makine ID» (`YatirimTesvikItemInstanceCheck`, B-NEW-09) — SATIR
+   *    BAZINDA, yalnız 01 kalemde.
    *  • `SARJANLIK` → her kalemde ESU/şarj ünitesi seri numarası
    *    (`EnerjiItemInstanceSerialIDCheck`) — tip bazında, TÜM kalemlerde.
    */

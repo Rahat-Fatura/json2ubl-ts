@@ -1,5 +1,6 @@
 import type { SuggestionRule, Suggestion } from '../suggestion-types';
 import type { SimpleLineInput } from '../simple-types';
+import { isYatirimTesvikScope } from '../../config/schematron-scopes';
 
 /**
  * Sprint 8i.5 / AR-10 Faz 2 — YATIRIMTESVIK grubu suggestion kuralları (4 kural).
@@ -8,6 +9,10 @@ import type { SimpleLineInput } from '../simple-types';
  *  2. yatirim-tesvik/makine-traceid-required — itemClass=01 + productTraceId boş → uyarı
  *  3. yatirim-tesvik/makine-serialid-required — itemClass=01 + serialId boş → uyarı
  *  4. yatirim-tesvik/insaat-suggest-itemclass-02 — name/description "inşaat" → 02 (heuristic, optional)
+ *
+ * 4.5.2 — kapsam artık İKİ DÜZLEMİ de alır (`isYatirimTesvikScope`): e-Arşiv YTB
+ * belgelerinde (EARSIVFATURA + YTB* tipi) bu öneriler HİÇ üretilmiyordu; alanlar
+ * o düzlemde de zorunlu olduğuna göre yardımın da orada olması gerekir.
  *
  * Kural 1 ile Kural 4 mutually exclusive: Kural 1'in applies'ı `!hasInsaatHint(line)`
  * koşuluyla daraltılır (R5 false positive mitigation — Kural 4 önce, Kural 1 fallback).
@@ -25,7 +30,7 @@ function hasInsaatHint(line: SimpleLineInput): boolean {
 const YATIRIM_TESVIK_ITEMCLASS_DEFAULT: SuggestionRule = {
   id: 'yatirim-tesvik/itemclass-default',
   applies: (input) =>
-    input.profile === 'YATIRIMTESVIK' &&
+    isYatirimTesvikScope(input.profile ?? '', input.type ?? '') &&
     input.lines.some(l => !l.itemClassificationCode && !hasInsaatHint(l)),
   produce: (input) => {
     const out: Suggestion[] = [];
@@ -50,7 +55,7 @@ const YATIRIM_TESVIK_ITEMCLASS_DEFAULT: SuggestionRule = {
 const YATIRIM_TESVIK_MAKINE_TRACEID_REQUIRED: SuggestionRule = {
   id: 'yatirim-tesvik/makine-traceid-required',
   applies: (input) =>
-    input.profile === 'YATIRIMTESVIK' &&
+    isYatirimTesvikScope(input.profile ?? '', input.type ?? '') &&
     input.lines.some(l => l.itemClassificationCode === '01' && !l.productTraceId),
   produce: (input) => {
     const out: Suggestion[] = [];
@@ -73,7 +78,7 @@ const YATIRIM_TESVIK_MAKINE_TRACEID_REQUIRED: SuggestionRule = {
 const YATIRIM_TESVIK_MAKINE_SERIALID_REQUIRED: SuggestionRule = {
   id: 'yatirim-tesvik/makine-serialid-required',
   applies: (input) =>
-    input.profile === 'YATIRIMTESVIK' &&
+    isYatirimTesvikScope(input.profile ?? '', input.type ?? '') &&
     input.lines.some(l => l.itemClassificationCode === '01' && !l.serialId),
   produce: (input) => {
     const out: Suggestion[] = [];
@@ -96,7 +101,7 @@ const YATIRIM_TESVIK_MAKINE_SERIALID_REQUIRED: SuggestionRule = {
 const YATIRIM_TESVIK_INSAAT_SUGGEST_ITEMCLASS_02: SuggestionRule = {
   id: 'yatirim-tesvik/insaat-suggest-itemclass-02',
   applies: (input) =>
-    input.profile === 'YATIRIMTESVIK' &&
+    isYatirimTesvikScope(input.profile ?? '', input.type ?? '') &&
     input.lines.some(l => !l.itemClassificationCode && hasInsaatHint(l)),
   produce: (input) => {
     const out: Suggestion[] = [];

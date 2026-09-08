@@ -52,6 +52,23 @@ export {
 } from "./config/constants";
 export type { PartyIdentificationSchemeId } from "./config/constants";
 
+/* 🔑 4.5.2 — ŞEMATRON KAPSAM YÜKLEMLERİ DIŞA AÇILDI.
+ *
+ * 4.5.1'in ölçütünü karşılarlar: (a) paketin dışa açtığı görünürlük bayraklarının
+ * (`showYatirimTesvikNo`, `showItemClassificationCode`, `showProductTraceId`,
+ * `showSerialId`) HANGİ belgede açıldığını belirleyen kural bunlardır,
+ * (b) başka genel erişimcisi yoktur — tüketici (portal) koşulu elle aynalamak
+ * zorunda kalıyordu (`isPhantomKdvCombination` de dışa açık değildi ve
+ * MimForge'da `isYatirimTesvikExemptionScope` adıyla kopyalanmıştı).
+ *
+ * Ayna eskirse kütüphaneyle tüketici sessizce ayrışır — bu paketi ÜÇ KEZ vuran
+ * kusur sınıfının ta kendisi. */
+export {
+    isYatirimTesvikScope,
+    isYatirimTesvikKdvScope,
+    isYatirimTesvikIstisnaScope,
+} from "./config/schematron-scopes";
+
 /**
  * 4.1.0 — türev whitelist'leri (`TAX_TYPE_CODES` vb.) `configManager`'ın GÜNCEL
  * durumundan elle yeniden hesaplar. Normalde GEREKMEZ: `configManager` her

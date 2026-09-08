@@ -41,6 +41,7 @@ import type { InvoiceSessionUpdateOverloads } from './session-paths.generated';
 import { KNOWN_PATH_TEMPLATES, READ_ONLY_PATHS } from './session-paths.generated';
 import { parsePath, applyPathUpdate, readPath, deepEqual, tokensToTemplate, PathParseError } from './session-path-utils';
 import { deriveLineFieldVisibility } from './line-field-visibility';
+import { isYatirimTesvikKdvScope } from '../config/schematron-scopes';
 import type { ValidationError } from '../errors/ubl-build-error';
 import { validateSimpleLineRanges } from '../validators/simple-line-range-validator';
 import { validateProfileRequirements } from '../validators/profile-requirement-validator';
@@ -1232,9 +1233,16 @@ export class InvoiceSession extends EventEmitter {
     return {
       allowReducedKdvRate: this._allowReducedKdvRate,
 
-      ytbAllKdvPositive: this._input.profile === 'YATIRIMTESVIK'
+      /* 4.5.2 — İKİ DÜZLEM: e-Arşiv YTB belgelerinde (EARSIVFATURA + YTB* tipi)
+       * bu türetim `true` sabitleniyordu, dolayısıyla `validateInvoiceState`
+       * kapsamı genişletilse bile uyarı ASLA tetiklenmezdi. Kapsam yüklemi
+       * `isYatirimTesvikKdvScope` (İADE ailesini de eler — şematron öyle diyor). */
+      ytbAllKdvPositive: isYatirimTesvikKdvScope(
+        this._input.profile ?? '',
+        this._input.type ?? '',
+      )
         ? (linesPresent && lines.every(l => l.kdvPercent > 0))
-        : true,   // diğer profillerde irrelevant, true → rule trigger olmasın
+        : true,   // kapsam dışında irrelevant, true → rule trigger olmasın
 
       hasGtip: linesPresent && lines.every(l => !!l.delivery?.gtipNo),
 

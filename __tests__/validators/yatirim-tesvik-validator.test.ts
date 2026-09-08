@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
-  isYatirimTesvikScope,
   validateYatirimTesvikKdvDocument,
   validateYatirimTesvikKdvLine,
 } from '../../src/validators/yatirim-tesvik-validator';
+/* 4.5.2: kapsam yüklemi validator'dan TEK KAYNAĞA taşındı ve adı anlamıyla
+ * eşitlendi (`isYatirimTesvikScope` → `isYatirimTesvikKdvScope`). */
+import { isYatirimTesvikKdvScope } from '../../src/config/schematron-scopes';
 import { InvoiceTypeCode, InvoiceProfileId } from '../../src/types/enums';
 import type { InvoiceInput, InvoiceLineInput } from '../../src/types/invoice-input';
 
@@ -81,36 +83,36 @@ function makeInput(
 }
 
 // ============================================================
-// isYatirimTesvikScope
+// isYatirimTesvikKdvScope
 // ============================================================
 
-describe('isYatirimTesvikScope', () => {
+describe('isYatirimTesvikKdvScope', () => {
   it('YATIRIMTESVIK + SATIS → scope içinde', () => {
-    expect(isYatirimTesvikScope(InvoiceProfileId.YATIRIMTESVIK, InvoiceTypeCode.SATIS)).toBe(true);
+    expect(isYatirimTesvikKdvScope(InvoiceProfileId.YATIRIMTESVIK, InvoiceTypeCode.SATIS)).toBe(true);
   });
 
   it('YATIRIMTESVIK + IADE → kapsam dışı (İADE tipleri hariç)', () => {
-    expect(isYatirimTesvikScope(InvoiceProfileId.YATIRIMTESVIK, InvoiceTypeCode.IADE)).toBe(false);
+    expect(isYatirimTesvikKdvScope(InvoiceProfileId.YATIRIMTESVIK, InvoiceTypeCode.IADE)).toBe(false);
   });
 
   it('YATIRIMTESVIK + TEVKIFATIADE → kapsam dışı', () => {
-    expect(isYatirimTesvikScope(InvoiceProfileId.YATIRIMTESVIK, InvoiceTypeCode.TEVKIFATIADE)).toBe(false);
+    expect(isYatirimTesvikKdvScope(InvoiceProfileId.YATIRIMTESVIK, InvoiceTypeCode.TEVKIFATIADE)).toBe(false);
   });
 
   it('EARSIVFATURA + YTBSATIS → scope içinde', () => {
-    expect(isYatirimTesvikScope(InvoiceProfileId.EARSIVFATURA, InvoiceTypeCode.YTBSATIS)).toBe(true);
+    expect(isYatirimTesvikKdvScope(InvoiceProfileId.EARSIVFATURA, InvoiceTypeCode.YTBSATIS)).toBe(true);
   });
 
   it('EARSIVFATURA + YTBIADE → kapsam dışı (İADE hariç)', () => {
-    expect(isYatirimTesvikScope(InvoiceProfileId.EARSIVFATURA, InvoiceTypeCode.YTBIADE)).toBe(false);
+    expect(isYatirimTesvikKdvScope(InvoiceProfileId.EARSIVFATURA, InvoiceTypeCode.YTBIADE)).toBe(false);
   });
 
   it('EARSIVFATURA + SATIS (YTB dışı) → kapsam dışı', () => {
-    expect(isYatirimTesvikScope(InvoiceProfileId.EARSIVFATURA, InvoiceTypeCode.SATIS)).toBe(false);
+    expect(isYatirimTesvikKdvScope(InvoiceProfileId.EARSIVFATURA, InvoiceTypeCode.SATIS)).toBe(false);
   });
 
   it('TEMELFATURA + SATIS → kapsam dışı (YATIRIMTESVIK değil)', () => {
-    expect(isYatirimTesvikScope(InvoiceProfileId.TEMELFATURA, InvoiceTypeCode.SATIS)).toBe(false);
+    expect(isYatirimTesvikKdvScope(InvoiceProfileId.TEMELFATURA, InvoiceTypeCode.SATIS)).toBe(false);
   });
 });
 

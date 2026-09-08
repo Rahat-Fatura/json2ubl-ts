@@ -13,6 +13,7 @@ import type { WithholdingTaxDefinition } from './withholding-config';
 import type { ExemptionDefinition } from './exemption-config';
 import { BillingDocumentTypeCode } from './simple-types';
 import { PROFILE_TYPE_MATRIX, WITHHOLDING_ALLOWED_TYPES } from '../config/constants';
+import { isYatirimTesvikScope, isYatirimTesvikKdvScope } from '../config/schematron-scopes';
 import { TAX_EXEMPTION_MATRIX } from '../validators/cross-check-matrix';
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 
@@ -191,7 +192,12 @@ export interface FieldVisibility {
   showOnlineSale: boolean;
   /** Fatura dönemi gösterilsin mi? */
   showInvoicePeriod: boolean;
-  /** Yatırım teşvik numarası gösterilsin mi? */
+  /**
+   * Yatırım teşvik numarası (6 haneli YTBNO) gösterilsin mi?
+   *
+   * Kapsam = e-Fatura `YATIRIMTESVIK` **veya** e-Arşiv `EARSIVFATURA`+`YTB*` tipi
+   * (`YatirimTesvikContractDocumentReferenceIDCheck` — İKİ DÜZLEMİ de kapsar).
+   */
   showYatirimTesvikNo: boolean;
   /** Satır bazında ek tanımlayıcılar (IMEI, KUNYENO, ETIKETNO vb.) gösterilsin mi? */
   showAdditionalItemIdentifications: boolean;
@@ -391,7 +397,12 @@ export function deriveFieldVisibility(type: string, profile: string, currencyCod
   const isIhracat = profile === 'IHRACAT';
   const isKamu = profile === 'KAMU';
   const isEarsiv = profile === 'EARSIVFATURA';
-  const isYatirimTesvik = profile === 'YATIRIMTESVIK';
+  /* 🔴 4.5.2 — İKİ DÜZLEM. Eskiden `profile === 'YATIRIMTESVIK'` idi: e-Arşiv
+   * YTB belgelerinde (EARSIVFATURA + YTBSATIS/YTBIADE/YTBISTISNA/YTBTEVKIFAT/
+   * YTBTEVKIFATIADE) YTB numarası ve harcama tipi alanları HİÇ açılmıyordu,
+   * oysa doğrulayıcı ikisini de zorunlu sayıyordu. Kapsam yüklemi TEK KAYNAK:
+   * `config/schematron-scopes` — doğrulayıcı da oradan okur. */
+  const isYatirimTesvik = isYatirimTesvikScope(profile, type);
   const isIlacTibbi = profile === 'ILAC_TIBBICIHAZ';
   const isTeknolojiDestek = type === 'TEKNOLOJIDESTEK';
   const isYolcuBeraber = profile === 'YOLCUBERABERFATURA';
@@ -576,10 +587,15 @@ export function validateInvoiceState(state: {
     });
   }
 
-  // YATIRIMTESVIK → ytbNo zorunlu (6 haneli numerik)
-  if (state.profile === 'YATIRIMTESVIK' && !state.ytbNo) {
+  // Yatırım teşvik kapsamı → ytbNo zorunlu (6 haneli numerik)
+  /* 4.5.2: kapsam yalnız profile bakıyordu; e-Arşiv YTB belgelerinde (EARSIVFATURA
+   * + YTB* tipi) şematron `YatirimTesvikContractDocumentReferenceIDCheck` YTBNO'yu
+   * ŞART KOŞARKEN oturum sessiz kalıyordu. Görünürlük bayrağı ile aynı yüklemden
+   * okur → "alan görünür ama zorunlu değil" ya da tersi ayrışması imkânsız. */
+  const ytbKapsam = isYatirimTesvikScope(state.profile, state.type);
+  if (ytbKapsam && !state.ytbNo) {
     warnings.push({ field: 'ytbNo', message: 'Yatırım Teşvik faturalarında YTB numarası zorunludur.', severity: 'error' });
-  } else if (state.profile === 'YATIRIMTESVIK' && state.ytbNo && (state.ytbNo.length !== 6 || !/^\d{6}$/.test(state.ytbNo))) {
+  } else if (ytbKapsam && state.ytbNo && (state.ytbNo.length !== 6 || !/^\d{6}$/.test(state.ytbNo))) {
     warnings.push({ field: 'ytbNo', message: 'YTB numarası 6 haneli numerik olmalıdır.', severity: 'error' });
   }
 
@@ -589,8 +605,14 @@ export function validateInvoiceState(state: {
       message: '555 kodu kullanımı için allowReducedKdvRate flag açık olmalıdır (M4).', severity: 'error' });
   }
 
-  // B-78.2: YATIRIMTESVIK profili + KDV subtotal hepsi pozitif değil → uyarı
-  if (state.profile === 'YATIRIMTESVIK' && state.ytbAllKdvPositive === false) {
+  // B-78.2: yatırım teşvik KDV kapsamı + KDV subtotal hepsi pozitif değil → uyarı
+  /* 4.5.2 — İKİ değişiklik, ikisi de şematronla ölçüldü (`YatirimTesvikKDVCheck`,
+   * Common:495-497):
+   *   (a) e-Arşiv düzlemi EKLENDİ (EARSIVFATURA + YTB* tipi) — kural orada da geçerli.
+   *   (b) İADE ailesi ÇIKARILDI: kuralın kendi metni `IADE/TEVKIFATIADE/YTBIADE/
+   *       YTBTEVKIFATIADE` tiplerini HARİÇ tutar; eski kod YATIRIMTESVIK+IADE'de
+   *       yanlış-pozitif hata üretiyordu. */
+  if (isYatirimTesvikKdvScope(state.profile, state.type) && state.ytbAllKdvPositive === false) {
     warnings.push({ field: 'taxTotals',
       message: 'YATIRIMTESVIK faturalarında tüm KDV subtotal TaxAmount ve Percent > 0 olmalıdır (B-08).',
       severity: 'error' });

@@ -2,6 +2,126 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.5.2] — 2026-09-08
+
+Bir **kusur** ve onu üreten **kök sebep**. Yeni GİB kuralı YOK, üretilen XML
+DEĞİŞMEDİ; değişen tek şey, kuralların hangi belgelerde GÖRÜNÜR olduğu.
+
+### Fixed
+
+- 🔴 **e-Arşiv YTB belgelerinde yatırım teşvik alanlarının HİÇBİRİ açılmıyordu.**
+
+  Kullanıcı bildirimi: «e-Arşiv YTB tipli belgelerde, yatırım teşvik için gerekli
+  alanların hiçbiri açılmıyor.» Ölçüldü, teşhis kesindi:
+
+  | Katman | Kapsam | Doğru mu |
+  |---|---|---|
+  | `profile-requirement-validator.ts` | `YATIRIMTESVIK` **veya** `EARSIVFATURA`+YTB tipi | ✅ |
+  | `line-field-visibility.ts:98` | `profile === 'YATIRIMTESVIK'` | ❌ |
+  | `invoice-rules.ts:394` (belge) | `profile === 'YATIRIMTESVIK'` | ❌ |
+  | `invoice-rules.ts:579` (`ytbNo`) | `profile === 'YATIRIMTESVIK'` | ❌ |
+  | `invoice-rules.ts:593` (`ytbAllKdvPositive`) | `profile === 'YATIRIMTESVIK'` | ❌ |
+
+  Sonuç: e-Arşiv YTB'de kütüphane "zorunlu" diyor ama alanı hiç göstermiyordu —
+  kullanıcı hatayı görüp dolduracak yer bulamıyordu. Artık **harcama tipi**
+  (`showItemClassificationCode`), **makine teçhizat sıra no**
+  (`showProductTraceId`), **makine ID** (`showSerialId`), **YTB numarası**
+  (`showYatirimTesvikNo`) ve **harcama tipi sütunu**
+  (`showCommodityClassification`) e-Arşiv düzleminde de açılır.
+
+  Kapsanan tipler şematronun `$YatirimTesvikEArsivInvoiceTypeCodeList`
+  değişkeninden BİREBİR alındı (`UBL-TR_Codelist.xml:67`): `YTBSATIS`,
+  `YTBIADE`, `YTBISTISNA`, `YTBTEVKIFAT`, **`YTBTEVKIFATIADE`**. Sonuncusu
+  ÜRETİM seçim listesinde yoktur ama gelen/kayıtlı belge o tiple açılabildiği
+  için görünürlük onu da kapsar.
+
+- **YTB önerileri e-Arşiv düzleminde hiç üretilmiyordu.** Aynı kapsam kusurunun
+  öneri motorundaki kopyası: `yatirim-tesvik/itemclass-default`,
+  `.../makine-traceid-required`, `.../makine-serialid-required`,
+  `.../insaat-suggest-itemclass-02` artık temel kapsamı;
+  `kdv/ytb-istisna-suggest-308` ve `.../339` ise ISTİSNA dar kapsamını kullanır.
+  Alan o düzlemde zorunluysa yardımın da orada olması gerekir.
+
+- **`ytbAllKdvPositive` (B-78.2) İADE ailesinde yanlış-pozitif üretiyordu.**
+
+  `YatirimTesvikKDVCheck` (Common:495-497) kendi metninde
+  `IADE/TEVKIFATIADE/YTBIADE/YTBTEVKIFATIADE` tiplerini **HARİÇ** tutar — iade
+  belgesinde KDV'nin pozitif olması beklenmez. Eski kod yalnız profile baktığı
+  için `YATIRIMTESVIK + IADE`'de olmayan bir hatayı bildiriyordu. Kural artık
+  şematronun kendi elemesini uygular (`isYatirimTesvikKdvScope`).
+
+### Changed
+
+- 🔑 **Şematron kapsam yüklemleri TEK KAYNAĞA taşındı:
+  `src/config/schematron-scopes.ts`.**
+
+  Bu kusur sınıfı paketi **ÜÇ KEZ** vurdu — HKS mal sahibi/künye alanları
+  (4.4.0), `SARJANLIK` kalem seri numarası (4.5.0), şimdi yatırım teşvikin
+  tamamı. Kök sebep her seferinde aynıydı: **iki düzlemli bir şematron kuralının
+  kapsamı, doğrulayıcı ile görünürlükte AYRI AYRI yazılmıştı**; biri güncellenip
+  diğeri unutuluyordu. Yeni modül o yeri kurar:
+
+  | Yüklem | Şematron karşılığı |
+  |---|---|
+  | `isYatirimTesvikScope` | `...ContractDocumentReferenceIDCheck`, `...CommodityClassificationCheck`, `...ItemClassificationCodeCheck`, `...ItemInstanceCheck` (temel kapsam) |
+  | `isYatirimTesvikKdvScope` | `...KDVCheck`, `...LineKDVCheck` (temel kapsam **eksi** İADE ailesi) |
+  | `isYatirimTesvikIstisnaScope` | `...ItemClassificationCodeIstisnaCheck`, `...IstisnaCalculationSequenceNumericCheck`, `...TaxExemptionReasonCode308Check`, `...339Check` (dar EŞLEŞME) |
+
+  Okuyan yerler: `profile-requirement-validator`, `line-field-visibility`,
+  `invoice-rules`, `invoice-session`, `profile-validators`,
+  `yatirim-tesvik-validator`, `phantom-kdv-rules`, `suggestion-rules/
+  yatirim-tesvik-suggestions`, `suggestion-rules/kdv-suggestions`.
+  **Kopya bırakılmadı.**
+
+  ⚠️ **Körü körüne genelleme YAPILMADI — kural kural okundu:**
+  - `YatirimTesvikInvoiceTypeCodeCheck` (Common:369-371) e-Arşiv düzlemini
+    **KAPSAMAZ**: yalnız `ProfileID='YATIRIMTESVIK'` yazar. Dokunulmadı.
+  - `TaxExemptionReasonCodeCheck` (Common:318) e-Arşiv dalında
+    `ProfileID='EARSIVFATURA'` **ARAMAZ**, yalnız tipin listede olmasına bakar —
+    ortak yükleme bağlanmadı, kapsamı daralırdı
+    (`validateYatirimTesvikExemptionScope` kendi koşulunu korudu).
+  - ISTİSNA dörtlüsü temel kapsamın alt kümesi DEĞİL, ayrı bir eşleşmedir.
+
+- **`yatirim-tesvik-validator.isYatirimTesvikScope` → `isYatirimTesvikKdvScope`
+  (dahili ad; eski hâli `src/index.ts`'te dışa açık DEĞİLDİ).** Eski ad tuzaktı:
+  aynı isimli ama farklı anlamlı ikinci bir yüklem
+  `profile-requirement-validator` içinde yaşıyordu (o İADE ailesini elemez).
+  Ad artık anlamıyla eşit.
+
+### Added
+
+- **Üç kapsam yüklemi ana giriş noktasından dışa aktarıldı**
+  (`isYatirimTesvikScope`, `isYatirimTesvikKdvScope`,
+  `isYatirimTesvikIstisnaScope`). 4.5.1'in ölçütünü karşılarlar: paketin dışa
+  açtığı görünürlük bayraklarının HANGİ belgede açıldığını bunlar belirler ve
+  başka genel erişimcileri yoktu — tüketici koşulu elle aynalamak zorundaydı
+  (`isPhantomKdvCombination` dışa açık değil ve MimForge portalında
+  `isYatirimTesvikExemptionScope` adıyla kopyalanmış durumda). **Portal tarafında
+  değişiklik GEREKMEZ**; ayna istenirse artık silinebilir.
+
+### Verified
+
+- **Canlı şematron** (xslt-service `:8081`, `POST /v1/validate`,
+  `profile=unnumbered-invoice`, `parameters=[{key:'type',value:'efatura'|'earchive'}]`):
+
+  | Senaryo | Sonuç |
+  |---|---|
+  | `YATIRIMTESVIK+SATIS` · alanlar BOŞ | 3 ihlal (`ContractDocumentReferenceID`, `CommodityClassification`, `ItemClassificationCode`) |
+  | `EARSIVFATURA+YTBSATIS` · alanlar BOŞ | **aynı 3 ihlal** |
+  | `YATIRIMTESVIK+ISTISNA` · alanlar BOŞ | 6 ihlal (+ `KDVCheck`, `LineKDVCheck`, `ItemClassificationCodeIstisnaCheck`) |
+  | `EARSIVFATURA+YTBISTISNA` · alanlar BOŞ | **aynı 6 ihlal** |
+  | Dördü de · alanlar DOLU | **0 ihlal** |
+  | `EARSIVFATURA+SATIS` (YTB dışı) · alanlar BOŞ | 0 ihlal — YTB kuralı tetiklenmiyor |
+
+- `__tests__/calculator/yatirim-tesvik-earsiv-plane.test.ts` (48 test): beş YTB
+  tipinin her biri için e-Arşiv düzlemi kalem görünürlük haritasının e-Fatura
+  muadiliyle **birebir eşit** olduğunu, `EARSIVFATURA+SATIS`'ta hiçbirinin
+  açılmadığını, `ytbNo` / `ytbAllKdvPositive` kapsamlarını ve öneri
+  kapsamlarını kilitler.
+- Tüm paket: **113 dosya / 2448 test yeşil** (taban 112/2398), `tsc --noEmit`
+  temiz, `verify:paths` yeşil, `build` başarılı. Üretilen XML'de fark YOK
+  (`examples` + `examples-matrix` snapshot'ları değişmedi).
+
 ## [4.5.1] — 2026-09-08
 
 İki **eksik**; ikisi de "GİB izin veriyor, kütüphane sunmuyor" sınıfından.

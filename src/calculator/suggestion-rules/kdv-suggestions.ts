@@ -1,5 +1,6 @@
 import type { SuggestionRule, Suggestion } from '../suggestion-types';
 import { isSelfExemptionInvoice } from '../../config/self-exemption-types';
+import { isYatirimTesvikIstisnaScope } from '../../config/schematron-scopes';
 
 /**
  * Sprint 8i.2 / AR-10 Faz 2 — KDV grubu suggestion kuralları (7 kural).
@@ -46,8 +47,10 @@ const KDV_ZERO_SUGGEST_351: SuggestionRule = {
 const KDV_YTB_ISTISNA_SUGGEST_308: SuggestionRule = {
   id: 'kdv/ytb-istisna-suggest-308',
   applies: (input) =>
-    input.profile === 'YATIRIMTESVIK' &&
-    input.type === 'ISTISNA' &&
+    /* 4.5.2: İKİ DÜZLEM — (YATIRIMTESVIK+ISTISNA) veya (EARSIVFATURA+YTBISTISNA).
+     * Şematronun 308/339 kurallarıyla AYNI dar eşleşme; phantom-KDV tetikleyicisi
+     * de aynı yüklemi kullanır. */
+    isYatirimTesvikIstisnaScope(input.profile ?? '', input.type ?? '') &&
     input.lines.some(l => l.kdvPercent === 0 && l.itemClassificationCode === '01' && !l.kdvExemptionCode),
   produce: (input) => {
     const out: Suggestion[] = [];
@@ -72,8 +75,10 @@ const KDV_YTB_ISTISNA_SUGGEST_308: SuggestionRule = {
 const KDV_YTB_ISTISNA_SUGGEST_339: SuggestionRule = {
   id: 'kdv/ytb-istisna-suggest-339',
   applies: (input) =>
-    input.profile === 'YATIRIMTESVIK' &&
-    input.type === 'ISTISNA' &&
+    /* 4.5.2: İKİ DÜZLEM — (YATIRIMTESVIK+ISTISNA) veya (EARSIVFATURA+YTBISTISNA).
+     * Şematronun 308/339 kurallarıyla AYNI dar eşleşme; phantom-KDV tetikleyicisi
+     * de aynı yüklemi kullanır. */
+    isYatirimTesvikIstisnaScope(input.profile ?? '', input.type ?? '') &&
     input.lines.some(l => l.kdvPercent === 0 && l.itemClassificationCode === '02' && !l.kdvExemptionCode),
   produce: (input) => {
     const out: Suggestion[] = [];

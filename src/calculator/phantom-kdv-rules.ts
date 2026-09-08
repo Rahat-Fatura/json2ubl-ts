@@ -13,6 +13,8 @@
  * fakat LegalMonetaryTotal ve parent TaxTotal/TaxAmount'a dahil edilmez.
  */
 
+import { isYatirimTesvikIstisnaScope } from '../config/schematron-scopes';
+
 /** Kütüphane otomatik olarak set eder — kullanıcıdan alınmaz. */
 export const PHANTOM_KDV_CALCULATION_SEQUENCE_NUMERIC = -1;
 
@@ -36,9 +38,14 @@ export function phantomKdvExemptionCodeFor(itemClassificationCode: string): stri
  * YATIRIMTESVIK+ISTISNA veya EARSIVFATURA+YTBISTISNA kombinasyonunda `true`.
  * Profile ve type string'leri `CalculatedDocument.profile` ve `.type` ile
  * eşleşir (tespit edilmiş final değerler).
+ *
+ * 4.5.2: koşul artık `config/schematron-scopes`ten okunur — KOPYA DEĞİL.
+ * Phantom-KDV tetikleyicisi ile şematronun ISTİSNA dörtlüsünün
+ * (`YatirimTesvikItemClassificationCodeIstisnaCheck`,
+ * `...IstisnaCalculationSequenceNumericCheck`, `...TaxExemptionReasonCode308Check`,
+ * `...339Check`) kapsamı AYNI koşuldur; ikisini ayrı yerlerde tutmak bu paketi
+ * üç kez vuran ayrışma sınıfını üretiyordu.
  */
 export function isPhantomKdvCombination(profile: string, type: string): boolean {
-  if (profile === 'YATIRIMTESVIK' && type === 'ISTISNA') return true;
-  if (profile === 'EARSIVFATURA' && type === 'YTBISTISNA') return true;
-  return false;
+  return isYatirimTesvikIstisnaScope(profile, type);
 }
