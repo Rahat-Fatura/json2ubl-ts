@@ -2,6 +2,66 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.5.3] — 2026-09-08
+
+Tek bir kusur: **"geçerli mi" diye soran yüklem, GİB'in değil EKRANIN listesine
+bakıyordu.** Üretilen XML DEĞİŞMEDİ, yeni GİB kuralı YOK.
+
+### Fixed
+
+- 🔴 **`isValidPaymentMeansCode` GİB'in kabul ettiği 68 kodu "geçersiz" sayıyordu.**
+
+  Ödeme şekli kodu için ortalıkta ÜÇ ayrı liste vardı ve hiçbiri diğerini
+  bilmiyordu:
+
+  | Yer | İçerik | Durum |
+  |---|---|---|
+  | şematron `$PaymentMeansCodeTypeList` (`UBL-TR_Codelist.xml:58`) | **75 kod** | GİB gerçeği |
+  | `PAYMENT_MEANS_CODES` (`config/constants.ts`) | 20 kod | ölü sabit — TÜKETİCİSİ YOKTU |
+  | `PAYMENT_MEANS_DEFINITIONS` (`payment-means-config.ts`) | 7 kod + Türkçe ad | UI önerileri |
+
+  `isValidPaymentMeansCode` üçüncüsüne, yani **7'lik öneri listesine** bakıyordu.
+  Kütüphanede onu çağıran bir doğrulayıcı olmadığı için fatura kesmeyi
+  engellemiyordu; ama yüklem adıyla "GİB bunu kabul eder mi" sorusunu vaat ettiği
+  için tüketicisini yanıltıyordu — MimForge portalı ödeme şekli seçicisini bu
+  yediye kilitlemişti ve `30` (Havale) gibi meşru bir kod SEÇİLEMİYORDU.
+
+  Yüklem artık şematron kümesini okur. Küme GERÇEKTEN dayatılıyor, ölçüldü:
+  `PaymentMeansCodeCheck` (`UBL-TR_Common_Schematron.xml:407-409`) →
+  `inv:Invoice/cac:PaymentMeans/cbc:PaymentMeansCode` (`Main:292-294`).
+
+### Changed
+
+- **`PAYMENT_MEANS_CODES` şematron kümesinin TEK tanımı oldu** (20 → 75 kod:
+  `1-53`, `60-67`, `70`, `74-78`, `91-97`, `ZZZ`). Silinmedi, çünkü kümenin bir
+  yerde yaşaması gerekiyordu ve diğer şematron kod kümeleri de (`UNIT_CODES`,
+  `PACKAGING_TYPE_CODES`, `LICENSE_PLATE_SCHEME_IDS`) orada yaşıyor. Ara kodlar
+  (54-59, 68-69, 71-73, 79-90, 98-99) şematronda YOKTUR; liste "1-99 arası" diye
+  genellenmedi, ELLE yazıldı.
+
+  ⚠️ **Paket dışına AÇILMADI.** 4.5.1'in dışa açma ölçütü "(a) genel bir bayrak
+  alanı bu kümeyi istiyor, (b) başka genel erişimci YOK" idi; burada (b)
+  sağlanmıyor — `isValidPaymentMeansCode` zaten genel erişimcidir. Tüketici
+  kümeyi kopyalamak yerine yüklemi çağırır.
+
+- **`PAYMENT_MEANS_DEFINITIONS` (7 kod) ÖNERİ listesi olarak kaldı**; adı ve
+  JSDoc'u bunu açıkça söyler. GİB kılavuzu yalnız bu yediyi Türkçe adlandırır;
+  kalan 68 kodun Türkçe karşılığı YOKTUR ve **uydurulmadı** — ekranda kendi
+  koduyla görünürler. Aynı asimetri kap cinsinde de var (~400 geçerli kod, 27
+  adlandırılmış); çözüm de aynı: adlandırılmışlar öneri, kalanlar serbest giriş.
+
+- `getPaymentMeansDefinition` sözleşmesi netleşti: yalnız ADI olan 7 kod için
+  tanım döner; geçerli ama adsız kodda `undefined`. "Geçerli mi" sorusu ona
+  DEĞİL, `isValidPaymentMeansCode`'a sorulur.
+
+### Tests
+
+- `__tests__/calculator/payment-means-config.test.ts` kümeyi artık **şematron
+  XML'inden okuyup** karşılaştırır (elle kopyalanan beklenti, düzeltilen hatanın
+  tekrarı olurdu). Şematron paketi güncellenip sabit güncellenmezse test kırılır.
+  Ayrıca "öneri ≠ geçerlilik" ayrımı kilitlendi: `30`, `31`, `49`, `50`, `51`,
+  `60`, `70`, `97` geçerli AMA öneri listesinde yok.
+
 ## [4.5.2] — 2026-09-08
 
 Bir **kusur** ve onu üreten **kök sebep**. Yeni GİB kuralı YOK, üretilen XML

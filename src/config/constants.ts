@@ -448,14 +448,48 @@ export const ADDITIONAL_ITEM_ID_SCHEME_IDS = new Set([
 ]);
 
 /**
- * Ödeme yöntemi kodları — UN/EDIFACT 4461 (geniş whitelist).
+ * Ödeme şekli kodları (`cbc:PaymentMeansCode`) — GİB'in KABUL ETTİĞİ TAM KÜME.
  *
- * **M7 NOT:** Payment Means için M7 türetme uygulanmadı; `payment-means-config.ts` sadece
- * sık kullanılan 7 kodu Türkçe isimle içerir (UI dropdown). Validator whitelist bu geniş
- * setin tamamını kabul eder (kullanıcı talep halinde tüm UN/EDIFACT desteği — açık soru #9 cevabı).
+ * Kaynak: şematron `$PaymentMeansCodeTypeList` (`schematrons/UBL-TR_Codelist.xml:58`),
+ * UN/EDIFACT 4461 tablosunun GİB tarafından DARALTILMIŞ hâli — 75 kod:
+ * `1-53`, `60-67`, `70`, `74-78`, `91-97`, `ZZZ`. (Ara kodlar — 54-59, 68-69,
+ * 71-73, 79-90, 98-99 — listede YOKTUR; aralık yazıp genişletmek GİB'in
+ * reddedeceği kodları geçerli saymak olurdu, bu yüzden liste ELLE yazılıdır.)
+ *
+ * 🔑 **Bu küme GERÇEKTEN DAYATILIYOR.** "Kod listesinde tanımlı" ile "şematron
+ * dayatıyor" ayrı şeylerdir (bkz. `AdditionalItemIdentificationIDType` — tanımlı
+ * ama hiçbir `sch:assert` okumuyor). Burada dayatma ölçüldü:
+ *   • kural: `PaymentMeansCodeCheck` (`UBL-TR_Common_Schematron.xml:407-409`)
+ *   • bağlam: `inv:Invoice/cac:PaymentMeans/cbc:PaymentMeansCode`
+ *     (`UBL-TR_Main_Schematron.xml:292-294`)
+ * Yani listede olmayan bir kod GİB kapısından DÖNER.
+ *
+ * 🔴 4.5.3 — ESKİ HÂLİ 20 KODLUK BİR TAHMİNDİ ve HİÇBİR TÜKETİCİSİ YOKTU (ölü
+ * sabit). "Geniş whitelist" diye anılıyordu ama şematronun kabul ettiği 75 kodun
+ * yalnız 20'sini içeriyordu; `30` (Havale) gibi meşru kodlar dışarıda kalmıştı.
+ * Artık şematron kümesinin TEK tanımıdır ve `isValidPaymentMeansCode` onu okur.
+ *
+ * ⚠️ Paket dışına AÇILMAZ. 4.5.1'in dışa açma ölçütü "(a) genel bir bayrak alanı
+ * bu kümeyi istiyor, (b) başka genel erişimci YOK" idi; burada (b) sağlanmıyor —
+ * `isValidPaymentMeansCode` zaten genel erişimcidir. Tüketici kümeyi kopyalamak
+ * yerine yüklemi çağırır.
  */
-export const PAYMENT_MEANS_CODES = new Set([
-  '1', '2', '3', '4', '5', '10', '20', '23', '30', '31', '42', '48', '49', '50', '51', '60', '61', '62', '97', 'ZZZ',
+export const PAYMENT_MEANS_CODES = new Set<string>([
+  // 1-53 — kesintisiz
+  '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
+  '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+  '21', '22', '23', '24', '25', '26', '27', '28', '29', '30',
+  '31', '32', '33', '34', '35', '36', '37', '38', '39', '40',
+  '41', '42', '43', '44', '45', '46', '47', '48', '49', '50',
+  '51', '52', '53',
+  // 60-67
+  '60', '61', '62', '63', '64', '65', '66', '67',
+  // 70 · 74-78
+  '70', '74', '75', '76', '77', '78',
+  // 91-97
+  '91', '92', '93', '94', '95', '96', '97',
+  // karşılığı olmayan/diğer
+  'ZZZ',
 ]);
 
 /**
