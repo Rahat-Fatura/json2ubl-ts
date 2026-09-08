@@ -2,6 +2,104 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.5.1] — 2026-09-08
+
+İki **eksik**; ikisi de "GİB izin veriyor, kütüphane sunmuyor" sınıfından.
+Kural değişikliği YOK, davranış daralması YOK.
+
+### Added
+
+- **`SATICIDIBSATIRKOD` alanı — İhraç Kayıtlı satıcı DİB satır kodu.**
+
+  Şematron `IhracKayitliPartyIdentificationIDTypeCheck`
+  (`schematrons/UBL-TR_Common_Schematron.xml:462`) **İKİ** schemeID'ye izin verir
+  (`UBL-TR_Codelist.xml:66`):
+
+  ```xml
+  <sch:let name="IhracKayitliPartyIdentificationIDType"
+           value="',SATICIDIBSATIRKOD,ALICIDIBSATIRKOD,'"/>
+  ```
+
+  Kural **OLUMSUZ** kurulmuştur: "`cac:CustomsDeclaration/cac:IssuerParty/
+  cac:PartyIdentification` altında bu ikisi DIŞINDA schemeID bulunmasın." Yani
+  satıcı kodu **İZİNLİ**, zorunlu değil. Kütüphanede karşılığı hiç yoktu —
+  kullanıcı GİB'in kabul ettiği bir beyanı yapamıyordu.
+
+  Zorunluluk yalnız `ALICIDIBSATIRKOD`'a aittir (`TaxExemptionReasonCodeCheck`,
+  Common satır 326: 12 hane GTİP + 11 hane alıcı kodu) ve **DOKUNULMADI**.
+
+  | Katman | Değişiklik |
+  |---|---|
+  | `simple-types.ts` | `SimpleLineDeliveryInput.saticidibsatirkod?: string` |
+  | `session-paths.generated.ts` | `SessionPaths.lineDeliverySaticidibsatirkod(i)` (üretildi) |
+  | `line-field-visibility.ts` | `showSaticidibsatirkod` |
+  | `simple-invoice-mapper.ts` | aynı `IssuerParty` altında ikinci `cac:PartyIdentification` |
+
+  🔴 **Uzunluk dayatılmadı.** 11 hane şartı 702 kuralında YALNIZ
+  `ALICIDIBSATIRKOD` için yazılıdır; `SATICIDIBSATIRKOD` şematron paketinde
+  (20260701) sadece kod listesinde geçer — hiçbir uzunluk/biçim şartı yoktur.
+  Var olmayan bir kuralı dayatmak kullanıcının geçerli beyanını reddetmek olurdu.
+
+  **Görünürlük kararı:** `showSaticidibsatirkod` koşulu `showAlicidibsatirkod`
+  ile **AYNI** (`type=IHRACKAYITLI` + satır `kdvExemptionCode='702'`). İkisi de
+  tek bir şematron bağlamına aittir; alanın yazıldığı `cac:CustomsDeclaration`
+  ağacı bu akış dışında anlamsızdır. Görünürlük ≠ zorunluluk: alan görünür, boş
+  bırakılabilir. Ayrı bayrak tutulur ki portal "zorunlu" rozetini yalnız ALICI
+  koduna koyabilsin.
+
+  **Üretim şekli:** iki kod TEK `cac:CustomsDeclaration`, TEK `cac:IssuerParty`
+  altında iki `cac:PartyIdentification` olur (sıra ALICI → SATICI; mevcut
+  belgelerin çıktısı bit-bire aynı kalır). Alan boşsa o kimlik HİÇ üretilmez;
+  ikisi de boşsa `CustomsDeclaration` hiç doğmaz.
+
+- **Beş kod listesi ana giriş noktasından dışa aktarıldı.**
+
+  `YATIRIM_TESVIK_ONLY_EXEMPTION_CODES` `config/constants.ts:237`'de tanımlıydı
+  ama `src/index.ts`'te YOKTU (`dist/index.js`'te de yoktu) — tüketici kümeyi
+  elle aynalamak zorunda kalıyor, ayna kütüphaneyle güncellenmiyordu.
+
+  Aynı sınıftan dört sabit daha açıldı. Ölçüt: **(a)** paketin ZATEN dışa açtığı
+  bir görünürlük bayrağının seçenek kümesi olmak, **(b)** `configManager`
+  üzerinden başka genel erişimcisi bulunmamak.
+
+  | Sabit | Besleyen bayrak |
+  |---|---|
+  | `YATIRIM_TESVIK_ONLY_EXEMPTION_CODES` | `showExemptionCodeSelector` |
+  | `YTB_ITEM_CLASSIFICATION_CODES` | `showItemClassificationCode` |
+  | `ADDITIONAL_ITEM_ID_SCHEME_IDS` | `showAdditionalItemIdentifications` |
+  | `DELIVERY_TERM_CODES` | `showLineDelivery` |
+  | `TRANSPORT_MODE_CODES` | `showLineDelivery` |
+
+  Ölçütü karşılamayanlar **bilerek kapalı** kaldı: rol/kural kümeleri
+  (`PROFILE_TYPE_MATRIX`, `WITHHOLDING_ALLOWED_TYPES`, `TAX_4171_ALLOWED_TYPES`,
+  `YATIRIM_TESVIK_*_TYPES`, `KDV_ZERO_EXEMPTION_EXCLUDED_TYPES` — hepsinin genel
+  bir çözücüsü var: `getAllowedTypesForProfile`, `deriveFieldVisibility`),
+  `configManager` türevleri (`UNIT_CODES`, `PACKAGING_TYPE_CODES`,
+  `*_EXEMPTION_REASON_CODES`, `WITHHOLDING_TAX_TYPE_WITH_PERCENT` —
+  `*_DEFINITIONS` ve `isValid*` zaten dışa açık) ve biçim regexleri
+  (`TCKN_REGEX`, `VKN_REGEX`, `DATE_REGEX`, `DECIMAL_REGEX`, `TR_IBAN_REGEX`,
+  `POSTAL_ZONE_REGEX`, `SEVKIYAT_NO_REGEX`, `ETIKET_NO_REGEX`,
+  `*_LICENSE_PLATE_*`, `ENERJI_*`, `ESU_RAPOR_*`, `ACCOUNTING_COST_CODES`,
+  `PAYMENT_MEANS_CODES`, `DEMIRBAS_KDV_EXEMPTION_CODES`,
+  `NON_ISTISNA_REASON_CODES`). Genel API sözleşmesi gereksiz genişletilmedi.
+
+### Canlı şematron ölçümü (xslt-service :8081, paket 2026-08-04-14-42-12)
+
+`profile=unnumbered-invoice`, `parameters=[{key:'type',value:'efatura'}]`,
+TEMELFATURA + IHRACKAYITLI + 702 senaryosu:
+
+| # | Senaryo | XSD | Şematron | İhlal |
+|---|---|---|---|---|
+| 1 | yalnız `ALICIDIBSATIRKOD` | ✅ 0 | ✅ 0 | — |
+| 2 | `ALICIDIBSATIRKOD` + `SATICIDIBSATIRKOD` | ✅ 0 | ✅ 0 | — |
+| 3 | yalnız `SATICIDIBSATIRKOD` | ✅ 0 | ❌ 1 | `TaxExemptionReasonCodeCheck` |
+
+3. senaryonun tek ihlali beklenen olandır: «IHRACKAYITLI fatura tipinde 702
+Muafiyet sebebi için GTİP ve Alıcı Satır Kodu bilgisi girilmelidir». Whitelist
+kuralı (`IhracKayitliPartyIdentificationIDTypeCheck`) hiç ihlal edilmedi —
+`SATICIDIBSATIRKOD` gerçekten geçerli bir schemeID. 2. senaryo ise ikinci
+`cac:PartyIdentification`'ın **XSD'ce de** geçerli olduğunu kanıtlar.
+
 ## [4.5.0] — 2026-09-07
 
 Beşi de kullanıcının **canlı portal testinde** çıkan kusurlar; hepsi

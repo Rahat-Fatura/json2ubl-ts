@@ -121,6 +121,17 @@ export interface LineFieldVisibility {
   showCommodityClassification: boolean;
   /** type=IHRACKAYITLI + line.kdvExemptionCode='702' (ALICIDIBSATIRKOD zorunlu, B-78.3). */
   showAlicidibsatirkod: boolean;
+  /**
+   * type=IHRACKAYITLI + line.kdvExemptionCode='702' (SATICIDIBSATIRKOD **izinli**, 4.5.1).
+   *
+   * Koşul `showAlicidibsatirkod` ile BİLEREK AYNI — ikisi de tek bir şematron
+   * bağlamına aittir: `IhracKayitliPartyIdentificationIDTypeCheck` yalnız
+   * `InvoiceTypeCode='IHRACKAYITLI'` **ve** `TaxExemptionReasonCode='702'` iken
+   * tetiklenir, alanın yazıldığı `cac:CustomsDeclaration` ağacı da bu akış dışında
+   * anlamsızdır. Görünürlük ≠ zorunluluk: alan görünür ama boş bırakılabilir;
+   * zorunluluğu 702 kuralı yalnız ALICI koduna yükler.
+   */
+  showSaticidibsatirkod: boolean;
   /** profile=EARSIVFATURA + type ∈ {TEKNOLOJIDESTEK, ILACTIBBI} ise IMEI/seri dropdown (B-NEW-06/07). */
   showAdditionalItemIdentifications: boolean;
   /** profile=YATIRIMTESVIK ise harcama tipi (01-04) dropdown (M3). */
@@ -184,6 +195,12 @@ export function deriveLineFieldVisibility(
       flags.isIhracKayitli && line.kdvExemptionCode === '702',
 
     showAlicidibsatirkod:
+      flags.isIhracKayitli && line.kdvExemptionCode === '702',
+
+    /* Satıcı DİB satır kodu ALICI koduyla AYNI kapıdan geçer (gerekçe arayüz
+     * tanımında). Ayrı bir bayrak tutulur ki portal iki alanı ayrı etiketleyip
+     * "zorunlu" rozetini yalnız ALICI'ya koyabilsin. */
+    showSaticidibsatirkod:
       flags.isIhracKayitli && line.kdvExemptionCode === '702',
 
     /* 🔴 HKS EKLENDİ (A1). Şematron `HKSInvioceCheck` her kalemde 19 karakterli

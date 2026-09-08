@@ -319,6 +319,12 @@ export const SessionPaths = {
   lineDeliveryAlicidibsatirkod: (i: number) => `lines[${i}].delivery.alicidibsatirkod` as `lines[${number}].delivery.alicidibsatirkod`,
 
   /**
+   * Satıcı DİB Satır Kodu — `ALICIDIBSATIRKOD`'un İZİNLİ (zorunlu DEĞİL) eşi. Şematron `IhracKayitliPartyIdentificationIDTypeCheck` (Common satır 462) kuralı OLUMSUZ kurulur: CustomsDeclaration/IssuerParty/PartyIdentification altında `$IhracKayitliPartyIdentificationIDType = ',SATICIDIBSATIRKOD,ALICIDIBSATIRKOD,'` DIŞINDA schemeID bulunmasın. Yani ikisi de geçerlidir; zorunluluk yalnız `ALICIDIBSATIRKOD`'a aittir (702 kuralı, Common satır 326). 4.5.1'e kadar bu alanın kütüphanede KARŞILIĞI YOKTU: kullanıcı GİB'in izin verdiği satıcı satır kodunu hiç beyan edemiyordu. Mapper bu alanı `alicidibsatirkod` ile AYNI IssuerParty altında ikinci bir `PartyIdentification[schemeID='SATICIDIBSATIRKOD']` olarak yazar. 🔴 Uzunluk DAYATILMAZ: 11 hane şartı 702 kuralında yalnız `ALICIDIBSATIRKOD` için yazılıdır; `SATICIDIBSATIRKOD` şematron paketinde (20260701) yalnız kod listesinde geçer, hiçbir uzunluk/biçim şartı YOK.
+   * Expected type: string | undefined
+   */
+  lineDeliverySaticidibsatirkod: (i: number) => `lines[${i}].delivery.saticidibsatirkod` as `lines[${number}].delivery.saticidibsatirkod`,
+
+  /**
    * Taşıma modu kodu (ör: "1" Deniz, "3" Karayolu, "4" Havayolu)
    * Expected type: string | undefined
    */
@@ -859,6 +865,7 @@ export interface SessionPathMap {
   'lines[${number}].delivery.deliveryTermCode': string | undefined;
   'lines[${number}].delivery.gtipNo': string | undefined;
   'lines[${number}].delivery.alicidibsatirkod': string | undefined;
+  'lines[${number}].delivery.saticidibsatirkod': string | undefined;
   'lines[${number}].delivery.transportModeCode': string | undefined;
   'lines[${number}].delivery.packageId': string | undefined;
   'lines[${number}].delivery.packageQuantity': number | undefined;
@@ -1013,6 +1020,7 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'lines[*].delivery.packageId',
   'lines[*].delivery.packageQuantity',
   'lines[*].delivery.packageTypeCode',
+  'lines[*].delivery.saticidibsatirkod',
   'lines[*].delivery.transportModeCode',
   'lines[*].description',
   'lines[*].itemClassificationCode',
@@ -1152,6 +1160,7 @@ export interface InvoiceSessionUpdateOverloads {
   update(path: `lines[${number}].delivery.deliveryTermCode`, value: string | undefined): void;
   update(path: `lines[${number}].delivery.gtipNo`, value: string | undefined): void;
   update(path: `lines[${number}].delivery.alicidibsatirkod`, value: string | undefined): void;
+  update(path: `lines[${number}].delivery.saticidibsatirkod`, value: string | undefined): void;
   update(path: `lines[${number}].delivery.transportModeCode`, value: string | undefined): void;
   update(path: `lines[${number}].delivery.packageId`, value: string | undefined): void;
   update(path: `lines[${number}].delivery.packageQuantity`, value: number | undefined): void;

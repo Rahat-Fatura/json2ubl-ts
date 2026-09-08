@@ -101,6 +101,28 @@ describe('deriveLineFieldVisibility kuralları', () => {
     );
     expect(v.showCommodityClassification).toBe(true);
     expect(v.showAlicidibsatirkod).toBe(true);
+    // 4.5.1: satıcı kodu ZORUNLU değil ama İZİNLİ — aynı kapıdan görünür olmalı,
+    // yoksa kullanıcı GİB'in kabul ettiği alanı dolduracak yeri bulamaz.
+    expect(v.showSaticidibsatirkod).toBe(true);
+  });
+
+  it('showSaticidibsatirkod: 702 yoksa kapalı (ALICI ile simetrik)', () => {
+    const v = deriveLineFieldVisibility(
+      { ...baseLine, kdvExemptionCode: '701' },
+      { type: 'IHRACKAYITLI', profile: 'TICARIFATURA' },
+      0,
+    );
+    expect(v.showSaticidibsatirkod).toBe(false);
+    expect(v.showSaticidibsatirkod).toBe(v.showAlicidibsatirkod);
+  });
+
+  it('showSaticidibsatirkod: IHRACKAYITLI dışı tipte kapalı', () => {
+    const v = deriveLineFieldVisibility(
+      { ...baseLine, kdvExemptionCode: '702' },
+      { type: 'SATIS', profile: 'TICARIFATURA' },
+      0,
+    );
+    expect(v.showSaticidibsatirkod).toBe(false);
   });
 
   it('showCommodityClassification: false for IHRACKAYITLI without 702', () => {
@@ -264,13 +286,15 @@ describe('LineFieldVisibility doc-level vs line-level kombinasyon', () => {
     expect(v3.showKdvExemptionCodeSelector).toBe(false);    // YATIRIMTESVIK doc fallback
   });
 
-  it('LineFieldVisibility tipi 10 alan içerir', () => {
+  it('LineFieldVisibility tipi 11 alan içerir', () => {
+    // 4.5.1: showSaticidibsatirkod eklendi (10 → 11).
     const v = deriveLineFieldVisibility(baseLine, { type: 'SATIS', profile: 'TICARIFATURA' }, 0);
     const keys = Object.keys(v) as (keyof LineFieldVisibility)[];
-    expect(keys).toHaveLength(10);
+    expect(keys).toHaveLength(11);
     expect(keys).toContain('showKdvExemptionCodeSelector');
     expect(keys).toContain('showWithholdingTaxSelector');
     expect(keys).toContain('showProductTraceId');
+    expect(keys).toContain('showSaticidibsatirkod');
   });
 });
 

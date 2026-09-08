@@ -597,7 +597,7 @@ function buildSingleLine(
   // Satır seviyesi teslimat (ihracat, IHRACKAYITLI+702)
   if (line.delivery) {
     const del = line.delivery;
-    // transportHandlingUnits: paket bilgisi ve/veya alicidibsatirkod
+    // transportHandlingUnits: paket bilgisi ve/veya DİB satır kodları
     // (B-07 IHRACKAYITLI+702 gümrük beyannamesi) için tek element oluştur.
     //
     // B-102 iki düzeltme:
@@ -608,7 +608,28 @@ function buildSingleLine(
     //     KOŞULLU olarak düşüyordu. Artık üç alandan herhangi biri paketi doğurur.
     const hasPackage =
       isNonEmpty(del.packageId) || isNonEmpty(del.packageTypeCode) || del.packageQuantity !== undefined;
-    const thuNeeded = hasPackage || del.alicidibsatirkod;
+
+    /* 🔴 4.5.1 — DİB satır kodları ARTIK İKİ TANE.
+     *
+     * Şematron whitelist'i (`IhracKayitliPartyIdentificationIDTypeCheck`) hem
+     * `ALICIDIBSATIRKOD` hem `SATICIDIBSATIRKOD` schemeID'sine izin verir; zorunlu
+     * olan yalnız birincisidir (702 kuralı). Kütüphanede ikincisinin karşılığı hiç
+     * yoktu, dolayısıyla kullanıcı satıcı satır kodunu BEYAN EDEMİYORDU.
+     *
+     * Kodlar AYNI `IssuerParty` altında ayrı `cac:PartyIdentification` elemanlarına
+     * yazılır (UBL `PartyType` bu alanı maxOccurs=unbounded tanımlar). Sıra ALICI →
+     * SATICI: mevcut belgelerin çıktısı bit-bire aynı kalır. Alan boşsa o kimlik
+     * HİÇ üretilmez — boş schemeID'li kabuk eleman GİB'e gitmez. */
+    const customsPartyIdentifications: Array<{ id: string; schemeID: string }> = [];
+    if (del.alicidibsatirkod) {
+      customsPartyIdentifications.push({ id: del.alicidibsatirkod, schemeID: 'ALICIDIBSATIRKOD' });
+    }
+    if (del.saticidibsatirkod) {
+      customsPartyIdentifications.push({ id: del.saticidibsatirkod, schemeID: 'SATICIDIBSATIRKOD' });
+    }
+    const hasCustomsDeclaration = customsPartyIdentifications.length > 0;
+
+    const thuNeeded = hasPackage || hasCustomsDeclaration;
     const transportHandlingUnits = thuNeeded ? [{
       actualPackages: hasPackage
         ? [{
@@ -617,16 +638,15 @@ function buildSingleLine(
           quantity: del.packageQuantity,
         }]
         : undefined,
-      /* IssuerParty = ALICI. "Alıcı DİB Satır Kodu" zaten alıcıya ait olduğundan
-       * ad ve adres faturanın `customer` bloğundan türetilir — veri uydurulmaz.
-       * Üçü birlikte zorunludur (UBL-TR PartyType, canlı XSD ile ölçüldü). */
-      customsDeclarations: del.alicidibsatirkod
+      /* IssuerParty ad+adres ALICI'dan türetilir: "Alıcı DİB Satır Kodu" zaten alıcıya
+       * aittir ve UBL-TR PartyType bu bağlamda kimlik+ad+adres ÜÇÜNÜ birden zorunlu
+       * kılar (canlı XSD ile ölçüldü) — veri uydurulmaz. Satıcı satır kodu da aynı
+       * beyannamenin kimlik listesine eklenir; şematron kimliği düzenleyen tarafa göre
+       * AYRIŞTIRMAZ, yalnız schemeID whitelist'ine bakar. */
+      customsDeclarations: hasCustomsDeclaration
         ? [{
           issuerParty: {
-            partyIdentifications: [{
-              id: del.alicidibsatirkod,
-              schemeID: 'ALICIDIBSATIRKOD',
-            }],
+            partyIdentifications: customsPartyIdentifications,
             name: customer?.name,
             postalAddress: customer
               ? {

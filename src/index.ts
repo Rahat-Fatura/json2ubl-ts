@@ -29,6 +29,26 @@ export {
     INVOICE_ID_REGEX,
     UUID_REGEX,
     PARTY_IDENTIFICATION_SCHEME_IDS,
+    /* 🔴 4.5.1 — "GÖRÜNÜRLÜK BAYRAĞI VAR, KOD LİSTESİ YOK" AÇIĞI.
+     *
+     * Aşağıdaki beş sabit, paketin ZATEN dışa açtığı bir görünürlük bayrağının
+     * (`deriveFieldVisibility` / `LineFieldVisibility`) doldurmasını beklediği
+     * seçenek kümesidir ve `configManager` üzerinden erişilebilecek BAŞKA bir
+     * genel yolu yoktur. Tüketici (portal) bu yüzden kümeleri elle aynalamak
+     * zorunda kalıyordu — kütüphane listeyi güncellediğinde ayna sessizce
+     * eskiyordu. Açma ölçütü BU: (a) genel bir bayrak alanı istiyor,
+     * (b) başka genel erişimci yok. Ölçütü karşılamayan sabitler (rol kümeleri,
+     * biçim regexleri, `configManager` türevleri) BİLEREK kapalı kalır.
+     *
+     *  • YATIRIM_TESVIK_ONLY_EXEMPTION_CODES — `showExemptionCodeSelector`
+     *  • YTB_ITEM_CLASSIFICATION_CODES       — `showItemClassificationCode`
+     *  • ADDITIONAL_ITEM_ID_SCHEME_IDS       — `showAdditionalItemIdentifications`
+     *  • DELIVERY_TERM_CODES / TRANSPORT_MODE_CODES — `showLineDelivery` */
+    YATIRIM_TESVIK_ONLY_EXEMPTION_CODES,
+    YTB_ITEM_CLASSIFICATION_CODES,
+    ADDITIONAL_ITEM_ID_SCHEME_IDS,
+    DELIVERY_TERM_CODES,
+    TRANSPORT_MODE_CODES,
 } from "./config/constants";
 export type { PartyIdentificationSchemeId } from "./config/constants";
 

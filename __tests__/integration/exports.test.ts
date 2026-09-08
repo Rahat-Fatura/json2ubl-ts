@@ -10,7 +10,15 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { PARTY_IDENTIFICATION_SCHEME_IDS } from '../../src';
+import {
+  PARTY_IDENTIFICATION_SCHEME_IDS,
+  YATIRIM_TESVIK_ONLY_EXEMPTION_CODES,
+  YTB_ITEM_CLASSIFICATION_CODES,
+  ADDITIONAL_ITEM_ID_SCHEME_IDS,
+  DELIVERY_TERM_CODES,
+  TRANSPORT_MODE_CODES,
+} from '../../src';
+import * as publicApi from '../../src';
 import type {
   SimpleSgkType,
   SimpleSgkInput,
@@ -116,6 +124,7 @@ describe('Public type re-exports (Sprint 8l.1 / v2.2.4 — Library Öneri #5)', 
       showLineDelivery: false,
       showCommodityClassification: false,
       showAlicidibsatirkod: false,
+      showSaticidibsatirkod: false,
       showAdditionalItemIdentifications: false,
       showItemClassificationCode: false,
       showProductTraceId: false,
@@ -181,5 +190,51 @@ describe('Public type re-exports (Sprint 8m.1 / v2.2.5 — Library Öneri #7)', 
     expect(PARTY_IDENTIFICATION_SCHEME_IDS.has('TCKN')).toBe(true);
     expect(PARTY_IDENTIFICATION_SCHEME_IDS.has('VKN')).toBe(true);
     expect(PARTY_IDENTIFICATION_SCHEME_IDS.size).toBe(29);
+  });
+});
+
+/**
+ * 4.5.1 — "görünürlük bayrağı var, kod listesi yok" açığı.
+ *
+ * `YATIRIM_TESVIK_ONLY_EXEMPTION_CODES` `constants.ts`'te tanımlıydı ama ana
+ * giriş noktasından HİÇ dışa aktarılmıyordu (`dist/index.js`'te yoktu): portal
+ * kümeyi elle aynalamak zorunda kalmış, ayna kütüphaneyle birlikte güncellenmiyordu.
+ * Aynı sınıftan dört sabit daha açıldı — ölçüt: paketin ZATEN dışa açtığı bir
+ * görünürlük bayrağının seçenek kümesi olmak ve başka genel erişimcisi bulunmamak.
+ */
+describe('Kod listesi export\'ları (4.5.1)', () => {
+  it('YATIRIM_TESVIK_ONLY_EXEMPTION_CODES ana giriş noktasından erişilebilir', () => {
+    expect(YATIRIM_TESVIK_ONLY_EXEMPTION_CODES).toBeInstanceOf(Set);
+    expect([...YATIRIM_TESVIK_ONLY_EXEMPTION_CODES].sort()).toEqual(['308', '339']);
+  });
+
+  it('YTB_ITEM_CLASSIFICATION_CODES — showItemClassificationCode bayrağının seçenekleri', () => {
+    expect([...YTB_ITEM_CLASSIFICATION_CODES].sort()).toEqual(['01', '02', '03', '04']);
+  });
+
+  it('ADDITIONAL_ITEM_ID_SCHEME_IDS — showAdditionalItemIdentifications seçenekleri', () => {
+    expect(ADDITIONAL_ITEM_ID_SCHEME_IDS.has('KUNYENO')).toBe(true);
+    expect(ADDITIONAL_ITEM_ID_SCHEME_IDS.has('TELEFON')).toBe(true);
+    expect(ADDITIONAL_ITEM_ID_SCHEME_IDS.has('ETIKETNO')).toBe(true);
+    // B-88: BILGISAYAR çıkarılmıştı — ayna tutan tüketici bunu kaçırıyordu
+    expect(ADDITIONAL_ITEM_ID_SCHEME_IDS.has('BILGISAYAR')).toBe(false);
+  });
+
+  it('DELIVERY_TERM_CODES + TRANSPORT_MODE_CODES — showLineDelivery seçenekleri', () => {
+    expect(DELIVERY_TERM_CODES.has('EXW')).toBe(true);
+    expect(DELIVERY_TERM_CODES.has('DPU')).toBe(true);
+    expect(TRANSPORT_MODE_CODES.size).toBe(10);
+  });
+
+  it('beşi de paket yüzeyinde ADIYLA duruyor (ağaç sarsıntısı/barrel regresyon kalkanı)', () => {
+    for (const name of [
+      'YATIRIM_TESVIK_ONLY_EXEMPTION_CODES',
+      'YTB_ITEM_CLASSIFICATION_CODES',
+      'ADDITIONAL_ITEM_ID_SCHEME_IDS',
+      'DELIVERY_TERM_CODES',
+      'TRANSPORT_MODE_CODES',
+    ]) {
+      expect(Object.keys(publicApi)).toContain(name);
+    }
   });
 });

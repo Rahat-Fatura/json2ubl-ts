@@ -189,6 +189,26 @@ export interface SimpleLineDeliveryInput {
      * Sprint 8c.2 / B-NEW-12 ile eklendi.
      */
     alicidibsatirkod?: string;
+    /**
+     * Satıcı DİB Satır Kodu — `ALICIDIBSATIRKOD`'un İZİNLİ (zorunlu DEĞİL) eşi.
+     *
+     * Şematron `IhracKayitliPartyIdentificationIDTypeCheck` (Common satır 462) kuralı
+     * OLUMSUZ kurulur: CustomsDeclaration/IssuerParty/PartyIdentification altında
+     * `$IhracKayitliPartyIdentificationIDType = ',SATICIDIBSATIRKOD,ALICIDIBSATIRKOD,'`
+     * DIŞINDA schemeID bulunmasın. Yani ikisi de geçerlidir; zorunluluk yalnız
+     * `ALICIDIBSATIRKOD`'a aittir (702 kuralı, Common satır 326).
+     *
+     * 4.5.1'e kadar bu alanın kütüphanede KARŞILIĞI YOKTU: kullanıcı GİB'in izin
+     * verdiği satıcı satır kodunu hiç beyan edemiyordu.
+     *
+     * Mapper bu alanı `alicidibsatirkod` ile AYNI IssuerParty altında ikinci bir
+     * `PartyIdentification[schemeID='SATICIDIBSATIRKOD']` olarak yazar.
+     *
+     * 🔴 Uzunluk DAYATILMAZ: 11 hane şartı 702 kuralında yalnız `ALICIDIBSATIRKOD`
+     * için yazılıdır; `SATICIDIBSATIRKOD` şematron paketinde (20260701) yalnız kod
+     * listesinde geçer, hiçbir uzunluk/biçim şartı YOK.
+     */
+    saticidibsatirkod?: string;
     /** Taşıma modu kodu (ör: "1" Deniz, "3" Karayolu, "4" Havayolu) */
     transportModeCode?: string;
     /**
