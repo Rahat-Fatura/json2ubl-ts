@@ -2,6 +2,54 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.6.0] — 2026-09-15
+
+> **e-İRSALİYE OTURUM KATMANI.** İkinci belge tipi. Amaç mimari tutarlılık: dışarıdan
+> bakan biri BİR oturumu tanıdığında diğerlerini de tanımalı. Sıradaki tipler
+> (e-SMM / e-Müstahsil Makbuzu) aynı deseni izleyecek.
+>
+> 🔴 **FATURA DAVRANIŞI DEĞİŞMEDİ.** `session-paths.generated.ts` byte-identik;
+> 2603 mevcut testin tamamı yeşil (toplam 128 dosya / 2723 test). Kanıt yalnız sayı
+> değil: 157 belge byte-exact XML snapshot'ıyla karşılaştırılıyor.
+
+### Added
+
+- **`DespatchSession`** — `InvoiceSession`'ın yapısal aynası. `update()` / `unset()` /
+  satır CRUD / `validate()` / `buildXml()` / `uiState` / olay yayma; olay SIRASI
+  faturayla birebir. Faturada olup irsaliyede olmayanı TAŞIMAZ: `calculate()`,
+  hesaplama, mükellefiyet, ihracat kilidi, istisna/tevkifat, öneri motoru,
+  profil↔tip uzlaşma matrisi.
+- **`SimpleDespatchInput` + `mapSimpleToDespatchInput`** — `SimpleInvoiceInput`
+  deseninde: taraflar `sender`/`customer`, `datetime` TEK alan (SDK `issueDate` +
+  `issueTime`e böler), `type`/`profile` düz string.
+- **Ortak oturum çekirdeği (`src/session/`)** — `runPathGates` (update()'in 4 katmanı),
+  `diffVisibility`, `checkIndexBounds`, `ValidationWarning`. 🔴 SAF: emit ETMEZ, veri
+  döner; olay sırası oturumun sözleşmesidir ve buraya gömülseydi sessizce kayardı.
+- **Ortak taraf eşleyicisi (`utils/party-mapper.ts`)** + `utils/tax-id.ts`. Tip başına
+  kopyalansaydı 4.5.5'te düzeltilen "uzunluk değil içerik" hatası tip başına doğardı.
+- **Yol üreteci tip-parametrik** (`GeneratorTarget` tablosu) — ikinci hedef
+  `despatch-session-paths.generated.ts` (118 yol).
+- `DespatchLineInput.note` → `cbc:Note`, `DespatchItemInput.description` →
+  `cac:Item/cbc:Description`. Simple katmanında karşılıkları vardı ama ham katmanda
+  YOKTU → veri sessizce düşüyordu.
+
+### Fixed
+
+- **`DESPATCH_ACTUAL_BEFORE_ISSUE`** — fiili sevk anı düzenleme anından ÖNCE olamaz
+  (e-İrsaliye Uygulama Kılavuzu V1.2 §10). Şematronda karşılığı YOK; kapı bizde.
+  MATBUDAN istisnası korundu (matbu belge ertesi gün e-İrsaliyeye çevrilebilir).
+- **Yol üretecinde `TYPE_ALIASES` sızıntısı** — modül düzeyinde global Map'ti ve hiç
+  temizlenmiyordu; iki hedef aynı süreçte üretilirse birinci dosyanın alias'ları
+  ikinciye SIZARDI. Hedefe yerelleştirildi; sızıntıyı yakalayan fixture'lı test var.
+
+### Notes
+
+- Fiili sevk anı verilmezse **"şimdi" YAZILMAZ**, boş bırakılır ve doğrulayıcı bildirir.
+  Sevkin ne zaman başladığı dış dünyaya ait bir olgudur; uydurmak posta kodunu
+  `'00000'` yazmakla aynı hata sınıfıdır (VUK 227/3).
+- String enum'lara DOKUNULMADI: üreteç `SimpleDespatchInput`'u hedeflediği için
+  nominal-enum sorunu yapısal olarak düştü.
+
 ## [4.5.5] — 2026-09-11
 
 > 4.5.4 YAYIMLANMADI; içeriği bu sürümde toplandı. İki iş var: **İHRACAT
