@@ -41,6 +41,11 @@ export const input: SimpleInvoiceInput = {
       kdvPercent: 0,
       delivery: {
         deliveryTermCode: 'FOB',
+        // 🔴 ŞEMATRON ZORUNLUSU (`LineDeliveryCheck`, Common:434): IHRACAT'ta
+        // taşıma modu satırda ya da belge düzeyinde DOLU olmalı. 4.5.3'e kadar
+        // bu fixture'larda alan HİÇ YOKTU — `review:"auto-ok"` etiketi canlı
+        // şematronla doğrulanmadığı için eksiği örtüyordu.
+        transportModeCode: '1',
         gtipNo: '847330000001',
         deliveryAddress: {
           address: 'Ambarlı Liman',
@@ -58,6 +63,7 @@ export const input: SimpleInvoiceInput = {
       kdvPercent: 0,
       delivery: {
         deliveryTermCode: 'FOB',
+        transportModeCode: '4',
         gtipNo: '847330000002',
         deliveryAddress: {
           address: 'Ambarlı Liman',

@@ -144,6 +144,17 @@ function serializeCountry(
 
 /**
  * Person bloğu → XML. B-20 fix: PERSON_SEQ sırası (FirstName → FamilyName → Title → MiddleName → ...).
+ *
+ * 🔴 İÇİ BOŞ `<cac:Person>` ASLA YAZILMAZ — `''` döner, `joinLines` boş satırı
+ * eler. UBL `PersonType` `cbc:FirstName`i ZORUNLU kılar, dolayısıyla çocuksuz
+ * bir Person düğümü HER ZAMAN XSD-geçersizdir; yazmak GİB'den «"Person"
+ * elementinin içeriği eksik» reddi demektir (canlı ölçüldü: ihracat alıcısı
+ * `taxIdType` yanlışlıkla TCKN olduğunda tam bu oluyordu).
+ *
+ * ⚠️ Bu bir SAVUNMA katmanıdır, veri UYDURMAZ: eksik ad burada uydurulmaz,
+ * yalnız geçersiz düğüm yazılmaz. Gerçekten zorunlu olduğu yerde eksiği
+ * `common-validators` (`TCKN sahibi için Person/FirstName zorunludur`) açık
+ * hata olarak bildirir.
  */
 function serializePersonBlock(
   p: { firstName?: string; familyName?: string; middleName?: string; nationalityId?: string; passportId?: string },
@@ -167,6 +178,7 @@ function serializePersonBlock(
     IdentityDocumentReference: () => identityRefXml,
   });
   const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
+  if (body === '') return '';
   return [`${indent}<cac:Person>`, body, `${indent}</cac:Person>`].join('\n');
 }
 

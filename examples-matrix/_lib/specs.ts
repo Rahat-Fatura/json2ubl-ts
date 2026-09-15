@@ -1083,7 +1083,22 @@ export const validSpecs: ValidSpec[] = [
         name: 'İhraç kayıtlı ürün',
         quantity: 100, price: 50, unitCode: 'Adet', kdvPercent: 0,
         kdvExemptionCode: '701',
-        gtip: '8471300000',
+        /* 🔴 DÜZELTİLDİ — bu senaryo adını GTİP'ten alıyor (`notes`,
+         * `specialIdentifiers: ['gtip', ...]`) ama ÜRETTİĞİ XML'de hiç
+         * `RequiredCustomsID` YOKTU.
+         *
+         * Sebep: alan satır köküne `gtip` diye yazılmıştı; `SimpleLineInput`'ta
+         * böyle bir alan YOK — doğru yol `delivery.gtipNo`. Fazla-alan sessizce
+         * düşüyordu, çünkü `tsconfig.json` yalnız `src`i derler
+         * (`include: ["src"]`), `examples-matrix` hiç tip denetiminden geçmez.
+         *
+         * Değer de 10 haneydi (`'8471300000'`); GİB «noktasız 12 hane» ister
+         * (17.01.2017 İHRACAT entegratör test duyurusu). 8471.30 pozisyonunun
+         * 12 haneli yazımı `847130000000`. */
+        delivery: {
+          gtipNo: '847130000000',
+          deliveryAddress: { address: 'Liman', district: 'Ambarlı', city: 'İstanbul', country: 'Türkiye' },
+        },
       }],
     },
   },

@@ -30,6 +30,7 @@
 
 import { EventEmitter } from 'events';
 import type { SimpleInvoiceInput, SimpleLineInput, SimplePartyIdentification } from './simple-types';
+import { resolveBillingReferences } from './simple-types';
 import type { CalculatedDocument } from './document-calculator';
 import { calculateDocument } from './document-calculator';
 import type { InvoiceUIState, ValidationWarning, FieldVisibility, CustomerLiability } from './invoice-rules';
@@ -227,7 +228,10 @@ export type UnsetScope =
   // `update('despatchReferences[0].id', 'X')` D-6 sub-object create
   // ile array'i yeniden oluşturabilir.
   | 'despatchReferences'
-  | 'additionalDocuments';
+  | 'additionalDocuments'
+  // 4.5.5: çoklu iade referansı. Tekil `billingReference` scope'u AYRI durur —
+  // ikisi bağımsız temizlenir, biri diğerini silmez.
+  | 'billingReferences';
 
 /**
  * `removeIdentification` / `setIdentifications` API'lerinde party tarafı
@@ -1124,7 +1128,9 @@ export class InvoiceSession extends EventEmitter {
       profile: this._input.profile ?? this._calculation?.profile ?? 'TICARIFATURA',
       currencyCode: this._input.currencyCode,
       exchangeRate: this._input.exchangeRate,
-      billingReferenceId: this._input.billingReference?.id,
+      // 4.5.5: çoklu referansta "en az bir tanesi var mı" sorusunun cevabı —
+      // etkin listenin İLK elemanı (tekil alan da aynı listeye düşer).
+      billingReferenceId: resolveBillingReferences(this._input)[0]?.id,
       hasPaymentMeans: !!this._input.paymentMeans,
       paymentMeansCode: this._input.paymentMeans?.meansCode,
       paymentAccountNumber: this._input.paymentMeans?.accountNumber,

@@ -106,6 +106,22 @@ function singularize(plural: string): string {
   return plural;
 }
 
+/**
+ * Dizi alanının SessionPaths anahtar öneki (D-11, 4.5.5).
+ *
+ * Normalde tekilleştirilir (`despatchReferences` → `despatchReference`). Ancak
+ * tekil hâli KARDEŞ bir alanın adıyla çakışıyorsa (`billingReferences` ↔ geriye
+ * uyum için korunan tekil `billingReference`) iki alan aynı anahtarı üretir ve
+ * `SessionPaths` nesne literali "duplicate property" ile derlenemez. Böyle bir
+ * durumda ÇOĞUL ad aynen korunur → `billingReferencesId(i)`.
+ *
+ * Kural GENELDİR; elle bakımı gereken bir istisna listesi YOKTUR.
+ */
+function arrayItemKey(fieldName: string, siblingNames: ReadonlySet<string>): string {
+  const singular = singularize(fieldName);
+  return singular !== fieldName && siblingNames.has(singular) ? fieldName : singular;
+}
+
 // ─── AST tarama: tüm interface'leri topla ─────────────────────────────────────
 
 function parseInterfaces(): Map<string, InterfaceField[]> {
@@ -295,6 +311,9 @@ function generateEntries(interfaces: Map<string, InterfaceField[]>): PathEntry[]
     throw new Error('SimpleInvoiceInput interface not found in simple-types.ts');
   }
 
+  // Kardeş alan adları — dizi anahtarı çakışma kontrolü için (D-11).
+  const siblingNames = new Set(inputFields.map(f => f.name));
+
   for (const field of inputFields) {
     const baseType = stripUndefined(field.type);
     const resolved = resolveAlias(baseType);
@@ -317,8 +336,9 @@ function generateEntries(interfaces: Map<string, InterfaceField[]>): PathEntry[]
       const elementFields = interfaces.get(elementType);
       if (!elementFields) continue;
 
-      // Array adı için key prefix'i (lines → line, despatchReferences → despatchReference)
-      const itemKey = singularize(field.name);
+      // Array adı için key prefix'i (lines → line, despatchReferences → despatchReference).
+      // Çakışma varsa çoğul ad korunur (billingReferences → billingReferences, D-11).
+      const itemKey = arrayItemKey(field.name, siblingNames);
 
       for (const subField of elementFields) {
         addArrayElementEntries(

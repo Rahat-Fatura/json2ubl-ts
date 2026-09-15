@@ -95,6 +95,22 @@
     <cbc:ID>1</cbc:ID>
     <cbc:InvoicedQuantity unitCode="C62">100.00</cbc:InvoicedQuantity>
     <cbc:LineExtensionAmount currencyID="TRY">5000.00</cbc:LineExtensionAmount>
+    <cac:Delivery>
+      <cac:DeliveryAddress>
+        <cbc:StreetName>Liman</cbc:StreetName>
+        <cbc:CitySubdivisionName>Ambarlı</cbc:CitySubdivisionName>
+        <cbc:CityName>İstanbul</cbc:CityName>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:DeliveryAddress>
+      <cac:Shipment>
+        <cbc:ID>1</cbc:ID>
+        <cac:GoodsItem>
+          <cbc:RequiredCustomsID>847130000000</cbc:RequiredCustomsID>
+        </cac:GoodsItem>
+      </cac:Shipment>
+    </cac:Delivery>
     <cac:TaxTotal>
       <cbc:TaxAmount currencyID="TRY">0.00</cbc:TaxAmount>
       <cac:TaxSubtotal>

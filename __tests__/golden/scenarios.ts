@@ -304,4 +304,60 @@ export const GOLDEN_SCENARIOS: GoldenScenario[] = [
       ],
     },
   },
+
+  // ─── (i) İHRACAT — yabancı alıcı + taşıma modu ──────────────────────────
+  {
+    slug: 'i-ihracat-yabanci-alici',
+    description:
+      '🔴 ÇIPA: IHRACAT profili — 11 KARAKTERLİK harfli yabancı vergi numarası ' +
+      '("DE123456789") TCKN sanılıp boş cac:Person açılmamalı, ve satır taşıma ' +
+      'modu (TransportModeCode) yazılmalı. 4.5.3 ikisini de kaçırıyordu: XSD ' +
+      '«Person içeriği eksik: FirstName» + şematron LineDeliveryCheck.',
+    validateType: 'efatura',
+    input: {
+      id: 'GLD2026000000010',
+      uuid: 'a0000000-0010-4000-8010-000000000010',
+      datetime: '2026-04-23T10:00:00',
+      profile: 'IHRACAT',
+      type: 'ISTISNA',
+      currencyCode: 'USD',
+      exchangeRate: 32.5,
+      kdvExemptionCode: '301',
+      sender: { ...SENDER },
+      // İhracatta AccountingCustomerParty yurt içi kayıttır; asıl yurt dışı
+      // alıcı `buyerCustomer` (PARTYTYPE=EXPORT) olarak ayrıca yazılır.
+      customer: { ...CUSTOMER },
+      buyerCustomer: {
+        // 🔴 TAM 11 KARAKTER ama RAKAM DEĞİL — kusurun tetikleyicisi budur.
+        taxNumber: 'DE123456789',
+        name: 'Global Trade Holdings GmbH',
+        address: 'Bahnhofstraße 123',
+        district: 'Munich',
+        city: 'Bayern',
+        country: 'Germany',
+      },
+      lines: [
+        {
+          name: 'İhracat — tekstil',
+          quantity: 100,
+          price: 10,
+          unitCode: 'Adet',
+          kdvPercent: 0,
+          delivery: {
+            deliveryTermCode: 'FOB',
+            gtipNo: '620342000010',
+            // 🔴 Şematron `LineDeliveryCheck` bunu ZORUNLU tutar; kütüphane
+            // varsayılan UYDURMAZ, değeri kullanıcı verir.
+            transportModeCode: '1',
+            deliveryAddress: {
+              address: 'Ambarlı Liman',
+              district: 'Avcılar',
+              city: 'İstanbul',
+              country: 'Türkiye',
+            },
+          },
+        },
+      ],
+    },
+  },
 ];

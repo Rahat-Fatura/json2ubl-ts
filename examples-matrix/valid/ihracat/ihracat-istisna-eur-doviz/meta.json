@@ -30,6 +30,6 @@
   },
   "generatedAt": "2026-04-24T14:19:36.966Z",
   "generatedBy": "examples-matrix/scaffold.ts",
-  "review": "auto-ok",
-  "notes": "IHRACAT+ISTISNA EUR döviz + Avrupa alıcısı"
+  "review": "schematron-verified",
+  "notes": "IHRACAT+ISTISNA EUR döviz + Avrupa alıcısı | 4.5.4: transportModeCode eklendi (şematron LineDeliveryCheck zorunlusu) ve çıktı CANLI GİB paketine soruldu — validSchematron=true, XSD'de yalnız imzasız/UBLExtensions-siz ara-üründen gelen bilinen hata kaldı."
 }

@@ -76,6 +76,19 @@ export {
  */
 export { refreshDerivedConfig } from "./config/derived-config";
 
+/* GTİP — noktasız 12 hane (GİB 17.01.2017 İHRACAT entegratör test duyurusu).
+ *
+ * Dışa açılıyor ki portal/ingest tarafı KENDİ sayma kuralını yazmak zorunda
+ * kalmasın: kusur tam olarak buydu — aynı değer dört katmanda dört farklı
+ * şekilde ölçülüyordu. Tüketiciler alan doğrulamasında `isValidGtip`,
+ * kullanıcıya gösterilecek gerekçede `describeGtipDefect` kullanmalıdır. */
+export {
+    normalizeGtip,
+    isValidGtip,
+    describeGtipDefect,
+    GTIP_DIGIT_COUNT,
+} from "./utils/gtip";
+
 // Yazıyla tutar (v3.0.0) — saf sayı okuma + not biçimlendirme
 export {
     numberToTurkishWords,

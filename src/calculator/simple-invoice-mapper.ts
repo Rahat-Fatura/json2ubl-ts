@@ -5,7 +5,12 @@
  * InvoiceInput formatına dönüştürür.
  */
 
-import type { SimpleInvoiceInput, SimplePartyInput } from './simple-types';
+import type {
+  SimpleBillingReferenceInput,
+  SimpleInvoiceInput,
+  SimplePartyInput,
+} from './simple-types';
+import { resolveBillingReferences } from './simple-types';
 import type { CalculatedDocument } from './document-calculator';
 import type { CalculatedLine } from './line-calculator';
 import { calculateDocument } from './document-calculator';
@@ -37,7 +42,30 @@ import type {
   DeliveryInput,
 } from '../types/common';
 import { isNonEmpty, normalizeTime } from '../utils/formatters';
+import { TCKN_REGEX } from '../config/constants';
 import { canBuildCarrierParty } from '../validators/online-sale-validator';
+
+/**
+ * Vergi/kimlik numarasından `taxIdType` çıkarımı — **UZUNLUK DEĞİL, İÇERİK**.
+ *
+ * 🔴 Eskiden kural `taxNumber.length === 11 → TCKN` idi ve YABANCI vergi
+ * numaralarını gerçek kişi sanıyordu. Canlı ölçüm (`ihracat-istisna-baseline`):
+ * Alman KDV numarası `"DE123456789"` TAM 11 KARAKTER → `TCKN` etiketleniyor →
+ * `party-serializer` gerçek kişi varsayıp `cac:Person` düğümü açıyor → düğümün
+ * içi boş kaldığı için GİB XSD'si «"Person" elementinin içeriği eksik. Zorunlu
+ * element(ler): FirstName.» diyerek belgeyi reddediyordu.
+ *
+ * TCKN TANIM GEREĞİ 11 HANE RAKAMDIR (bkz. `TCKN_REGEX`, Skill §7.1). Harf
+ * içeren 11 karakterlik bir numara TCKN olamaz. Yurt içi gerçek kişi faturası
+ * (11 haneli rakam) ve 10 haneli VKN bu değişiklikten ETKİLENMEZ.
+ *
+ * ⚠️ Bu yalnız İÇERİK kapısıdır. Yabancı bir vergi numarası TAM 11 HANE RAKAM
+ * da olabilir (örn. İtalyan "partita IVA" 11 hanedir), dolayısıyla tek başına
+ * yetmez — BAĞLAM kapısı için bkz. `buildBuyerCustomer`.
+ */
+function resolveTaxIdType(taxNumber: string | undefined | null): TaxIdType {
+  return TCKN_REGEX.test(String(taxNumber ?? '').trim()) ? 'TCKN' : 'VKN';
+}
 
 // ─── Ana Dönüşüm Fonksiyonu ────────────────────────────────────────────────────
 
@@ -110,9 +138,10 @@ function buildInvoiceInput(
     }];
   }
 
-  // Fatura referansı
-  if (simple.billingReference) {
-    result.billingReferences = [buildBillingReference(simple, calc)];
+  // Fatura referansları (tekil kısayol + çoğul alan tek yerde yorumlanır)
+  const billingRefs = resolveBillingReferences(simple);
+  if (billingRefs.length > 0) {
+    result.billingReferences = billingRefs.map(ref => buildBillingReference(ref, calc));
   }
 
   // Sipariş referansı
@@ -208,7 +237,7 @@ function buildOnlineSaleDelivery(simple: SimpleInvoiceInput): DeliveryInput | un
 
   if (canBuildCarrierParty(os)) {
     const taxNumber = os.carrierTaxNumber!.trim();
-    const isTckn = taxNumber.length === 11;
+    const isTckn = resolveTaxIdType(taxNumber) === 'TCKN';
 
     const carrierParty: PartyInput = {
       vknTckn: taxNumber,
@@ -248,7 +277,7 @@ function buildOnlineSaleDelivery(simple: SimpleInvoiceInput): DeliveryInput | un
 // ─── Party Dönüşümü ─────────────────────────────────────────────────────────────
 
 function mapParty(party: SimplePartyInput): PartyInput {
-  const taxIdType: TaxIdType = party.taxNumber.length === 11 ? 'TCKN' : 'VKN';
+  const taxIdType: TaxIdType = resolveTaxIdType(party.taxNumber);
   const result: PartyInput = {
     vknTckn: party.taxNumber,
     taxIdType,
@@ -718,7 +747,17 @@ function buildSingleLine(
 
 // ─── Referanslar ────────────────────────────────────────────────────────────────
 
-function buildBillingReference(simple: SimpleInvoiceInput, calc: CalculatedDocument): BillingReferenceInput {
+/**
+ * Tek bir iade referansını UBL `cac:BillingReference` girdisine çevirir.
+ *
+ * 4.5.5: imza artık TEK REFERANS alır (eskiden `SimpleInvoiceInput` alıp
+ * `simple.billingReference!` okuyordu). Çoklu referans desteği bu sayede
+ * `.map()` ile aynı kuralı HER referansa aynen uygular — davranış ayrışamaz.
+ */
+function buildBillingReference(
+  ref: SimpleBillingReferenceInput,
+  calc: CalculatedDocument,
+): BillingReferenceInput {
   const isIadeGroup = ['IADE', 'TEVKIFATIADE', 'YTBIADE', 'YTBTEVKIFATIADE'].includes(calc.type);
 
   // Schematron IADEInvioceCheck: IADE grubu tiplerinde DocumentTypeCode='IADE' zorunlu.
@@ -727,15 +766,15 @@ function buildBillingReference(simple: SimpleInvoiceInput, calc: CalculatedDocum
   // mapper zorla 'IADE' atıyordu (silent override). Berkay kararıyla değiştirildi:
   // - Kullanıcı değer verdiyse, MAPPER OLDUĞU GİBİ TAŞIR (validator B-31 yakalar).
   // - Kullanıcı vermediyse + IADE grubu, default 'IADE' (mevcut compat davranış).
-  const userValue = simple.billingReference!.documentTypeCode;
+  const userValue = ref.documentTypeCode;
   const documentTypeCode = userValue !== undefined
     ? userValue
     : (isIadeGroup ? 'IADE' : undefined);
 
   return {
     invoiceDocumentReference: {
-      id: simple.billingReference!.id,
-      issueDate: simple.billingReference!.issueDate,
+      id: ref.id,
+      issueDate: ref.issueDate,
       documentTypeCode,
     },
   };
@@ -870,10 +909,23 @@ function resolveBuyerPartyType(profile: string): 'EXPORT' | 'TAXFREE' | undefine
 function buildBuyerCustomer(simple: SimpleInvoiceInput, profile: string): BuyerCustomerInput {
   const bc = simple.buyerCustomer!;
   const partyType = resolveBuyerPartyType(profile);
+  /* BAĞLAM KAPISI — yalnız IHRACAT (`partyType === 'EXPORT'`).
+   *
+   * İhracat alıcısı TANIM GEREĞİ yurt dışındadır: numarası yabancı bir vergi
+   * numarasıdır, TCKN OLAMAZ. İçerik kapısı (`resolveTaxIdType`) tek başına
+   * yetmez, çünkü yabancı numara tam 11 hane RAKAM da olabilir (İtalyan
+   * "partita IVA"). Bu yüzden ihracatta çıkarım hiç yapılmaz, doğrudan VKN.
+   *
+   * 🔴 YOLCUBERABERFATURA (`TAXFREE`) BİLEREK KAPSAM DIŞI: oradaki alıcı bir
+   * GERÇEK KİŞİdir (yolcu) ve `cac:Person` bloğu o profilde ZORUNLUDUR —
+   * `nationalityId`/`passportId` üzerinden ayrıca emit edilir. O profilin kendi
+   * XSD açıkları (NationalityID'nin FirstName'den önce gelmesi,
+   * IdentityDocumentReference/IssueDate eksiği) AYRI bir iştir; bu turda
+   * ölçülmedi, dokunulmadı. Dolayısıyla TAXFREE eski içerik-kuralında kalır. */
   const result: BuyerCustomerInput = {
     party: {
       vknTckn: bc.taxNumber,
-      taxIdType: bc.taxNumber.length === 11 ? 'TCKN' : 'VKN',
+      taxIdType: partyType === 'EXPORT' ? 'VKN' : resolveTaxIdType(bc.taxNumber),
       name: bc.name,
       streetName: bc.address,
       citySubdivisionName: bc.district,

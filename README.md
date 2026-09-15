@@ -107,6 +107,28 @@ const { xml } = builder.build({
 // Otomatik: profil=TEMELFATURA, BillingReference.DocumentTypeCode='IADE'
 ```
 
+**Çoklu iade referansı (4.5.5+)** — bir iade faturası birden çok asıl faturayı
+referanslayabilir. GİB buna izin verir: XSD `cac:BillingReference`
+`maxOccurs="unbounded"`, şematron `IADEInvioceCheck` sayı değil ORAN denetler
+(her referans 16 haneli ve `DocumentTypeCode='IADE'` olmalıdır).
+
+```typescript
+const { xml } = builder.build({
+  type: 'IADE',
+  billingReferences: [
+    { id: 'ABC2025000000001', issueDate: '2025-01-15' },
+    { id: 'XYZ2025000000009', issueDate: '2025-02-03' },
+  ],
+  // ...
+});
+// Çıktı: iki ayrı <cac:BillingReference> düğümü
+```
+
+Tekil `billingReference` alanı geriye uyum için KORUNUR (`@deprecated`): çoğul
+alan verilmediğinde tek elemanlı liste gibi işlenir ve birebir aynı XML çıkar.
+Yol adresleme mevcut çoğul alanların desenini izler:
+`SessionPaths.billingReferencesId(0)` → `'billingReferences[0].id'`.
+
 ### İstisna / İhraç Kayıtlı / Özel Matrah
 
 ```typescript

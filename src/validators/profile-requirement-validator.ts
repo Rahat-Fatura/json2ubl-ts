@@ -25,6 +25,7 @@
  */
 
 import type { SimpleInvoiceInput } from '../calculator/simple-types';
+import { billingReferencePath, resolveBillingReferences } from '../calculator/simple-types';
 import type { ValidationError } from '../errors/ubl-build-error';
 import type { InvoiceTypeCode } from '../types/enums';
 import {
@@ -181,19 +182,23 @@ export function validateProfileRequirements(input: SimpleInvoiceInput): Validati
    *
    * ⚠️ BOŞ referans burada hata değildir: onu `invoice-rules.validateInvoiceState`
    * ("İade faturalarında iade edilen fatura referansı zorunludur") zaten söylüyor. */
+  /* 4.5.5: referans ARTIK ÇOĞUL olabilir (GİB `cac:BillingReference`
+   * maxOccurs="unbounded"). Desen kontrolü HER referansa ayrı ayrı uygulanır —
+   * şematron da öyle yapar: `count(... 16 haneli ...) = count(hepsi)`. */
   if (IADE_GROUP_TYPES.has(tip as InvoiceTypeCode)) {
-    const referansNo = String(input.billingReference?.id ?? '').trim();
-    if (referansNo !== '' && !INVOICE_ID_REGEX.test(referansNo)) {
+    resolveBillingReferences(input).forEach((ref, i) => {
+      const referansNo = String(ref.id ?? '').trim();
+      if (referansNo === '' || INVOICE_ID_REGEX.test(referansNo)) return;
       errors.push({
         code: 'INVALID_FORMAT',
         message:
           'İade edilen fatura numarası GİB biçimine uymuyor: 3 hane seri (harf/rakam) + ' +
           '4 hane yıl + 9 hane sıra, toplam 16 karakter (ör: ABC2026000000002).',
-        path: 'billingReference.id',
+        path: billingReferencePath(input, i, 'id'),
         expected: 'ABC2026000000002 biçimi (16 karakter)',
         actual: referansNo,
       });
-    }
+    });
   }
 
   // ── KAMU → alıcı kurum + VKN

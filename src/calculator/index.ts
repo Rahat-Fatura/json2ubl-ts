@@ -29,6 +29,8 @@ export { mapSimpleToInvoiceInput } from "./simple-invoice-mapper";
 
 // Basit giriş tipleri
 export { BillingDocumentTypeCode } from "./simple-types";
+// 4.5.5 — tekil/çoğul iade referansı öncelik kuralının tek yorumlayıcısı.
+export { billingReferencePath, resolveBillingReferences } from "./simple-types";
 export type {
     SimpleInvoiceInput,
     SimplePartyInput,

@@ -475,6 +475,24 @@ export const SessionPaths = {
   billingReferenceDocumentTypeCode: 'billingReference.documentTypeCode',
 
   /**
+   * Referans fatura numarası (Schematron: IADE grubu tiplerinde 16 karakter zorunlu)
+   * Expected type: string
+   */
+  billingReferencesId: (i: number) => `billingReferences[${i}].id` as `billingReferences[${number}].id`,
+
+  /**
+   * Referans fatura tarihi
+   * Expected type: string
+   */
+  billingReferencesIssueDate: (i: number) => `billingReferences[${i}].issueDate` as `billingReferences[${number}].issueDate`,
+
+  /**
+   * Belge tipi kodu. - IADE grubu tiplerinde otomatik `'IADE'` atanır (Schematron zorunlu). - Diğer tiplerde serbest metin — Schematron kısıtlaması yoktur.
+   * Expected type: string | undefined
+   */
+  billingReferencesDocumentTypeCode: (i: number) => `billingReferences[${i}].documentTypeCode` as `billingReferences[${number}].documentTypeCode`,
+
+  /**
    * İrsaliye numarası
    * Expected type: string
    */
@@ -891,6 +909,9 @@ export interface SessionPathMap {
   'billingReference.id': string;
   'billingReference.issueDate': string;
   'billingReference.documentTypeCode': string | undefined;
+  'billingReferences[${number}].id': string;
+  'billingReferences[${number}].issueDate': string;
+  'billingReferences[${number}].documentTypeCode': string | undefined;
   'despatchReferences[${number}].id': string;
   'despatchReferences[${number}].issueDate': string;
   'additionalDocuments[${number}].id': string;
@@ -968,6 +989,9 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'billingReference.documentTypeCode',
   'billingReference.id',
   'billingReference.issueDate',
+  'billingReferences[*].documentTypeCode',
+  'billingReferences[*].id',
+  'billingReferences[*].issueDate',
   'buyerCustomer.address',
   'buyerCustomer.city',
   'buyerCustomer.country',
@@ -1186,6 +1210,9 @@ export interface InvoiceSessionUpdateOverloads {
   update(path: 'billingReference.id', value: string): void;
   update(path: 'billingReference.issueDate', value: string): void;
   update(path: 'billingReference.documentTypeCode', value: string | undefined): void;
+  update(path: `billingReferences[${number}].id`, value: string): void;
+  update(path: `billingReferences[${number}].issueDate`, value: string): void;
+  update(path: `billingReferences[${number}].documentTypeCode`, value: string | undefined): void;
   update(path: `despatchReferences[${number}].id`, value: string): void;
   update(path: `despatchReferences[${number}].issueDate`, value: string): void;
   update(path: `additionalDocuments[${number}].id`, value: string): void;

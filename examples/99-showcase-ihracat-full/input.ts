@@ -52,6 +52,11 @@ export const input: SimpleInvoiceInput = {
       quantity: 100, price: 20, unitCode: 'Adet', kdvPercent: 0,
       delivery: {
         deliveryTermCode: 'FOB', gtipNo: '620342000010',
+        // 🔴 ŞEMATRON ZORUNLUSU (`LineDeliveryCheck`): IHRACAT'ta taşıma modu
+        // satırda ya da belge düzeyinde DOLU olmalı. Kütüphane varsayılan
+        // UYDURMAZ — bu fixture'larda 4.5.3'e kadar alan HİÇ YOKTU ve
+        // üretilen her ihracat faturası GİB kapısından dönerdi.
+        transportModeCode: '1',
         deliveryAddress: { address: 'Ambarlı Liman', district: 'Avcılar', city: 'İstanbul', country: 'Türkiye' },
       },
     },
@@ -60,6 +65,7 @@ export const input: SimpleInvoiceInput = {
       quantity: 10, price: 500, unitCode: 'Adet', kdvPercent: 0,
       delivery: {
         deliveryTermCode: 'CIF', gtipNo: '570110100000',
+        transportModeCode: '4',
         deliveryAddress: { address: 'Zürich Flughafen', district: 'Kloten', city: 'Zurich', country: 'Switzerland' },
       },
     },
@@ -68,6 +74,7 @@ export const input: SimpleInvoiceInput = {
       quantity: 25, price: 80, unitCode: 'Adet', kdvPercent: 0,
       delivery: {
         deliveryTermCode: 'EXW', gtipNo: '741400000000',
+        transportModeCode: '3',
         deliveryAddress: { address: 'Fabrika', district: 'Üsküdar', city: 'İstanbul', country: 'Türkiye' },
       },
     },
@@ -76,6 +83,7 @@ export const input: SimpleInvoiceInput = {
       quantity: 50, price: 15, unitCode: 'Adet', kdvPercent: 0,
       delivery: {
         deliveryTermCode: 'DAP', gtipNo: '090111000000',
+        transportModeCode: '3',
         deliveryAddress: { address: 'Dietikon Depot', district: 'Dietikon', city: 'Zurich', country: 'Switzerland' },
       },
     },
@@ -84,6 +92,7 @@ export const input: SimpleInvoiceInput = {
       quantity: 30, price: 25, unitCode: 'Adet', kdvPercent: 0,
       delivery: {
         deliveryTermCode: 'DDP', gtipNo: '170310000000',
+        transportModeCode: '3',
         deliveryAddress: { address: 'Merkez Depo', district: 'Central', city: 'Zurich', country: 'Switzerland' },
       },
     },

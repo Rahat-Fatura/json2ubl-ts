@@ -1,6 +1,7 @@
 import type { DeliveryInput, LineDeliveryInput, AddressInput } from '../types/common';
 import { cbcOptionalTag, cbcRequiredTag, joinLines } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
+import { normalizeGtip } from '../utils/gtip';
 import { serializePartyAs } from './party-serializer';
 import { DELIVERY_SEQ, ADDRESS_SEQ, SHIPMENT_SEQ, PACKAGE_SEQ, emitInOrder } from './xsd-sequence';
 
@@ -104,20 +105,49 @@ function serializeShipment(shipment: DeliveryInput['shipment'], indent: string):
   const i2 = indent + '  ';
   const i3 = indent + '    ';
 
-  // B-99: shipmentStages var ise onları kullan; yoksa transportModeCode fallback tek stage.
-  const stagesSource: Array<{ transportModeCode?: string }> =
+  /* B-99: shipmentStages var ise onları kullan; yoksa transportModeCode fallback tek stage.
+   *
+   * 🔴 TAŞIMA MODU UYDURULMAZ. Şematron `LineDeliveryCheck` IHRACAT'ta bu kodu
+   * ZORUNLU tutar, ama eksikliğin çaresi burada bir varsayılan (örn. "4 =
+   * Havayolu") basmak DEĞİLDİR: uydurulan kod belgeye GERÇEK OLMAYAN bir
+   * taşıma beyanı yazar ve kullanıcı eksiğini hiç öğrenmez. Değer yoksa hiçbir
+   * ShipmentStage yazılmaz; eksiği `profile-validators` AÇIK hata olarak
+   * bildirir.
+   *
+   * İçi tamamen boş kalacak stage'ler de ELENİR: çocuksuz bir
+   * `<cac:ShipmentStage>` hiçbir şematron kuralını karşılamaz, yalnız gürültü
+   * üretir (kullanıcı `shipmentStages: [{}]` verdiğinde oluşuyordu). */
+  const stagesSource: Array<{ transportModeCode?: string }> = (
     shipment.shipmentStages && shipment.shipmentStages.length > 0
       ? shipment.shipmentStages
       : isNonEmpty(shipment.transportModeCode)
         ? [{ transportModeCode: shipment.transportModeCode }]
-        : [];
+        : []
+  ).filter(stage => isNonEmpty(stage.transportModeCode));
 
+  /* 🔴 GTİP XML'e NOKTASIZ yazılır — tel biçimi budur.
+   *
+   * GİB 17.01.2017 İHRACAT entegratör test duyurusu: «GTİP noktasız 12 hane».
+   * Şematron `Common:326` da KARAKTER sayar (`string-length(normalize-space(...))
+   * = 12`) — `normalize-space` noktayı ELEMEZ. Yani kullanıcının gayet meşru
+   * yazdığı `8471.30.0000.00` (15 karakter) ham hâliyle gönderilirse GİB
+   * reddeder, GTB tarafında `1230` olarak patlardı.
+   *
+   * Burası tüm yolların (mapper → InvoiceInput → XML ve builder → InvoiceInput
+   * → XML) ortak son kapısıdır; normalizasyon TEK yerde, burada yapılır.
+   *
+   * Bu bir DEĞER UYDURMA değildir: yalnız biçim ayracı silinir, hane
+   * eklenmez/kırpılmaz. Hane sayısı yanlışsa belge buraya zaten ULAŞMAZ —
+   * `profile-validators` (İHRACAT) ve `ihrackayitli-validator` (702) o kapıyı
+   * hata ile kapatır. Kullanıcının YAZDIĞI alan da değiştirilmez; değişen
+   * yalnız tele giden temsildir. */
   const goodsItemsXml = shipment.goodsItems
     ? joinLines(
         shipment.goodsItems.map(gi => {
           const giLines: string[] = [`${i2}<cac:GoodsItem>`];
-          if (isNonEmpty(gi.requiredCustomsId)) {
-            giLines.push(`${i3}${cbcOptionalTag('RequiredCustomsID', gi.requiredCustomsId)}`);
+          const customsId = normalizeGtip(gi.requiredCustomsId);
+          if (isNonEmpty(customsId)) {
+            giLines.push(`${i3}${cbcOptionalTag('RequiredCustomsID', customsId)}`);
           }
           giLines.push(`${i2}</cac:GoodsItem>`);
           return giLines.join('\n');

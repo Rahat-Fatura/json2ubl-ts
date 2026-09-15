@@ -8,6 +8,7 @@ import {
 import { isYatirimTesvikScope } from '../config/schematron-scopes';
 import { profileRequirement, invalidFormat, yatirimTesvikRequiresYtbNo } from './validation-result';
 import { isNonEmpty, isNumeric, hasLength } from '../utils/formatters';
+import { isValidGtip, describeGtipDefect } from '../utils/gtip';
 
 /**
  * §3 Profil-bazlı validasyon — ProfileID'ye göre ek kurallar
@@ -46,6 +47,26 @@ export function validateByProfile(input: InvoiceInput): ValidationError[] {
   return errors;
 }
 
+/**
+ * Bir Delivery bloğundaki DOLU taşıma modu kodlarını toplar.
+ *
+ * İki şekil de okunur, çünkü serileştirici ikisini de basar (`delivery-serializer`
+ * B-99): `shipment.transportModeCode` kısayolu ve `shipment.shipmentStages[]`
+ * dizisi. Belge düzeyi (`InvoiceInput.delivery`) ve satır düzeyi
+ * (`InvoiceLineInput.delivery`) aynı `shipment` şeklini taşır.
+ */
+function collectTransportModeCodes(
+  delivery: { shipment?: { transportModeCode?: string; shipmentStages?: Array<{ transportModeCode?: string }> } } | undefined,
+): string[] {
+  const shipment = delivery?.shipment;
+  if (!shipment) return [];
+  const codes = [
+    shipment.transportModeCode,
+    ...(shipment.shipmentStages ?? []).map(stage => stage.transportModeCode),
+  ];
+  return codes.filter((code): code is string => isNonEmpty(code)).map(code => code.trim());
+}
+
 /** §3.3 IHRACAT profili */
 function validateIhracat(input: InvoiceInput): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -68,6 +89,17 @@ function validateIhracat(input: InvoiceInput): ValidationError[] {
   if (!isNonEmpty(input.supplier?.taxOffice)) {
     errors.push(profileRequirement(p, 'supplier.taxOffice',
       'IHRACAT profilinde satıcı vergi dairesi adı zorunludur'));
+  }
+
+  /* Belge düzeyi taşıma modu — şematron `LineDeliveryCheck`
+   * (`UBL-TR_Common_Schematron.xml:434`) satır ya da BELGE düzeyinden BİRİNİ
+   * yeterli sayar. Satır döngüsünün dışında bir kez ölçülür. */
+  const documentTransportModes = collectTransportModeCodes(input.delivery);
+  for (const code of documentTransportModes) {
+    if (!TRANSPORT_MODE_CODES.has(code)) {
+      errors.push(profileRequirement(p, 'delivery.shipment.transportModeCode',
+        `Geçersiz taşıma modu: ${code}`));
+    }
   }
 
   // Her satırda: PriceAmount+LineExtensionAmount (B-29) ve DeliveryTerms/DeliveryAddress/TransportModeCode/RequiredCustomsID
@@ -99,19 +131,56 @@ function validateIhracat(input: InvoiceInput): ValidationError[] {
         `Geçersiz INCOTERMS kodu: ${del.deliveryTerms.id}`));
     }
 
-    // TransportModeCode
-    if (del.shipment?.transportModeCode !== undefined) {
-      if (!TRANSPORT_MODE_CODES.has(del.shipment.transportModeCode)) {
+    /* TransportModeCode — 🔴 ZORUNLU, "varsa doğrula" DEĞİL.
+     *
+     * Eski kod `!== undefined` kapısıyla alanı fiilen OPSİYONEL sayıyordu;
+     * şematron ise zorunlu tutuyor ve belgeyi reddediyor:
+     *   `LineDeliveryCheck` (`UBL-TR_Common_Schematron.xml:434`) — «ProfileID
+     *   IHRACAT iken, InvoiceLine Delivery/.../TransportModeCode içermiyorsa
+     *   Invoice Delivery/.../TransportModeCode içermelidir».
+     * Yani kural "satır YA DA belge" biçiminde bir VEYA'dır; ikisi de boşsa red.
+     * Doğrulayıcı artık şematronun bu iki-şıklı hâlini birebir kurar.
+     *
+     * 🔴 EKSİK DEĞER UYDURULMAZ. Serileştirici hiçbir varsayılan basmaz
+     * (bkz. `delivery-serializer`); kullanıcı vermediyse kapı BURADA, açık
+     * hatayla kapanır. Sessiz varsayılan bu depoda defalarca ısırmıştır.
+     *
+     * `shipmentStages[]` de okunur: serileştirici hem `transportModeCode`
+     * kısayolunu hem de çoklu `shipmentStages` şeklini basar; yalnız birini
+     * denetlemek, diğerini kullanan geçerli belgede YANLIŞ hata üretirdi. */
+    const lineTransportModes = collectTransportModeCodes(del);
+    if (lineTransportModes.length === 0 && documentTransportModes.length === 0) {
+      errors.push(profileRequirement(p, `lines[${i}].delivery.shipment.transportModeCode`,
+        'IHRACAT: Taşıma modu (TransportModeCode) zorunludur — satırda ya da belge '
+        + 'düzeyinde verilmelidir (şematron LineDeliveryCheck)'));
+    }
+    for (const code of lineTransportModes) {
+      if (!TRANSPORT_MODE_CODES.has(code)) {
         errors.push(profileRequirement(p, `lines[${i}].delivery.shipment.transportModeCode`,
-          `Geçersiz taşıma modu: ${del.shipment.transportModeCode}`));
+          `Geçersiz taşıma modu: ${code}`));
       }
     }
 
-    // RequiredCustomsID (GTİP)
+    /* RequiredCustomsID (GTİP) — 🔴 VARLIK YETMEZ, BİÇİM DE DENETLENİR.
+     *
+     * Eski kapı yalnız `isNonEmpty` bakıyordu; `8471.30` gibi 6 haneli bir
+     * değer buradan sessizce geçiyordu. Şematron da yakalamıyor:
+     * `UBL-TR_Common_Schematron.xml:436` İHRACAT'ta YALNIZ
+     * `string-length(...) != 0` şartı koyar, hane SAYMAZ. Yani yanlış biçim
+     * tüm yerel kontrollerden geçip GTB tarafında `1230` reddi olarak
+     * patlıyordu (GİB SSS 34'e göre usulsüzlük cezası riski).
+     *
+     * 12 hane şartının dayanağı GİB'in 17.01.2017 tarihli İHRACAT entegratör
+     * test duyurusudur: «GTİP noktasız 12 hane». Ayrıntı: `utils/gtip`. */
     const goodsItems = del.shipment?.goodsItems;
-    if (!goodsItems || goodsItems.length === 0 || !isNonEmpty(goodsItems[0]?.requiredCustomsId)) {
-      errors.push(profileRequirement(p, `lines[${i}].delivery.shipment.goodsItems[0].requiredCustomsId`,
+    const gtipPath = `lines[${i}].delivery.shipment.goodsItems[0].requiredCustomsId`;
+    const gtipRaw = goodsItems?.[0]?.requiredCustomsId;
+    if (!goodsItems || goodsItems.length === 0 || !isNonEmpty(gtipRaw)) {
+      errors.push(profileRequirement(p, gtipPath,
         'IHRACAT: RequiredCustomsID (GTİP) zorunludur'));
+    } else if (!isValidGtip(gtipRaw)) {
+      errors.push(profileRequirement(p, gtipPath,
+        `IHRACAT: ${describeGtipDefect(gtipRaw)}`));
     }
   });
 

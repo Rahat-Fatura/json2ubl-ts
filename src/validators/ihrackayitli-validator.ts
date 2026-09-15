@@ -33,6 +33,8 @@
 import { InvoiceTypeCode } from '../types/enums';
 import type { InvoiceInput } from '../types/invoice-input';
 import type { ValidationError } from '../errors/ubl-build-error';
+import { isNonEmpty } from '../utils/formatters';
+import { isValidGtip, describeGtipDefect, GTIP_DIGIT_COUNT } from '../utils/gtip';
 
 /** IHRACKAYITLI CustomsDeclaration PartyIdentification schemeID whitelist (Schematron satır 451) */
 const IHRAC_KAYITLI_SCHEME_IDS: ReadonlySet<string> = new Set([
@@ -53,18 +55,31 @@ export function validateIhrackayitli702(input: InvoiceInput): ValidationError[] 
   input.lines.forEach((line, idx) => {
     const pathPrefix = `lines[${idx}]`;
 
-    // 1. GTİP kontrolü (RequiredCustomsID 12 hane)
+    /* 1. GTİP kontrolü (RequiredCustomsID 12 hane).
+     *
+     * Ölçüm `utils/gtip`'e devredildi. Eski `requiredCustomsId.length === 12`
+     * HAM karakter sayıyordu ve iki yönde de yanlıştı:
+     *   • `'8471.30.0000.00'` (15 karakter) REDDEDİLİYORDU — oysa değer 12
+     *     haneyi taşıyor, yalnız noktalı yazılmış; serileştirici artık
+     *     noktasız bastığı için belge GİB'e GEÇERLİ gidiyor.
+     *   • `' 847130000000 '` (14 karakter) REDDEDİLİYORDU — oysa şematron
+     *     `normalize-space` ile boşluğu kırpıp 12 sayar, yani GİB KABUL
+     *     ediyordu; kütüphane GİB'den katı davranıyordu.
+     *
+     * Normalizasyon tolere edici, doğrulama katı: `isValidGtip` normalize
+     * edilmiş değerin TAM 12 RAKAM olmasını şart koşar. */
     const goodsItems = line.delivery?.shipment?.goodsItems ?? [];
-    const hasGtip12 = goodsItems.some(
-      gi => gi.requiredCustomsId && gi.requiredCustomsId.length === 12,
-    );
+    const hasGtip12 = goodsItems.some(gi => isValidGtip(gi.requiredCustomsId));
     if (!hasGtip12) {
+      const firstGtip = goodsItems.find(gi => isNonEmpty(gi.requiredCustomsId))?.requiredCustomsId;
       errors.push({
         code: 'IHRACKAYITLI_702_REQUIRES_GTIP',
         message: 'IHRACKAYITLI + 702 için her satırda 12 haneli GTİP (RequiredCustomsID) zorunlu',
         path: `${pathPrefix}.delivery.shipment.goodsItems[].requiredCustomsId`,
-        expected: '12 hane GTİP',
-        actual: goodsItems.length === 0 ? 'goodsItems boş' : '12 hane değil',
+        expected: `${GTIP_DIGIT_COUNT} hane GTİP (noktasız)`,
+        actual: goodsItems.length === 0
+          ? 'goodsItems boş'
+          : (describeGtipDefect(firstGtip) ?? `${GTIP_DIGIT_COUNT} hane değil`),
       });
     }
 

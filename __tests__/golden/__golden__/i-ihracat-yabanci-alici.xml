@@ -7,14 +7,19 @@
   xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 UBL-Invoice-2.1.xsd">
+  <ext:UBLExtensions>
+    <ext:UBLExtension>
+      <ext:ExtensionContent/>
+    </ext:UBLExtension>
+  </ext:UBLExtensions>
   <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
   <cbc:CustomizationID>TR1.2</cbc:CustomizationID>
   <cbc:ProfileID>IHRACAT</cbc:ProfileID>
-  <cbc:ID>EXA2026000000018</cbc:ID>
+  <cbc:ID>GLD2026000000010</cbc:ID>
   <cbc:CopyIndicator>false</cbc:CopyIndicator>
-  <cbc:UUID>e1a2b3c4-0018-4000-8018-000000000018</cbc:UUID>
+  <cbc:UUID>a0000000-0010-4000-8010-000000000010</cbc:UUID>
   <cbc:IssueDate>2026-04-23</cbc:IssueDate>
-  <cbc:IssueTime>13:00:00</cbc:IssueTime>
+  <cbc:IssueTime>10:00:00</cbc:IssueTime>
   <cbc:InvoiceTypeCode>ISTISNA</cbc:InvoiceTypeCode>
   <cbc:Note>YAZIYLA:#BİN AMERIKAN DOLARI#</cbc:Note>
   <cbc:DocumentCurrencyCode>USD</cbc:DocumentCurrencyCode>
@@ -25,7 +30,7 @@
         <cbc:ID schemeID="VKN">1234567890</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
-        <cbc:Name>Sınır Tanımaz İhracat A.Ş.</cbc:Name>
+        <cbc:Name>Sınır Tanımaz Ticaret A.Ş.</cbc:Name>
       </cac:PartyName>
       <cac:PostalAddress>
         <cbc:StreetName>Barbaros Bulvarı No:123 Kat:5</cbc:StreetName>
@@ -46,20 +51,25 @@
   <cac:AccountingCustomerParty>
     <cac:Party>
       <cac:PartyIdentification>
-        <cbc:ID schemeID="VKN">2222222222</cbc:ID>
+        <cbc:ID schemeID="VKN">9876543210</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
-        <cbc:Name>Global Trade Holdings (Germany)</cbc:Name>
+        <cbc:Name>Yeşil Alıcı Ltd. Şti.</cbc:Name>
       </cac:PartyName>
       <cac:PostalAddress>
-        <cbc:StreetName>Bahnhofstraße 123</cbc:StreetName>
-        <cbc:CitySubdivisionName>Munich</cbc:CitySubdivisionName>
-        <cbc:CityName>Bayern</cbc:CityName>
-        <cbc:PostalZone>80335</cbc:PostalZone>
+        <cbc:StreetName>Bağdat Caddesi No:456</cbc:StreetName>
+        <cbc:CitySubdivisionName>Kadıköy</cbc:CitySubdivisionName>
+        <cbc:CityName>İstanbul</cbc:CityName>
+        <cbc:PostalZone>34710</cbc:PostalZone>
         <cac:Country>
-          <cbc:Name>Germany</cbc:Name>
+          <cbc:Name>Türkiye</cbc:Name>
         </cac:Country>
       </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cac:TaxScheme>
+          <cbc:Name>Kadıköy</cbc:Name>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
     </cac:Party>
   </cac:AccountingCustomerParty>
   <cac:BuyerCustomerParty>
@@ -77,7 +87,6 @@
         <cbc:StreetName>Bahnhofstraße 123</cbc:StreetName>
         <cbc:CitySubdivisionName>Munich</cbc:CitySubdivisionName>
         <cbc:CityName>Bayern</cbc:CityName>
-        <cbc:PostalZone>80335</cbc:PostalZone>
         <cac:Country>
           <cbc:Name>Germany</cbc:Name>
         </cac:Country>
@@ -85,9 +94,6 @@
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>Global Trade Holdings GmbH</cbc:RegistrationName>
       </cac:PartyLegalEntity>
-      <cac:Contact>
-        <cbc:ElectronicMail>import@global-trade.example.de</cbc:ElectronicMail>
-      </cac:Contact>
     </cac:Party>
   </cac:BuyerCustomerParty>
   <cac:PricingExchangeRate>
@@ -124,7 +130,7 @@
     <cbc:LineExtensionAmount currencyID="USD">1000.00</cbc:LineExtensionAmount>
     <cac:Delivery>
       <cac:DeliveryAddress>
-        <cbc:StreetName>Ambarlı Liman Yüksek Gümrük</cbc:StreetName>
+        <cbc:StreetName>Ambarlı Liman</cbc:StreetName>
         <cbc:CitySubdivisionName>Avcılar</cbc:CitySubdivisionName>
         <cbc:CityName>İstanbul</cbc:CityName>
         <cac:Country>
@@ -161,7 +167,7 @@
       </cac:TaxSubtotal>
     </cac:TaxTotal>
     <cac:Item>
-      <cbc:Name>Premium Tekstil Ürünü — İhracat</cbc:Name>
+      <cbc:Name>İhracat — tekstil</cbc:Name>
     </cac:Item>
     <cac:Price>
       <cbc:PriceAmount currencyID="USD">10.00</cbc:PriceAmount>

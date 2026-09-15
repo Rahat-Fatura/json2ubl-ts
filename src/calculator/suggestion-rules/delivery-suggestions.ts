@@ -1,4 +1,5 @@
 import type { SuggestionRule, Suggestion } from '../suggestion-types';
+import { isValidGtip, describeGtipDefect } from '../../utils/gtip';
 
 /**
  * Sprint 8i.6 / AR-10 Faz 2 — Delivery grubu suggestion kuralları (3 kural).
@@ -36,30 +37,58 @@ const DELIVERY_IHRACAT_INCOTERMS_REQUIRED: SuggestionRule = {
   },
 };
 
+/**
+ * GTİP biçim önerisi — hane ölçümü `utils/gtip`'e devredildi.
+ *
+ * Eskiden burada `gtip.replace(/\D/g, '')` ile AYRI bir sayma vardı; aynı
+ * değeri profil doğrulayıcı ve IHRACKAYITLI+702 doğrulayıcı başka başka
+ * ölçüyordu (üç katman, üç sonuç). Artık üçü de `isValidGtip` kullanır.
+ *
+ * 🔴 Bu kural neden hâlâ `recommended` (bloke ETMİYOR)?
+ * Şematron GTİP'in 12 hane olmasını YALNIZ `IHRACKAYITLI`+`702` bağlamında
+ * (`Common:326`) şart koşar; İHRACAT profilinde 12 hane şartının dayanağı
+ * GİB'in 17.01.2017 test duyurusudur ve `profile-validators` onu ZATEN bloke
+ * eden hata olarak kurar. Geriye kalan hâllerde (ör. GTİP girilmiş bir SATIS
+ * faturası) GİB belgeyi reddetmez; onları bloke etmek kütüphaneyi GİB'den
+ * KATI yapar ve bugün geçen belgeleri yarın reddederdi. Bu yüzden advisory
+ * kalır — kapı, GİB'in gerçekten reddettiği iki katmandadır.
+ *
+ * 🔴 `value` neden HER ZAMAN `undefined` (yani somut bir düzeltme önerilmez)?
+ * Geçerlilik artık NORMALİZASYON SONRASI ölçülüyor. Dolayısıyla "yalnız ayraç
+ * temizliğiyle düzelecek" bir değer (`8471.30.0000.00`) zaten GEÇERLİ sayılır
+ * ve bu kural onun için HİÇ tetiklenmez — noktasız yazılmasını serileştirici
+ * üstlenir. Geriye kalan tek küme "hane sayısı yanlış" ya da "rakam değil"
+ * olanlardır; onların doğrusunu kütüphane UYDURAMAZ. Yani önerilecek somut bir
+ * değer YOKTUR; `value: undefined` burada "kullanıcının doldurması/düzeltmesi
+ * gereken alan" işaretidir (bkz. `Suggestion.value` sözleşmesi).
+ *
+ * Not: bu dosyada bir ara `repairable ? normalized : undefined` dalı yazılmıştı.
+ * Ölçüldü — `isValidGtip` normalizasyon-farkında olduğu için o dala ULAŞAN
+ * hiçbir girdi yok; ÖLÜ KODDU, kaldırıldı.
+ */
 const DELIVERY_GTIP_FORMAT_12_DIGIT: SuggestionRule = {
   id: 'delivery/gtip-format-12-digit',
   applies: (input) =>
     input.lines.some(l => {
       const gtip = l.delivery?.gtipNo;
       if (!gtip) return false;
-      const digits = gtip.replace(/\D/g, '');
-      return digits.length !== 12;
+      return !isValidGtip(gtip);
     }),
   produce: (input) => {
     const out: Suggestion[] = [];
     for (let i = 0; i < input.lines.length; i++) {
       const gtip = input.lines[i].delivery?.gtipNo;
       if (!gtip) continue;
-      const digits = gtip.replace(/\D/g, '');
-      if (digits.length !== 12) {
-        out.push({
-          path: `lines[${i}].delivery.gtipNo`,
-          value: undefined,
-          reason: `GTİP No 12 hane olmalı (girilen: ${digits.length} hane). Düzeltiniz.`,
-          severity: 'recommended',
-          ruleId: 'delivery/gtip-format-12-digit',
-        });
-      }
+      const defect = describeGtipDefect(gtip);
+      if (defect === undefined) continue;
+
+      out.push({
+        path: `lines[${i}].delivery.gtipNo`,
+        value: undefined,
+        reason: `${defect} Düzeltiniz.`,
+        severity: 'recommended',
+        ruleId: 'delivery/gtip-format-12-digit',
+      });
     }
     return out;
   },

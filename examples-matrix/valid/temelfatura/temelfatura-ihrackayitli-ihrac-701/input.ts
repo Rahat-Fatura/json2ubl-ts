@@ -38,7 +38,15 @@ export const input: SimpleInvoiceInput = {
       unitCode: 'Adet',
       kdvPercent: 0,
       kdvExemptionCode: '701',
-      gtip: '8471300000',
+      delivery: {
+        gtipNo: '847130000000',
+        deliveryAddress: {
+          address: 'Liman',
+          district: 'Ambarlı',
+          city: 'İstanbul',
+          country: 'Türkiye',
+        },
+      },
     },
   ],
 };

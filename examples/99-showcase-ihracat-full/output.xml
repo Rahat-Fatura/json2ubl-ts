@@ -147,6 +147,9 @@
         <cac:GoodsItem>
           <cbc:RequiredCustomsID>620342000010</cbc:RequiredCustomsID>
         </cac:GoodsItem>
+        <cac:ShipmentStage>
+          <cbc:TransportModeCode>1</cbc:TransportModeCode>
+        </cac:ShipmentStage>
       </cac:Shipment>
     </cac:Delivery>
     <cac:TaxTotal>
@@ -193,6 +196,9 @@
         <cac:GoodsItem>
           <cbc:RequiredCustomsID>570110100000</cbc:RequiredCustomsID>
         </cac:GoodsItem>
+        <cac:ShipmentStage>
+          <cbc:TransportModeCode>4</cbc:TransportModeCode>
+        </cac:ShipmentStage>
       </cac:Shipment>
     </cac:Delivery>
     <cac:TaxTotal>
@@ -239,6 +245,9 @@
         <cac:GoodsItem>
           <cbc:RequiredCustomsID>741400000000</cbc:RequiredCustomsID>
         </cac:GoodsItem>
+        <cac:ShipmentStage>
+          <cbc:TransportModeCode>3</cbc:TransportModeCode>
+        </cac:ShipmentStage>
       </cac:Shipment>
     </cac:Delivery>
     <cac:TaxTotal>
@@ -285,6 +294,9 @@
         <cac:GoodsItem>
           <cbc:RequiredCustomsID>090111000000</cbc:RequiredCustomsID>
         </cac:GoodsItem>
+        <cac:ShipmentStage>
+          <cbc:TransportModeCode>3</cbc:TransportModeCode>
+        </cac:ShipmentStage>
       </cac:Shipment>
     </cac:Delivery>
     <cac:TaxTotal>
@@ -331,6 +343,9 @@
         <cac:GoodsItem>
           <cbc:RequiredCustomsID>170310000000</cbc:RequiredCustomsID>
         </cac:GoodsItem>
+        <cac:ShipmentStage>
+          <cbc:TransportModeCode>3</cbc:TransportModeCode>
+        </cac:ShipmentStage>
       </cac:Shipment>
     </cac:Delivery>
     <cac:TaxTotal>

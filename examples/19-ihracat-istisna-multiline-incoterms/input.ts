@@ -58,6 +58,11 @@ export const input: SimpleInvoiceInput = {
       kdvPercent: 0,
       delivery: {
         deliveryTermCode: 'FOB', // Free On Board — risk Türkiye limanında geçer
+        // 🔴 ŞEMATRON ZORUNLUSU (`LineDeliveryCheck`): IHRACAT'ta taşıma modu
+        // satırda ya da belge düzeyinde DOLU olmalı. Kütüphane varsayılan
+        // UYDURMAZ — bu fixture'larda 4.5.3'e kadar alan HİÇ YOKTU ve
+        // üretilen her ihracat faturası GİB kapısından dönerdi.
+        transportModeCode: '1',
         gtipNo: '620342000010',
         deliveryAddress: {
           address: 'Ambarlı Limanı',
@@ -75,6 +80,7 @@ export const input: SimpleInvoiceInput = {
       kdvPercent: 0,
       delivery: {
         deliveryTermCode: 'CIF', // Cost, Insurance & Freight — satıcı sorumluluğu var
+        transportModeCode: '4',
         gtipNo: '570110100000',
         deliveryAddress: {
           address: 'Zurich Havalimanı Kargo Terminali',
@@ -92,6 +98,7 @@ export const input: SimpleInvoiceInput = {
       kdvPercent: 0,
       delivery: {
         deliveryTermCode: 'EXW', // Ex Works — alıcı fabrikadan teslim alır
+        transportModeCode: '3',
         gtipNo: '741400000000',
         deliveryAddress: {
           address: 'Sınır Tanımaz Fabrika — Üretim Hattı',

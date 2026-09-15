@@ -2,6 +2,109 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [4.5.5] — 2026-09-11
+
+> 4.5.4 YAYIMLANMADI; içeriği bu sürümde toplandı. İki iş var: **İHRACAT
+> kusurlarının onarımı** (`Fixed`) ve **çoklu iade referansı desteği** (`Added`).
+> İkisi de canlı GİB paketiyle ölçüldü (MimForge `xslt-service`), tahmin edilmedi.
+
+### Added
+
+- **`billingReferences` — bir iade faturası ARTIK BİRDEN ÇOK asıl faturayı
+  referanslayabilir.**
+
+  Simple API bugüne kadar tek referans tanıyordu (`billingReference`). Bunun bir
+  GİB kısıtı OLMADIĞI ölçüldü:
+
+  | Kapı | Kaynak | Ölçüm |
+  |---|---|---|
+  | XSD | `UBL-Invoice-2.1.xsd:29` | `<xsd:element ref="cac:BillingReference" minOccurs="0" maxOccurs="unbounded"/>` → çoğul SERBEST |
+  | XSD | `UBL-CommonAggregateComponents-2.1.xsd:808` | `BillingReferenceType` içinde `cac:InvoiceDocumentReference` 0..1 → doğru şekil "N adet `BillingReference`, her birinde TEK referans" |
+  | Şematron | `IADEInvioceCheck` (`UBL-TR_Common_Schematron.xml:361-362`) | SAYI değil ORAN denetler: `count(…[DocumentTypeCode='IADE' ve 16 haneli ID]) = count(…hepsi)`. Kuralın kendi metni zaten **"iade fatura sayısı kadar … elemanı içermelidir"** diyor. |
+  | Canlı | `xslt-service` `/v1/validate` | 2 ve 3 referanslı İADE faturaları → `validSchematron: true`, şematron hatası SIFIR. Negatif kontrol (2. referansın ID'si 16 hane değil) aynı kuralı DÜŞÜRÜYOR — kural gerçekten değerlendiriliyor, sessiz geçiş yok. |
+
+  Alan şekli mevcut çoğul alanların (`despatchReferences`, `additionalDocuments`)
+  desenine birebir uyar; `SessionPaths.billingReferencesId(i)`,
+  `update('billingReferences[0].id', …)` ve `unset('billingReferences')` çalışır.
+
+  🔴 **Tekil `billingReference` BOZULMADI ve kaldırılmadı.** `@deprecated`
+  işaretlidir ama süresiz korunur; çoğul alan verilmediğinde (ya da boş dizi
+  olduğunda) tek elemanlı liste gibi işlenir. Tekil ↔ tek elemanlı çoğul
+  **birebir aynı XML** üretir, bu bir testle çipalandı. Önceliği yorumlayan TEK
+  yüklem `resolveBillingReferences()`'tir (dışa aktarıldı), böylece mapper /
+  oturum / doğrulayıcı ayrışamaz.
+
+  Doğrulama da referans BAŞINA işler: desen kontrolü her referansa ayrı uygulanır
+  ve hata yolu etkin alana göre üretilir (`billingReferences[1].id`, tekil
+  kullanımda eskisi gibi `billingReference.id` — portal bölüm eşlemesi bozulmaz).
+
+### Fixed
+
+- 🔴 **11 KARAKTERLİK yabancı vergi numarası TCKN sanılıyordu → boş `cac:Person`
+  → XSD reddi.**
+
+  Çıkarım kuralı `taxNumber.length === 11 → TCKN` idi. Alman KDV numarası
+  `"DE123456789"` TAM 11 KARAKTERDİR; kütüphane bunu gerçek kişi sanıp
+  `party-serializer`'da `cac:Person` düğümü açıyor, ad/soyad olmadığı için
+  düğümün içi boş kalıyordu. Canlı XSD:
+
+  ```
+  Satır 87, Sütun 20: "Person" elementinin içeriği eksik.
+         Zorunlu element(ler): FirstName.
+  ```
+
+  Ayrım artık **uzunluk değil, içerik + bağlam**:
+
+  | Kapı | Nerede | Kural |
+  |---|---|---|
+  | İçerik | `resolveTaxIdType` (`simple-invoice-mapper`) | TCKN = TAM 11 HANE **RAKAM** (`TCKN_REGEX`). Harf içeren 11 karakter TCKN olamaz. |
+  | Bağlam | `buildBuyerCustomer` | `partyType === 'EXPORT'` (IHRACAT) ise çıkarım hiç yapılmaz → her zaman `VKN`. İhracat alıcısı tanım gereği yurt dışındadır ve yabancı numara TAM 11 HANE RAKAM da olabilir (İtalyan "partita IVA"), o yüzden tek başına içerik kapısı yetmez. |
+  | Savunma | `serializePersonBlock` | İçi BOŞ `cac:Person` ASLA yazılmaz — çocuksuz `PersonType` her zaman XSD-geçersizdir. Veri UYDURULMAZ, yalnız geçersiz düğüm yazılmaz. |
+
+  **Yurt içi davranış DEĞİŞMEDİ**: 11 haneli RAKAM hâlâ TCKN'dir (gerçek kişi
+  `cac:Person` bloğu üretilir), 10 haneli VKN bozulmadı. İkisi de golden
+  çıpalarıyla kilitlendi. `YOLCUBERABERFATURA` (`TAXFREE`) BİLEREK kapsam
+  dışında bırakıldı: oradaki alıcı bir gerçek kişidir (yolcu) ve o profilin
+  kendi XSD açıkları ayrı bir iştir — bu turda ölçülmedi, dokunulmadı.
+
+- 🔴 **`TransportModeCode` şematronda ZORUNLU, doğrulayıcıda "varsa doğrula"
+  idi.**
+
+  `LineDeliveryCheck` (`UBL-TR_Common_Schematron.xml:434`) IHRACAT'ta bu kodu
+  zorunlu tutar ve kural iki şıklıdır: **satır YA DA belge** düzeyinde dolu
+  olmalıdır. Doğrulayıcı ise `!== undefined` kapısıyla alanı fiilen opsiyonel
+  sayıyor, eksikliği hiç bildirmiyordu.
+
+  Doğrulayıcı artık şematronun iki-şıklı hâlini birebir kurar ve
+  `shipmentStages[]` şeklini de okur (serileştirici ikisini de basar; yalnız
+  birini denetlemek geçerli belgede yanlış hata üretirdi).
+
+  🔴 **Eksik değer UYDURULMAZ.** Serileştirici hiçbir varsayılan basmaz
+  (öneri motorundaki `4 — Havayolu` bir ÖNERİdir, sessiz varsayılan değil);
+  kullanıcı vermediyse kapı doğrulayıcıda, AÇIK hatayla kapanır. İçi tamamen
+  boş kalacak `cac:ShipmentStage` düğümleri de artık yazılmaz.
+
+  Kabul edilen kod kümesi ölçüldü ve değişmedi: `$TransportModeCodeList`
+  (`UBL-TR_Codelist.xml:33`) = `0-9`, on kod. Şematron paketi bu kodlara AD
+  VERMEZ; kütüphanede de ad sözlüğü yoktur, uydurulmadı.
+
+### Changed
+
+- **İHRACAT fixture'ları artık `review: "schematron-verified"`.** Üçü de
+  `auto-ok` damgasıyla duruyordu ve ÜÇÜ DE GİB'in reddettiği XML üretiyordu.
+  `transportModeCode` eklendi, çıktılar canlı GİB paketine soruldu:
+  `validSchematron = true`. Aynı eksik `examples/18`, `examples/19` ve
+  `examples/99-showcase-ihracat-full` senaryolarında da vardı — onlar da
+  düzeltildi.
+- **Yeni golden çıpası `i-ihracat-yabanci-alici`** — iki kusuru da tek belgede
+  kilitler ve canlı şematrondan temiz geçer.
+- **`SessionPaths` üreticisi çakışan dizi anahtarlarını çözer (D-11).**
+  `billingReferences` tekilleştirilince kardeş alan `billingReference` ile aynı
+  anahtarı üretiyordu (`billingReferenceId`) ve nesne literali derlenemezdi.
+  Kural GENELDİR, elle bakılan istisna listesi değildir: tekil hâli bir kardeş
+  alanın adıysa ÇOĞUL ad korunur → `billingReferencesId(i)`. Üretilen dosyada bu
+  tur SIFIR silme, yalnız ekleme vardır — geriye uyumun makine kanıtı.
+
 ## [4.5.3] — 2026-09-08
 
 Tek bir kusur: **"geçerli mi" diye soran yüklem, GİB'in değil EKRANIN listesine

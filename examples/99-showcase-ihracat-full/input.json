@@ -53,6 +53,7 @@
       "delivery": {
         "deliveryTermCode": "FOB",
         "gtipNo": "620342000010",
+        "transportModeCode": "1",
         "deliveryAddress": {
           "address": "Ambarlı Liman",
           "district": "Avcılar",
@@ -70,6 +71,7 @@
       "delivery": {
         "deliveryTermCode": "CIF",
         "gtipNo": "570110100000",
+        "transportModeCode": "4",
         "deliveryAddress": {
           "address": "Zürich Flughafen",
           "district": "Kloten",
@@ -87,6 +89,7 @@
       "delivery": {
         "deliveryTermCode": "EXW",
         "gtipNo": "741400000000",
+        "transportModeCode": "3",
         "deliveryAddress": {
           "address": "Fabrika",
           "district": "Üsküdar",
@@ -104,6 +107,7 @@
       "delivery": {
         "deliveryTermCode": "DAP",
         "gtipNo": "090111000000",
+        "transportModeCode": "3",
         "deliveryAddress": {
           "address": "Dietikon Depot",
           "district": "Dietikon",
@@ -121,6 +125,7 @@
       "delivery": {
         "deliveryTermCode": "DDP",
         "gtipNo": "170310000000",
+        "transportModeCode": "3",
         "deliveryAddress": {
           "address": "Merkez Depo",
           "district": "Central",

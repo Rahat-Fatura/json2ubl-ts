@@ -197,6 +197,90 @@ describe('4.1.0 iddiaları — miktar ve birim fiyat hassasiyeti', () => {
   });
 });
 
+describe('4.5.4 iddiaları — İHRACAT: yabancı vergi no + taşıma modu', () => {
+  /** İhracat golden'ının `cac:BuyerCustomerParty` bloğu. */
+  function buyerBlock(): string {
+    const xml = readGolden('i-ihracat-yabanci-alici');
+    return /<cac:BuyerCustomerParty>[\s\S]*?<\/cac:BuyerCustomerParty>/.exec(xml)?.[0] ?? '';
+  }
+
+  it('11 KARAKTERLİK harfli yabancı vergi no TCKN sayılmaz — schemeID="VKN"', () => {
+    expect(buyerBlock()).toContain('<cbc:ID schemeID="VKN">DE123456789</cbc:ID>');
+    expect(buyerBlock()).not.toContain('schemeID="TCKN">DE123456789');
+  });
+
+  it('🔴 ÇIPA: yabancı alıcı için cac:Person HİÇ açılmaz (XSD FirstName reddi)', () => {
+    // 4.5.3'te burada içi BOŞ bir <cac:Person> vardı ve GİB XSD'si
+    // «"Person" elementinin içeriği eksik. Zorunlu element(ler): FirstName.»
+    // diyerek belgeyi reddediyordu.
+    expect(buyerBlock()).not.toContain('<cac:Person>');
+  });
+
+  it('PARTYTYPE=EXPORT kimliği korunur (IhracatYolcuBeraberCheck)', () => {
+    expect(buyerBlock()).toContain('<cbc:ID schemeID="PARTYTYPE">EXPORT</cbc:ID>');
+  });
+
+  it('🔴 ÇIPA: satırda TransportModeCode yazılır (şematron LineDeliveryCheck)', () => {
+    const xml = readGolden('i-ihracat-yabanci-alici');
+    const stage = /<cac:ShipmentStage>[\s\S]*?<\/cac:ShipmentStage>/.exec(xml)?.[0] ?? '';
+    expect(stage).toContain('<cbc:TransportModeCode>1</cbc:TransportModeCode>');
+  });
+
+  it('taşıma modu VERİLMEZSE uydurulmaz — ShipmentStage hiç yazılmaz + doğrulayıcı hata verir', () => {
+    const scenario = GOLDEN_SCENARIOS.find(s => s.slug === 'i-ihracat-yabanci-alici')!;
+    const without = structuredClone(scenario.input) as typeof scenario.input;
+    delete (without.lines[0] as { delivery?: { transportModeCode?: string } }).delivery!
+      .transportModeCode;
+
+    // 1. Sessiz varsayılan YOK: `validationLevel:'none'` ile üretilen XML'de
+    //    ShipmentStage bulunmaz (GTİP yüzünden Shipment yine yazılır).
+    const xml = new SimpleInvoiceBuilder({
+      prettyPrint: true,
+      validationLevel: 'none',
+      includeUblExtensions: true,
+    }).build(without).xml;
+    expect(xml).not.toContain('<cac:ShipmentStage>');
+    expect(xml).not.toContain('TransportModeCode');
+
+    // 2. Doğrulayıcı SUSMAZ: 'strict' seviyede açık hata fırlatır.
+    let thrown: unknown;
+    try {
+      new SimpleInvoiceBuilder({ validationLevel: 'strict' }).build(without);
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown, 'strict doğrulama hata fırlatmalıydı').toBeDefined();
+    const errs = (thrown as { errors?: Array<{ path?: string; message?: string }> }).errors ?? [];
+    const hit = errs.find(e => (e.path ?? '').includes('transportModeCode'));
+    expect(hit, `transportModeCode hatası bulunamadı: ${JSON.stringify(errs)}`).toBeDefined();
+    expect(hit!.message).toContain('zorunludur');
+  });
+
+  it('geçersiz taşıma modu kodu reddedilir (kod kümesi 0–9)', () => {
+    const scenario = GOLDEN_SCENARIOS.find(s => s.slug === 'i-ihracat-yabanci-alici')!;
+    const bad = structuredClone(scenario.input) as typeof scenario.input;
+    (bad.lines[0] as { delivery: { transportModeCode: string } }).delivery.transportModeCode = 'X';
+    expect(() => new SimpleInvoiceBuilder({ validationLevel: 'strict' }).build(bad)).toThrow();
+  });
+});
+
+describe('4.5.4 iddiaları — yurt içi TCKN/VKN REGRESYON KAPISI', () => {
+  it('11 HANE RAKAM hâlâ TCKN — gerçek kişi Person bloğu üretilir', () => {
+    const xml = readGolden('g-earsiv-satis');
+    expect(xml).toContain('<cbc:ID schemeID="TCKN">12345678901</cbc:ID>');
+    expect(xml).toContain('<cac:Person>');
+    expect(xml).toContain('<cbc:FirstName>Ayşe</cbc:FirstName>');
+    expect(xml).toContain('<cbc:FamilyName>Yılmaz</cbc:FamilyName>');
+  });
+
+  it('10 haneli VKN bozulmadı — tüzel kişi, Person YOK', () => {
+    const xml = readGolden('a-basit-satis-tek-kdv');
+    expect(xml).toContain('<cbc:ID schemeID="VKN">1234567890</cbc:ID>');
+    expect(xml).toContain('<cbc:ID schemeID="VKN">9876543210</cbc:ID>');
+    expect(xml).not.toContain('<cac:Person>');
+  });
+});
+
 describe('4.1.0 iddiaları — ext:UBLExtensions bayrağı', () => {
   const scenario = GOLDEN_SCENARIOS[0];
 

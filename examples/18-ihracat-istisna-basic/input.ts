@@ -59,6 +59,11 @@ export const input: SimpleInvoiceInput = {
       kdvPercent: 0,
       delivery: {
         deliveryTermCode: 'FOB', // INCOTERMS Free On Board
+        // 🔴 ŞEMATRON ZORUNLUSU (`LineDeliveryCheck`): IHRACAT'ta taşıma modu
+        // satırda ya da belge düzeyinde DOLU olmalı. Kütüphane varsayılan
+        // UYDURMAZ — bu fixture'larda 4.5.3'e kadar alan HİÇ YOKTU ve
+        // üretilen her ihracat faturası GİB kapısından dönerdi.
+        transportModeCode: '1',
         gtipNo: '620342000010',
         deliveryAddress: {
           address: 'Ambarlı Liman Yüksek Gümrük',

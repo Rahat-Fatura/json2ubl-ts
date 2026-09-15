@@ -290,6 +290,52 @@ export interface SimpleBillingReferenceInput {
     documentTypeCode?: string;
 }
 
+/**
+ * ETKİN iade referansları — tekil/çoğul alanların TEK yorumlayıcısı (4.5.5).
+ *
+ * Kütüphanede `billingReference` (tekil, geriye uyum) ve `billingReferences`
+ * (çoğul) BİRLİKTE yaşar. "Hangisi geçerli?" sorusu TEK YERDE cevaplanır ki
+ * mapper / oturum / doğrulayıcılar asla ayrışmasın:
+ *
+ *   1. `billingReferences` DOLU ise (en az bir eleman) → o kullanılır.
+ *   2. Aksi hâlde `billingReference` varsa → tek elemanlı liste.
+ *   3. Hiçbiri yoksa → boş liste.
+ *
+ * Boş dizi (`billingReferences: []`) "referans verilmedi" sayılır ve tekile
+ * düşülür; böylece çoğul alanı tanımayan eski çağıran bozulmaz.
+ */
+export function resolveBillingReferences(
+    input: Pick<SimpleInvoiceInput, "billingReference" | "billingReferences">,
+): SimpleBillingReferenceInput[] {
+    if (usesPluralBillingReferences(input)) return input.billingReferences!;
+    return input.billingReference ? [input.billingReference] : [];
+}
+
+/** Çoğul alan mı etkin? Öncelik kuralının TEK yüklemi. */
+function usesPluralBillingReferences(
+    input: Pick<SimpleInvoiceInput, "billingReference" | "billingReferences">,
+): boolean {
+    return !!input.billingReferences && input.billingReferences.length > 0;
+}
+
+/**
+ * Etkin iade referansının HATA YOLU (`ValidationError.path`) — 4.5.5.
+ *
+ * Doğrulama hataları kullanıcının GERÇEKTEN doldurduğu alanı göstermelidir:
+ * çoğul alan etkinse `billingReferences[2].id`, tekil kısayol etkinse
+ * `billingReference.id`. Portal bölüm eşlemesi (section-mapping) bu yollara
+ * bakar; tekil kullanan çağıran için yol AYNEN korunur.
+ */
+export function billingReferencePath(
+    input: Pick<SimpleInvoiceInput, "billingReference" | "billingReferences">,
+    index: number,
+    field: keyof SimpleBillingReferenceInput,
+): string {
+    return usesPluralBillingReferences(input)
+        ? `billingReferences[${index}].${field}`
+        : `billingReference.${field}`;
+}
+
 /** İrsaliye referansı */
 export interface SimpleDespatchReferenceInput {
     /** İrsaliye numarası */
@@ -565,8 +611,22 @@ export interface SimpleInvoiceInput {
     // ── Referanslar ──────────────────────────────────────────────────────────
     /** Sipariş referansı */
     orderReference?: SimpleOrderReferenceInput;
-    /** Fatura referansı (iade faturaları için zorunlu) */
+    /**
+     * Fatura referansı — TEKİL kısayol (iade faturaları için zorunlu).
+     * @deprecated 4.5.5 — çoklu iade referansı için `billingReferences` kullanın.
+     * Geriye uyum için SÜRESİZ korunur; `billingReferences` verilmediğinde
+     * tek elemanlı çoğul listeymiş gibi işlenir.
+     */
     billingReference?: SimpleBillingReferenceInput;
+    /**
+     * Fatura referansları — ÇOĞUL (4.5.5).
+     * Bir iade faturası birden çok asıl faturayı referanslayabilir; GİB buna
+     * izin verir (XSD `cac:BillingReference` maxOccurs="unbounded", şematron
+     * `IADEInvioceCheck` sayı değil ORAN denetler: her referans 16 haneli ve
+     * `DocumentTypeCode='IADE'` olmalıdır).
+     * Verildiğinde tekil `billingReference` alanının YERİNE geçer.
+     */
+    billingReferences?: SimpleBillingReferenceInput[];
     /** İrsaliye referansları */
     despatchReferences?: SimpleDespatchReferenceInput[];
     /** Ek doküman referansları */

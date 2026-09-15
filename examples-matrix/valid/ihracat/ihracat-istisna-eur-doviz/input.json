@@ -39,6 +39,7 @@
       "kdvPercent": 0,
       "delivery": {
         "deliveryTermCode": "FOB",
+        "transportModeCode": "4",
         "gtipNo": "847330000001",
         "deliveryAddress": {
           "address": "Ambarlı Liman",
