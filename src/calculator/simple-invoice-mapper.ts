@@ -11,6 +11,7 @@ import type {
   SimplePartyInput,
 } from './simple-types';
 import { resolveBillingReferences } from './simple-types';
+import { resolveTaxIdType } from '../utils/tax-id';
 import type { CalculatedDocument } from './document-calculator';
 import type { CalculatedLine } from './line-calculator';
 import { calculateDocument } from './document-calculator';
@@ -42,30 +43,8 @@ import type {
   DeliveryInput,
 } from '../types/common';
 import { isNonEmpty, normalizeTime } from '../utils/formatters';
-import { TCKN_REGEX } from '../config/constants';
 import { canBuildCarrierParty } from '../validators/online-sale-validator';
 
-/**
- * Vergi/kimlik numarasından `taxIdType` çıkarımı — **UZUNLUK DEĞİL, İÇERİK**.
- *
- * 🔴 Eskiden kural `taxNumber.length === 11 → TCKN` idi ve YABANCI vergi
- * numaralarını gerçek kişi sanıyordu. Canlı ölçüm (`ihracat-istisna-baseline`):
- * Alman KDV numarası `"DE123456789"` TAM 11 KARAKTER → `TCKN` etiketleniyor →
- * `party-serializer` gerçek kişi varsayıp `cac:Person` düğümü açıyor → düğümün
- * içi boş kaldığı için GİB XSD'si «"Person" elementinin içeriği eksik. Zorunlu
- * element(ler): FirstName.» diyerek belgeyi reddediyordu.
- *
- * TCKN TANIM GEREĞİ 11 HANE RAKAMDIR (bkz. `TCKN_REGEX`, Skill §7.1). Harf
- * içeren 11 karakterlik bir numara TCKN olamaz. Yurt içi gerçek kişi faturası
- * (11 haneli rakam) ve 10 haneli VKN bu değişiklikten ETKİLENMEZ.
- *
- * ⚠️ Bu yalnız İÇERİK kapısıdır. Yabancı bir vergi numarası TAM 11 HANE RAKAM
- * da olabilir (örn. İtalyan "partita IVA" 11 hanedir), dolayısıyla tek başına
- * yetmez — BAĞLAM kapısı için bkz. `buildBuyerCustomer`.
- */
-function resolveTaxIdType(taxNumber: string | undefined | null): TaxIdType {
-  return TCKN_REGEX.test(String(taxNumber ?? '').trim()) ? 'TCKN' : 'VKN';
-}
 
 // ─── Ana Dönüşüm Fonksiyonu ────────────────────────────────────────────────────
 

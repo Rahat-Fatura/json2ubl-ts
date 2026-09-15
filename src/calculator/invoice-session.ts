@@ -40,7 +40,8 @@ import { mapSimpleToInvoiceInput } from './simple-invoice-mapper';
 import { SimpleInvoiceBuilder } from './simple-invoice-builder';
 import type { InvoiceSessionUpdateOverloads } from './session-paths.generated';
 import { KNOWN_PATH_TEMPLATES, READ_ONLY_PATHS } from './session-paths.generated';
-import { parsePath, applyPathUpdate, readPath, deepEqual, tokensToTemplate, PathParseError } from './session-path-utils';
+import { applyPathUpdate, readPath, deepEqual } from './session-path-utils';
+import { runPathGates, diffVisibility, type PathTokens } from '../session';
 import { deriveLineFieldVisibility } from './line-field-visibility';
 import { isYatirimTesvikKdvScope } from '../config/schematron-scopes';
 import type { ValidationError } from '../errors/ubl-build-error';
@@ -437,52 +438,19 @@ export class InvoiceSession extends EventEmitter {
    * literal key overload'ları orada üretilir.
    */
   update(path: string, value: unknown): void {
-    // Katman 1: Syntax parsing
-    let tokens;
-    try {
-      tokens = parsePath(path);
-    } catch (err) {
-      if (err instanceof PathParseError) {
-        this.emit('path-error', {
-          code: 'INVALID_PATH',
-          path,
-          reason: err.message,
-          requestedValue: value,
-        });
-        return;
-      }
-      throw err;
-    }
-
-    // Katman 2: Read-only path
-    if (READ_ONLY_PATHS.has(path)) {
-      this.emit('path-error', {
-        code: 'READ_ONLY_PATH',
-        path,
-        reason: `'${path}' is constructor-only and immutable`,
-        requestedValue: value,
-      });
+    /* Katman 1-4 ORTAK kapıda (`src/session/path-gates.ts`) — belge tipinden
+       bağımsız. Kapı SAF'tır, emit ETMEZ: olay sırası bu dosyanın sözleşmesidir
+       ve portalın store köprüsüne kadar uzanır (bkz. path-gates.ts başı). */
+    const gate = runPathGates(path, value, {
+      knownPathTemplates: KNOWN_PATH_TEMPLATES,
+      readOnlyPaths: READ_ONLY_PATHS,
+      root: this._input,
+    });
+    if (!gate.ok) {
+      this.emit('path-error', gate.error);
       return;
     }
-
-    // Katman 3: SessionPaths map'inde mi?
-    const template = tokensToTemplate(tokens);
-    if (!KNOWN_PATH_TEMPLATES.has(template)) {
-      this.emit('path-error', {
-        code: 'UNKNOWN_PATH',
-        path,
-        reason: `path not in SessionPaths map (template: ${template})`,
-        requestedValue: value,
-      });
-      return;
-    }
-
-    // Katman 4: Index bounds (lines[i] ama length<i+1)
-    const indexErr = this._checkIndexBounds(tokens, path);
-    if (indexErr) {
-      this.emit('path-error', indexErr);
-      return;
-    }
+    const tokens = gate.tokens;
 
     // Constraint: liability path + isExport=true (M10 kontratı)
     if (path === 'liability' && this._isExport) {
@@ -726,57 +694,10 @@ export class InvoiceSession extends EventEmitter {
     return null;
   }
 
-  /**
-   * Path validation Katman 4: index bounds.
-   *
-   * Array CRUD (addLine/updateLine/setLines) path-based değil; index ile yeni
-   * element create EDİLMEZ. `taxes[0]` ile sparse array oluşturma engellenir:
-   * parent array undefined ise implicit length=0 → INDEX_OUT_OF_BOUNDS.
-   */
-  private _checkIndexBounds(
-    tokens: ReturnType<typeof parsePath>,
-    path: string,
-  ): PathErrorPayload | null {
-    let current: any = this._input;
-    for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i];
-      if (token.kind === 'index') {
-        // Parent array undefined/null:
-        //   - index===0: D-6 sub-object create kapsamı → uygulayıcı (applyPathUpdate)
-        //     otomatik `[]` oluşturur, ilk eleman set edilir. Reject etme.
-        //   - index>0: implicit length=0, INDEX_OUT_OF_BOUNDS.
-        // Sprint 8j.2: party identifications (sender/customer/buyerCustomer)
-        // gibi opsiyonel array path'lerin runtime'da kullanılabilmesi için.
-        if (current === undefined || current === null) {
-          if (token.value === 0) {
-            return null;
-          }
-          return {
-            code: 'INDEX_OUT_OF_BOUNDS',
-            path,
-            reason: `parent array is undefined (implicit length=0), cannot access index ${token.value}`,
-          };
-        }
-        if (!Array.isArray(current)) return null;   // type mismatch, Katman 3 atmalıydı
-        // Sprint 8j.2: `token.value === current.length` next-append olarak izinli
-        // (party identifications çoklu giriş, taxes append vs.). Sadece `> length`
-        // sparse skip ihtimali olduğu için reddedilir.
-        if (token.value > current.length) {
-          return {
-            code: 'INDEX_OUT_OF_BOUNDS',
-            path,
-            reason: `index ${token.value} but length=${current.length}`,
-          };
-        }
-      }
-      current = token.kind === 'index' ? current[token.value] : (current ?? {})[token.value];
-    }
-    return null;
-  }
 
   /** SessionPaths value oku (liability özel-durum: _liability private field). */
   private _readSessionValue(
-    tokens: ReturnType<typeof parsePath>,
+    tokens: PathTokens,
     path: string,
   ): unknown {
     if (path === 'liability') return this._liability;
@@ -1293,23 +1214,20 @@ export class InvoiceSession extends EventEmitter {
     this.emit('ui-state-changed', this._uiState);
   }
 
-  /** Doc-level FieldVisibility diff emit (field-activated / field-deactivated). */
+  /**
+   * Belge düzeyi görünürlük farkını olaya çevirir.
+   *
+   * Fark hesabı ORTAK (`src/session/visibility-diff.ts`); emit burada kalır çünkü
+   * gerekçe cümlesi (`derived from type=…`) FATURA bilgisidir ve olay sırası bu
+   * dosyanın sözleşmesidir.
+   */
   private _emitFieldVisibilityDiff(prev: FieldVisibility, next: FieldVisibility): void {
-    const keys = Object.keys(next) as (keyof FieldVisibility)[];
-    for (const key of keys) {
-      const wasVisible = prev[key];
-      const isVisible = next[key];
-      if (!wasVisible && isVisible) {
-        this.emit('field-activated', {
-          path: `fields.${key}`,
-          reason: `derived from type=${this._input.type}, profile=${this._input.profile}`,
-        });
-      } else if (wasVisible && !isVisible) {
-        this.emit('field-deactivated', {
-          path: `fields.${key}`,
-          reason: `derived from type=${this._input.type}, profile=${this._input.profile}`,
-        });
-      }
+    const reason = `derived from type=${this._input.type}, profile=${this._input.profile}`;
+    for (const { key, activated } of diffVisibility(prev, next)) {
+      this.emit(activated ? 'field-activated' : 'field-deactivated', {
+        path: `fields.${key}`,
+        reason,
+      });
     }
   }
 

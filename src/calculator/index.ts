@@ -90,6 +90,20 @@ export type { Suggestion, SuggestionRule, SuggestionSeverity } from "./suggestio
 export { SessionPaths } from "./session-paths.generated";
 export type { SessionPathMap } from "./session-paths.generated";
 
+// DespatchSessionPaths runtime export — e-İrsaliye oturumunun path yüzeyi.
+// Aynı üreteç, ayrı hedef: scripts/generate-session-paths.ts (input: DespatchInput).
+// Adlar bilerek nitelikli: `KNOWN_PATH_TEMPLATES` / `READ_ONLY_PATHS` niteliksiz
+// olduğu için fatura muadilleriyle tek yüzeyde çakışırdı.
+export {
+    DespatchSessionPaths,
+    DESPATCH_KNOWN_PATH_TEMPLATES,
+    DESPATCH_READ_ONLY_PATHS,
+} from "./despatch-session-paths.generated";
+export type {
+    DespatchSessionPathMap,
+    DespatchSessionUpdateOverloads,
+} from "./despatch-session-paths.generated";
+
 // Kurallar motoru ve UI state
 export {
     getAllowedProfilesForType,

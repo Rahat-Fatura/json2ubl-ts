@@ -1,24 +1,30 @@
 /**
- * SessionPaths generator (Sprint 8h.1 / AR-10).
+ * Session paths generator (Sprint 8h.1 / AR-10 — tip-parametrik: Sprint 10).
  *
- * `src/calculator/simple-types.ts` SimpleInvoiceInput interface'ini TypeScript
- * Compiler API ile tarayıp `src/calculator/session-paths.generated.ts` üretir.
+ * Bir kök arayüzü (örn. `SimpleInvoiceInput`, `DespatchInput`) TypeScript
+ * Compiler API ile tarayıp o belge tipine ait `*-session-paths.generated.ts`
+ * dosyasını üretir. Hangi belge tipinin üretileceği `GeneratorTarget` tablosuyla
+ * belirlenir; üreteç artık faturaya sabitlenmiş DEĞİLDİR.
  *
  * Modlar:
- *   - `tsx scripts/generate-session-paths.ts`         → dosyayı yaz
- *   - `tsx scripts/generate-session-paths.ts --check` → diff varsa exit 1 (CI drift)
+ *   - `tsx scripts/generate-session-paths.ts`         → tüm hedefleri yaz
+ *   - `tsx scripts/generate-session-paths.ts --check` → herhangi bir hedefte
+ *                                                       diff varsa exit 1 (CI drift)
  *
  * Kararlar:
  *   - In-house parser, ts-morph yok (D-1).
  *   - Bracket notation path: `lines[0].kdvPercent` (validator pattern uyumu).
  *   - Sub-object isimlendirme prefix'li: `lineDeliveryGtipNo` (tutarlılık).
- *   - Manuel append: `liability` (D-9, session-level state).
- *   - READ_ONLY_PATHS: `isExport` (D-10, constructor-locked).
+ *   - Manuel append ve read-only path'ler HEDEFE aittir (fatura: `liability` /
+ *     `isExport`; irsaliyede muadili yoktur).
+ *   - Her hedef AYRI dosyaya üretilir: `KNOWN_PATH_TEMPLATES` gibi niteliksiz
+ *     export adları tek dosyada çakışır, `@generated` drift kontrolü dosya
+ *     bazlıdır ve paket tepe yüzeyinde adlar ayrışık kalmalıdır.
  */
 
 import * as ts from 'typescript';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // __dirname shim (ESM/CJS arası uyumlu)
@@ -27,8 +33,11 @@ const SCRIPT_DIR = typeof __dirname !== 'undefined'
   : dirname(fileURLToPath(import.meta.url));
 
 const REPO_ROOT = join(SCRIPT_DIR, '..');
-const SIMPLE_TYPES_PATH = join(REPO_ROOT, 'src', 'calculator', 'simple-types.ts');
-const OUTPUT_PATH = join(REPO_ROOT, 'src', 'calculator', 'session-paths.generated.ts');
+
+/** Repo köküne göreli POSIX yolunu mutlak dosya yoluna çevirir. */
+function absPath(repoRelative: string): string {
+  return join(REPO_ROOT, ...repoRelative.split('/'));
+}
 
 // ─── Tip tanımları ────────────────────────────────────────────────────────────
 
@@ -46,10 +55,67 @@ interface PathEntry {
   pathTemplate: string;
   /** TypeScript value tipi */
   valueType: string;
-  /** JSDoc açıklaması (opsiyonel kaynak: simple-types.ts) */
+  /** JSDoc açıklaması (opsiyonel kaynak: kaynak arayüz dosyası) */
   jsdoc?: string;
   /** Fonksiyon parametreleri (line-level için ['i'], çift indeks için ['i', 'ti']) */
   fnParams: string[];
+}
+
+/**
+ * Bir belge tipi için üreteç hedefi.
+ *
+ * Üretecin faturaya dair TÜM sabitleri bu tabloya taşındı; yeni bir belge tipi
+ * eklemek = yeni bir `GeneratorTarget` yazmak.
+ */
+export interface GeneratorTarget {
+  /** Girdi dosyası — repo köküne göreli POSIX yolu. */
+  sourceFile: string;
+  /** Path üretiminin başladığı kök arayüz adı. */
+  rootInterface: string;
+  /** Çıktı dosyası — repo köküne göreli POSIX yolu. */
+  outputFile: string;
+  /** Üretilen sabit map'in adı (örn. `SessionPaths`). */
+  constName: string;
+  /** Path → değer tipi arayüzünün adı (örn. `SessionPathMap`). */
+  mapTypeName: string;
+  /** `update()` overload arayüzünün adı (örn. `InvoiceSessionUpdateOverloads`). */
+  overloadsName: string;
+  /** Bilinen path şablonları set'inin export adı. */
+  templatesName: string;
+  /** Salt-okunur path set'inin export adı. */
+  readOnlyName: string;
+  /** Kaynak arayüzde karşılığı olmayan, elle eklenen girdiler (session-level state). */
+  manualEntries: readonly PathEntry[];
+  /** `update()` ile değiştirilemeyen, constructor'da kilitlenen path'ler. */
+  readOnlyPaths: readonly string[];
+  /**
+   * İzin verilen azami ÖZELLİK SEGMENTİ derinliği; dizi indeksi segment saymaz.
+   *
+   * `sender.taxNumber` = 2, `lines[i].delivery.gtipNo` = 3,
+   * `lines[i].delivery.deliveryAddress.city` = 4.
+   *
+   * Fatura hedefi bugünkü davranışı (3) korur — derinlik sınırının gevşetilmesi
+   * `session-paths.generated.ts` çıktısını DEĞİŞTİREMEZ.
+   */
+  maxDepth: number;
+  /**
+   * Kök dosyanın `import type` ile getirdiği arayüz/alias'ları çözebilmek için
+   * ek kaynak dosyalar. Üreteç dosyaları kendiliğinden takip etmez; çok dosyalı
+   * tip grafiği olan belgelerde (irsaliye: `common.ts` + `enums.ts`) bu liste şarttır.
+   */
+  dependencyFiles?: readonly string[];
+  /** Başlık yorumundaki indeksli path örneği (örn. `lines[0].kdvPercent`). */
+  exampleIndexedPath: string;
+}
+
+/** Bir kaynak kümesinden çıkarılan tip bilgisi — hedef başına YEREL tutulur. */
+interface ParsedTypes {
+  /** Arayüz adı → alan listesi (synthetic inline literal'ler dâhil). */
+  interfaces: Map<string, InterfaceField[]>;
+  /** Type alias / string enum adı → literal union metni. */
+  aliases: Map<string, string>;
+  /** İmport edilmiş tip adı → mutlak modül yolu (uzantısız). */
+  importedTypes: Map<string, string>;
 }
 
 // ─── Yardımcılar ──────────────────────────────────────────────────────────────
@@ -62,17 +128,26 @@ const PRIMITIVE_ARRAY_TYPES = new Set([
   'string[]', 'number[]', 'boolean[]',
 ]);
 
+/** Dizi indeks parametrelerinin iç-içe geçme sırasına göre adları. */
+const INDEX_PARAM_NAMES = ['i', 'ti', 'tti'] as const;
+
 function isPrimitive(type: string): boolean {
   return PRIMITIVE_TYPES.has(type) || PRIMITIVE_ARRAY_TYPES.has(type)
     || /^['"]/.test(type)               // String literal union ('einvoice' | 'earchive')
     || /^[0-9]/.test(type);             // Numeric literal
 }
 
-/** Type alias resolution (örn: SimpleSgkType → "'SAGLIK_ECZ' | 'SAGLIK_HAS' | ..."). */
-const TYPE_ALIASES = new Map<string, string>();
-
-function resolveAlias(type: string): string {
-  const resolved = TYPE_ALIASES.get(type);
+/**
+ * Type alias resolution (örn: SimpleSgkType → "'SAGLIK_ECZ' | 'SAGLIK_HAS' | ...").
+ *
+ * 🔴 Alias tablosu MODÜL DÜZEYİNDE GLOBAL DEĞİLDİR. Eskiden öyleydi ve
+ * `parseInterfaces()` onu hiç temizlemiyordu: aynı süreçte iki hedef üretilince
+ * birinci kaynağın alias'ları ikinciye sızıyor, ikinci belgenin KENDİ kaynak
+ * kümesinde tanımlı olmayan bir tip sessizce çözümlenmiş gibi davranıyordu.
+ * Tek kaynak varken zararsızdı; tip-parametrik üreteçte sessiz yanlış çıktıydı.
+ */
+function resolveAlias(type: string, aliases: ReadonlyMap<string, string>): string {
+  const resolved = aliases.get(type);
   if (!resolved) return type;
   // Multi-line union normalize: '| A\n  | B\n  | C' → 'A | B | C'
   return resolved
@@ -106,6 +181,11 @@ function singularize(plural: string): string {
   return plural;
 }
 
+/** PascalCase → kebab-case (`InvoiceSession` → `invoice-session`). */
+function toKebabCase(name: string): string {
+  return name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+}
+
 /**
  * Dizi alanının SessionPaths anahtar öneki (D-11, 4.5.5).
  *
@@ -124,23 +204,53 @@ function arrayItemKey(fieldName: string, siblingNames: ReadonlySet<string>): str
 
 // ─── AST tarama: tüm interface'leri topla ─────────────────────────────────────
 
-function parseInterfaces(): Map<string, InterfaceField[]> {
-  const sourceText = readFileSync(SIMPLE_TYPES_PATH, 'utf-8');
+/**
+ * Hedefin kaynak dosyalarını tarar.
+ *
+ * Bağımlılık dosyaları ÖNCE okunur, kök dosya EN SON: aynı adlı bir tip iki
+ * yerde tanımlıysa kök dosyanın tanımı kazanır.
+ */
+function parseInterfaces(target: GeneratorTarget): ParsedTypes {
+  const parsed: ParsedTypes = {
+    interfaces: new Map<string, InterfaceField[]>(),
+    aliases: new Map<string, string>(),
+    importedTypes: new Map<string, string>(),
+  };
+
+  for (const filePath of [...(target.dependencyFiles ?? []), target.sourceFile]) {
+    parseSourceFile(absPath(filePath), parsed);
+  }
+
+  return parsed;
+}
+
+/** Tek bir dosyayı tarayıp `parsed` tablolarına ekler. */
+function parseSourceFile(sourcePath: string, parsed: ParsedTypes): void {
+  const sourceText = readFileSync(sourcePath, 'utf-8');
   const sourceFile = ts.createSourceFile(
-    SIMPLE_TYPES_PATH,
+    sourcePath,
     sourceText,
     ts.ScriptTarget.Latest,
     true,
   );
 
-  const interfaces = new Map<string, InterfaceField[]>();
+  const { interfaces, aliases, importedTypes } = parsed;
 
-  // İlk geçiş: type aliases topla (literal union resolve için)
+  // İlk geçiş: type alias + string enum + import tabloları
   for (const stmt of sourceFile.statements) {
     if (ts.isTypeAliasDeclaration(stmt)) {
-      const aliasName = stmt.name.text;
-      const aliasType = stmt.type.getText(sourceFile).trim();
-      TYPE_ALIASES.set(aliasName, aliasType);
+      aliases.set(stmt.name.text, stmt.type.getText(sourceFile).trim());
+      continue;
+    }
+    // String enum → literal union. Üretilen dosya kendi kendine yetsin diye
+    // nominal enum tipi yerine değer kümesi yazılır (alias'larla aynı disiplin).
+    if (ts.isEnumDeclaration(stmt)) {
+      const union = enumToLiteralUnion(stmt);
+      if (union) aliases.set(stmt.name.text, union);
+      continue;
+    }
+    if (ts.isImportDeclaration(stmt)) {
+      collectImportedTypeNames(stmt, sourcePath, importedTypes);
     }
   }
 
@@ -158,8 +268,8 @@ function parseInterfaces(): Map<string, InterfaceField[]> {
 
       // Inline anon literal array (örn. `Array<{ schemeId: string; value: string; }>`
       // veya `{ schemeId: string; value: string }[]`) → synthetic interface'e indirge.
-      // Bu sayede addSubObjectEntries içindeki array-of-interface dalı normal şekilde
-      // çalışır (8j.2: party identifications için kritik).
+      // Bu sayede alt-nesne dalı normal şekilde çalışır (8j.2: party identifications
+      // için kritik).
       //
       // Sprint 8n.1 / v2.2.6 / Library Öneri #9 — array değilse single inline literal
       // (örn. `attachment?: { filename; mimeCode; ... }`) için de synthetic interface
@@ -192,8 +302,42 @@ function parseInterfaces(): Map<string, InterfaceField[]> {
 
     interfaces.set(stmt.name.text, fields);
   }
+}
 
-  return interfaces;
+/**
+ * String enum'u literal union metnine çevirir; üyelerden biri bile string
+ * literal ile başlatılmamışsa `undefined` döner (uydurma yapılmaz).
+ */
+function enumToLiteralUnion(decl: ts.EnumDeclaration): string | undefined {
+  const literals: string[] = [];
+  for (const member of decl.members) {
+    if (!member.initializer || !ts.isStringLiteral(member.initializer)) return undefined;
+    literals.push(`'${member.initializer.text}'`);
+  }
+  return literals.length > 0 ? literals.join(' | ') : undefined;
+}
+
+/**
+ * `import type { A, B } from './x'` ifadesinden getirilen tip adlarını modülün
+ * MUTLAK (uzantısız) yoluyla eşler. Bu tablo yalnızca hiçbir kaynak dosyada
+ * çözümlenemeyen tipler için kullanılır: o tipler değer tipi olarak aynen
+ * yazılır ve üretilen dosyaya `import type` satırı eklenir.
+ */
+function collectImportedTypeNames(
+  stmt: ts.ImportDeclaration,
+  sourcePath: string,
+  importedTypes: Map<string, string>,
+): void {
+  if (!ts.isStringLiteral(stmt.moduleSpecifier)) return;
+  const spec = stmt.moduleSpecifier.text;
+  if (!spec.startsWith('.')) return;                     // yalnız repo-içi göreli import
+  const bindings = stmt.importClause?.namedBindings;
+  if (!bindings || !ts.isNamedImports(bindings)) return;
+
+  const moduleAbs = join(dirname(sourcePath), ...spec.split('/'));
+  for (const element of bindings.elements) {
+    importedTypes.set(element.name.text, moduleAbs);
+  }
 }
 
 /**
@@ -244,10 +388,9 @@ function extractInlineLiteralArrayFields(
  * `attachment?: { filename: string; mimeCode: string; ... }` gibi inline object literal
  * field'ları synthetic interface'e indirger. `extractInlineLiteralArrayFields` helper'ının
  * non-array versiyonu — array form (`Array<{...}>` ve `{...}[]`) önce kontrol edilir
- * (parseInterfaces içinde), bu helper sadece tek `{...}` formuna düşer.
+ * (parseSourceFile içinde), bu helper sadece tek `{...}` formuna düşer.
  *
  * Sprint 8j.2'deki "still skips single inline literals" disiplini bu commit'te kaldırıldı.
- * Şu an kütüphane çapında tek etkilenen field: `SimpleAdditionalDocumentInput.attachment`.
  */
 function extractInlineLiteralFields(
   typeNode: ts.TypeNode,
@@ -291,34 +434,23 @@ function buildKey(parts: string[]): string {
   return parts[0] + parts.slice(1).map(capitalize).join('');
 }
 
-function buildPathTemplate(segments: Array<string | { array: string; param: string }>): string {
-  let result = '';
-  for (let i = 0; i < segments.length; i++) {
-    const seg = segments[i];
-    if (typeof seg === 'string') {
-      result += (i === 0 ? '' : '.') + seg;
-    } else {
-      result += (i === 0 ? '' : '.') + seg.array + `[${seg.param}]`;
-    }
-  }
-  return result;
-}
-
-function generateEntries(interfaces: Map<string, InterfaceField[]>): PathEntry[] {
+function generateEntries(parsed: ParsedTypes, target: GeneratorTarget): PathEntry[] {
   const entries: PathEntry[] = [];
-  const inputFields = interfaces.get('SimpleInvoiceInput');
+  const { interfaces, aliases, importedTypes } = parsed;
+  const inputFields = interfaces.get(target.rootInterface);
   if (!inputFields) {
-    throw new Error('SimpleInvoiceInput interface not found in simple-types.ts');
+    throw new Error(`${target.rootInterface} interface not found in ${target.sourceFile}`);
   }
 
   // Kardeş alan adları — dizi anahtarı çakışma kontrolü için (D-11).
   const siblingNames = new Set(inputFields.map(f => f.name));
+  const rootParam = INDEX_PARAM_NAMES[0];
 
   for (const field of inputFields) {
     const baseType = stripUndefined(field.type);
-    const resolved = resolveAlias(baseType);
+    const resolved = resolveAlias(baseType, aliases);
 
-    // 1) Doc-level primitive (veya literal union, veya string[], veya type alias literal union)
+    // 1) Doc-level primitive (veya literal union, veya string[], veya alias/enum union)
     if (isPrimitive(resolved)) {
       entries.push({
         key: field.name,
@@ -332,8 +464,7 @@ function generateEntries(interfaces: Map<string, InterfaceField[]>): PathEntry[]
 
     // 2) Array of interface (lines[], despatchReferences[], additionalDocuments[])
     if (isArrayOfInterface(baseType)) {
-      const elementType = getArrayElementType(baseType);
-      const elementFields = interfaces.get(elementType);
+      const elementFields = interfaces.get(getArrayElementType(baseType));
       if (!elementFields) continue;
 
       // Array adı için key prefix'i (lines → line, despatchReferences → despatchReference).
@@ -341,155 +472,118 @@ function generateEntries(interfaces: Map<string, InterfaceField[]>): PathEntry[]
       const itemKey = arrayItemKey(field.name, siblingNames);
 
       for (const subField of elementFields) {
-        addArrayElementEntries(
-          entries,
-          interfaces,
-          subField,
-          /* arrayName */ field.name,
-          /* itemKeyPrefix */ itemKey,
-        );
+        addFieldEntries(entries, parsed, target, subField, [itemKey],
+          `${field.name}[${rootParam}]`, [rootParam], 1);
       }
       continue;
     }
 
-    // 3) Sub-object (interface ref)
-    if (interfaces.has(baseType)) {
-      const subFields = interfaces.get(baseType)!;
+    // 3) Sub-object (interface ref veya synthetic inline literal)
+    const subFields = interfaces.get(baseType);
+    if (subFields) {
       for (const subField of subFields) {
-        addSubObjectEntries(entries, interfaces, subField, field.name);
+        addFieldEntries(entries, parsed, target, subField, [field.name], field.name, [], 1);
       }
       continue;
     }
 
-    // Diğer tipler (örn. inline object literal `{ filename: string; ... }`) skip — Faz 1 kapsamı dışı
+    // 4) Başka dosyadan import edilmiş, çözümlenemeyen tip → değer tipi aynen taşınır
+    if (importedTypes.has(baseType)) {
+      entries.push({
+        key: field.name,
+        pathTemplate: field.name,
+        valueType: field.optional ? `${baseType} | undefined` : baseType,
+        jsdoc: field.jsdoc,
+        fnParams: [],
+      });
+      continue;
+    }
+
+    // Diğer tipler (anon union, generic vb.) → kapsam dışı
   }
 
   return entries;
 }
 
 /**
- * Sub-object alt-fields'ı için entry üretir (örn: sender.taxNumber, paymentMeans.iban).
- * Deep-nested sub-object'leri (örn. delivery.deliveryAddress dış lines için) skip eder.
+ * Tek bir alan için path entry üretir; alt-nesnelere ve dizilere ÖZYİNELER.
+ *
+ * `depth` = `pathPrefix`'in taşıdığı özellik segmenti sayısı (dizi indeksi
+ * segment saymaz): `sender` → 1, `lines[i].delivery` → 2. Bu çağrının üreteceği
+ * girdi `depth + 1` derinliğinde olur; hedefin `maxDepth` bütçesi aşılıyorsa
+ * alan tümüyle atlanır.
+ *
+ * Eski üreteçteki iki ayrı fonksiyon (`addSubObjectEntries` / `addArrayElementEntries`)
+ * ve içlerindeki "Faz 1 SKIP" sabit sınırları bu tek özyinelemede birleşti;
+ * sınır artık hedefe göre ayarlanabilir.
  */
-function addSubObjectEntries(
+function addFieldEntries(
   entries: PathEntry[],
-  interfaces: Map<string, InterfaceField[]>,
+  parsed: ParsedTypes,
+  target: GeneratorTarget,
   field: InterfaceField,
-  parentName: string,
+  keyParts: string[],
+  pathPrefix: string,
+  fnParams: string[],
+  depth: number,
 ): void {
-  const baseType = stripUndefined(field.type);
-  const resolved = resolveAlias(baseType);
+  if (depth + 1 > target.maxDepth) return;
 
+  const { interfaces, aliases, importedTypes } = parsed;
+  const baseType = stripUndefined(field.type);
+  const resolved = resolveAlias(baseType, aliases);
+
+  // 1) Primitive / literal union / primitive dizi
   if (isPrimitive(resolved)) {
     entries.push({
-      key: buildKey([parentName, field.name]),
-      pathTemplate: `${parentName}.${field.name}`,
+      key: buildKey([...keyParts, field.name]),
+      pathTemplate: `${pathPrefix}.${field.name}`,
       valueType: field.optional ? `${resolved} | undefined` : resolved,
       jsdoc: field.jsdoc,
-      fnParams: [],
+      fnParams: [...fnParams],
     });
     return;
   }
 
-  // Sub-object array (örn. sender.identifications: SimplePartyIdentification[],
-  // buyerCustomer.identifications: __Inline_*[] synthetic). Sprint 8j.2.
+  // 2) Arayüz dizisi → yeni indeks parametresi (`i` → `ti` → `tti`)
   if (isArrayOfInterface(baseType)) {
-    const elementType = getArrayElementType(baseType);
-    const elementFields = interfaces.get(elementType);
+    const elementFields = interfaces.get(getArrayElementType(baseType));
     if (!elementFields) return;
+    const param = INDEX_PARAM_NAMES[fnParams.length];
+    if (!param) return;                       // indeks parametresi tükendi
     const itemKey = singularize(field.name);
     for (const subField of elementFields) {
-      const subBase = stripUndefined(subField.type);
-      const subResolved = resolveAlias(subBase);
-      if (!isPrimitive(subResolved)) continue;
-      entries.push({
-        key: buildKey([parentName, itemKey, subField.name]),
-        pathTemplate: `${parentName}.${field.name}[i].${subField.name}`,
-        valueType: subField.optional ? `${subResolved} | undefined` : subResolved,
-        jsdoc: subField.jsdoc,
-        fnParams: ['i'],
-      });
+      addFieldEntries(entries, parsed, target, subField, [...keyParts, itemKey],
+        `${pathPrefix}.${field.name}[${param}]`, [...fnParams, param], depth + 1);
     }
     return;
   }
 
-  // Sub-object'in kendi sub-object'i (örn. paymentMeans.attachment) → SKIP
-}
-
-/**
- * Array element fields'ı için entry üretir (örn: lines[i].kdvPercent, lines[i].delivery.gtipNo,
- * lines[i].taxes[ti].code).
- */
-function addArrayElementEntries(
-  entries: PathEntry[],
-  interfaces: Map<string, InterfaceField[]>,
-  field: InterfaceField,
-  arrayName: string,
-  itemKeyPrefix: string,
-): void {
-  const baseType = stripUndefined(field.type);
-  const resolved = resolveAlias(baseType);
-
-  // 1) Element içi primitive: lines[i].kdvPercent
-  if (isPrimitive(resolved)) {
-    entries.push({
-      key: buildKey([itemKeyPrefix, field.name]),
-      pathTemplate: `${arrayName}[i].${field.name}`,
-      valueType: field.optional ? `${resolved} | undefined` : resolved,
-      jsdoc: field.jsdoc,
-      fnParams: ['i'],
-    });
-    return;
-  }
-
-  // 2) Element içi sub-object: lines[i].delivery.gtipNo
-  if (interfaces.has(baseType)) {
-    const subFields = interfaces.get(baseType)!;
+  // 3) Alt-nesne (arayüz referansı veya synthetic inline literal)
+  const subFields = interfaces.get(baseType);
+  if (subFields) {
     for (const subField of subFields) {
-      const subBase = stripUndefined(subField.type);
-      const subResolved = resolveAlias(subBase);
-      if (isPrimitive(subResolved)) {
-        entries.push({
-          key: buildKey([itemKeyPrefix, field.name, subField.name]),
-          pathTemplate: `${arrayName}[i].${field.name}.${subField.name}`,
-          valueType: subField.optional ? `${subResolved} | undefined` : subResolved,
-          jsdoc: subField.jsdoc,
-          fnParams: ['i'],
-        });
-      }
-      // Üçüncü derinlik (lines[i].delivery.deliveryAddress.X) → Faz 1 SKIP
+      addFieldEntries(entries, parsed, target, subField, [...keyParts, field.name],
+        `${pathPrefix}.${field.name}`, fnParams, depth + 1);
     }
     return;
   }
 
-  // 3) Element içi array of interface: lines[i].taxes[ti].code (çift indeks)
-  if (isArrayOfInterface(baseType)) {
-    const innerElementType = getArrayElementType(baseType);
-    const innerFields = interfaces.get(innerElementType);
-    if (!innerFields) return;
-
-    const innerKeyPrefix = singularize(field.name);
-    for (const innerField of innerFields) {
-      const innerBase = stripUndefined(innerField.type);
-      const innerResolved = resolveAlias(innerBase);
-      if (isPrimitive(innerResolved)) {
-        entries.push({
-          key: buildKey([itemKeyPrefix, innerKeyPrefix, innerField.name]),
-          pathTemplate: `${arrayName}[i].${field.name}[ti].${innerField.name}`,
-          valueType: innerField.optional ? `${innerResolved} | undefined` : innerResolved,
-          jsdoc: innerField.jsdoc,
-          fnParams: ['i', 'ti'],
-        });
-      }
-    }
+  // 4) Çözümlenemeyen ama import edilmiş tip → değer tipi aynen taşınır
+  if (importedTypes.has(baseType)) {
+    entries.push({
+      key: buildKey([...keyParts, field.name]),
+      pathTemplate: `${pathPrefix}.${field.name}`,
+      valueType: field.optional ? `${baseType} | undefined` : baseType,
+      jsdoc: field.jsdoc,
+      fnParams: [...fnParams],
+    });
   }
-
-  // Diğer (inline object literal, anon array) → SKIP
 }
 
 // ─── Manuel append (D-9): session-level state, SimpleInvoiceInput dışı ────────
 
-const MANUAL_ENTRIES: PathEntry[] = [
+const MANUAL_ENTRIES: readonly PathEntry[] = [
   {
     key: 'liability',
     pathTemplate: 'liability',
@@ -499,11 +593,69 @@ const MANUAL_ENTRIES: PathEntry[] = [
   },
 ];
 
-// ─── Read-only path'ler (D-10): constructor-locked, update() reddedilir ──────
+// ─── Hedef tablosu ────────────────────────────────────────────────────────────
 
-const READ_ONLY_PATHS = ['isExport'] as const;
+/**
+ * e-Fatura hedefi — üretecin tip-parametrik hâle gelmeden önceki TÜM sabitlerini
+ * birebir taşır. `src/calculator/session-paths.generated.ts` byte düzeyinde
+ * değişmemelidir; bu tablo o garantinin tek dayanağıdır.
+ */
+export const INVOICE_TARGET: GeneratorTarget = {
+  sourceFile: 'src/calculator/simple-types.ts',
+  rootInterface: 'SimpleInvoiceInput',
+  outputFile: 'src/calculator/session-paths.generated.ts',
+  constName: 'SessionPaths',
+  mapTypeName: 'SessionPathMap',
+  overloadsName: 'InvoiceSessionUpdateOverloads',
+  templatesName: 'KNOWN_PATH_TEMPLATES',
+  readOnlyName: 'READ_ONLY_PATHS',
+  manualEntries: MANUAL_ENTRIES,
+  readOnlyPaths: ['isExport'],
+  maxDepth: 3,
+  exampleIndexedPath: 'lines[0].kdvPercent',
+};
+
+/**
+ * e-İrsaliye hedefi — `DespatchSession`'ın ön koşulu.
+ *
+ * `maxDepth: 4` çünkü irsaliyenin taşıdığı veri üçüncü/dördüncü segmentte yaşıyor:
+ * `shipment.deliveryAddress.cityName`, `shipment.driverPersons[i].firstName`,
+ * `shipment.licensePlates[i].plateNumber`,
+ * `lines[i].item.additionalItemIdentifications[ti].schemeId`.
+ *
+ * `manualEntries` / `readOnlyPaths` BOŞ: irsaliyede `liability` (mükellefiyet) ve
+ * `isExport` (ihracat kilidi) muadili bir session-level state YOKTUR.
+ */
+export const DESPATCH_TARGET: GeneratorTarget = {
+  sourceFile: 'src/types/despatch-input.ts',
+  rootInterface: 'DespatchInput',
+  outputFile: 'src/calculator/despatch-session-paths.generated.ts',
+  constName: 'DespatchSessionPaths',
+  mapTypeName: 'DespatchSessionPathMap',
+  overloadsName: 'DespatchSessionUpdateOverloads',
+  templatesName: 'DESPATCH_KNOWN_PATH_TEMPLATES',
+  readOnlyName: 'DESPATCH_READ_ONLY_PATHS',
+  manualEntries: [],
+  readOnlyPaths: [],
+  maxDepth: 4,
+  dependencyFiles: ['src/types/enums.ts', 'src/types/common.ts'],
+  exampleIndexedPath: 'lines[0].deliveredQuantity',
+};
+
+/** Üretilecek tüm hedefler — `main()` ve `--check` bunun üzerinde döner. */
+export const TARGETS: readonly GeneratorTarget[] = [INVOICE_TARGET, DESPATCH_TARGET];
 
 // ─── Çıktı üretimi ────────────────────────────────────────────────────────────
+
+/** `lines[i].taxes[ti].code` → `lines[${number}].taxes[${number}].code` */
+function toNumberTemplate(pathTemplate: string): string {
+  return pathTemplate.replace(/\[[a-z]+\]/g, '[${number}]');
+}
+
+/** `lines[i].taxes[ti].code` → `lines[*].taxes[*].code` */
+function toStarTemplate(pathTemplate: string): string {
+  return pathTemplate.replace(/\[[a-z]+\]/g, '[*]');
+}
 
 function renderEntry(entry: PathEntry): string {
   const jsdocBlock = entry.jsdoc
@@ -511,11 +663,11 @@ function renderEntry(entry: PathEntry): string {
     : `  /** Expected type: ${entry.valueType} */\n`;
 
   // Sprint 8k.2 / Library Öneri #2: fonksiyon path return değeri
-  // SessionPathMap key'iyle aynı template literal'a `as ...` ile narrow
+  // path map key'iyle aynı template literal'a `as ...` ile narrow
   // edilir; `update<P extends keyof SessionPathMap>(...)` generic'ine
   // cast'siz assign edilebilmesi için kritik.
-  const fnPath = entry.pathTemplate.replace(/\[i\]/g, '[${i}]').replace(/\[ti\]/g, '[${ti}]');
-  const mapKey = entry.pathTemplate.replace(/\[i\]/g, '[${number}]').replace(/\[ti\]/g, '[${number}]');
+  const fnPath = entry.pathTemplate.replace(/\[([a-z]+)\]/g, '[${$1}]');
+  const mapKey = toNumberTemplate(entry.pathTemplate);
 
   const value = entry.fnParams.length === 0
     ? `'${entry.pathTemplate}'`
@@ -524,29 +676,25 @@ function renderEntry(entry: PathEntry): string {
   return `${jsdocBlock}  ${entry.key}: ${value},`;
 }
 
-function renderPathMapType(entries: PathEntry[]): string {
-  // SessionPathMap: her path template'i için value tipi.
+function renderPathMapType(entries: PathEntry[], target: GeneratorTarget): string {
+  // Path map: her path template'i için value tipi.
   // Fonksiyon path'lerinde template değişkenler (`i`, `ti`) literal `${number}` ile gösterilir.
-  const lines = entries.map(entry => {
-    const tpl = entry.pathTemplate
-      .replace(/\[i\]/g, '[${number}]')
-      .replace(/\[ti\]/g, '[${number}]');
-    return `  '${tpl}': ${entry.valueType};`;
-  });
-  return `export interface SessionPathMap {\n${lines.join('\n')}\n}`;
+  const lines = entries.map(entry => `  '${toNumberTemplate(entry.pathTemplate)}': ${entry.valueType};`);
+  return `export interface ${target.mapTypeName} {\n${lines.join('\n')}\n}`;
 }
 
-function renderKnownPathTemplates(entries: PathEntry[]): string {
+function renderKnownPathTemplates(entries: PathEntry[], target: GeneratorTarget): string {
   // Path validation Katman 3: parsed path → '*' normalize → bu set'te ara.
-  const templates = entries.map(entry =>
-    entry.pathTemplate.replace(/\[i\]/g, '[*]').replace(/\[ti\]/g, '[*]'),
-  );
-  const unique = Array.from(new Set(templates)).sort();
-  return `export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([\n${unique.map(t => `  '${t}',`).join('\n')}\n]);`;
+  const unique = Array.from(new Set(entries.map(e => toStarTemplate(e.pathTemplate)))).sort();
+  return `export const ${target.templatesName}: ReadonlySet<string> = new Set([\n${unique.map(t => `  '${t}',`).join('\n')}\n]);`;
 }
 
-function renderReadOnlyPaths(): string {
-  return `export const READ_ONLY_PATHS: ReadonlySet<string> = new Set([\n${READ_ONLY_PATHS.map(p => `  '${p}',`).join('\n')}\n]);`;
+function renderReadOnlyPaths(target: GeneratorTarget): string {
+  if (target.readOnlyPaths.length === 0) {
+    return `export const ${target.readOnlyName}: ReadonlySet<string> = new Set([]);`;
+  }
+  const lines = target.readOnlyPaths.map(p => `  '${p}',`).join('\n');
+  return `export const ${target.readOnlyName}: ReadonlySet<string> = new Set([\n${lines}\n]);`;
 }
 
 /**
@@ -558,14 +706,10 @@ function renderReadOnlyPaths(): string {
  * generic'iyle TS2345 alıyor.
  *
  * Çözüm: Her fonksiyonel path için spesifik template literal overload üret.
- * `InvoiceSessionUpdateOverloads` interface'i `invoice-session.ts`'te declaration
- * merging (interface InvoiceSession extends ...) ile InvoiceSession class'ına enjekte
- * edilir.
- *
- * Tek-indeks (i): `update<I extends number>(path: \`...[${'$'}{I}]...\`, value: T): void;`
- * Çift-indeks (i, ti): `update<I extends number, TI extends number>(path: \`...[${'$'}{I}]...[${'$'}{TI}]...\`, value: T): void;`
+ * Üretilen overload interface'i ilgili session dosyasında declaration merging
+ * (interface XSession extends ...) ile class'a enjekte edilir.
  */
-function renderUpdateOverloads(entries: PathEntry[]): string {
+function renderUpdateOverloads(entries: PathEntry[], target: GeneratorTarget): string {
   if (entries.length === 0) return '';
 
   // Sprint 8l.2 / v2.2.4 — Tüm path entry'leri için update() overload üretir.
@@ -587,71 +731,144 @@ function renderUpdateOverloads(entries: PathEntry[]): string {
       return `  update(path: '${entry.pathTemplate}', value: ${entry.valueType}): void;`;
     }
     // Fonksiyonel path: `${number}` placeholder'lı template literal
-    const pathTpl = entry.pathTemplate
-      .replace(/\[i\]/g, '[${number}]')
-      .replace(/\[ti\]/g, '[${number}]');
-    return `  update(path: \`${pathTpl}\`, value: ${entry.valueType}): void;`;
+    return `  update(path: \`${toNumberTemplate(entry.pathTemplate)}\`, value: ${entry.valueType}): void;`;
   });
+
+  const sessionClassName = target.overloadsName.replace(/UpdateOverloads$/, '');
+  const sessionModuleName = `${toKebabCase(sessionClassName)}.ts`;
 
   const header = [
     '/**',
     ' * Sprint 8l.2 / v2.2.4 — Tüm path overload\'larının deklaratif kaynağı.',
     ' *',
     ' * TS 5.7+ template literal type inference uyumsuzluğunu çözer (Library Öneri #6).',
-    ' * `invoice-session.ts` declaration merging ile `InvoiceSession` class\'ına enjekte eder:',
+    ' * `' + sessionModuleName + '` declaration merging ile `' + sessionClassName + '` class\'ına enjekte eder:',
     ' *',
-    ' *   export interface InvoiceSession extends InvoiceSessionUpdateOverloads {}',
+    ' *   export interface ' + sessionClassName + ' extends ' + target.overloadsName + ' {}',
     ' *',
     ' * TÜM path\'ler için spesifik overload üretilir (doc-level literal + fonksiyonel',
-    ' * `${number}` placeholder); class\'ta `<P extends keyof SessionPathMap>` generic',
+    ' * `${number}` placeholder); class\'ta `<P extends keyof ' + target.mapTypeName + '>` generic',
     ' * yok — TS 5.7+ keyof distributive union template literal key\'leri açamıyor.',
     ' * Generator regenerate sonrası overload listesi otomatik güncellenir.',
     ' */',
   ].join('\n');
 
-  return `${header}\nexport interface InvoiceSessionUpdateOverloads {\n${lines.join('\n')}\n}`;
+  return `${header}\nexport interface ${target.overloadsName} {\n${lines.join('\n')}\n}`;
 }
 
-function generateOutputContent(entries: PathEntry[]): string {
+/**
+ * Üretilen dosyanın ihtiyaç duyduğu `import type` satırları.
+ *
+ * Yalnızca GERÇEKTEN kullanılan tipler yazılır (`noUnusedLocals` açık). Boş
+ * dönerse çıktıya hiçbir şey eklenmez — fatura hedefinde durum budur, o yüzden
+ * `session-paths.generated.ts` byte düzeyinde etkilenmez.
+ */
+function renderTypeImports(
+  entries: PathEntry[],
+  parsed: ParsedTypes,
+  target: GeneratorTarget,
+): string {
+  const outputDir = dirname(absPath(target.outputFile));
+  const byModule = new Map<string, Set<string>>();
+
+  for (const [typeName, moduleAbs] of parsed.importedTypes) {
+    const used = entries.some(e => new RegExp(`\\b${typeName}\\b`).test(e.valueType));
+    if (!used) continue;
+    let specifier = relative(outputDir, moduleAbs).split(/[\\/]/).join('/');
+    if (!specifier.startsWith('.')) specifier = `./${specifier}`;
+    const names = byModule.get(specifier) ?? new Set<string>();
+    names.add(typeName);
+    byModule.set(specifier, names);
+  }
+
+  if (byModule.size === 0) return '';
+
+  return Array.from(byModule.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([specifier, names]) =>
+      `import type { ${Array.from(names).sort().join(', ')} } from '${specifier}';`)
+    .join('\n');
+}
+
+function generateOutputContent(
+  entries: PathEntry[],
+  parsed: ParsedTypes,
+  target: GeneratorTarget,
+): string {
+  const manualLine = target.manualEntries.length > 0
+    ? `${target.manualEntries.map(e => e.key).join(', ')} (session-level state, see scripts/generate-session-paths.ts MANUAL_ENTRIES)`
+    : '(none)';
+  const readOnlyLine = target.readOnlyPaths.length > 0
+    ? `${target.readOnlyPaths.join(', ')} (constructor-locked, D-10)`
+    : '(none)';
+
   const header = `// =====================================================================
 // @generated
 // THIS FILE IS AUTO-GENERATED by scripts/generate-session-paths.ts
 // DO NOT EDIT BY HAND. Edits will be lost on next regeneration.
-// Generator input: src/calculator/simple-types.ts (SimpleInvoiceInput)
-// Manual entries: liability (session-level state, see scripts/generate-session-paths.ts MANUAL_ENTRIES)
-// Read-only paths: isExport (constructor-locked, D-10)
+// Generator input: ${target.sourceFile} (${target.rootInterface})
+// Manual entries: ${manualLine}
+// Read-only paths: ${readOnlyLine}
 // =====================================================================
 //
-// SessionPaths — path-based update API için tip-güvenli path map (AR-10).
-// Mimsoft form akışında her field için \`session.update(SessionPaths.X, value)\` çağrısında kullanılır.
+// ${target.constName} — path-based update API için tip-güvenli path map (AR-10).
+// Mimsoft form akışında her field için \`session.update(${target.constName}.X, value)\` çağrısında kullanılır.
 //
-// Path syntax: bracket notation (örn: 'lines[0].kdvPercent') — kütüphanedeki tüm
+// Path syntax: bracket notation (örn: '${target.exampleIndexedPath}') — kütüphanedeki tüm
 // validator'lar bu formatta ValidationError.path üretir, reactive session aynı convention'ı taşır.
 //
-// Generic tip türetimi: \`SessionPathMap\` ile \`update<P extends keyof SessionPathMap>(path: P, value: SessionPathMap[P])\`
+// Generic tip türetimi: \`${target.mapTypeName}\` ile \`update<P extends keyof ${target.mapTypeName}>(path: P, value: ${target.mapTypeName}[P])\`
 // imzası compile-time tip kontrolü sağlar.
 `;
 
-  const constBlock = `export const SessionPaths = {\n${entries.map(renderEntry).join('\n\n')}\n} as const;`;
+  const constBlock = `export const ${target.constName} = {\n${entries.map(renderEntry).join('\n\n')}\n} as const;`;
 
-  return [
-    header,
+  const blocks: string[] = [header];
+  const importBlock = renderTypeImports(entries, parsed, target);
+  if (importBlock) blocks.push(importBlock);
+
+  blocks.push(
     constBlock,
-    renderPathMapType(entries),
-    renderKnownPathTemplates(entries),
-    renderReadOnlyPaths(),
-    renderUpdateOverloads(entries),
+    renderPathMapType(entries, target),
+    renderKnownPathTemplates(entries, target),
+    renderReadOnlyPaths(target),
+    renderUpdateOverloads(entries, target),
     '',
-  ].join('\n\n');
+  );
+
+  return blocks.join('\n\n');
+}
+
+/**
+ * Aynı anahtarı iki path üretirse nesne literali derlenemez ("duplicate property").
+ * Sessiz bozuk çıktı yerine üretim anında patlaması için kapı.
+ */
+function assertUniqueKeys(entries: readonly PathEntry[], target: GeneratorTarget): void {
+  const seen = new Map<string, string>();
+  const clashes: string[] = [];
+  for (const entry of entries) {
+    const previous = seen.get(entry.key);
+    if (previous) clashes.push(`${entry.key} (${previous} ↔ ${entry.pathTemplate})`);
+    else seen.set(entry.key, entry.pathTemplate);
+  }
+  if (clashes.length > 0) {
+    throw new Error(`${target.constName}: duplicate path keys — ${clashes.join(', ')}`);
+  }
 }
 
 // ─── Ana akış ─────────────────────────────────────────────────────────────────
 
-export function generateSessionPaths(): string {
-  const interfaces = parseInterfaces();
-  const autoEntries = generateEntries(interfaces);
-  const allEntries = [...autoEntries, ...MANUAL_ENTRIES];
-  return generateOutputContent(allEntries);
+/**
+ * Bir hedef için üretilecek dosya içeriğini döndürür (diske YAZMAZ).
+ *
+ * Varsayılan hedef faturadır: üretecin sıfır-argümanlı eski imzası aynen çalışır.
+ */
+export function generateSessionPaths(target: GeneratorTarget = INVOICE_TARGET): string {
+  const parsed = parseInterfaces(target);
+  const autoEntries = generateEntries(parsed, target);
+  const allEntries = [...autoEntries, ...target.manualEntries];
+  assertUniqueKeys(allEntries, target);
+  return generateOutputContent(allEntries, parsed, target);
 }
 
 function normalizeLineEndings(s: string): string {
@@ -659,28 +876,38 @@ function normalizeLineEndings(s: string): string {
 }
 
 function main(): void {
-  const generated = generateSessionPaths();
   const checkMode = process.argv.includes('--check');
+  let drift = false;
 
-  if (checkMode) {
-    if (!existsSync(OUTPUT_PATH)) {
-      console.error(`SessionPaths drift: ${OUTPUT_PATH} does not exist. Run \`npm run generate:paths\` to create.`);
-      process.exit(1);
+  for (const target of TARGETS) {
+    const generated = generateSessionPaths(target);
+    const outputPath = absPath(target.outputFile);
+
+    if (!checkMode) {
+      writeFileSync(outputPath, generated, 'utf-8');
+      console.log(`Generated ${outputPath} (${generated.split('\n').length} lines)`);
+      continue;
     }
-    const existing = readFileSync(OUTPUT_PATH, 'utf-8');
+
+    if (!existsSync(outputPath)) {
+      console.error(`SessionPaths drift: ${outputPath} does not exist. Run \`npm run generate:paths\` to create.`);
+      drift = true;
+      continue;
+    }
+
+    const existing = readFileSync(outputPath, 'utf-8');
     if (normalizeLineEndings(generated) !== normalizeLineEndings(existing)) {
-      console.error('SessionPaths drift detected. Run `npm run generate:paths` to regenerate.');
+      console.error(`SessionPaths drift detected in ${target.outputFile}. Run \`npm run generate:paths\` to regenerate.`);
       console.error(`  Expected: ${generated.length} chars`);
       console.error(`  Found:    ${existing.length} chars`);
-      process.exit(1);
+      drift = true;
+      continue;
     }
-    console.log('SessionPaths up to date.');
-    return;
+
+    console.log(`${target.outputFile} up to date.`);
   }
 
-  writeFileSync(OUTPUT_PATH, generated, 'utf-8');
-  const lineCount = generated.split('\n').length;
-  console.log(`Generated ${OUTPUT_PATH} (${lineCount} lines)`);
+  if (drift) process.exit(1);
 }
 
 // Direct execution kontrolü (tsx ile çalıştırıldığında)
