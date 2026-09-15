@@ -37,14 +37,24 @@ export const input: DespatchInput = {
       { firstName: 'Mehmet', familyName: 'Birinci Sürücü', nationalityId: '12345678901' },
       { firstName: 'Ali', familyName: 'İkinci Sürücü', nationalityId: '23456789012' },
     ],
+    /* Adres ZORUNLU: `CarrierParty` UBL-TR'de `PartyType`'tır ve `cac:PostalAddress`
+       minOccurs=1'dir. Adressiz taşıyıcı GİB kapısından geçmez. */
     carrierParty: {
       vknTckn: '5555555555',
       taxIdType: 'VKN',
       name: 'Hızlı Taşımacılık A.Ş.',
+      streetName: 'Lojistik Cad. No:12',
+      citySubdivisionName: 'Ümraniye',
+      cityName: 'İstanbul',
+      postalZone: '34760',
+      country: 'Türkiye',
     },
+    /* 🔴 ÇEKİCİ TEK SATIR. `cac:RoadTransport` içinde XSD TEK `cbc:LicensePlateID`
+       kabul eder; dorse buraya İKİNCİ satır olarak yazılamaz. Kanonik yeri
+       aşağıdaki `transportHandlingUnits`tir (B-49) — bu örnek dorseyi eskiden
+       İKİ YERDE birden taşıyordu ve belge bu yüzden geçersizdi. */
     licensePlates: [
       { plateNumber: '34ABC123', schemeId: 'PLAKA' },
-      { plateNumber: '34DEF456', schemeId: 'DORSE' },
     ],
     transportHandlingUnits: [
       { transportEquipmentId: '34DEF456', schemeId: 'DORSEPLAKA' },

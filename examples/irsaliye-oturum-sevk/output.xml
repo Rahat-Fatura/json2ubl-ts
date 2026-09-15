@@ -108,7 +108,7 @@
   <cac:DespatchLine>
     <cbc:ID>1</cbc:ID>
     <cbc:Note>Üst üste konmasın</cbc:Note>
-    <cbc:DeliveredQuantity unitCode="Adet">10.00</cbc:DeliveredQuantity>
+    <cbc:DeliveredQuantity unitCode="C62">10.00</cbc:DeliveredQuantity>
     <cac:OrderLineReference>
       <cbc:LineID>1</cbc:LineID>
     </cac:OrderLineReference>
@@ -119,7 +119,7 @@
   </cac:DespatchLine>
   <cac:DespatchLine>
     <cbc:ID>2</cbc:ID>
-    <cbc:DeliveredQuantity unitCode="Adet">4.00</cbc:DeliveredQuantity>
+    <cbc:DeliveredQuantity unitCode="C62">4.00</cbc:DeliveredQuantity>
     <cac:OrderLineReference>
       <cbc:LineID>2</cbc:LineID>
     </cac:OrderLineReference>

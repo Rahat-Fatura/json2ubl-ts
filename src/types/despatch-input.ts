@@ -6,7 +6,6 @@ import type {
   SignatureInput,
   AdditionalItemIdInput,
   AddressInput,
-  PartyIdentifierInput,
 } from './common';
 
 /** İrsaliye giriş verisi — tüm senaryoları kapsar */
@@ -96,15 +95,26 @@ export interface DriverPersonInput {
   title?: string;
 }
 
-/** Taşıyıcı firma */
-export interface CarrierPartyInput {
-  vknTckn: string;
-  taxIdType: 'VKN' | 'TCKN';
-  name?: string;
-  firstName?: string;
-  familyName?: string;
-  additionalIdentifiers?: PartyIdentifierInput[];
-}
+/**
+ * Taşıyıcı firma — `cac:Delivery/cac:CarrierParty`.
+ *
+ * 🔴 `PartyInput`TİR, dar bir alt küme DEĞİL. Eskiden yalnız VKN/ad taşıyan ayrı
+ * bir şekildi ve bu İKİ SESSİZ KUSUR üretiyordu (canlı GİB kapısında ölçüldü):
+ *   · `cac:PostalAddress` hiç serileştirilemiyordu. UBL-TR `PartyType`'ta o
+ *     eleman ZORUNLUDUR (minOccurs=1), dolayısıyla şoförsüz/yalnız-taşıyıcı
+ *     irsaliyesi HER ZAMAN reddediliyordu:
+ *     "CarrierParty elementinin içeriği eksik. Zorunlu element(ler): PostalAddress"
+ *   · TCKN dalında `firstName`/`familyName` doldurulup hiçbir yere yazılmıyordu
+ *     (`cac:Person` bloğu yoktu) — gerçek kişi taşıyıcının adı kayboluyordu.
+ *
+ * Fatura tarafı bu işi baştan doğru yapıyordu: `DeliveryInput.carrierParty` da
+ * `PartyInput`tır ve ortak `serializePartyAs` ile basılır. İrsaliye o ortak
+ * yoldan sapmıştı; sapma kaldırıldı.
+ *
+ * Genişletme GERİYE UYUMLUDUR: `PartyInput` eski şeklin üst kümesidir, eski
+ * çağıran nesneleri aynen tip denetiminden geçer.
+ */
+export type CarrierPartyInput = PartyInput;
 
 /**
  * Plaka schemeID — Schematron `$LicensePlateIDSchemeIDType` (20260701, Sprint 9).

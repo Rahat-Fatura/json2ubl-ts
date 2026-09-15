@@ -224,7 +224,13 @@ describe('DespatchBuilder', () => {
       expect(xml).toContain('<cbc:FirstName>Ayşe</cbc:FirstName>');
     });
 
-    it('carrierParty-only (driverPersons undefined) başarılı', () => {
+    /* 🔴 CANLI GİB KAPISINDA ÖLÇÜLDÜ: bu yol eskiden HER ZAMAN reddediliyordu
+       ("CarrierParty elementinin içeriği eksik. Zorunlu element(ler): PostalAddress").
+       Serileştirici taşıyıcıyı elle yazıyor ve adresi hiç basmıyordu; artık ortak
+       `serializePartyAs`ten geçiyor. Test adresi ZORUNLU olarak taşır ve
+       `PostalAddress`ın gerçekten bastığını çivilar — kapı bir daha sessizce
+       kapanamaz. */
+    it('carrierParty-only (driverPersons undefined) başarılı — PostalAddress DÂHİL', () => {
       const builder = new DespatchBuilder();
       const input = createValidDespatchInput();
       input.shipment.driverPersons = undefined;
@@ -232,10 +238,35 @@ describe('DespatchBuilder', () => {
         vknTckn: '1234567890',
         taxIdType: 'VKN',
         name: 'Taşıyıcı A.Ş.',
+        citySubdivisionName: 'Ümraniye',
+        cityName: 'İstanbul',
       };
       const xml = builder.build(input);
       expect(xml).toContain('<cac:CarrierParty>');
       expect(xml).not.toContain('<cac:DriverPerson>');
+      const carrier = xml.match(/<cac:CarrierParty>[\s\S]*?<\/cac:CarrierParty>/)?.[0] ?? '';
+      expect(carrier).toContain('<cac:PostalAddress>');
+      expect(carrier).toContain('<cbc:CityName>İstanbul</cbc:CityName>');
+    });
+
+    /* Gerçek kişi taşıyıcı: ad/soyad eskiden eşleyicide doldurulup serileştiricide
+       DÜŞÜYORDU (`cac:Person` bloğu hiç yazılmıyordu). */
+    it('TCKN taşıyıcıda cac:Person yazılır (ad/soyad düşmez)', () => {
+      const builder = new DespatchBuilder();
+      const input = createValidDespatchInput();
+      input.shipment.driverPersons = undefined;
+      input.shipment.carrierParty = {
+        vknTckn: '12345678901',
+        taxIdType: 'TCKN',
+        firstName: 'Ali',
+        familyName: 'Veli',
+        citySubdivisionName: 'Ümraniye',
+        cityName: 'İstanbul',
+      };
+      const carrier = builder.build(input).match(/<cac:CarrierParty>[\s\S]*?<\/cac:CarrierParty>/)?.[0] ?? '';
+      expect(carrier).toContain('<cac:Person>');
+      expect(carrier).toContain('<cbc:FirstName>Ali</cbc:FirstName>');
+      expect(carrier).toContain('<cbc:FamilyName>Veli</cbc:FamilyName>');
     });
 
     it('eksik alanlı sürücülerde validation hatası indexli path üretir', () => {

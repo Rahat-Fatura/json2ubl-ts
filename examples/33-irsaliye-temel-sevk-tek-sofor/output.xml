@@ -102,7 +102,7 @@
   </cac:Shipment>
   <cac:DespatchLine>
     <cbc:ID>1</cbc:ID>
-    <cbc:DeliveredQuantity unitCode="Adet">10.00</cbc:DeliveredQuantity>
+    <cbc:DeliveredQuantity unitCode="C62">10.00</cbc:DeliveredQuantity>
     <cac:OrderLineReference>
       <cbc:LineID>1</cbc:LineID>
     </cac:OrderLineReference>

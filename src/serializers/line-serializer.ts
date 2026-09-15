@@ -13,6 +13,7 @@ import { serializeTaxTotal, serializeWithholdingTaxTotal } from './tax-serialize
 import { serializeAllowanceCharge } from './common-serializer';
 import { serializeLineDelivery } from './delivery-serializer';
 import { INVOICE_LINE_SEQ, ITEM_SEQ, PRICE_SEQ, DESPATCH_LINE_SEQ, emitInOrder } from './xsd-sequence';
+import { configManager } from '../calculator/config-manager';
 
 /**
  * InvoiceLine → XML fragment.
@@ -182,7 +183,17 @@ export function serializeDespatchLine(line: DespatchLineInput, indent: string = 
   const inner = emitInOrder(DESPATCH_LINE_SEQ, {
     ID: () => cbcRequiredTag('ID', line.id, 'DespatchLine'),
     Note: () => cbcOptionalTag('Note', line.note),
-    DeliveredQuantity: () => cbcOptionalQuantityTag('DeliveredQuantity', line.deliveredQuantity, line.unitCode),
+    /* 🔴 BİRİM ADI → GİB KODU, EMİSYON ANINDA. Fatura bu çözümlemeyi hesaplayıcıda
+     * yapıyor (`line-calculator.ts:232`); irsaliyede hesaplayıcı YOK, bu yüzden
+     * çağrı hiçbir yerde koşmuyor ve `unitCode="Adet"` ham hâliyle XML'e düşüyordu.
+     * Canlı GİB kapısında ölçüldü: `GeneralUnitCodeCheck` bunun için patlıyor.
+     *
+     * Yeri BİLEREK serileştiricidir, eşleyici değil: ham `DespatchInput` ile gelen
+     * çağıran eşleyiciye HİÇ UĞRAMAZ (`DespatchBuilder.build` doğrudan serileştirir),
+     * dolayısıyla eşleyiciye konsaydı iki yoldan yalnız biri düzelirdi.
+     * Çözümleme tanımadığı değeri AYNEN döndürür → zaten kod veren etkilenmez. */
+    DeliveredQuantity: () =>
+      cbcOptionalQuantityTag('DeliveredQuantity', line.deliveredQuantity, configManager.resolveUnitCode(line.unitCode)),
     OrderLineReference: () => orderLineRef,
     Item: () => [`${i2}<cac:Item>`, ...itemInner, `${i2}</cac:Item>`].join('\n'),
   });

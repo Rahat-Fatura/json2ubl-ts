@@ -32,15 +32,12 @@ import type {
   SimpleLicensePlateInput,
   SimpleShipmentInput,
 } from './simple-despatch-types';
-import type { SimplePartyInput } from './simple-types';
-import { mapSimpleParty, splitPersonName } from '../utils/party-mapper';
-import { resolveTaxIdType } from '../utils/tax-id';
+import { mapSimpleParty } from '../utils/party-mapper';
 import { DespatchProfileId, DespatchTypeCode } from '../types/enums';
 import type {
   DespatchInput,
   DespatchLineInput,
   DespatchShipmentInput,
-  CarrierPartyInput,
   LicensePlateInput,
   LicensePlateSchemeId,
 } from '../types/despatch-input';
@@ -57,6 +54,8 @@ import { isNonEmpty } from '../utils/formatters';
 const DEFAULT_DESPATCH_TYPE = 'SEVK';
 /** `SimpleDespatchInput.profile` verilmediğinde (bkz. tip JSDoc'u). */
 const DEFAULT_DESPATCH_PROFILE = 'TEMELIRSALIYE';
+/** `SimpleTrailerPlateInput.scheme` verilmediğinde (bkz. tip JSDoc'u). */
+const DEFAULT_TRAILER_PLATE_SCHEME = 'DORSEPLAKA';
 /** `SimpleLicensePlateInput.scheme` verilmediğinde (bkz. tip JSDoc'u). */
 const DEFAULT_LICENSE_PLATE_SCHEME: LicensePlateSchemeId = 'PLAKA';
 /** `SimpleShipmentInput.goodsValueCurrency` verilmediğinde. */
@@ -184,11 +183,26 @@ function buildShipment(shipment: SimpleShipmentInput): DespatchShipmentInput {
   }
 
   if (shipment.carrier) {
-    result.carrierParty = buildCarrierParty(shipment.carrier);
+    /* 🔴 ORTAK EŞLEYİCİ — dosya başındaki "Taraf dönüşümü ORTAK, kopyalanmaz"
+     * kuralının tek istisnası buydu. Burada dar bir kopya vardı ve taşıyıcının
+     * ADRESİNİ ATIYORDU; UBL-TR `PartyType`'ta `cac:PostalAddress` zorunlu
+     * olduğu için şoförsüz irsaliye GİB kapısından hiç geçemiyordu. `SimplePartyInput`
+     * adresi zaten taşıyor — atan taraf eşleyiciydi. */
+    result.carrierParty = mapSimpleParty(shipment.carrier);
   }
 
   if (shipment.licensePlates?.length) {
     result.licensePlates = shipment.licensePlates.map(buildLicensePlate);
+  }
+
+  /* B-49: dorse plakası AYRI düğüme gider (`TransportHandlingUnit/TransportEquipment`).
+   * `licensePlates`e ikinci eleman eklemek XSD'yi ihlal ederdi — gerekçe
+   * `SimpleTrailerPlateInput` JSDoc'unda. */
+  if (shipment.trailerPlates?.length) {
+    result.transportHandlingUnits = shipment.trailerPlates.map(plate => ({
+      transportEquipmentId: plate.value,
+      schemeId: plate.scheme ?? DEFAULT_TRAILER_PLATE_SCHEME,
+    }));
   }
 
   if (isNonEmpty(shipment.shipmentId)) {
@@ -221,39 +235,6 @@ function buildDeliveryAddress(shipment: SimpleShipmentInput): AddressInput {
     postalZone: address.zipCode,
     country: address.country ?? DEFAULT_COUNTRY,
   };
-}
-
-/**
- * Taşıyıcı firma — `Delivery/CarrierParty`.
- *
- * `CarrierPartyInput` `PartyInput`'un DAR bir alt kümesidir (adres taşımaz), bu
- * yüzden ortak eşleyici doğrudan kullanılamaz. Ama VKN/TCKN ayrımı ve ad bölme
- * kuralı AYNI kaynaklardan gelir (`resolveTaxIdType` + `splitPersonName`) —
- * burada ikinci bir kopya yazılmaz.
- */
-function buildCarrierParty(carrier: SimplePartyInput): CarrierPartyInput {
-  const taxIdType = resolveTaxIdType(carrier.taxNumber);
-  const result: CarrierPartyInput = {
-    vknTckn: carrier.taxNumber,
-    taxIdType,
-  };
-
-  if (taxIdType === 'VKN') {
-    result.name = carrier.name;
-  } else {
-    const { firstName, familyName } = splitPersonName(carrier.name);
-    result.firstName = firstName;
-    result.familyName = familyName;
-  }
-
-  if (carrier.identifications?.length) {
-    result.additionalIdentifiers = carrier.identifications.map(id => ({
-      schemeId: id.schemeId,
-      value: id.value,
-    }));
-  }
-
-  return result;
 }
 
 function buildLicensePlate(plate: SimpleLicensePlateInput): LicensePlateInput {

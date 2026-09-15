@@ -75,7 +75,6 @@
       <cac:TransportMeans>
         <cac:RoadTransport>
           <cbc:LicensePlateID schemeID="PLAKA">34ABC123</cbc:LicensePlateID>
-          <cbc:LicensePlateID schemeID="DORSE">34DEF456</cbc:LicensePlateID>
         </cac:RoadTransport>
       </cac:TransportMeans>
       <cac:DriverPerson>
@@ -107,6 +106,15 @@
         <cac:PartyName>
           <cbc:Name>Hızlı Taşımacılık A.Ş.</cbc:Name>
         </cac:PartyName>
+        <cac:PostalAddress>
+          <cbc:StreetName>Lojistik Cad. No:12</cbc:StreetName>
+          <cbc:CitySubdivisionName>Ümraniye</cbc:CitySubdivisionName>
+          <cbc:CityName>İstanbul</cbc:CityName>
+          <cbc:PostalZone>34760</cbc:PostalZone>
+          <cac:Country>
+            <cbc:Name>Türkiye</cbc:Name>
+          </cac:Country>
+        </cac:PostalAddress>
       </cac:CarrierParty>
       <cac:Despatch>
         <cbc:ActualDespatchDate>2026-04-23</cbc:ActualDespatchDate>
@@ -121,7 +129,7 @@
   </cac:Shipment>
   <cac:DespatchLine>
     <cbc:ID>1</cbc:ID>
-    <cbc:DeliveredQuantity unitCode="Adet">100.00</cbc:DeliveredQuantity>
+    <cbc:DeliveredQuantity unitCode="C62">100.00</cbc:DeliveredQuantity>
     <cac:OrderLineReference>
       <cbc:LineID>1</cbc:LineID>
     </cac:OrderLineReference>

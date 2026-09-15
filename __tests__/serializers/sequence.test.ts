@@ -152,7 +152,8 @@ describe('B-14 — Despatch Delivery sequence (DeliveryAddress → CarrierParty 
         actualDespatchDate: '2024-01-16',
         actualDespatchTime: '08:00:00',
         deliveryAddress: { cityName: 'Ankara', citySubdivisionName: 'Çankaya' },
-        carrierParty: { vknTckn: '1111111111', taxIdType: 'VKN', name: 'Taşıyıcı' },
+        // Adres ZORUNLU: CarrierParty UBL-TR'de PartyType'tır, PostalAddress minOccurs=1.
+        carrierParty: { vknTckn: '1111111111', taxIdType: 'VKN', name: 'Taşıyıcı', cityName: 'Ankara', citySubdivisionName: 'Çankaya' },
       },
       lines: [{ id: '1', deliveredQuantity: 1, unitCode: 'C62', item: { name: 'Ürün' } }],
     };

@@ -73,6 +73,23 @@ export interface SimpleLicensePlateInput {
   scheme?: SimpleLicensePlateScheme;
 }
 
+/**
+ * Dorse/römork plakası — `Shipment/TransportHandlingUnit/TransportEquipment/ID`.
+ *
+ * 🔴 NEDEN AYRI ALAN: UBL-TR XSD'si `cac:RoadTransport` içinde TEK
+ * `cbc:LicensePlateID` kabul eder (canlı GİB kapısında ölçüldü: 2 plaka →
+ * "Invalid content … 'cbc:LicensePlateID'"). Çekici + dorse birlikte
+ * bildirilecekse ikinci plaka `licensePlates` dizisine EKLENMEZ; GİB'in kanonik
+ * yeri `TransportHandlingUnit/TransportEquipment`tir (B-49). Ham katman bu yolu
+ * baştan beri destekliyordu, açılmamış olan Simple katmanının yüzeyiydi.
+ */
+export interface SimpleTrailerPlateInput {
+  /** Plaka metni — `licensePlates` ile AYNI biçim kurallarına tabidir. */
+  value: string;
+  /** Şema — varsayılan: "DORSEPLAKA" */
+  scheme?: SimpleLicensePlateScheme;
+}
+
 /** Sevkiyat bilgileri — `cac:Shipment` (XSD'de zorunlu). */
 export interface SimpleShipmentInput {
   /**
@@ -92,8 +109,15 @@ export interface SimpleShipmentInput {
   drivers?: SimpleDriverInput[];
   /** Taşıyıcı firma — `Delivery/CarrierParty`. Şoför yoksa zorunlu. */
   carrier?: SimplePartyInput;
-  /** Araç/dorse plakaları — en az biri ZORUNLU (yukarıdaki nota bkz.) */
+  /**
+   * Araç (çekici) plakası — en az biri ZORUNLU (yukarıdaki nota bkz.).
+   *
+   * ⚠️ XSD burada TEK plakaya izin verir; dizinin ilk elemanı dışındakiler
+   * belgeyi GİB kapısında geçersiz kılar. Dorse için `trailerPlates` kullanın.
+   */
   licensePlates?: SimpleLicensePlateInput[];
+  /** Dorse/römork plakaları (0..n) — gerekçe `SimpleTrailerPlateInput`ta. */
+  trailerPlates?: SimpleTrailerPlateInput[];
   /** Sevkiyat numarası — `Shipment/ID` */
   shipmentId?: string;
   /** Taşınan malın beyan değeri — irsaliyedeki TEK tutar alanı */

@@ -2,7 +2,7 @@ import type { DespatchInput } from '../types/despatch-input';
 import { DESPATCH_NAMESPACES, UBL_CONSTANTS } from '../config/namespaces';
 import { cbcOptionalTag, cbcRequiredTag, joinLines, xmlDeclaration, despatchOpenTag, ublExtensionsSkeleton } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
-import { serializeParty } from './party-serializer';
+import { serializeParty, serializePartyAs } from './party-serializer';
 import { serializeAddress } from './delivery-serializer';
 import { serializeDespatchLine } from './line-serializer';
 import { serializeAdditionalDocument, serializeOrderReference } from './reference-serializer';
@@ -181,19 +181,17 @@ function serializeShipmentBlock(input: DespatchInput, indent: string): string {
   // DeliveryAddress (1)
   lines.push(serializeAddress(s.deliveryAddress, 'DeliveryAddress', i3));
 
-  // CarrierParty (2)
+  /* CarrierParty (2) — ORTAK taraf serileştiricisi.
+   *
+   * 🔴 Burada eskiden elle yazılmış bir blok vardı ve yalnız `PartyIdentification`
+   * + `PartyName` basıyordu. `cac:PostalAddress` UBL-TR `PartyType`'ta ZORUNLU
+   * olduğu için (minOccurs=1) o blok şoförsüz irsaliyeyi GİB kapısında her zaman
+   * reddettiriyordu; TCKN dalındaki `firstName`/`familyName` de hiçbir yere
+   * yazılmıyordu. Fatura tarafı aynı düğümü baştan beri `serializePartyAs` ile
+   * basıyor (`delivery-serializer.ts:23`) — sapma kaldırıldı, iki belge tipi
+   * artık AYNI satırdan geçiyor. */
   if (s.carrierParty) {
-    const cp = s.carrierParty;
-    lines.push(`${i3}<cac:CarrierParty>`);
-    lines.push(`${i4}<cac:PartyIdentification>`);
-    lines.push(`${i4}  ${cbcRequiredTag('ID', cp.vknTckn, 'CarrierParty.PartyIdentification', { schemeID: cp.taxIdType })}`);
-    lines.push(`${i4}</cac:PartyIdentification>`);
-    if (isNonEmpty(cp.name)) {
-      lines.push(`${i4}<cac:PartyName>`);
-      lines.push(`${i4}  ${cbcOptionalTag('Name', cp.name)}`);
-      lines.push(`${i4}</cac:PartyName>`);
-    }
-    lines.push(`${i3}</cac:CarrierParty>`);
+    lines.push(serializePartyAs(s.carrierParty, 'CarrierParty', i3));
   }
 
   // Despatch (3) — ActualDespatchDate/Time

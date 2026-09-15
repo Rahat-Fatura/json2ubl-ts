@@ -55,16 +55,17 @@
     "carrierParty": {
       "vknTckn": "5555555555",
       "taxIdType": "VKN",
-      "name": "Hızlı Taşımacılık A.Ş."
+      "name": "Hızlı Taşımacılık A.Ş.",
+      "streetName": "Lojistik Cad. No:12",
+      "citySubdivisionName": "Ümraniye",
+      "cityName": "İstanbul",
+      "postalZone": "34760",
+      "country": "Türkiye"
     },
     "licensePlates": [
       {
         "plateNumber": "34ABC123",
         "schemeId": "PLAKA"
-      },
-      {
-        "plateNumber": "34DEF456",
-        "schemeId": "DORSE"
       }
     ],
     "transportHandlingUnits": [

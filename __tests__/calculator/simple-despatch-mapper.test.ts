@@ -8,6 +8,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { mapSimpleToDespatchInput } from '../../src/calculator/simple-despatch-mapper';
+import { mapSimpleParty } from '../../src/utils/party-mapper';
 import type { SimpleDespatchInput } from '../../src/calculator/simple-despatch-types';
 
 function baseInput(overrides: Partial<SimpleDespatchInput> = {}): SimpleDespatchInput {
@@ -131,7 +132,12 @@ describe('mapSimpleToDespatchInput — sevkiyat', () => {
     expect(out.shipment.licensePlates?.[0].schemeId).toBe('DORSEPLAKA');
   });
 
-  it('carrier → carrierParty; VKN tarafında ad name alanına gider', () => {
+  /* 🔴 BU TEST ESKİDEN KUSURU ÇİVİLİYORDU: girdi adresi taşıyor, beklenen çıktı
+     ADRESSİZDİ. Taşıyıcı kendi dar eşleyicisinden geçtiği için adres atılıyor,
+     `cac:PostalAddress` hiç basılamıyor ve GİB belgeyi reddediyordu. Artık taraf
+     dönüşümü ORTAK `mapSimpleParty`den geçer — dosya başındaki "Taraf dönüşümü
+     ORTAK, kopyalanmaz" kuralının tek istisnası kapandı. */
+  it('carrier → carrierParty ORTAK eşleyiciden geçer; adres KORUNUR', () => {
     const input = baseInput();
     input.shipment.carrier = {
       taxNumber: '1112223334',
@@ -141,11 +147,42 @@ describe('mapSimpleToDespatchInput — sevkiyat', () => {
       city: 'İzmir',
     };
     const out = mapSimpleToDespatchInput(input);
-    expect(out.shipment.carrierParty).toEqual({
+    expect(out.shipment.carrierParty).toEqual(mapSimpleParty(input.shipment.carrier));
+    expect(out.shipment.carrierParty).toMatchObject({
       vknTckn: '1112223334',
       taxIdType: 'VKN',
       name: 'Nakliyeci A.Ş.',
+      streetName: 'Liman Cad. 5',
+      citySubdivisionName: 'Konak',
+      cityName: 'İzmir',
     });
+  });
+
+  /* ── Dorse plakası: B-49 kanonik yol ──────────────────────────────────────
+     `cac:RoadTransport` XSD'de TEK `cbc:LicensePlateID` kabul eder; dorse ikinci
+     satır olarak YAZILAMAZ. Simple katmanı ham katmanda zaten var olan
+     `transportHandlingUnits` yolunu açar. */
+  it('trailerPlates → transportHandlingUnits; varsayılan şema DORSEPLAKA', () => {
+    const input = baseInput();
+    input.shipment.trailerPlates = [{ value: '34DEF456' }];
+    const out = mapSimpleToDespatchInput(input);
+    expect(out.shipment.transportHandlingUnits).toEqual([
+      { transportEquipmentId: '34DEF456', schemeId: 'DORSEPLAKA' },
+    ]);
+  });
+
+  it('trailerPlates çekici plakasına KARIŞMAZ — licensePlates tek kalır', () => {
+    const input = baseInput();
+    input.shipment.licensePlates = [{ value: '34ABC123', scheme: 'PLAKA' }];
+    input.shipment.trailerPlates = [{ value: '34DEF456', scheme: 'DORSE' }];
+    const out = mapSimpleToDespatchInput(input);
+    expect(out.shipment.licensePlates).toHaveLength(1);
+    expect(out.shipment.transportHandlingUnits?.[0].schemeId).toBe('DORSE');
+  });
+
+  it('trailerPlates verilmezse transportHandlingUnits HİÇ doğmaz', () => {
+    const out = mapSimpleToDespatchInput(baseInput());
+    expect(out.shipment.transportHandlingUnits).toBeUndefined();
   });
 
   it('carrier TCKN ise ad/soyad ORTAK bölme kuralından geçer', () => {

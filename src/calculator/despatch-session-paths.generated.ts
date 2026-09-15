@@ -337,6 +337,18 @@ export const DespatchSessionPaths = {
   shipmentLicensePlateScheme: (i: number) => `shipment.licensePlates[${i}].scheme` as `shipment.licensePlates[${number}].scheme`,
 
   /**
+   * Plaka metni — `licensePlates` ile AYNI biçim kurallarına tabidir.
+   * Expected type: string
+   */
+  shipmentTrailerPlateValue: (i: number) => `shipment.trailerPlates[${i}].value` as `shipment.trailerPlates[${number}].value`,
+
+  /**
+   * Şema — varsayılan: "DORSEPLAKA"
+   * Expected type: 'PLAKA' | 'DORSE' | 'DORSEPLAKA' | 'YABANCIPLAKA' | 'YABANCIDORSE' | 'YABANCIDORSEPLAKA' | undefined
+   */
+  shipmentTrailerPlateScheme: (i: number) => `shipment.trailerPlates[${i}].scheme` as `shipment.trailerPlates[${number}].scheme`,
+
+  /**
    * Sevkiyat numarası — `Shipment/ID`
    * Expected type: string | undefined
    */
@@ -781,6 +793,8 @@ export interface DespatchSessionPathMap {
   'shipment.carrier.alias': string | undefined;
   'shipment.licensePlates[${number}].value': string;
   'shipment.licensePlates[${number}].scheme': 'PLAKA' | 'DORSE' | 'DORSEPLAKA' | 'YABANCIPLAKA' | 'YABANCIDORSE' | 'YABANCIDORSEPLAKA' | undefined;
+  'shipment.trailerPlates[${number}].value': string;
+  'shipment.trailerPlates[${number}].scheme': 'PLAKA' | 'DORSE' | 'DORSEPLAKA' | 'YABANCIPLAKA' | 'YABANCIDORSE' | 'YABANCIDORSEPLAKA' | undefined;
   'shipment.shipmentId': string | undefined;
   'shipment.goodsValue': number | undefined;
   'shipment.goodsValueCurrency': string | undefined;
@@ -965,6 +979,8 @@ export const DESPATCH_KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'shipment.licensePlates[*].scheme',
   'shipment.licensePlates[*].value',
   'shipment.shipmentId',
+  'shipment.trailerPlates[*].scheme',
+  'shipment.trailerPlates[*].value',
   'type',
   'uuid',
 ]);
@@ -1038,6 +1054,8 @@ export interface DespatchSessionUpdateOverloads {
   update(path: 'shipment.carrier.alias', value: string | undefined): void;
   update(path: `shipment.licensePlates[${number}].value`, value: string): void;
   update(path: `shipment.licensePlates[${number}].scheme`, value: 'PLAKA' | 'DORSE' | 'DORSEPLAKA' | 'YABANCIPLAKA' | 'YABANCIDORSE' | 'YABANCIDORSEPLAKA' | undefined): void;
+  update(path: `shipment.trailerPlates[${number}].value`, value: string): void;
+  update(path: `shipment.trailerPlates[${number}].scheme`, value: 'PLAKA' | 'DORSE' | 'DORSEPLAKA' | 'YABANCIPLAKA' | 'YABANCIDORSE' | 'YABANCIDORSEPLAKA' | undefined): void;
   update(path: 'shipment.shipmentId', value: string | undefined): void;
   update(path: 'shipment.goodsValue', value: number | undefined): void;
   update(path: 'shipment.goodsValueCurrency', value: string | undefined): void;
