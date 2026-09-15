@@ -14,15 +14,50 @@ import { missingField, invalidFormat, invalidValue, profileRequirement } from '.
 import { isNonEmpty } from '../utils/formatters';
 
 /**
+ * Doğrulamanın koştuğu AŞAMA.
+ *
+ * 🔴 NEDEN VAR: belge numarası (`cbc:ID`) belgenin KENDİSİNDEN gelmez — gönderim
+ * anında seri/numara motoru (mimkit) verir. Form hâlâ düzenlenirken numara BOŞ
+ * OLMALIDIR; o aşamada "numara zorunludur" demek kullanıcıya kapatamayacağı bir
+ * hata göstermektir.
+ *
+ * Fatura katmanı bu ayrımı MODÜL DÜZEYİNDE yapıyor: `InvoiceSession` yalnız
+ * `validators/simple-*` ailesini koşar ve o ailede numara kuralı HİÇ YOKTUR;
+ * numara kuralı ham `validateCommon`dadır ve yalnız `InvoiceBuilder.build`
+ * yolundan geçer. İrsaliyede tek doğrulayıcı modülü olduğu için aynı ayrım
+ * burada AŞAMA parametresiyle yapılır — davranış faturayla aynıdır.
+ *
+ *   • `'document'` (VARSAYILAN) — bitmiş belge. `DespatchBuilder.build` bunu
+ *     kullanır; numara ZORUNLUDUR. Eski davranış birebir korunur.
+ *   • `'session'` — düzenlenmekte olan form. `DespatchSession` bunu kullanır;
+ *     numaranın YOKLUĞU hata değildir, ama VARSA biçimi yine denetlenir
+ *     (kullanıcı elle yanlış numara yazdıysa söylenmeli).
+ */
+export type DespatchValidationStage = 'document' | 'session';
+
+export interface DespatchValidateOptions {
+  /** Varsayılan `'document'` — çağrı şekli değişmeyen her çağıran eski davranışı alır. */
+  stage?: DespatchValidationStage;
+}
+
+/**
  * §5 DespatchAdvice validasyonu — tüm irsaliye kuralları
  */
-export function validateDespatch(input: DespatchInput): ValidationError[] {
+export function validateDespatch(
+  input: DespatchInput,
+  opts?: DespatchValidateOptions,
+): ValidationError[] {
   const errors: ValidationError[] = [];
+  const stage = opts?.stage ?? 'document';
 
   // §5.1 Zorunlu alanlar
   if (!isNonEmpty(input.id)) {
-    errors.push(missingField('id', 'İrsaliye numarası zorunludur'));
+    // Numara yalnız BİTMİŞ belgede zorunlu — gerekçe `DespatchValidationStage`te.
+    if (stage === 'document') {
+      errors.push(missingField('id', 'İrsaliye numarası zorunludur'));
+    }
   } else if (!INVOICE_ID_REGEX.test(input.id)) {
+    // Biçim denetimi HER AŞAMADA koşar: elle yazılmış yanlış numara sessiz kalmamalı.
     errors.push(invalidFormat('id', '^[A-Z0-9]{3}20[0-9]{2}[0-9]{9}$', input.id));
   }
 

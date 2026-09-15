@@ -551,7 +551,12 @@ function computeValidation(
 ): { warnings: ValidationWarning[]; errors: ValidationError[] } {
   let errors: ValidationError[];
   try {
-    errors = validateDespatch(mapSimpleToDespatchInput(input));
+    /* 🔴 `stage: 'session'` — form DÜZENLENİRKEN belge numarası BOŞ olmalıdır;
+     * numarayı gönderim anında seri motoru (mimkit) verir. Fatura oturumu da
+     * numara kuralını hiç koşmaz (`validators/simple-*` ailesinde yoktur).
+     * Bitmiş belge yolu (`DespatchBuilder.build`) varsayılan `'document'`
+     * aşamasında kalır ve numarayı ZORUNLU tutmaya devam eder. */
+    errors = validateDespatch(mapSimpleToDespatchInput(input), { stage: 'session' });
   } catch (err) {
     // Eşleyici beklenmedik bir girdide patlarsa bunu doğrulama hatası olarak
     // ele al — fatura `_computeValidation` de mapper istisnasını böyle yutar.

@@ -410,3 +410,49 @@ describe('DespatchSession — validate() ve buildXml()', () => {
     expect(() => session.buildXml()).not.toThrow();
   });
 });
+
+/* ── Belge numarası: OTURUM aşamasında zorunlu DEĞİL ────────────────────────
+ *
+ * 🔴 Fatura emsali: `InvoiceSession` numara kuralını HİÇ koşmaz — o kural ham
+ * `validateCommon`dadır ve yalnız `InvoiceBuilder.build` yolundan geçer. Sebep
+ * ürünseldir: numarayı gönderim anında seri/numara motoru (mimkit) verir, form
+ * düzenlenirken alan BOŞ OLMALIDIR.
+ *
+ * İrsaliye oturumu ham doğrulayıcıyı çağırdığı için bu kural sızıyordu ve tamamen
+ * doldurulmuş bir irsaliye ekranda "İrsaliye numarası zorunludur" diyordu.
+ */
+describe('belge numarası — oturum aşaması', () => {
+  const numarasiz = (): SimpleDespatchInput => {
+    const input = completeInput();
+    delete input.id;
+    return input;
+  };
+
+  it('numarasız TAM irsaliye oturumda HİÇ uyarı üretmez', () => {
+    expect(new DespatchSession({ initialInput: numarasiz() }).warnings).toEqual([]);
+  });
+
+  it('numarasız irsaliye XML kurulabilir ve cbc:ID DOĞMAZ (seriesPrefix yolu)', () => {
+    const xml = new DespatchSession({ initialInput: numarasiz() }).buildXml({
+      validationLevel: 'none',
+    });
+    // Kök `cbc:ID` yalnız ilk `cac:` bloğundan ÖNCE aranır — satır/taraf ID'leri karışmasın.
+    expect(/<cbc:ID>/.test(xml.split('<cac:')[0])).toBe(false);
+  });
+
+  it('numara VARSA biçimi oturumda da denetlenir — elle yazılan yanlış numara sessiz kalmaz', () => {
+    const input = numarasiz();
+    input.id = 'BOZUK-NUMARA';
+    const uyarilar = new DespatchSession({ initialInput: input }).warnings;
+    expect(uyarilar.map((w) => w.field)).toContain('id');
+  });
+
+  it('BİTMİŞ belge yolu numarayı hâlâ ZORUNLU tutar (DespatchBuilder değişmedi)', async () => {
+    const { DespatchBuilder } = await import('../../src/builders/despatch-builder');
+    const { mapSimpleToDespatchInput } = await import('../../src/calculator/simple-despatch-mapper');
+    /* Ham `ValidationError` alanı `path`tir (`field` DEĞİL) — oturumun yaydığı
+       `ValidationWarning`den farklı şekil; köprü ikisini birbirine çevirir. */
+    const hatalar = new DespatchBuilder().validate(mapSimpleToDespatchInput(numarasiz()));
+    expect(hatalar.map((e) => e.path)).toContain('id');
+  });
+});
