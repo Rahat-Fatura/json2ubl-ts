@@ -140,12 +140,27 @@ export interface DespatchLineInput {
   unitCode: string;
   /** Ürün bilgileri */
   item: DespatchItemInput;
+  /**
+   * Satır notu — `cac:DespatchLine/cbc:Note` (XSD sırasında `ID`'den hemen sonra,
+   * `DESPATCH_LINE_SEQ` bu elemanı zaten tanıyordu).
+   *
+   * B-102 disiplini: `Simple*` katmanının taşıdığı bir alanın ham katmanda
+   * karşılığı yoksa veri SESSİZCE düşer. Faturada tam bu sınıf hata İKİ KEZ
+   * yaşandı (B-101 kargo alanları, B-102 marka/ürün kodları): "tipte var,
+   * XML'de yok". `SimpleDespatchLineInput.note` bu yüzden buraya bağlanır.
+   */
+  note?: string;
 }
 
 /** İrsaliye ürün bilgileri */
 export interface DespatchItemInput {
   /** Ürün adı — boş olamaz */
   name: string;
+  /**
+   * Ürün açıklaması — `cac:Item/cbc:Description`.
+   * UBL `ItemType` sırasında (`ITEM_SEQ`) `Description`, `Name`'den ÖNCE gelir.
+   */
+  description?: string;
   /** Ek ürün kimlikleri — §5.5 KUNYENO, §5.6 ETIKETNO */
   additionalItemIdentifications?: AdditionalItemIdInput[];
 }

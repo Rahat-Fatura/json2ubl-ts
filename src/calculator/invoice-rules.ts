@@ -16,6 +16,7 @@ import { PROFILE_TYPE_MATRIX, WITHHOLDING_ALLOWED_TYPES } from '../config/consta
 import { isYatirimTesvikScope, isYatirimTesvikKdvScope } from '../config/schematron-scopes';
 import { TAX_EXEMPTION_MATRIX } from '../validators/cross-check-matrix';
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
+import type { ValidationWarning } from '../session/validation-warning';
 
 /**
  * Schematron IADEInvioceCheck: BillingReference zorunlu olan IADE grubu tipleri.
@@ -211,13 +212,15 @@ export interface FieldVisibility {
 
 // ─── Validation Warning ──────────────────────────────────────────────────────
 
-export interface ValidationWarning {
-  field: string;
-  message: string;
-  severity: 'error' | 'warning' | 'info';
-  /** Validator pipeline'dan köprülenen ValidationError.code (Sprint 8h.7 / AR-10) */
-  code?: string;
-}
+/**
+ * Uyarı şekli ORTAK oturum çekirdeğine taşındı (`src/session/validation-warning.ts`).
+ *
+ * Tip ne faturaya ne de irsaliyeye aittir: her oturum `warnings` olayını AYNI
+ * şekille yayar ve `ValidationError` köprüsünü AYNI biçimde kurar. Burada ikinci
+ * bir tanım bırakılsaydı iki yapısal ikiz doğar, tüketici hangisini beklediğini
+ * tipten okuyamazdı. Bu satır geriye uyum içindir — fatura yüzeyi DEĞİŞMEZ.
+ */
+export type { ValidationWarning } from '../session/validation-warning';
 
 // ─── UI State ────────────────────────────────────────────────────────────────
 

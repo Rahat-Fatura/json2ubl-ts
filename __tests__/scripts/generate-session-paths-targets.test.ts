@@ -131,47 +131,73 @@ describe('tip-parametrik üreteç — e-İrsaliye hedefi', () => {
     expect(out).not.toContain("liability: 'liability',");
   });
 
-  it('kök alanları üretir (id, uuid, issueDate, despatchContactName)', () => {
+  it('kök alanları üretir (id, uuid, datetime, despatchContactName)', () => {
     expect(out).toContain("id: 'id',");
     expect(out).toContain("uuid: 'uuid',");
-    expect(out).toContain("issueDate: 'issueDate',");
+    // `Simple*` katmanı tarih/saati TEK alanda konuşur; ham `issueDate` + `issueTime`
+    // ikilisine mapper böler (fatura ile aynı sözleşme).
+    expect(out).toContain("datetime: 'datetime',");
     expect(out).toContain("despatchContactName: 'despatchContactName',");
   });
 
-  it('string enum\'ları literal union\'a çözer (profileId, despatchTypeCode)', () => {
-    expect(out).toContain("'profileId': 'TEMELIRSALIYE' | 'HKSIRSALIYE' | 'IDISIRSALIYE';");
-    expect(out).toContain("'despatchTypeCode': 'SEVK' | 'MATBUDAN';");
+  it('🔴 tip/profil DÜZ STRING\'dir — nominal enum yol yüzeyine SIZMAZ', () => {
+    /* Ham hedefte bu iki alan `DespatchTypeCode` / `DespatchProfileId` enum'larıydı
+     * ve TS string enum'u NOMİNAL olduğu için `update('type', 'SEVK')` çağrısı
+     * derlenmiyordu. `SimpleDespatchInput` düz string konuştuğu için sorun kökten
+     * düşer — faturada `SimpleInvoiceInput.profile` de düz `string`'tir. */
+    expect(out).toContain("type: 'type',");
+    expect(out).toContain("profile: 'profile',");
+    expect(out).toContain("'type': string | undefined;");
+    expect(out).toContain("'profile': string | undefined;");
+    expect(out).not.toContain("'TEMELIRSALIYE' | 'HKSIRSALIYE' | 'IDISIRSALIYE'");
+    expect(out).not.toContain("'SEVK' | 'MATBUDAN'");
   });
 
-  it('bağımlılık dosyalarından gelen party alanlarını çözer (common.ts)', () => {
-    expect(out).toContain("supplierVknTckn: 'supplier.vknTckn',");
-    expect(out).toContain("customerVknTckn: 'customer.vknTckn',");
-    expect(out).toContain("'supplier.taxIdType': 'VKN' | 'TCKN';");   // enums.ts alias'ı
+  it('bağımlılık dosyasından gelen ORTAK taraf tipini çözer (simple-types.ts)', () => {
+    // `SimplePartyInput` fatura ile ORTAKTIR → irsaliye yüzeyi de `sender.taxNumber` der.
+    expect(out).toContain("senderTaxNumber: 'sender.taxNumber',");
+    expect(out).toContain("customerTaxNumber: 'customer.taxNumber',");
+    expect(DESPATCH_TARGET.dependencyFiles).toEqual(['src/calculator/simple-types.ts']);
   });
 
   it('3. derinlik açıktır — DespatchSession\'ın istediği üç aile de üretilir', () => {
     // shipment.deliveryAddress.*
-    expect(out).toMatch(/shipmentDeliveryAddressCityName:\s*'shipment\.deliveryAddress\.cityName'/);
-    expect(out).toMatch(/shipmentDeliveryAddressCitySubdivisionName:\s*'shipment\.deliveryAddress\.citySubdivisionName'/);
-    // shipment.driverPersons[i].*
-    expect(out).toMatch(/shipmentDriverPersonFirstName:\s*\(i:\s*number\)\s*=>\s*`shipment\.driverPersons\[\$\{i\}\]\.firstName`/);
-    expect(out).toMatch(/shipmentDriverPersonNationalityId:\s*\(i:\s*number\)\s*=>\s*`shipment\.driverPersons\[\$\{i\}\]\.nationalityId`/);
+    expect(out).toMatch(/shipmentDeliveryAddressCity:\s*'shipment\.deliveryAddress\.city'/);
+    expect(out).toMatch(/shipmentDeliveryAddressDistrict:\s*'shipment\.deliveryAddress\.district'/);
+    // shipment.drivers[i].*
+    expect(out).toMatch(/shipmentDriverFirstName:\s*\(i:\s*number\)\s*=>\s*`shipment\.drivers\[\$\{i\}\]\.firstName`/);
+    expect(out).toMatch(/shipmentDriverNationalityId:\s*\(i:\s*number\)\s*=>\s*`shipment\.drivers\[\$\{i\}\]\.nationalityId`/);
     // shipment.licensePlates[i].*
-    expect(out).toMatch(/shipmentLicensePlatePlateNumber:\s*\(i:\s*number\)\s*=>\s*`shipment\.licensePlates\[\$\{i\}\]\.plateNumber`/);
-    expect(out).toMatch(/shipmentLicensePlateSchemeId:\s*\(i:\s*number\)\s*=>\s*`shipment\.licensePlates\[\$\{i\}\]\.schemeId`/);
+    expect(out).toMatch(/shipmentLicensePlateValue:\s*\(i:\s*number\)\s*=>\s*`shipment\.licensePlates\[\$\{i\}\]\.value`/);
+    expect(out).toMatch(/shipmentLicensePlateScheme:\s*\(i:\s*number\)\s*=>\s*`shipment\.licensePlates\[\$\{i\}\]\.scheme`/);
   });
 
-  it('4. derinliğe kadar iner — kalem künye/etiket kimlikleri çift indeksli', () => {
+  it('4. derinliğe kadar iner — taşıyıcı tarafın ek kimlikleri (shipment.carrier.identifications)', () => {
     expect(out).toMatch(
-      /lineItemAdditionalItemIdentificationSchemeId:\s*\(i:\s*number,\s*ti:\s*number\)\s*=>\s*`lines\[\$\{i\}\]\.item\.additionalItemIdentifications\[\$\{ti\}\]\.schemeId`/,
+      /shipmentCarrierIdentificationSchemeId:\s*\(i:\s*number\)\s*=>\s*`shipment\.carrier\.identifications\[\$\{i\}\]\.schemeId`/,
     );
     expect(DESPATCH_TARGET.maxDepth).toBe(4);
   });
 
+  it('kalem ek kimlikleri ÇİFT indeksli üretilir (KUNYENO / ETIKETNO)', () => {
+    expect(out).toMatch(
+      /lineAdditionalIdentificationScheme:\s*\(i:\s*number,\s*ti:\s*number\)\s*=>\s*`lines\[\$\{i\}\]\.additionalIdentifications\[\$\{ti\}\]\.scheme`/,
+    );
+  });
+
+  it('🔑 düzleştirilmiş beyan değeri yol üretir (eski iç-içe biçimde ÜRETİLEMİYORDU)', () => {
+    /* Ham katmanda `shipment.goodsItem.valueAmount.{value,currencyId}` inline nesne
+     * literaliydi ve parser literali yalnız BİR kat açtığı için bu yollar hiç
+     * doğmuyordu. `SimpleShipmentInput` alanı düzleştirdiği için boşluk kapandı. */
+    expect(out).toContain("shipmentGoodsValue: 'shipment.goodsValue',");
+    expect(out).toContain("shipmentGoodsValueCurrency: 'shipment.goodsValueCurrency',");
+  });
+
   it('KNOWN_PATH_TEMPLATES yıldızla normalize edilir', () => {
-    expect(out).toContain("'shipment.driverPersons[*].firstName',");
-    expect(out).toContain("'shipment.deliveryAddress.cityName',");
-    expect(out).toContain("'lines[*].item.additionalItemIdentifications[*].schemeId',");
+    expect(out).toContain("'shipment.drivers[*].firstName',");
+    expect(out).toContain("'shipment.deliveryAddress.city',");
+    expect(out).toContain("'lines[*].additionalIdentifications[*].scheme',");
+    expect(out).toContain("'shipment.carrier.identifications[*].schemeId',");
   });
 
   it('overload başlığı hedefin session sınıfına işaret eder', () => {

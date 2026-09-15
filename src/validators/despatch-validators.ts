@@ -83,6 +83,8 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
       errors.push(invalidFormat('shipment.actualDespatchTime', 'HH:mm:ss', s.actualDespatchTime));
     }
 
+    errors.push(...validateDespatchChronology(input));
+
     // DeliveryAddress zorunlu
     if (!s.deliveryAddress) {
       errors.push(missingField('shipment.deliveryAddress', 'Teslimat adresi zorunludur'));
@@ -256,6 +258,60 @@ export function validateDespatch(input: DespatchInput): ValidationError[] {
   }
 
   return errors;
+}
+
+/**
+ * Fiili sevk anı ≥ düzenleme anı — e-İrsaliye Uygulama Kılavuzu V1.2 §10.
+ *
+ * Kılavuzun sözü: «Fiili sevk tarihi/zamanı düzenleme zamanı ile aynı olabileceği
+ * gibi, daha ileriki bir tarih/zaman olabilir. Bununla birlikte fiili sevk zamanı,
+ * bu kılavuzda açıklanan istisnai haller dışında, düzenleme zamanından ÖNCEKİ bir
+ * tarih/zaman OLAMAZ.» İleri tarih SERBEST, geri tarih YASAK.
+ *
+ * 🔴 İSTİSNA: MATBUDAN. Matbu (kâğıt) irsaliyeden dönüştürülen belge, kâğıt
+ * belgenin GEÇMİŞTE gerçekleşmiş sevkini kayda geçirir; e-belge sonradan
+ * düzenlenir. Kılavuzun "istisnai haller" dediği yer tam olarak burasıdır ve
+ * `examples/35-irsaliye-matbudan` bu durumu canlı taşır (sevk 04-20, düzenleme 04-23).
+ *
+ * ⚠️ Şematronda KARŞILIĞI YOKTUR — `DespatchDateCheck` yalnız doluluk ve biçim
+ * bakar. Kural kılavuz düzeyindedir; GİB'in XML kapısından geçen bir belge yine de
+ * VUK açısından hatalı olabilir. Bu yüzden kapı BİZDE.
+ *
+ * Karşılaştırma yalnız İKİ TARAF DA GEÇERLİ BİÇİMDEYKEN yapılır: biçim hatası
+ * zaten kendi hatasını üretti, üstüne ikinci (ve yanıltıcı) bir hata eklenmez.
+ */
+function validateDespatchChronology(input: DespatchInput): ValidationError[] {
+  if (input.despatchTypeCode === DespatchTypeCode.MATBUDAN) return [];
+
+  const s = input.shipment;
+  if (!s) return [];
+
+  if (!DATE_REGEX.test(input.issueDate ?? '')) return [];
+  if (!DATE_REGEX.test(s.actualDespatchDate ?? '')) return [];
+
+  /* Saatler biçimsiz/eksikse tarih karşılaştırması yine de anlamlıdır: aynı günde
+   * saat bilinmiyorsa "geri tarihli" diyemeyiz, farklı günde ise zaten tarih karar
+   * verir. Bu yüzden saat yalnız AYNI GÜN dalında kullanılır. */
+  const issueTime = TIME_REGEX.test(input.issueTime ?? '') ? input.issueTime : undefined;
+  const despatchTime = TIME_REGEX.test(s.actualDespatchTime ?? '') ? s.actualDespatchTime : undefined;
+
+  const isBackdated = s.actualDespatchDate < input.issueDate
+    || (s.actualDespatchDate === input.issueDate
+      && issueTime !== undefined
+      && despatchTime !== undefined
+      && despatchTime < issueTime);
+
+  if (!isBackdated) return [];
+
+  return [{
+    code: 'DESPATCH_ACTUAL_BEFORE_ISSUE',
+    message: 'Fiili sevk zamanı, irsaliyenin düzenleme zamanından önce olamaz '
+      + '(e-İrsaliye Uygulama Kılavuzu §10). İleri tarih serbesttir; geriye dönük '
+      + 'sevk yalnızca MATBUDAN dönüşümünde mümkündür.',
+    path: 'shipment.actualDespatchDate',
+    expected: `>= ${input.issueDate}${issueTime ? ` ${issueTime}` : ''}`,
+    actual: `${s.actualDespatchDate}${despatchTime ? ` ${despatchTime}` : ''}`,
+  }];
 }
 
 /**

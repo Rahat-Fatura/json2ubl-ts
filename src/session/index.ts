@@ -14,3 +14,4 @@ export type { PathTokens, PathGateContext, PathGateResult } from './path-gates';
 export { runPathGates, checkIndexBounds } from './path-gates';
 export type { VisibilityTransition } from './visibility-diff';
 export { diffVisibility } from './visibility-diff';
+export type { ValidationWarning } from './validation-warning';

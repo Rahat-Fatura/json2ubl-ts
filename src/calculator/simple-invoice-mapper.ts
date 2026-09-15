@@ -12,6 +12,7 @@ import type {
 } from './simple-types';
 import { resolveBillingReferences } from './simple-types';
 import { resolveTaxIdType } from '../utils/tax-id';
+import { mapSimpleParty } from '../utils/party-mapper';
 import type { CalculatedDocument } from './document-calculator';
 import type { CalculatedLine } from './line-calculator';
 import { calculateDocument } from './document-calculator';
@@ -19,7 +20,6 @@ import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 // 4.1.0: statik `EXEMPTION_MAP` yerine configManager — enjekte edilen istisna
 // kodunun ADI da XML'e doğru yazılsın diye (varsayılanda aynı veri).
 import { configManager } from './config-manager';
-import type { TaxIdType } from '../types/enums';
 import type { InvoiceInput, InvoiceLineInput } from '../types/invoice-input';
 import type {
   PartyInput,
@@ -255,50 +255,17 @@ function buildOnlineSaleDelivery(simple: SimpleInvoiceInput): DeliveryInput | un
 
 // ─── Party Dönüşümü ─────────────────────────────────────────────────────────────
 
+/**
+ * Taraf dönüşümü ORTAK katmandadır (`src/utils/party-mapper.ts`).
+ *
+ * İçindeki iki ders — posta kodu UYDURULMAZ, VKN→`name` / TCKN→`firstName`+
+ * `familyName` — belge tipine bağlı DEĞİLDİR; irsaliye ve gelecek belge tipleri
+ * de AYNI fonksiyonu çağırır. Burada yerel bir kopya bırakılsaydı ders tip
+ * başına yeniden kaybedilirdi; `resolveTaxIdType` çıkarımının ortaklaştırılma
+ * gerekçesiyle birebir aynı.
+ */
 function mapParty(party: SimplePartyInput): PartyInput {
-  const taxIdType: TaxIdType = resolveTaxIdType(party.taxNumber);
-  const result: PartyInput = {
-    vknTckn: party.taxNumber,
-    taxIdType,
-    streetName: party.address,
-    citySubdivisionName: party.district,
-    cityName: party.city,
-    // 🔴 POSTA KODU UYDURULMAZ. Eskiden bilinmeyen posta kodu `'00000'` ile dolduruluyordu;
-    // `00000` geçerli bir Türk posta kodu DEĞİLDİR, yani belgeye GERÇEK OLMAYAN bir veri
-    // yazılıyordu. VUK 227/3 belgede yer alan bilgilerin gerçeği yansıtmasını arar.
-    // `cbc:PostalZone` UBL'de seçimlidir (`AddressType`, minOccurs=0) ve serializer zaten
-    // `cbcOptionalTag` kullanıyor — bilinmiyorsa ELEMAN HİÇ YAZILMAZ, sıfırlarla değil.
-    postalZone: party.zipCode,
-    country: party.country ?? 'Türkiye',
-    taxOffice: party.taxOffice,
-    telephone: party.phone,
-    email: party.email,
-    websiteUri: party.website,
-  };
-
-  // VKN → name, TCKN → firstName/familyName
-  if (taxIdType === 'VKN') {
-    result.name = party.name;
-  } else {
-    const nameParts = party.name.trim().split(/\s+/);
-    if (nameParts.length > 1) {
-      result.firstName = nameParts.slice(0, nameParts.length - 1).join(' ');
-      result.familyName = nameParts[nameParts.length - 1];
-    } else {
-      result.firstName = party.name;
-      result.familyName = '.';
-    }
-  }
-
-  // Ek tanımlayıcılar
-  if (party.identifications?.length) {
-    result.additionalIdentifiers = party.identifications.map(id => ({
-      schemeId: id.schemeId,
-      value: id.value,
-    }));
-  }
-
-  return result;
+  return mapSimpleParty(party);
 }
 
 // ─── Vergi Toplamları ───────────────────────────────────────────────────────────

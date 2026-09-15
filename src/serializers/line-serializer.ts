@@ -166,6 +166,10 @@ export function serializeDespatchLine(line: DespatchLineInput, indent: string = 
   ].join('\n');
 
   const itemInner: string[] = [];
+  // UBL `ItemType` sırası (ITEM_SEQ): Description → … → Name. Açıklama verilmezse
+  // `cbcOptionalTag` boş string döner ve eleman HİÇ yazılmaz.
+  const itemDescription = cbcOptionalTag('Description', line.item.description);
+  if (itemDescription !== '') itemInner.push(`${i3}${itemDescription}`);
   itemInner.push(`${i3}${cbcRequiredTag('Name', line.item.name, 'Item')}`);
   if (line.item.additionalItemIdentifications) {
     for (const aid of line.item.additionalItemIdentifications) {
@@ -177,6 +181,7 @@ export function serializeDespatchLine(line: DespatchLineInput, indent: string = 
 
   const inner = emitInOrder(DESPATCH_LINE_SEQ, {
     ID: () => cbcRequiredTag('ID', line.id, 'DespatchLine'),
+    Note: () => cbcOptionalTag('Note', line.note),
     DeliveredQuantity: () => cbcOptionalQuantityTag('DeliveredQuantity', line.deliveredQuantity, line.unitCode),
     OrderLineReference: () => orderLineRef,
     Item: () => [`${i2}<cac:Item>`, ...itemInner, `${i2}</cac:Item>`].join('\n'),

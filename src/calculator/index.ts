@@ -26,6 +26,7 @@ export type {
 
 // Mapper
 export { mapSimpleToInvoiceInput } from "./simple-invoice-mapper";
+export { mapSimpleToDespatchInput } from "./simple-despatch-mapper";
 
 // Basit giriş tipleri
 export { BillingDocumentTypeCode } from "./simple-types";
@@ -55,6 +56,21 @@ export type {
     BillingDocumentTypeCodeValue,
 } from "./simple-types";
 
+// Basitleştirilmiş e-İrsaliye giriş tipleri — `SimplePartyInput` fatura ile ORTAK
+// olduğu için burada TEKRAR dışa verilmez (yukarıdaki blokta zaten açık).
+export type {
+    SimpleDespatchInput,
+    SimpleDespatchLineInput,
+    SimpleDespatchOrderReferenceInput,
+    SimpleDespatchAdditionalDocumentInput,
+    SimpleShipmentInput,
+    SimpleDeliveryAddressInput,
+    SimpleDriverInput,
+    SimpleLicensePlateInput,
+    SimpleLicensePlateScheme,
+    SimpleItemIdentificationInput,
+} from "./simple-despatch-types";
+
 // Not: BillingDocumentTypeCodeValue artık sadece 'IADE' literal tipi.
 // Schematron'da IADE grubu dışı tipler için kısıtlama yok, serbest string kabul edilir.
 
@@ -77,6 +93,33 @@ export type {
     PathErrorPayload,
     PathErrorCode,
 } from "./invoice-session";
+
+// Reaktif e-İrsaliye oturumu — fatura oturumunun YAPISAL AYNASI.
+// Adlar nitelikli (`Despatch*`): `SessionEvents` / `UnsetScope` gibi niteliksiz
+// adlar tek yüzeyde fatura muadilleriyle çakışırdı.
+export { DespatchSession } from "./despatch-session";
+export type {
+    DespatchSessionEvents,
+    DespatchSessionEventName,
+    DespatchSessionOptions,
+    DespatchUnsetScope,
+    DespatchIdentificationParty,
+    DespatchPathErrorPayload,
+    DespatchPathErrorCode,
+    DespatchFieldChangedPayload,
+    DespatchFieldActivatedPayload,
+    DespatchFieldDeactivatedPayload,
+    DespatchLineFieldChangedPayload,
+} from "./despatch-session";
+
+// İrsaliye kurallar motoru ve UI state (fatura `invoice-rules` muadili)
+export {
+    deriveDespatchFieldVisibility,
+    deriveDespatchUIState,
+    DEFAULT_DESPATCH_TYPE,
+    DEFAULT_DESPATCH_PROFILE,
+} from "./despatch-rules";
+export type { DespatchFieldVisibility, DespatchUIState } from "./despatch-rules";
 
 // Line-level UI visibility (Sprint 8l.1 / v2.2.4 — direkt re-export, modül zinciri kısaltma)
 export type { LineFieldVisibility } from "./line-field-visibility";

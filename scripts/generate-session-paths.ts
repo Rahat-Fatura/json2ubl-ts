@@ -616,19 +616,34 @@ export const INVOICE_TARGET: GeneratorTarget = {
 };
 
 /**
- * e-İrsaliye hedefi — `DespatchSession`'ın ön koşulu.
+ * e-İrsaliye hedefi — `DespatchSession`'ın path yüzeyi.
+ *
+ * 🔴 KÖK ARAYÜZ `SimpleDespatchInput`'TUR, ham `DespatchInput` DEĞİL. Fatura
+ * hedefi de `SimpleInvoiceInput`'u gösterir; oturum `Simple*` katmanı üzerinde
+ * çalışır ve yol yüzeyi oturumun KONUŞTUĞU dili yansıtmak zorundadır.
+ *
+ * Bu seçim ENUM SORUNUNU DA ÇÖZER: TS string enum'u NOMİNALDİR — `'SEVK'` düz
+ * string'i `DespatchTypeCode` parametresine atanamaz, dolayısıyla ham hedefte
+ * `update('despatchTypeCode', 'SEVK')` derlenmez, çağıran `as DespatchTypeCode`
+ * yazmak zorunda kalırdı. `Simple*` katmanı `type`/`profile`'ı DÜZ STRING
+ * tuttuğu için çağrı doğal çalışır; faturada `SimpleInvoiceInput.profile` de
+ * düz `string`'tir.
  *
  * `maxDepth: 4` çünkü irsaliyenin taşıdığı veri üçüncü/dördüncü segmentte yaşıyor:
- * `shipment.deliveryAddress.cityName`, `shipment.driverPersons[i].firstName`,
- * `shipment.licensePlates[i].plateNumber`,
- * `lines[i].item.additionalItemIdentifications[ti].schemeId`.
+ * `shipment.deliveryAddress.city`, `shipment.drivers[i].firstName`,
+ * `shipment.licensePlates[i].value`, `shipment.carrier.identifications[ti].schemeId`.
+ *
+ * `dependencyFiles` yalnız `simple-types.ts`: `SimplePartyInput` fatura ile
+ * ORTAKTIR, taraf tipi orada yaşar. Ham hedefin ihtiyaç duyduğu `enums.ts` +
+ * `common.ts` artık GEREKMİYOR — `Simple*` katmanı ne enum ne de ham UBL tipi
+ * konuşur; bağımlılık listesinin sadeleşmesi bu ayrımın kanıtıdır.
  *
  * `manualEntries` / `readOnlyPaths` BOŞ: irsaliyede `liability` (mükellefiyet) ve
  * `isExport` (ihracat kilidi) muadili bir session-level state YOKTUR.
  */
 export const DESPATCH_TARGET: GeneratorTarget = {
-  sourceFile: 'src/types/despatch-input.ts',
-  rootInterface: 'DespatchInput',
+  sourceFile: 'src/calculator/simple-despatch-types.ts',
+  rootInterface: 'SimpleDespatchInput',
   outputFile: 'src/calculator/despatch-session-paths.generated.ts',
   constName: 'DespatchSessionPaths',
   mapTypeName: 'DespatchSessionPathMap',
@@ -638,8 +653,8 @@ export const DESPATCH_TARGET: GeneratorTarget = {
   manualEntries: [],
   readOnlyPaths: [],
   maxDepth: 4,
-  dependencyFiles: ['src/types/enums.ts', 'src/types/common.ts'],
-  exampleIndexedPath: 'lines[0].deliveredQuantity',
+  dependencyFiles: ['src/calculator/simple-types.ts'],
+  exampleIndexedPath: 'lines[0].quantity',
 };
 
 /** Üretilecek tüm hedefler — `main()` ve `--check` bunun üzerinde döner. */

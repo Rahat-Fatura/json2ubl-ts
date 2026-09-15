@@ -119,6 +119,22 @@ npx tsx examples/02-temelfatura-satis-gelir-stopaji/run.ts
 | 35 | [irsaliye-matbudan](./35-irsaliye-matbudan/) | TEMELIRSALIYE | MATBUDAN | additionalDocuments zorunlu (B-66) | — |
 | 36 | [irsaliye-idis](./36-irsaliye-idis/) | IDISIRSALIYE | SEVK | ETIKETNO + SEVKIYATNO | — |
 
+### §10.1 — İrsaliye Oturum Katmanı (1)
+
+Yukarıdaki dördü **ham** `DespatchInput` + `DespatchBuilder` kullanır. Aşağıdaki
+senaryo basitleştirilmiş `SimpleDespatchInput` + `DespatchSession` akışını uçtan
+uca gösterir — faturadaki `SimpleInvoiceInput` akışının irsaliye karşılığı.
+
+| Senaryo | Profile | Tip | Kapsadığı Feature | Fixture |
+|---------|---------|-----|-------------------|---------|
+| [irsaliye-oturum-sevk](./irsaliye-oturum-sevk/) | TEMELIRSALIYE | SEVK | `DespatchSession`: tek alanlı tarih/saat bölünmesi, VKN/TCKN çıkarımı, satır no türetimi, düz string tip/profil | — |
+
+> Klasör adı bilerek `NN-` ön eki TAŞIMAZ: numaralı senaryolar hangi builder ile
+> kurulacaklarını slug numarasından okuyan keşif kurallarına bağlıdır
+> (`33-`…`36-` → `DespatchBuilder`). Regresyonu
+> `__tests__/examples/despatch-session-parity.test.ts` korur; yeniden üretmek için
+> `npx tsx examples/irsaliye-oturum-sevk/run.ts`.
+
 ### §11 — Showcase (2)
 
 | # | Senaryo | Profile | Tip | Kapsadığı Feature | Fixture |
