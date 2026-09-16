@@ -1,15 +1,26 @@
 /**
- * UBL 2.1 XSD sequence tablosu — her UBL tipi için element yazım sırası.
+ * UBL sekans tabloları + `emitInOrder` — serializer'ların tek sıra otoritesi.
  *
- * Kaynak: UBL-Invoice-2.1.xsd, UBL-DespatchAdvice-2.1.xsd,
- * UBL-CommonAggregateComponents-2.1.xsd, UBL-CommonBasicComponents-2.1.xsd.
+ * ── TABLOLAR NEREDEN GELİYOR ──────────────────────────────────────────────
+ * Tablolar artık ELLE yazılmaz: `scripts/generate-sequences.ts` onları GİB
+ * UBL-TR XSD'sinden (`schemas/ubl-tr/`) üretir ve `xsd-sequence.generated.ts`
+ * dosyasına yazar. `npm run verify:sequences` üretilen dosyanın kaynaktan
+ * sapmadığını denetler (koşum: `npm test` + `prebuild`).
  *
- * Her seq array'i o tipin XSD minOccurs/maxOccurs'a bakılmaksızın
- * **tanımlandığı sırada** içerir. Zorunlu/opsiyonel ayrımı `cbcRequiredTag` /
- * `cbcOptionalTag` çağrısıyla yapılır; sıra tablosu sadece **pozisyon** belirler.
+ * Bu dosya yalnız iki şey yapar:
+ *   1. Üretilen tabloları tek kapıdan yeniden dışa açar (çağıranlar
+ *      `./xsd-sequence` yazmaya devam eder, üretilen dosyayı bilmez).
+ *   2. `emitInOrder` yardımcısını barındırır.
  *
- * `emitInOrder(SEQ, emitters)` — her field için emitter map'ten fonksiyonu alır,
- * çağırır, boş olmayan çıktıları seq sırasında döndürür.
+ * ── TABLOLAR TAŞIYICIDIR ──────────────────────────────────────────────────
+ * Emit sırasını tablo belirler, serializer'daki yazım sırası DEĞİL. Bir alanı
+ * öne/arkaya almak için tabloya değil XSD'ye bakılır; tablo XSD'nin kopyasıdır.
+ * Tablo yalnız POZİSYON söyler — zorunlu/opsiyonel ayrımı emitter tarafındadır
+ * (`cbcRequiredTag` / `cbcOptionalTag`).
+ *
+ * `__tests__/serializers/sequence-order-guard.test.ts` bu sözleşmenin bekçisidir:
+ * üretilen XML'deki çocuk eleman sırasının ilgili tablonun ALT-DİZİSİ olduğunu
+ * doğrular. `emitInOrder` yerine elle `parts.push()` yazılırsa test kırmızı olur.
  *
  * Kullanım:
  * ```ts
@@ -23,620 +34,48 @@
  * ```
  */
 
-// ─── Invoice ──────────────────────────────────────────────────────────────
-// UBL-Invoice-2.1.xsd (root element sequence)
-export const INVOICE_SEQ = [
-  'UBLExtensions',
-  'UBLVersionID',           // 2
-  'CustomizationID',        // 3
-  'ProfileID',              // 4
-  'ID',                     // 5
-  'CopyIndicator',          // 6
-  'UUID',                   // 7
-  'IssueDate',              // 8
-  'IssueTime',              // 9
-  'InvoiceTypeCode',        // 10
-  'Note',                   // 11
-  'DocumentCurrencyCode',   // 12
-  'TaxCurrencyCode',        // 13
-  'PricingCurrencyCode',    // 14
-  'PaymentCurrencyCode',    // 15
-  'PaymentAlternativeCurrencyCode', // 16
-  'AccountingCostCode',
-  'AccountingCost',
-  'LineCountNumeric',       // 19
-  'InvoicePeriod',          // 20
-  'OrderReference',         // 21
-  'BillingReference',       // 22
-  'DespatchDocumentReference', // 23
-  'ReceiptDocumentReference',  // 24
-  'OriginatorDocumentReference', // 25
-  'ContractDocumentReference', // 26
-  'AdditionalDocumentReference', // 27
-  'ProjectReference',
-  'Signature',              // 29
-  'AccountingSupplierParty',// 30
-  'AccountingCustomerParty',// 31
-  'PayeeParty',
-  'BuyerCustomerParty',     // 33
-  'SellerSupplierParty',    // 34
-  'TaxRepresentativeParty', // 35
-  'Delivery',               // 36
-  'DeliveryTerms',
-  'PaymentMeans',           // 38
-  'PaymentTerms',           // 39
-  'PrepaidPayment',
-  'AllowanceCharge',        // 41
-  'TaxExchangeRate',        // 42
-  'PricingExchangeRate',    // 43
-  'PaymentExchangeRate',    // 44
-  'PaymentAlternativeExchangeRate', // 45
-  'TaxTotal',               // 46
-  'WithholdingTaxTotal',    // 47 (UBL-TR)
-  'LegalMonetaryTotal',     // 48
-  'InvoiceLine',            // 49
-] as const;
-
-// ─── DespatchAdvice ───────────────────────────────────────────────────────
-// UBL-DespatchAdvice-2.1.xsd
-export const DESPATCH_SEQ = [
-  'UBLExtensions',
-  'UBLVersionID',
-  'CustomizationID',
-  'ProfileID',
-  'ID',
-  'CopyIndicator',
-  'UUID',
-  'IssueDate',
-  'IssueTime',
-  'DocumentStatusCode',
-  'DespatchAdviceTypeCode',
-  'Note',
-  'LineCountNumeric',
-  'OrderReference',
-  'AdditionalDocumentReference',
-  'Signature',
-  'DespatchSupplierParty',
-  'DeliveryCustomerParty',
-  'BuyerCustomerParty',
-  'SellerSupplierParty',
-  'OriginatorCustomerParty',
-  'Shipment',
-  'DespatchLine',
-] as const;
-
-// ─── InvoiceLine / DespatchLine ────────────────────────────────────────────
-// UBL-CommonAggregateComponents-2.1.xsd InvoiceLineType
-export const INVOICE_LINE_SEQ = [
-  'ID',
-  'UUID',
-  'Note',
-  'InvoicedQuantity',
-  'LineExtensionAmount',
-  'TaxPointDate',
-  'AccountingCostCode',
-  'AccountingCost',
-  'PaymentPurposeCode',
-  'FreeOfChargeIndicator',
-  'InvoicePeriod',
-  'OrderLineReference',
-  'DespatchLineReference',
-  'ReceiptLineReference',
-  'BillingReference',
-  'DocumentReference',
-  'PricingReference',
-  'OriginatorParty',
-  'Delivery',               // AllowanceCharge ÖNCESİ (B-10 fix)
-  'PaymentTerms',
-  'AllowanceCharge',
-  'TaxTotal',
-  'WithholdingTaxTotal',    // UBL-TR
-  'Item',
-  'Price',
-  'DeliveryTerms',
-  'SubInvoiceLine',
-  'ItemPriceExtension',
-] as const;
-
-export const DESPATCH_LINE_SEQ = [
-  'ID',
-  'UUID',
-  'Note',
-  'LineStatusCode',
-  'DeliveredQuantity',
-  'OutstandingQuantity',
-  'OutstandingReason',
-  'OversupplyQuantity',
-  'OrderLineReference',
-  'DocumentReference',
-  'Item',
-  'Shipment',
-] as const;
-
-// ─── TaxTotal / TaxSubtotal / TaxCategory / TaxScheme ──────────────────────
-// B-09 fix: TaxExemptionReasonCode/Reason TaxCategory altında
-export const TAX_TOTAL_SEQ = [
-  'TaxAmount',
-  'CalculationSequenceNumeric',
-  'RoundingAmount',
-  'TaxEvidenceIndicator',
-  'TaxIncludedIndicator',
-  'TaxSubtotal',
-] as const;
-
-export const TAX_SUBTOTAL_SEQ = [
-  'TaxableAmount',
-  'TaxAmount',
-  'CalculationSequenceNumeric',
-  'TransactionCurrencyTaxAmount',
-  'Percent',
-  'BaseUnitMeasure',
-  'PerUnitAmount',
-  'TierRange',
-  'TierRatePercent',
-  'TaxCategory',
-] as const;
-
-export const TAX_CATEGORY_SEQ = [
-  'ID',
-  'Name',
-  'Percent',
-  'BaseUnitMeasure',
-  'PerUnitAmount',
-  'TaxExemptionReasonCode',
-  'TaxExemptionReason',
-  'TierRange',
-  'TierRatePercent',
-  'TaxScheme',
-] as const;
-
-export const TAX_SCHEME_SEQ = [
-  'ID',
-  'Name',
-  'TaxTypeCode',
-  'CurrencyCode',
-  'JurisdictionRegionAddress',
-] as const;
-
-// ─── AllowanceCharge ──────────────────────────────────────────────────────
-// B-12 fix: Reason ChargeIndicator hemen sonrası
-export const ALLOWANCE_CHARGE_SEQ = [
-  'ID',
-  'ChargeIndicator',
-  'AllowanceChargeReasonCode',
-  'AllowanceChargeReason',   // = Reason (B-12)
-  'MultiplierFactorNumeric',
-  'PrepaidIndicator',
-  'SequenceNumeric',
-  'Amount',
-  'BaseAmount',
-  'AccountingCostCode',
-  'AccountingCost',
-  'PerUnitAmount',
-  'TaxCategory',
-  'TaxTotal',
-  'PaymentMeans',
-] as const;
-
-// ─── Item ─────────────────────────────────────────────────────────────────
-// B-13 fix: Description Name'den önce
-export const ITEM_SEQ = [
-  'Description',
-  'PackQuantity',
-  'PackSizeNumeric',
-  'CatalogueIndicator',
-  'Name',
-  'HazardousRiskIndicator',
-  'AdditionalInformation',
-  'Keyword',
-  'BrandName',
-  'ModelName',
-  'BuyersItemIdentification',
-  'SellersItemIdentification',
-  'ManufacturersItemIdentification',
-  'StandardItemIdentification',
-  'CatalogueItemIdentification',
-  'AdditionalItemIdentification',
-  'CatalogueDocumentReference',
-  'ItemSpecificationDocumentReference',
-  'OriginCountry',
-  'CommodityClassification',
-  'TransactionConditions',
-  'HazardousItem',
-  'ClassifiedTaxCategory',
-  'AdditionalItemProperty',
-  'ManufacturerParty',
-  'InformationContentProviderParty',
-  'OriginAddress',
-  'ItemInstance',
-  'Certificate',
-  'Dimension',
-] as const;
-
-// ─── Price ────────────────────────────────────────────────────────────────
-export const PRICE_SEQ = [
-  'PriceAmount',
-  'BaseQuantity',
-  'PriceChangeReason',
-  'PriceTypeCode',
-  'PriceType',
-  'OrderableUnitFactorRate',
-  'ValidityPeriod',
-  'PriceList',
-  'AllowanceCharge',
-  'PricingExchangeRate',
-  'PricingExchangeRate',
-  'PaymentTerms',
-  'PricingReference',
-] as const;
-
-// ─── Party / Person / Contact ─────────────────────────────────────────────
-// UBL-CommonAggregateComponents-2.1.xsd PartyType
-// B-34 fix: PostalAddress zorunlu emit (Party verildiyse)
-export const PARTY_SEQ = [
-  'WebsiteURI',
-  'LogoReferenceID',
-  'EndpointID',
-  'IndustryClassificationCode',
-  'PartyIdentification',
-  'PartyName',
-  'Language',
-  'PostalAddress',
-  'PhysicalLocation',
-  'PartyTaxScheme',
-  'PartyLegalEntity',
-  'Contact',
-  'Person',
-  'AgentParty',
-  'ServiceProviderParty',
-  'PowerOfAttorney',
-  'FinancialAccount',
-] as const;
-
-// B-20 fix: Person sequence — FirstName → FamilyName → Title → MiddleName → NameSuffix → NationalityID
-export const PERSON_SEQ = [
-  'ID',
-  'FirstName',
-  'FamilyName',
-  'Title',                   // MiddleName ÖNCESİ
-  'MiddleName',
-  'NameSuffix',
-  'JobTitle',
-  'OrganizationDepartment',
-  'NationalityID',
-  'GenderCode',
-  'BirthDate',
-  'BirthplaceName',
-  'ResidenceAddress',
-  'Contact',
-  'FinancialAccount',
-  'IdentityDocumentReference',
-  'ResidenceAddress',
-] as const;
-
-// ─── Address ──────────────────────────────────────────────────────────────
-// UBL-CommonAggregateComponents-2.1.xsd AddressType
-// B-35 fix: CityName + CitySubdivisionName required
-export const ADDRESS_SEQ = [
-  'ID',
-  'AddressTypeCode',
-  'AddressFormatCode',
-  'Postbox',
-  'Floor',
-  'Room',
-  'StreetName',
-  'AdditionalStreetName',
-  'BlockName',
-  'BuildingName',
-  'BuildingNumber',
-  'InhouseMail',
-  'Department',
-  'MarkAttention',
-  'MarkCare',
-  'PlotIdentification',
-  'CitySubdivisionName',    // required
-  'CityName',                // required
-  'PostalZone',
-  'CountrySubentity',
-  'CountrySubentityCode',
-  'Region',
-  'District',
-  'TimezoneOffset',
-  'AddressLine',
-  'Country',
-  'LocationCoordinate',
-] as const;
-
-// ─── Delivery ─────────────────────────────────────────────────────────────
-// B-14 fix: DeliveryAddress → CarrierParty → Despatch
-//
-// B-101 (Sprint 8o): CarrierParty slotu eklendi. Sıra GİB UBL-TR paketindeki
-// daraltılmış `DeliveryType`'tan alındı (UBL-TR 1.2.1 pakedi,
-// `xsdrt/common/UBL-CommonAggregateComponents-2.1.xsd`):
-//   ID → Quantity → ActualDeliveryDate → ActualDeliveryTime → LatestDeliveryDate
-//   → LatestDeliveryTime → TrackingID → DeliveryAddress → AlternativeDeliveryLocation
-//   → EstimatedDeliveryPeriod → CarrierParty → DeliveryParty → Despatch
-//   → DeliveryTerms → Shipment
-// DİKKAT: OASIS UBL 2.1'de sıra `DeliveryParty` → `CarrierParty`'dir; GİB bu ikisini
-// TERS çevirmiştir. UBL-TR belgesi ürettiğimiz için GİB sırası bağlayıcıdır.
-export const DELIVERY_SEQ = [
-  'ID',
-  'Quantity',
-  'MinimumQuantity',
-  'MaximumQuantity',
-  'ActualDeliveryDate',
-  'ActualDeliveryTime',
-  'LatestDeliveryDate',
-  'LatestDeliveryTime',
-  'ReleaseID',
-  'TrackingID',
-  'DeliveryAddress',         // CarrierParty ÖNCESİ
-  'AlternativeDeliveryLocation',
-  'RequestedDeliveryPeriod',
-  'PromisedDeliveryPeriod',
-  'EstimatedDeliveryPeriod',
-  'CarrierParty',            // GİB UBL-TR: DeliveryParty'den ÖNCE (OASIS'te sonra)
-  'DeliveryParty',
-  'Despatch',                // CarrierParty SONRASI
-  'DeliveryTerms',
-  'MinimumDeliveryUnit',
-  'MaximumDeliveryUnit',
-  'Shipment',
-] as const;
-
-// ─── Shipment ─────────────────────────────────────────────────────────────
-export const SHIPMENT_SEQ = [
-  'ID',
-  'ShippingPriorityLevelCode',
-  'HandlingCode',
-  'HandlingInstructions',
-  'Information',
-  'GrossWeightMeasure',
-  'NetWeightMeasure',
-  'NetNetWeightMeasure',
-  'GrossVolumeMeasure',
-  'NetVolumeMeasure',
-  'TotalGoodsItemQuantity',
-  'TotalTransportHandlingUnitQuantity',
-  'InsuranceValueAmount',
-  'DeclaredCustomsValueAmount',
-  'DeclaredForCarriageValueAmount',
-  'DeclaredStatisticsValueAmount',
-  'FreeOnBoardValueAmount',
-  'SpecialInstructions',
-  'DeliveryInstructions',
-  'SplitConsignmentIndicator',
-  'ConsignmentQuantity',
-  'Consignment',
-  'GoodsItem',
-  'ShipmentStage',
-  'Delivery',
-  'TransportHandlingUnit',
-  'ReturnAddress',
-  'OriginAddress',
-  'FirstArrivalPortLocation',
-  'LastExitPortLocation',
-  'ExportCountry',
-  'FreightAllowanceCharge',
-] as const;
-
-// ─── TransportHandlingUnit / CustomsDeclaration ──────────────────────────
-// UBL-CommonAggregateComponents-2.1.xsd TransportHandlingUnitType
-// B-14 (Sprint 5.3): ActualPackage + CustomsDeclaration emit
-export const TRANSPORT_HANDLING_UNIT_SEQ = [
-  'ID',
-  'TransportHandlingUnitTypeCode',
-  'HandlingCode',
-  'HandlingInstructions',
-  'HazardousRiskIndicator',
-  'TotalGoodsItemQuantity',
-  'TotalPackageQuantity',
-  'DamageRemarks',
-  'ShippingMarks',
-  'TraceID',
-  'HandlingUnitDespatchLine',
-  'ActualPackage',
-  'ReceivedHandlingUnitReceiptLine',
-  'TransportEquipment',
-  'TransportMeans',
-  'HazardousGoodsTransit',
-  'MeasurementDimension',
-  'MinimumTemperature',
-  'MaximumTemperature',
-  'GoodsLocation',
-  'CustomsDeclaration',      // IHRACKAYITLI + 702 (B-07)
-  'ReferencedShipmentID',
-  'Package',
-  'FloorSpaceMeasurementDimension',
-  'PalletSpaceMeasurementDimension',
-  'ShipmentDocumentReference',
-  'Status',
-] as const;
-
-// ─── Package (cac:ActualPackage) ─────────────────────────────────────────
-// UBL-CommonAggregateComponents-2.1.xsd PackageType.
-//
-// B-102: Önceki serializer `PackagingTypeCode`'u `Quantity`'den ÖNCE yazıyordu —
-// XSD sırası tersidir (ID → Quantity → ... → PackagingTypeCode). İki alan birlikte
-// verildiğinde çıktı şema-geçersizdi; kütüphanede bu kombinasyonu üreten test/örnek
-// olmadığı için hata bugüne dek görünmemişti.
-// GİB UBL-TR PackageType, OASIS UBL 2.1 göreli sırasını korur (ters-çevirme yok).
-export const PACKAGE_SEQ = [
-  'ID',
-  'Quantity',
-  'ReturnableMaterialIndicator',
-  'PackageLevelCode',
-  'PackagingTypeCode',
-  'PackingMaterial',
-  'ContainedPackage',
-  'ContainingTransportEquipment',
-  'GoodsItem',
-  'MeasurementDimension',
-  'DeliveryUnit',
-  'Delivery',
-  'Despatch',
-  'Pickup',
-] as const;
-
-// UBL-CommonAggregateComponents-2.1.xsd CustomsDeclarationType
-export const CUSTOMS_DECLARATION_SEQ = [
-  'ID',
-  'ValidityPeriod',
-  'ApplicableTransportMeans',
-  'IssuerParty',
-] as const;
-
-// ─── PaymentMeans ─────────────────────────────────────────────────────────
-// B-70 fix: PaymentMeansCode required (PaymentMeans verildiyse)
-export const PAYMENT_MEANS_SEQ = [
-  'ID',
-  'PaymentMeansCode',
-  'PaymentDueDate',
-  'PaymentChannelCode',
-  'InstructionID',
-  'InstructionNote',
-  'PaymentID',
-  'CardAccount',
-  'PayerFinancialAccount',
-  'PayeeFinancialAccount',
-  'CreditAccount',
-  'PaymentMandate',
-  'TradeFinancing',
-] as const;
-
-// ─── DocumentReference ────────────────────────────────────────────────────
-// B-32 fix: IssueDate required (DocumentReference verildiyse)
-//
-// 🔴 4.5.0 NOTU — «DocumentTypeCode bu konumda geçersiz, beklenen: IssueDate» hatası
-// bu diziden GELMEZ. Sıra burada UBL `DocumentReferenceType`'a birebir uygundur ve
-// `emitInOrder` de dizinin sırasını izler. GİB'in bu mesajı gerçekte EKSİK ELEMAN
-// demektir: UBL-TR şeması `cbc:IssueDate`'i 1..1'e daraltmıştır, tarih atlanınca
-// doğrulayıcı bir sonraki elemanı (DocumentTypeCode) "yanlış konumda" sayar.
-// Düzeltme `reference-serializer.ts`tedir (IssueDate zorunlu + belge tarihi yedeği);
-// burada değiştirilecek bir sıra YOKTUR — SGK'ya özel yama yapılmadı.
-export const DOCUMENT_REFERENCE_SEQ = [
-  'ID',
-  'CopyIndicator',
-  'UUID',
-  'IssueDate',
-  'IssueTime',
-  'DocumentTypeCode',
-  'DocumentType',
-  'XPath',
-  'LanguageID',
-  'LocaleCode',
-  'VersionID',
-  'DocumentStatusCode',
-  'DocumentDescription',
-  'Attachment',
-  'ValidityPeriod',
-  'IssuerParty',
-  'ResultOfVerification',
-] as const;
-
-// ─── OrderReference ───────────────────────────────────────────────────────
-// B-33 fix: IssueDate required (OrderReference verildiyse)
-export const ORDER_REFERENCE_SEQ = [
-  'ID',
-  'SalesOrderID',
-  'CopyIndicator',
-  'UUID',
-  'IssueDate',
-  'IssueTime',
-  'CustomerReference',
-  'OrderTypeCode',
-  'DocumentReference',
-] as const;
-
-// ─── ExchangeRate ─────────────────────────────────────────────────────────
-export const EXCHANGE_RATE_SEQ = [
-  'SourceCurrencyCode',
-  'SourceCurrencyBaseRate',
-  'TargetCurrencyCode',
-  'TargetCurrencyBaseRate',
-  'ExchangeMarketID',
-  'CalculationRate',
-  'MathematicOperatorCode',
-  'Date',
-  'ForeignExchangeContract',
-] as const;
-
-// ─── LegalMonetaryTotal ───────────────────────────────────────────────────
-export const LEGAL_MONETARY_TOTAL_SEQ = [
-  'LineExtensionAmount',
-  'TaxExclusiveAmount',
-  'TaxInclusiveAmount',
-  'AllowanceTotalAmount',
-  'ChargeTotalAmount',
-  'PrepaidAmount',
-  'PayableAmount',
-  'PayableAlternativeAmount',
-] as const;
-
-// ─── Period ───────────────────────────────────────────────────────────────
-export const PERIOD_SEQ = [
-  'StartDate',
-  'StartTime',
-  'EndDate',
-  'EndTime',
-  'DurationMeasure',
-  'DescriptionCode',
-  'Description',
-] as const;
-
-// ─── BillingReference ─────────────────────────────────────────────────────
-export const BILLING_REFERENCE_SEQ = [
-  'InvoiceDocumentReference',
-  'SelfBilledInvoiceDocumentReference',
-  'CreditNoteDocumentReference',
-  'SelfBilledCreditNoteDocumentReference',
-  'DebitNoteDocumentReference',
-  'ReminderDocumentReference',
-  'AdditionalDocumentReference',
-  'BillingReferenceLine',
-] as const;
-
-// ─── ContractDocumentReference / OriginatorDocumentReference ──────────────
-// B-32 downstream — aynı DOCUMENT_REFERENCE_SEQ pattern'inde
-
-// ─── Contact ──────────────────────────────────────────────────────────────
-export const CONTACT_SEQ = [
-  'ID',
-  'Name',
-  'Telephone',
-  'Telefax',
-  'ElectronicMail',
-  'Note',
-  'OtherCommunication',
-] as const;
-
-// ─── PartyTaxScheme / PartyLegalEntity ────────────────────────────────────
-export const PARTY_TAX_SCHEME_SEQ = [
-  'RegistrationName',
-  'CompanyID',
-  'TaxLevelCode',
-  'ExemptionReasonCode',
-  'ExemptionReason',
-  'RegistrationAddress',
-  'TaxScheme',
-] as const;
-
-export const PARTY_LEGAL_ENTITY_SEQ = [
-  'RegistrationName',
-  'CompanyID',
-  'RegistrationDate',
-  'RegistrationExpirationDate',
-  'CompanyLegalFormCode',
-  'CompanyLegalForm',
-  'SoleProprietorshipIndicator',
-  'CompanyLiquidationStatusCode',
-  'CorporationStockAmount',
-  'FullyPaidSharesIndicator',
-  'RegistrationAddress',
-  'CorporateRegistrationScheme',
-  'HeadOfficeParty',
-  'ShareholderParty',
-] as const;
+export {
+  // Kökler
+  INVOICE_SEQ,
+  DESPATCH_SEQ,
+  // Satırlar
+  INVOICE_LINE_SEQ,
+  DESPATCH_LINE_SEQ,
+  // Vergi
+  TAX_TOTAL_SEQ,
+  TAX_SUBTOTAL_SEQ,
+  TAX_CATEGORY_SEQ,
+  TAX_SCHEME_SEQ,
+  // Tutar / iskonto
+  ALLOWANCE_CHARGE_SEQ,
+  LEGAL_MONETARY_TOTAL_SEQ,
+  EXCHANGE_RATE_SEQ,
+  PAYMENT_MEANS_SEQ,
+  // Kalem
+  ITEM_SEQ,
+  PRICE_SEQ,
+  // Taraf
+  PARTY_SEQ,
+  PERSON_SEQ,
+  CONTACT_SEQ,
+  PARTY_TAX_SCHEME_SEQ,
+  PARTY_LEGAL_ENTITY_SEQ,
+  ADDRESS_SEQ,
+  // Teslimat / sevkiyat
+  DELIVERY_SEQ,
+  SHIPMENT_SEQ,
+  TRANSPORT_HANDLING_UNIT_SEQ,
+  PACKAGE_SEQ,
+  CUSTOMS_DECLARATION_SEQ,
+  // Referanslar / dönem
+  DOCUMENT_REFERENCE_SEQ,
+  ORDER_REFERENCE_SEQ,
+  BILLING_REFERENCE_SEQ,
+  PERIOD_SEQ,
+  // Bekçi testinin eşleme haritaları
+  ELEMENT_COMPLEX_TYPE,
+  SEQUENCE_BY_COMPLEX_TYPE,
+} from './xsd-sequence.generated';
 
 // ─── Generic helper ───────────────────────────────────────────────────────
 
@@ -646,6 +85,11 @@ export const PARTY_LEGAL_ENTITY_SEQ = [
  * - `seq` içinde olan her field için `emitters[field]` varsa çağırılır.
  * - Emitter yoksa veya `''` dönerse atlanır (filter).
  * - Emitter `throw` ederse hata yukarı propagate olur (M6 required enforce).
+ *
+ * `emitters` anahtarları `seq` elemanlarıyla sınırlıdır: tabloda OLMAYAN bir
+ * alana emitter yazılırsa TypeScript derleme anında reddeder. Tablolar XSD'den
+ * üretildiği için bu aynı zamanda "UBL-TR'de bulunmayan elemanı emit etme"
+ * kapısıdır.
  *
  * @returns Sıralı, boş-olmayan XML string array'i. Çağıran tarafta `joinLines` ile birleştir.
  */
