@@ -4,7 +4,7 @@ import type {
   AdditionalDocumentInput,
   OrderReferenceInput,
   SignatureInput,
-  AdditionalItemIdInput,
+  ItemInput,
   AddressInput,
 } from './common';
 
@@ -162,15 +162,20 @@ export interface DespatchLineInput {
   note?: string;
 }
 
-/** İrsaliye ürün bilgileri */
-export interface DespatchItemInput {
-  /** Ürün adı — boş olamaz */
-  name: string;
-  /**
-   * Ürün açıklaması — `cac:Item/cbc:Description`.
-   * UBL `ItemType` sırasında (`ITEM_SEQ`) `Description`, `Name`'den ÖNCE gelir.
-   */
-  description?: string;
-  /** Ek ürün kimlikleri — §5.5 KUNYENO, §5.6 ETIKETNO */
-  additionalItemIdentifications?: AdditionalItemIdInput[];
-}
+/**
+ * İrsaliye ürün bilgileri — `cac:DespatchLine/cac:Item`.
+ *
+ * 🔴 `ItemInput`TİR, dar bir alt küme DEĞİL. UBL'de `cac:Item` TEK tiptir
+ * (`ItemType`): faturanın kalemi ile irsaliyenin kalemi AYNI slotları taşır
+ * (`ITEM_SEQ`). Eskiden burada 3 alanlık ayrı bir şekil vardı ve serileştiricisi
+ * de ayrıydı; bu ikilik canlıda ÖLÇÜLMÜŞ bir kusur üretti — `resolveUnitCode`
+ * fatura yolunda hesaplayıcıda koşuyor, irsaliyede hesaplayıcı olmadığı için
+ * hiç koşmuyordu ve `unitCode="Adet"` ham hâliyle GİB'e gidip
+ * `GeneralUnitCodeCheck` kuralını patlatıyordu. `CarrierPartyInput = PartyInput`
+ * ile aynı ders, aynı çözüm.
+ *
+ * Yerleşik alanlar (§5.5 KUNYENO, §5.6 ETIKETNO) `additionalItemIdentifications`
+ * üzerinden gelmeye devam eder. Genişletme GERİYE UYUMLUDUR: `ItemInput` eski
+ * şeklin ÜST KÜMESİDİR, eski çağıran nesneleri aynen tip denetiminden geçer.
+ */
+export type DespatchItemInput = ItemInput;

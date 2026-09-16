@@ -1,5 +1,6 @@
 import type { InvoiceLineInput } from '../types/invoice-input';
 import type { DespatchLineInput } from '../types/despatch-input';
+import type { ItemInput } from '../types/common';
 import {
   cbcOptionalTag,
   cbcOptionalAmountTag,
@@ -11,8 +12,18 @@ import {
 import { isNonEmpty } from '../utils/formatters';
 import { serializeTaxTotal, serializeWithholdingTaxTotal } from './tax-serializer';
 import { serializeAllowanceCharge } from './common-serializer';
-import { serializeLineDelivery } from './delivery-serializer';
-import { INVOICE_LINE_SEQ, ITEM_SEQ, PRICE_SEQ, DESPATCH_LINE_SEQ, emitInOrder } from './xsd-sequence';
+import { serializeCountry, serializeLineDelivery } from './delivery-serializer';
+import {
+  INVOICE_LINE_SEQ,
+  ITEM_SEQ,
+  ITEM_IDENTIFICATION_SEQ,
+  COMMODITY_CLASSIFICATION_SEQ,
+  ITEM_INSTANCE_SEQ,
+  ORDER_LINE_REFERENCE_SEQ,
+  PRICE_SEQ,
+  DESPATCH_LINE_SEQ,
+  emitInOrder,
+} from './xsd-sequence';
 import { configManager } from '../calculator/config-manager';
 
 /**
@@ -54,27 +65,25 @@ export function serializeInvoiceLine(line: InvoiceLineInput, currencyCode: strin
 /**
  * Tekil `cac:*ItemIdentification` bloğu — GİB `ItemIdentificationType` yalnızca
  * `cbc:ID` (minOccurs=1) içerir. Değer boşsa blok hiç emit edilmez (B-102).
+ *
+ * Beş eleman aynı tiptedir (`ITEM_IDENTIFICATION_SEQ`): Buyers / Sellers /
+ * Manufacturers / Additional / ItemIdentification — tek üretici hepsini basar.
  */
-function itemIdentificationBlock(tagName: string, value: string | undefined, indent: string): string {
+function itemIdentificationBlock(
+  tagName: string,
+  value: string | undefined,
+  indent: string,
+  attrs?: Record<string, string>,
+): string {
   if (!isNonEmpty(value)) return '';
-  return [
+  const inner = emitInOrder(ITEM_IDENTIFICATION_SEQ, {
+    ID: () => cbcRequiredTag('ID', value, tagName, attrs),
+  });
+  return joinLines([
     `${indent}<cac:${tagName}>`,
-    `${indent}  ${cbcRequiredTag('ID', value, tagName)}`,
+    ...inner.map(s => `${indent}  ${s}`),
     `${indent}</cac:${tagName}>`,
-  ].join('\n');
-}
-
-/**
- * `cac:OriginCountry` bloğu — GİB `CountryType`: `cbc:IdentificationCode` (0..1)
- * → `cbc:Name` (**1..1**). Name zorunlu olduğu için isim yoksa blok emit edilmez;
- * yalnız kod verilmiş olsa bile şema-geçersiz belge üretilmez (B-102).
- */
-function originCountryBlock(code: string | undefined, name: string | undefined, indent: string): string {
-  if (!isNonEmpty(name)) return '';
-  const inner: string[] = [];
-  if (isNonEmpty(code)) inner.push(`${indent}  ${cbcOptionalTag('IdentificationCode', code)}`);
-  inner.push(`${indent}  ${cbcRequiredTag('Name', name, 'OriginCountry')}`);
-  return [`${indent}<cac:OriginCountry>`, ...inner, `${indent}</cac:OriginCountry>`].join('\n');
+  ]);
 }
 
 /**
@@ -85,8 +94,16 @@ function originCountryBlock(code: string | undefined, name: string | undefined, 
  * emit edildi. Slotlar ITEM_SEQ'te zaten vardı, emitter'ları yoktu — bu yüzden
  * `SimpleLineInput.brand/buyerCode/sellerCode/manufacturerCode/origin` alanları
  * uçtan uca sessizce düşüyordu.
+ *
+ * 🔴 S2b: fatura ve irsaliyenin TEK `cac:Item` üreticisi budur. İrsaliye tarafı
+ * `serializeDespatchLine` içinde `itemInner` dizisini ELLE kuruyor ve yalnız
+ * 3 alanı (Description / Name / AdditionalItemIdentification) tanıyordu. Bu
+ * ikilik canlıda ÖLÇÜLMÜŞ bir kusur üretmişti: `resolveUnitCode` fatura yolunda
+ * hesaplayıcıda koşuyor, irsaliyede hesaplayıcı olmadığı için hiç koşmuyordu →
+ * `unitCode="Adet"` ham hâliyle GİB'e gidip `GeneralUnitCodeCheck`'i patlatıyordu.
+ * "İki tip, iki kod yolu" deseni kalktı: `DespatchItemInput` artık `ItemInput`tır.
  */
-function serializeItem(item: InvoiceLineInput['item'], indent: string): string {
+export function serializeItem(item: ItemInput, indent: string): string {
   const i2 = indent + '  ';
   const inner = emitInOrder(ITEM_SEQ, {
     Description: () => cbcOptionalTag('Description', item.description),
@@ -99,38 +116,43 @@ function serializeItem(item: InvoiceLineInput['item'], indent: string): string {
       itemIdentificationBlock('SellersItemIdentification', item.sellersItemIdentification, i2),
     ManufacturersItemIdentification: () =>
       itemIdentificationBlock('ManufacturersItemIdentification', item.manufacturersItemIdentification, i2),
-    OriginCountry: () => originCountryBlock(item.originCountryCode, item.originCountryName, i2),
+    /* `cac:OriginCountry` da `CountryType`'tır — adresteki `cac:Country` ile
+     * AYNI üreticiden geçer. GİB'de `cbc:Name` 1..1'dir; isim yoksa blok hiç
+     * yazılmaz (bkz. `serializeCountry`). */
+    OriginCountry: () =>
+      serializeCountry(item.originCountryCode, item.originCountryName, i2, 'OriginCountry'),
     AdditionalItemIdentification: () =>
-      item.additionalItemIdentifications
-        ? joinLines(
-            item.additionalItemIdentifications.map(aid =>
-              [
-                `${i2}<cac:AdditionalItemIdentification>`,
-                `${i2}  ${cbcRequiredTag('ID', aid.value, 'AdditionalItemIdentification', { schemeID: aid.schemeId })}`,
-                `${i2}</cac:AdditionalItemIdentification>`,
-              ].join('\n'),
-            ),
-          )
-        : '',
-    CommodityClassification: () =>
-      item.commodityClassification
-        ? [
-            `${i2}<cac:CommodityClassification>`,
-            `${i2}  ${cbcOptionalTag('ItemClassificationCode', item.commodityClassification.itemClassificationCode)}`,
-            `${i2}</cac:CommodityClassification>`,
-          ].join('\n')
-        : '',
+      joinLines(
+        (item.additionalItemIdentifications ?? []).map(aid =>
+          itemIdentificationBlock('AdditionalItemIdentification', aid.value, i2, { schemeID: aid.schemeId }),
+        ),
+      ),
+    CommodityClassification: () => {
+      if (!item.commodityClassification) return '';
+      const ccInner = emitInOrder(COMMODITY_CLASSIFICATION_SEQ, {
+        ItemClassificationCode: () =>
+          cbcOptionalTag('ItemClassificationCode', item.commodityClassification!.itemClassificationCode),
+      });
+      return joinLines([
+        `${i2}<cac:CommodityClassification>`,
+        ...ccInner.map(s => `${i2}  ${s}`),
+        `${i2}</cac:CommodityClassification>`,
+      ]);
+    },
     ItemInstance: () =>
-      item.itemInstances
-        ? joinLines(
-            item.itemInstances.map(inst => {
-              const il: string[] = [];
-              if (isNonEmpty(inst.productTraceId)) il.push(`${i2}  ${cbcOptionalTag('ProductTraceID', inst.productTraceId)}`);
-              if (isNonEmpty(inst.serialId)) il.push(`${i2}  ${cbcOptionalTag('SerialID', inst.serialId)}`);
-              return [`${i2}<cac:ItemInstance>`, ...il, `${i2}</cac:ItemInstance>`].join('\n');
-            }),
-          )
-        : '',
+      joinLines(
+        (item.itemInstances ?? []).map(inst => {
+          const instInner = emitInOrder(ITEM_INSTANCE_SEQ, {
+            ProductTraceID: () => cbcOptionalTag('ProductTraceID', inst.productTraceId),
+            SerialID: () => cbcOptionalTag('SerialID', inst.serialId),
+          });
+          return joinLines([
+            `${i2}<cac:ItemInstance>`,
+            ...instInner.map(s => `${i2}  ${s}`),
+            `${i2}</cac:ItemInstance>`,
+          ]);
+        }),
+      ),
   });
 
   const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
@@ -157,28 +179,15 @@ function serializePrice(priceAmount: number, currencyCode: string, indent: strin
 /** DespatchLine → XML fragment. Sequence: DESPATCH_LINE_SEQ. */
 export function serializeDespatchLine(line: DespatchLineInput, indent: string = ''): string {
   const i2 = indent + '  ';
-  const i3 = indent + '    ';
-  const i4 = indent + '      ';
 
-  const orderLineRef = [
+  const orderLineRefInner = emitInOrder(ORDER_LINE_REFERENCE_SEQ, {
+    LineID: () => cbcOptionalTag('LineID', line.id),
+  });
+  const orderLineRef = joinLines([
     `${i2}<cac:OrderLineReference>`,
-    `${i3}${cbcOptionalTag('LineID', line.id)}`,
+    ...orderLineRefInner.map(s => `${i2}  ${s}`),
     `${i2}</cac:OrderLineReference>`,
-  ].join('\n');
-
-  const itemInner: string[] = [];
-  // UBL `ItemType` sırası (ITEM_SEQ): Description → … → Name. Açıklama verilmezse
-  // `cbcOptionalTag` boş string döner ve eleman HİÇ yazılmaz.
-  const itemDescription = cbcOptionalTag('Description', line.item.description);
-  if (itemDescription !== '') itemInner.push(`${i3}${itemDescription}`);
-  itemInner.push(`${i3}${cbcRequiredTag('Name', line.item.name, 'Item')}`);
-  if (line.item.additionalItemIdentifications) {
-    for (const aid of line.item.additionalItemIdentifications) {
-      itemInner.push(`${i3}<cac:AdditionalItemIdentification>`);
-      itemInner.push(`${i4}${cbcRequiredTag('ID', aid.value, 'AdditionalItemIdentification', { schemeID: aid.schemeId })}`);
-      itemInner.push(`${i3}</cac:AdditionalItemIdentification>`);
-    }
-  }
+  ]);
 
   const inner = emitInOrder(DESPATCH_LINE_SEQ, {
     ID: () => cbcRequiredTag('ID', line.id, 'DespatchLine'),
@@ -195,7 +204,8 @@ export function serializeDespatchLine(line: DespatchLineInput, indent: string = 
     DeliveredQuantity: () =>
       cbcOptionalQuantityTag('DeliveredQuantity', line.deliveredQuantity, configManager.resolveUnitCode(line.unitCode)),
     OrderLineReference: () => orderLineRef,
-    Item: () => [`${i2}<cac:Item>`, ...itemInner, `${i2}</cac:Item>`].join('\n'),
+    // S2b: fatura ile AYNI üretici. Eskiden burada 3 alanlık elle kurulmuş bir kopya vardı.
+    Item: () => serializeItem(line.item, i2),
   });
 
   const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));

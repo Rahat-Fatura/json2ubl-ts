@@ -52,12 +52,27 @@ describe('Address — B-98 BlockName/District/Postbox emit', () => {
 });
 
 describe('Address — B-100 Country IdentificationCode + Name', () => {
-  it('countryCode sadece IdentificationCode emit eder', () => {
+  /**
+   * 🔴 DAVRANIŞ DEĞİŞTİ (S2b) — bu test eskiden ŞEMA-GEÇERSİZ bir çıktıyı
+   * kilitliyordu.
+   *
+   * GİB `CountryType` sekansı: `cbc:IdentificationCode` (0..1) → `cbc:Name`
+   * (**minOccurs=1**; `schemas/ubl-tr/common/UBL-CommonAggregateComponents-2.1.xsd`).
+   * Yalnız kod yazılan `cac:Country` bu yüzden XSD'den DÜŞER. CANLI ÖLÇÜM
+   * (xslt-service :8081, paket 20260701 — golden'ın ilk `cac:Country` bloğu
+   * yalnız-kod hâline getirilip gönderildi):
+   *
+   *   «"Country" elementinin içeriği eksik. Zorunlu element(ler): Name.»
+   *
+   * Doğru davranış `line-serializer.originCountryBlock`ta ZATEN vardı; S2b'de
+   * `CountryType`'ın üç kopyası tek üreticide birleşince adres tarafına da geldi.
+   * Eksik ülke adı UYDURULMAZ, yalnız geçersiz düğüm yazılmaz.
+   */
+  it('yalnız countryCode verilirse cac:Country HİÇ yazılmaz — cbc:Name XSD-zorunludur', () => {
     const addr: AddressInput = { ...baseAddress(), countryCode: 'TR' };
     const xml = serializeAddress(addr, 'DeliveryAddress');
-    expect(xml).toContain('<cac:Country>');
-    expect(xml).toContain('<cbc:IdentificationCode>TR</cbc:IdentificationCode>');
-    expect(xml).not.toContain('<cbc:Name>');
+    expect(xml).not.toContain('<cac:Country>');
+    expect(xml).not.toContain('<cbc:IdentificationCode>');
   });
 
   it('countryCode + country her ikisi emit edilir (XSD sırası: IdentificationCode < Name)', () => {

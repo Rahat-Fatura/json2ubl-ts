@@ -125,18 +125,40 @@ export function serializeAddress(addr: AddressInput, tagName: string, indent: st
   return [`${indent}<cac:${tagName}>`, body, `${indent}</cac:${tagName}>`].join('\n');
 }
 
-/** `cac:Country` — B-100 IdentificationCode → Name. Sıra: `COUNTRY_SEQ`. */
+/**
+ * `CountryType` → XML. TEK üretici; sıra `COUNTRY_SEQ`
+ * (B-100: `IdentificationCode` 0..1 → `Name` **1..1**).
+ *
+ * İki eleman adıyla çıkar: adres altında `cac:Country`, kalem altında
+ * `cac:OriginCountry`. S2b öncesinde ÜÇ kopyası vardı (`delivery-serializer`,
+ * `party-serializer`, `line-serializer.originCountryBlock`) ve üçü aynı
+ * davranmıyordu:
+ *
+ * 🔴 `cac:Country` kopyaları YALNIZ KOD verildiğinde bloğu yine de yazıyordu.
+ * GİB `CountryType`'ta `cbc:Name` minOccurs=1'dir, yani o çıktı ŞEMA-GEÇERSİZDİ
+ * («"Country" elementinin içeriği eksik. Zorunlu element(ler): Name»). Doğru
+ * davranış `originCountryBlock`'ta zaten vardı ve buraya taşındı: isim yoksa
+ * blok HİÇ yazılmaz — geçersiz belge üretmektense eksik veri görünür kalır.
+ *
+ * Bu bir veri uydurma değildir; eksik ülke adı uydurulmaz, yalnız geçersiz
+ * düğüm yazılmaz.
+ */
 export function serializeCountry(
   countryCode: string | undefined,
   countryName: string | undefined,
   indent: string,
+  tagName: 'Country' | 'OriginCountry' = 'Country',
 ): string {
+  if (!isNonEmpty(countryName)) return '';
   const inner = emitInOrder(COUNTRY_SEQ, {
     IdentificationCode: () => cbcOptionalTag('IdentificationCode', countryCode),
-    Name: () => cbcOptionalTag('Name', countryName),
+    Name: () => cbcRequiredTag('Name', countryName, tagName),
   });
-  if (inner.length === 0) return '';
-  return [`${indent}<cac:Country>`, ...inner.map(s => `${indent}  ${s}`), `${indent}</cac:Country>`].join('\n');
+  return joinLines([
+    `${indent}<cac:${tagName}>`,
+    ...inner.map(s => `${indent}  ${s}`),
+    `${indent}</cac:${tagName}>`,
+  ]);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
