@@ -33,7 +33,7 @@ import {
   ESU_RAPOR_ID_SCHEME_ID,
   ESU_RAPOR_ISSUE_DATE_REGEX,
   IADE_GROUP_TYPES,
-  INVOICE_ID_REGEX,
+  DOCUMENT_ID_REGEX,
   UUID_REGEX,
 } from '../config/constants';
 /* 🔑 4.5.2 — kapsam yüklemi ARTIK BURADA TANIMLI DEĞİL.
@@ -163,12 +163,12 @@ export function validateProfileRequirements(input: SimpleInvoiceInput): Validati
    *
    * ⚠️ BOŞ numara HATA DEĞİLDİR: portal numarayı mimkit serisinden gönderim
    * anında ayırır; taslak aşamasında numarasız belge meşrudur. */
-  if (!bos(input.id) && !INVOICE_ID_REGEX.test(String(input.id))) {
+  if (!bos(input.id) && !DOCUMENT_ID_REGEX.test(String(input.id))) {
     errors.push({
       code: 'INVALID_FORMAT',
       message: 'Fatura numarası GİB biçimine uymuyor: 3 harf/rakam + yıl (20XX) + 9 rakam.',
       path: 'id',
-      expected: String(INVOICE_ID_REGEX.source),
+      expected: String(DOCUMENT_ID_REGEX.source),
       actual: String(input.id),
     });
   }
@@ -177,7 +177,7 @@ export function validateProfileRequirements(input: SimpleInvoiceInput): Validati
   /* Şematron `IADEInvioceCheck` yalnız UZUNLUĞA bakar (`string-length(...) = 16`), bu
    * yüzden "abc-2026-00000002" gibi 16-17 karakterli ama desensiz bir değer GİB'e kadar
    * gidip orada reddoluyordu. Desen kontrolü bizde: 3 hane alfanümerik seri + 4 hane yıl
-   * + 9 hane sıra. Kaynak TEK: `INVOICE_ID_REGEX` (belgenin kendi numarası ile aynı
+   * + 9 hane sıra. Kaynak TEK: `DOCUMENT_ID_REGEX` (belgenin kendi numarası ile aynı
    * kural — iade edilen de sonuçta bir e-Fatura numarasıdır), ikinci desen YAZILMADI.
    *
    * ⚠️ BOŞ referans burada hata değildir: onu `invoice-rules.validateInvoiceState`
@@ -188,7 +188,7 @@ export function validateProfileRequirements(input: SimpleInvoiceInput): Validati
   if (IADE_GROUP_TYPES.has(tip as InvoiceTypeCode)) {
     resolveBillingReferences(input).forEach((ref, i) => {
       const referansNo = String(ref.id ?? '').trim();
-      if (referansNo === '' || INVOICE_ID_REGEX.test(referansNo)) return;
+      if (referansNo === '' || DOCUMENT_ID_REGEX.test(referansNo)) return;
       errors.push({
         code: 'INVALID_FORMAT',
         message:

@@ -8,8 +8,7 @@ import type {
   OrderReferenceInput,
 } from '../types/common';
 import {
-  INVOICE_ID_REGEX, UUID_REGEX, DATE_REGEX, TIME_REGEX,
-  CURRENCY_CODES, TAX_TYPE_CODES,
+  DATE_REGEX, CURRENCY_CODES, TAX_TYPE_CODES,
   EXCHANGE_RATE_REGEX, PARTY_IDENTIFICATION_SCHEME_IDS,
 } from '../config/constants';
 import {
@@ -19,77 +18,29 @@ import {
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 import { missingField, invalidFormat, invalidValue } from './validation-result';
 import { isNonEmpty } from '../utils/formatters';
-
-/** B-65: IssueDate aralık alt sınırı (Schematron e-Fatura başlangıcı) */
-const ISSUE_DATE_MIN = '2005-01-01';
-
-/**
- * 🔴 "BUGÜN" TÜRKİYE SAATİYLE HESAPLANIR — UTC ile DEĞİL.
- *
- * Schematron `TimeCheck` (Common_Schematron:169) düzenlenme tarihinin GELECEKTE olamayacağını
- * söyler. "Gelecek" GİB'in takvimine göredir ve GİB Türkiye saatiyle çalışır.
- *
- * ⛔️ ESKİ HÂL BİR HATAYDI: `new Date().toISOString().slice(0, 10)` UTC gününü verir. Türkiye
- * UTC+3 olduğu için her gece 00:00–03:00 (TR) arasında UTC hâlâ BİR ÖNCEKİ gündedir; o üç
- * saatte düzenlenen ve tarihi DOĞRU olan her Türk faturası "gelecek tarihli" diye REDDEDİLİYORDU.
- * Yani kütüphane her gün üç saat boyunca fatura üretemiyordu.
- *
- * Türkiye 2016'dan beri yaz saati uygulamıyor: sabit UTC+3. Sabit ofset aritmetiği bu yüzden
- * güvenlidir ve `Intl`e (ICU verisi olmayan derlemelerde sessizce UTC'ye düşer) bağımlı değildir.
- */
-const TURKEY_UTC_OFFSET_MS = 3 * 60 * 60 * 1000;
-
-function turkeyToday(): string {
-  return new Date(Date.now() + TURKEY_UTC_OFFSET_MS).toISOString().slice(0, 10);
-}
+import { runFieldBindings } from './rules/field-rule';
+import { INVOICE_HEADER_BINDINGS } from './rules/header-bindings';
 
 /**
- * §1 Ortak zorunluluk validasyonu — tüm faturalar için geçerli kurallar
+ * §1 e-Fatura ortak zorunluluk validasyonu.
+ *
+ * ⚠️ ADI "common" AMA TİPİ FATURADIR (`InvoiceInput`) — ve bu artık BİLEREK
+ * böyledir. S3'ten önce belge-türü tanımayan GİB ORTAK kuralları da bu gövdede
+ * yaşıyordu; ölçülmüş bedeli `ISSUE_DATE_MIN` aralık kontrolüydü:
+ * `Common_Schematron:169-170`ten gelen ORTAK bir kural olduğu hâlde yalnız
+ * faturaya uygulanıyor, e-İrsaliye onu HİÇ ALMIYORDU.
+ *
+ * Artık künye (`cbc:ID`/`UUID`/`ProfileID`/tip/tarih/saat) kuralları
+ * `rules/common-field-rules.ts` içinde belge-türü BİLMEYEN saf yüklemlerdir ve
+ * buraya `rules/header-bindings.ts` tablosundan VERİ olarak bağlanır. Bu
+ * gövdede kalanlar gerçekten FATURAYA ÖZGÜ olanlardır (para birimi, vergi
+ * toplamları, satırlar, `LegalMonetaryTotal`, parent-child zorunlulukları).
  */
 export function validateCommon(input: InvoiceInput): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  // §1.2 Zorunlu dinamik alanlar
-  if (!isNonEmpty(input.id)) {
-    errors.push(missingField('id', 'Fatura numarası (cbc:ID) zorunludur'));
-  } else if (!INVOICE_ID_REGEX.test(input.id)) {
-    errors.push(invalidFormat('id', '^[A-Z0-9]{3}20[0-9]{2}[0-9]{9}$', input.id));
-  }
-
-  if (!isNonEmpty(input.uuid)) {
-    errors.push(missingField('uuid', 'UUID (cbc:UUID) zorunludur'));
-  } else if (!UUID_REGEX.test(input.uuid)) {
-    errors.push(invalidFormat('uuid', 'UUID formatı (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)', input.uuid));
-  }
-
-  if (!isNonEmpty(input.profileId)) {
-    errors.push(missingField('profileId', 'ProfileID (cbc:ProfileID) zorunludur'));
-  } else if (!Object.values(InvoiceProfileId).includes(input.profileId as InvoiceProfileId)) {
-    // B-68: ProfileID whitelist runtime (CommonSchematron:147)
-    errors.push(invalidFormat('profileId',
-      Object.values(InvoiceProfileId).join('|'), input.profileId));
-  }
-
-  if (!isNonEmpty(input.invoiceTypeCode)) {
-    errors.push(missingField('invoiceTypeCode', 'InvoiceTypeCode (cbc:InvoiceTypeCode) zorunludur'));
-  }
-
-  if (!isNonEmpty(input.issueDate)) {
-    errors.push(missingField('issueDate', 'Düzenleme tarihi (cbc:IssueDate) zorunludur'));
-  } else if (!DATE_REGEX.test(input.issueDate)) {
-    errors.push(invalidFormat('issueDate', 'YYYY-MM-DD', input.issueDate));
-  } else {
-    // B-65: IssueDate aralık kontrolü (CommonSchematron:169-170)
-    const today = turkeyToday();
-    if (input.issueDate < ISSUE_DATE_MIN || input.issueDate > today) {
-      errors.push(invalidValue('issueDate',
-        `${ISSUE_DATE_MIN} ≤ tarih ≤ ${today}`, input.issueDate));
-    }
-  }
-
-  if (input.issueTime && !TIME_REGEX.test(input.issueTime)) {
-    errors.push(invalidFormat('issueTime', 'HH:mm:ss', input.issueTime));
-  }
+  // §1.2 Künye — yüklemler ortak, bağlama tablosu faturaya ait.
+  errors.push(...runFieldBindings(INVOICE_HEADER_BINDINGS, input));
 
   // §1.3 Para birimi
   if (!isNonEmpty(input.currencyCode)) {

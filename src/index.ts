@@ -26,6 +26,10 @@ export {
     CURRENCY_CODES,
     TAX_TYPE_CODES,
     WITHHOLDING_TAX_TYPE_CODES,
+    /* S3 — ortak GİB belge-numarası deseni (fatura + irsaliye + iade referansı).
+     * `INVOICE_ID_REGEX` aynı nesnenin geriye-uyumlu takma adıdır; dışarıdaki
+     * tüketiciyi kırmamak için AÇIK KALIR. */
+    DOCUMENT_ID_REGEX,
     INVOICE_ID_REGEX,
     UUID_REGEX,
     PARTY_IDENTIFICATION_SCHEME_IDS,

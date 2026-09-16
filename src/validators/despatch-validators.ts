@@ -2,7 +2,7 @@ import type { ValidationError } from '../errors/ubl-build-error';
 import type { DespatchInput, CarrierPartyInput } from '../types/despatch-input';
 import { DespatchProfileId, DespatchTypeCode } from '../types/enums';
 import {
-  INVOICE_ID_REGEX, UUID_REGEX, DATE_REGEX, TIME_REGEX,
+  DATE_REGEX, TIME_REGEX,
   POSTAL_ZONE_REGEX, SEVKIYAT_NO_REGEX, ETIKET_NO_REGEX,
   LICENSE_PLATE_SCHEME_IDS, TCKN_REGEX, VKN_REGEX,
   PARTY_IDENTIFICATION_SCHEME_IDS,
@@ -12,6 +12,8 @@ import {
 import { validateParty } from './common-validators';
 import { missingField, invalidFormat, invalidValue, profileRequirement } from './validation-result';
 import { isNonEmpty } from '../utils/formatters';
+import { runFieldBindings } from './rules/field-rule';
+import { despatchHeaderBindings } from './rules/header-bindings';
 
 /**
  * Doğrulamanın koştuğu AŞAMA.
@@ -50,51 +52,12 @@ export function validateDespatch(
   const errors: ValidationError[] = [];
   const stage = opts?.stage ?? 'document';
 
-  // §5.1 Zorunlu alanlar
-  if (!isNonEmpty(input.id)) {
-    // Numara yalnız BİTMİŞ belgede zorunlu — gerekçe `DespatchValidationStage`te.
-    if (stage === 'document') {
-      errors.push(missingField('id', 'İrsaliye numarası zorunludur'));
-    }
-  } else if (!INVOICE_ID_REGEX.test(input.id)) {
-    // Biçim denetimi HER AŞAMADA koşar: elle yazılmış yanlış numara sessiz kalmamalı.
-    errors.push(invalidFormat('id', '^[A-Z0-9]{3}20[0-9]{2}[0-9]{9}$', input.id));
-  }
-
-  if (!isNonEmpty(input.uuid)) {
-    errors.push(missingField('uuid', 'UUID zorunludur'));
-  } else if (!UUID_REGEX.test(input.uuid)) {
-    errors.push(invalidFormat('uuid', 'UUID formatı', input.uuid));
-  }
-
-  // O3 — ProfileID whitelist (Schematron ProfileIDTypeDespatchAdvice)
-  if (!isNonEmpty(input.profileId)) {
-    errors.push(missingField('profileId', 'ProfileID zorunludur'));
-  } else if (!Object.values(DespatchProfileId).includes(input.profileId as DespatchProfileId)) {
-    errors.push(invalidFormat('profileId',
-      Object.values(DespatchProfileId).join('|'), input.profileId));
-  }
-
-  // O3 — DespatchAdviceTypeCode whitelist (Schematron DespatchAdviceTypeCodeCheck)
-  if (!isNonEmpty(input.despatchTypeCode)) {
-    errors.push(missingField('despatchTypeCode', 'DespatchAdviceTypeCode zorunludur'));
-  } else if (!Object.values(DespatchTypeCode).includes(input.despatchTypeCode as DespatchTypeCode)) {
-    errors.push(invalidFormat('despatchTypeCode',
-      Object.values(DespatchTypeCode).join('|'), input.despatchTypeCode));
-  }
-
-  if (!isNonEmpty(input.issueDate)) {
-    errors.push(missingField('issueDate', 'Düzenleme tarihi zorunludur'));
-  } else if (!DATE_REGEX.test(input.issueDate)) {
-    errors.push(invalidFormat('issueDate', 'YYYY-MM-DD', input.issueDate));
-  }
-
-  // B-18: issueTime XSD zorunlu (M6 parent-child — parent Despatch zorunlu ⇒ issueTime zorunlu)
-  if (!isNonEmpty(input.issueTime)) {
-    errors.push(missingField('issueTime', 'Düzenleme saati (cbc:IssueTime) zorunludur (B-18)'));
-  } else if (!TIME_REGEX.test(input.issueTime)) {
-    errors.push(invalidFormat('issueTime', 'HH:mm:ss', input.issueTime));
-  }
+  /* §5.1 Künye — yüklemler ORTAK (`rules/common-field-rules.ts`), bağlama
+   * tablosu irsaliyeye ait (`rules/header-bindings.ts`).
+   *
+   * 🔴 S3 SIKILAŞMASI: `issueDate` aralığı (B-65) bu tabloya İLK KEZ bağlandı.
+   * GİB'in ORTAK kuralı olduğu hâlde irsaliye onu hiç almıyordu. */
+  errors.push(...runFieldBindings(despatchHeaderBindings(stage), input));
 
   // Party validasyonu
   errors.push(...validateParty(input.supplier, 'supplier'));

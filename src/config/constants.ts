@@ -518,8 +518,31 @@ export const ACCOUNTING_COST_CODES = new Set([
 // FORMAT REGEXLERİ
 // ============================================================
 
-/** Fatura ID formatı: 3 harf/rakam + 20XX + 9 rakam */
-export const INVOICE_ID_REGEX = /^[A-Z0-9]{3}20[0-9]{2}[0-9]{9}$/;
+/**
+ * 🔑 GİB BELGE NUMARASI deseni: 3 harf/rakam seri + `20XX` yıl + 9 hane sıra.
+ *
+ * ── NİYE "INVOICE" DEĞİL "DOCUMENT" (S3)
+ * Desen bir FATURA kuralı değildir, GİB'in e-belge numarası kuralıdır. Ölçülmüş
+ * kullanım:
+ *   • e-Fatura kendi numarası      — `common-validators`
+ *   • e-İrsaliye kendi numarası    — `despatch-validators` (AYNI deseni kullanıyor)
+ *   • iade edilen fatura referansı — `profile-requirement-validator`
+ *   • e-SMM / e-MM (gelecek)       — 39 üretim belgesinin 39'u bu desene uyuyor
+ * Adın "fatura" demesi, irsaliye tarafında "fatura deseni ödünç alındı" gibi
+ * okunuyordu; oysa TEK ve ORTAK kuraldır — yalnız HATA METNİ belgeye göre
+ * değişir (yüklem ⟂ sözlük ayrımı; bkz. `validators/rules/`).
+ *
+ * ⚠️ `INVOICE_ID_REGEX` geriye-uyumlu takma addır (paket dışına açıktır,
+ * `src/index.ts`) ve AYNI `RegExp` nesnesini gösterir. Yeni kod
+ * `DOCUMENT_ID_REGEX` kullanır.
+ */
+export const DOCUMENT_ID_REGEX = /^[A-Z0-9]{3}20[0-9]{2}[0-9]{9}$/;
+
+/**
+ * @deprecated `DOCUMENT_ID_REGEX` kullanın — desen belgeye özgü değildir.
+ * Dışa açık API olduğu için geriye-uyumluluk adına korunur.
+ */
+export const INVOICE_ID_REGEX = DOCUMENT_ID_REGEX;
 
 /** UUID formatı */
 export const UUID_REGEX = /^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/;
