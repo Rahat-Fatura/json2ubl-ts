@@ -6,6 +6,15 @@
  *  2. İDDİA      — 4.1.0 uyumluluk düzeltmelerinin her biri ayrı ayrı kilitlenir.
  *  3. ŞEMATRON   — her golden CANLI GİB doğrulayıcısına gönderilir.
  *
+ * 🔴 1 ve 2 yalnızca "çıktı dünküyle aynı" der — snapshot YANLIŞ XML'i de dondurur
+ * (bu deponun kendi geçmişi: denetim-04'te bulunan 6 kritik XSD sıra ihlali o an
+ * snapshot'larda yeşildi). "GİB'e geçer" iddiasını KATMAN 3 taşır; o katman
+ * atlanmışsa koşum uyumluluğu KANITLAMAZ. Bu yüzden atlanması görünür olmalıdır:
+ *   • doğrulayıcı VAR                       → testler gerçekten koşar
+ *   • doğrulayıcı YOK + REQUIRE_VALIDATOR=1 → koşum KIRMIZI (`npm run test:strict`)
+ *   • doğrulayıcı YOK + bayrak yok          → SKIPPED (passed DEĞİL) + görünür uyarı
+ * Kapı `__tests__/support/global-setup.ts`, sözleşme `__tests__/support/validator.ts`.
+ *
  * Golden dosyaları yenilemek için:
  *   UPDATE_GOLDEN=1 npx vitest run __tests__/golden
  * ⚠️ Yenilemeden ÖNCE diff'i okuyun — golden'ın değişmesi ya kasıtlı bir
@@ -22,12 +31,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SimpleInvoiceBuilder } from '../../src';
 import { GOLDEN_SCENARIOS } from './scenarios';
+import {
+  probeValidator,
+  validateLive,
+  validatorRequiredMessage,
+  VALIDATOR_REQUIRED,
+} from '../support/validator';
 
 const GOLDEN_DIR = path.join(__dirname, '__golden__');
 const UPDATE = process.env.UPDATE_GOLDEN === '1';
-
-/** Canlı UBL doğrulama servisi (XSD + Schematron). */
-const VALIDATOR_URL = process.env.UBL_VALIDATOR_URL ?? 'http://127.0.0.1:8081/v1/validate';
 
 /** Senaryoyu üretir. Tüm golden'lar aynı builder ayarlarıyla üretilmelidir. */
 function buildXml(scenarioIndex: number): string {
@@ -310,45 +322,24 @@ describe('4.1.0 iddiaları — ext:UBLExtensions bayrağı', () => {
 });
 
 // ─── 3. CANLI ŞEMATRON doğrulaması ────────────────────────────────────────
+//
+// ÜÇ DURUMLU DAVRANIŞ — ayrıntılı gerekçe `__tests__/support/validator.ts`'te:
+//   doğrulayıcı VAR                       → testler GERÇEKTEN koşar
+//   doğrulayıcı YOK + REQUIRE_VALIDATOR=1 → KIRMIZI (aşağıdaki güvenlik-ağı testi)
+//   doğrulayıcı YOK + bayrak yok          → SKIPPED (passed DEĞİL) + görünür uyarı
+//
+// 🔑 Yoklama TOPLAMA (collection) anında, modül üst düzeyinde yapılır —
+// `beforeAll` içinde DEĞİL. Sebep: `it.skipIf(...)` kararını vitest testleri
+// toplarken verir; beforeAll ondan SONRA koşar. Toplama anında karar verilince
+// atlanan testler raporda "skipped" olarak sayılır ve `--reporter=verbose`
+// çıktısında "↓" ile ayrılır; beforeAll'da kurulan bir bayrağa bakan
+// `ctx.skip()` ise testin GÖVDESİNİ atlar — sebebi de, sayısı da testin içine
+// gömülü kalır. Fark ölçüldü (2026-09-16): globalSetup uyarısıyla birlikte
+// atlama artık koşumun en görünür satırıdır.
 
-interface ValidateResult {
-  validSchema: boolean;
-  validSchematron: boolean;
-  schemaValidationErrors: string[] | null;
-  schematronValidationErrors: Array<{ ruleId: string; message: string }> | null;
-}
-
-async function validateLive(xml: string, type: string): Promise<ValidateResult> {
-  const form = new FormData();
-  form.append('source', new Blob([xml], { type: 'application/xml' }), 'invoice.xml');
-  form.append('parameters', JSON.stringify([{ key: 'type', value: type }]));
-
-  const res = await fetch(VALIDATOR_URL, { method: 'POST', body: form });
-  if (!res.ok) throw new Error(`Doğrulayıcı HTTP ${res.status}`);
-  const json = (await res.json()) as { result: ValidateResult; errorMessage: string | null };
-  if (!json.result) throw new Error(`Doğrulayıcı yanıtı boş: ${json.errorMessage}`);
-  return json.result;
-}
-
-/** Servis ayakta mı? beforeAll'da bir kez ölçülür. */
-let validatorUp = false;
-let validatorError = '';
+const validator = await probeValidator();
 
 describe('Canlı GİB şematron doğrulaması', () => {
-  beforeAll(async () => {
-    try {
-      // Basit bir probe: geçerli golden'lardan biriyle gerçek çağrı.
-      const probe = fs.existsSync(path.join(GOLDEN_DIR, `${GOLDEN_SCENARIOS[0].slug}.xml`))
-        ? readGolden(GOLDEN_SCENARIOS[0].slug)
-        : buildXml(0);
-      await validateLive(probe, 'efatura');
-      validatorUp = true;
-    } catch (e) {
-      validatorUp = false;
-      validatorError = e instanceof Error ? e.message : String(e);
-    }
-  }, 30_000);
-
   /**
    * ⚠️ Kütüphane İMZASIZ belge üretir — bu bilinçli bir sınırdır (imzayı
    * entegratör/imzalayıcı ekler). GİB `UBL-Invoice-2.1.xsd` ise imzayı
@@ -364,16 +355,13 @@ describe('Canlı GİB şematron doğrulaması', () => {
    */
   const SIGNATURE_XSD_ERRORS = [/ExtensionContent/, /AccountingSupplierParty/];
 
-  GOLDEN_SCENARIOS.forEach(scenario => {
-    it(
-      `${scenario.slug} — Schematron iş kuralları TEMİZ`,
-      async ctx => {
-        if (!validatorUp) {
-          // 🔴 SESSİZCE GEÇMEZ: servis yoksa test ATLANIR ve sebebi görünür.
-          ctx.skip();
-          return;
-        }
+  /** Doğrulayıcıya bağlı testler: servis yoksa KOŞULMAZ ve "skipped" sayılır. */
+  const liveIt = it.skipIf(!validator.up);
 
+  GOLDEN_SCENARIOS.forEach(scenario => {
+    liveIt(
+      `${scenario.slug} — Schematron iş kuralları TEMİZ`,
+      async () => {
         const result = await validateLive(readGolden(scenario.slug), scenario.validateType);
 
         // ── Şematron: SIFIR hata. Asıl uyumluluk hedefi budur. ──
@@ -393,14 +381,9 @@ describe('Canlı GİB şematron doğrulaması', () => {
     );
   });
 
-  it(
+  liveIt(
     'İMZA eklenince XSD TAMAMEN geçer — includeUblExtensions iskeletinin işe yaradığının kanıtı',
-    async ctx => {
-      if (!validatorUp) {
-        ctx.skip();
-        return;
-      }
-
+    async () => {
       // İmzalayıcının yapacağı iki işi simüle et:
       //  (1) XAdES'i boş ExtensionContent'in İÇİNE yaz,
       //  (2) cac:Signature bloğunu AccountingSupplierParty'den ÖNCE ekle.
@@ -446,11 +429,7 @@ describe('Canlı GİB şematron doğrulaması', () => {
     30_000,
   );
 
-  it('4.0.0 REGRESYONU: tevkifat Percent "90.00" olsaydı şematron REDDEDERDİ', async ctx => {
-    if (!validatorUp) {
-      ctx.skip();
-      return;
-    }
+  liveIt('4.0.0 REGRESYONU: tevkifat Percent "90.00" olsaydı şematron REDDEDERDİ', async () => {
     // Golden'ı bilinçli olarak 4.0.0 davranışına geri döndür ve doğrulayıcının
     // gerçekten reddettiğini KANITLA — düzeltmenin bir şeyi çözdüğünün delili.
     const broken = readGolden('d-tevkifat-606-yuzde90').replace(
@@ -463,12 +442,23 @@ describe('Canlı GİB şematron doğrulaması', () => {
     expect(rules).toContain('WithholdingTaxTotalCheck');
   }, 30_000);
 
-  it('doğrulayıcı erişilemezse bu koşumda ATLANDIĞI görünür olmalı', ctx => {
-    if (!validatorUp) {
-      // Sebebi teste yazıp atla — sessiz yeşil YOK.
-      ctx.skip();
+  // 🔴 GÜVENLİK AĞININ KENDİSİ — bu test ASLA atlanmaz.
+  //
+  // Önceki sürümde bu testin gövdesi de `if (!validatorUp) ctx.skip()` ile
+  // başlıyordu: yani tam olarak yakalaması gereken durumda kendisi atlanıyor,
+  // hiçbir koşulda düşemiyordu. Bekçi, nöbeti bırakınca uyuyan bekçiydi.
+  //
+  // Yeni hâli her koşumda çalışır ve iki şeyi kilitler:
+  //   1. Doğrulayıcı ayaktaysa yoklama hatasız olmalıdır (sözleşme sapması = kırmızı).
+  //   2. Doğrulayıcı yoksa, YALNIZCA zorunlu-kip KAPALIYKEN atlamaya izin verilir;
+  //      `REQUIRE_VALIDATOR=1` altında bu satır koşumu KIRMIZIYA düşürür.
+  // (globalSetup zaten koşumun başında durduruyor; bu, o kapı bir gün config'ten
+  //  düşerse diye ikinci kilit — güvenlik ağının tek bir dosyaya bağlı olmaması için.)
+  it('güvenlik ağı: doğrulayıcı erişilemiyorsa zorunlu kipte koşum KIRMIZI olur', () => {
+    if (validator.up) {
+      expect(validator.error).toBe('');
       return;
     }
-    expect(validatorError).toBe('');
+    expect(VALIDATOR_REQUIRED, `\n${validatorRequiredMessage(validator)}\n`).toBe(false);
   });
 });

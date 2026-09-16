@@ -2,6 +2,33 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [Yayınlanmamış]
+
+> **GÜVENLİK AĞI — canlı GİB doğrulaması artık sessizce kaybolamaz.** Test-only;
+> `src/` ve üretilen XML DEĞİŞMEDİ (128 dosya / 2731 test, doğrulayıcı ayaktayken yeşil).
+
+### Changed
+
+- **Canlı şematron katmanı üç durumlu oldu.** Doğrulayıcı VAR → testler koşar;
+  YOK + `REQUIRE_VALIDATOR=1` → koşum KIRMIZI; YOK + bayraksız → **SKIPPED**
+  (passed DEĞİL) + koşumun başında ve sonunda göze batan uyarı.
+  Ölçülen kusur şuydu: doğrulayıcı kapalıyken koşum `exit 0` veriyor, hiçbir uyarı
+  basılmıyor ve "12 şematron testi ATLANDI" bilgisi yalnız özet satırının içinde
+  kalıyordu — yani "XML'imiz GİB'e geçer" kanıtı sessizce kayboluyordu.
+- **Bekçi testi artık nöbeti bırakmıyor.** Eski `doğrulayıcı erişilemezse … görünür
+  olmalı` testi tam da yakalaması gereken durumda `ctx.skip()` ediyordu; hiçbir
+  koşulda düşemezdi. Yerine HER koşumda çalışan `güvenlik ağı: …` testi geldi.
+- **`prepublishOnly` → `npm run test:strict`.** Canlı GİB kanıtı olmadan paket
+  yayınlanamaz.
+
+### Added
+
+- **`__tests__/support/validator.ts`** — `/v1/validate` sözleşmesi, `probeValidator()`
+  (port değil SÖZLEŞME yoklar) ve ortak uyarı metinleri; tek kaynak.
+- **`__tests__/support/global-setup.ts`** — vitest `globalSetup` kapısı. Worker
+  dışında koştuğu için uyarı çıktı-tamponuna takılmaz.
+- **`npm run test:strict`** (`REQUIRE_VALIDATOR=1 npm test`) — CI koşum yolu.
+
 ## [4.6.0] — 2026-09-15
 
 > **e-İRSALİYE OTURUM KATMANI.** İkinci belge tipi. Amaç mimari tutarlılık: dışarıdan
