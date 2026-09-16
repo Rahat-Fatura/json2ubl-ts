@@ -1,9 +1,17 @@
-import type { DeliveryInput, LineDeliveryInput, AddressInput } from '../types/common';
+import type { DeliveryInput, LineDeliveryInput, AddressInput, CustomsDeclarationInput } from '../types/common';
 import { cbcOptionalTag, cbcRequiredTag, joinLines } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
 import { normalizeGtip } from '../utils/gtip';
 import { serializePartyAs } from './party-serializer';
-import { DELIVERY_SEQ, ADDRESS_SEQ, SHIPMENT_SEQ, PACKAGE_SEQ, emitInOrder } from './xsd-sequence';
+import {
+  DELIVERY_SEQ,
+  ADDRESS_SEQ,
+  SHIPMENT_SEQ,
+  PACKAGE_SEQ,
+  TRANSPORT_HANDLING_UNIT_SEQ,
+  CUSTOMS_DECLARATION_SEQ,
+  emitInOrder,
+} from './xsd-sequence';
 
 /**
  * Delivery → XML fragment (§3.3 IHRACAT + B-101 e-Arşiv internet satışı).
@@ -171,73 +179,40 @@ function serializeShipment(shipment: DeliveryInput['shipment'], indent: string):
   const thuXml = shipment.transportHandlingUnits
     ? joinLines(
         shipment.transportHandlingUnits.map(thu => {
-          const thuLines: string[] = [`${i2}<cac:TransportHandlingUnit>`];
-          // XSD sequence: ActualPackage (12) → ... → CustomsDeclaration (21)
-          //
-          // B-102: ActualPackage içi sıra artık PACKAGE_SEQ'ten gelir
-          // (ID → Quantity → PackagingTypeCode). Önceki kod PackagingTypeCode'u
-          // Quantity'den ÖNCE yazıyordu; ikisi birlikte verildiğinde şema-geçersizdi.
-          if (thu.actualPackages) {
-            for (const pkg of thu.actualPackages) {
-              const pkgInner = emitInOrder(PACKAGE_SEQ, {
-                ID: () => cbcOptionalTag('ID', pkg.id),
-                Quantity: () => (pkg.quantity !== undefined ? cbcOptionalTag('Quantity', String(pkg.quantity)) : ''),
-                PackagingTypeCode: () => cbcOptionalTag('PackagingTypeCode', pkg.packagingTypeCode),
-              });
-              thuLines.push(`${i3}<cac:ActualPackage>`);
-              for (const p of pkgInner) thuLines.push(`${i3}  ${p}`);
-              thuLines.push(`${i3}</cac:ActualPackage>`);
-            }
-          }
-          // CustomsDeclaration — IHRACKAYITLI + 702 için (B-14, Schematron satır 322/451)
-          // Sequence: ID → ValidityPeriod → ApplicableTransportMeans → IssuerParty
-          if (thu.customsDeclarations) {
-            for (const [cdIndex, cd] of thu.customsDeclarations.entries()) {
-              thuLines.push(`${i3}<cac:CustomsDeclaration>`);
-              /* 🔴 `cbc:ID` KOŞULSUZ yazılır — UBL `CustomsDeclarationType` onu ZORUNLU
-               * kılar (minOccurs=1). Eskiden yalnız `cd.id` doluysa yazılıyordu; İHRAÇ
-               * KAYITLI akışında mapper `alicidibsatirkod`tan yalnız `issuerParty`
-               * ürettiği için ID hiç gelmiyor ve belge XSD'den düşüyordu:
-               *   «"IssuerParty" elementi bu konumda geçersiz. Beklenen: ID.»
-               * Bu, ihraç kayıtlı satışın TAMAMINI kesilemez yapıyordu (kaplama seferi,
-               * 6 profil × IHRACKAYITLI).
-               *
-               * Şematron bu alanın DEĞERİNİ denetlemez (yalnız IssuerParty altındaki
-               * ALICIDIBSATIRKOD'a bakar), dolayısıyla iş verisi uydurmak gerekmez.
-               * Konum sırası yazılır — `Shipment/ID`'de zaten uygulanan emsalin aynısı. */
-              thuLines.push(
-                `${i3}  ${cbcRequiredTag('ID', isNonEmpty(cd.id) ? cd.id : String(cdIndex + 1), 'CustomsDeclaration')}`,
-              );
-              if (cd.issuerParty?.partyIdentifications?.length) {
-                thuLines.push(`${i3}  <cac:IssuerParty>`);
-                for (const pi of cd.issuerParty.partyIdentifications) {
-                  thuLines.push(`${i3}    <cac:PartyIdentification>`);
-                  thuLines.push(
-                    `${i3}      ${cbcRequiredTag('ID', pi.id, 'CustomsDeclaration/IssuerParty/PartyIdentification', { schemeID: pi.schemeID })}`,
-                  );
-                  thuLines.push(`${i3}    </cac:PartyIdentification>`);
-                }
-                /* 🔴 UBL-TR `PartyType` bu bağlamda ÜÇÜNÜ birden ister:
-                 * PartyIdentification + PartyName + PostalAddress. Yalnız kimlik
-                 * yazılan belge «"IssuerParty" elementinin içeriği eksik» ile
-                 * XSD'den düşer (canlı ölçüm). Ad ve adres alıcıdan gelir —
-                 * ALICIDIBSATIRKOD zaten alıcının kodudur. */
-                if (isNonEmpty(cd.issuerParty.name)) {
-                  thuLines.push(`${i3}    <cac:PartyName>`);
-                  thuLines.push(`${i3}      ${cbcRequiredTag('Name', cd.issuerParty.name, 'CustomsDeclaration/IssuerParty/PartyName')}`);
-                  thuLines.push(`${i3}    </cac:PartyName>`);
-                }
-                if (cd.issuerParty.postalAddress) {
-                  const adres = serializeAddress(cd.issuerParty.postalAddress, 'PostalAddress', `${i3}    `);
-                  if (adres) thuLines.push(adres);
-                }
-                thuLines.push(`${i3}  </cac:IssuerParty>`);
-              }
-              thuLines.push(`${i3}</cac:CustomsDeclaration>`);
-            }
-          }
-          thuLines.push(`${i2}</cac:TransportHandlingUnit>`);
-          return thuLines.join('\n');
+          // Sequence: TRANSPORT_HANDLING_UNIT_SEQ — ActualPackage (12) → CustomsDeclaration (21).
+          const thuInner = emitInOrder(TRANSPORT_HANDLING_UNIT_SEQ, {
+            /* B-102: ActualPackage içi sıra PACKAGE_SEQ'ten gelir
+             * (ID → Quantity → PackagingTypeCode). Önceki kod PackagingTypeCode'u
+             * Quantity'den ÖNCE yazıyordu; ikisi birlikte verildiğinde şema-geçersizdi. */
+            ActualPackage: () =>
+              joinLines(
+                (thu.actualPackages ?? []).map(pkg => {
+                  const pkgInner = emitInOrder(PACKAGE_SEQ, {
+                    ID: () => cbcOptionalTag('ID', pkg.id),
+                    Quantity: () => (pkg.quantity !== undefined ? cbcOptionalTag('Quantity', String(pkg.quantity)) : ''),
+                    PackagingTypeCode: () => cbcOptionalTag('PackagingTypeCode', pkg.packagingTypeCode),
+                  });
+                  return joinLines([
+                    `${i3}<cac:ActualPackage>`,
+                    ...pkgInner.map(p => `${i3}  ${p}`),
+                    `${i3}</cac:ActualPackage>`,
+                  ]);
+                }),
+              ),
+
+            // CustomsDeclaration — IHRACKAYITLI + 702 için (B-14, Schematron satır 322/451)
+            CustomsDeclaration: () =>
+              joinLines(
+                (thu.customsDeclarations ?? []).map((cd, cdIndex) =>
+                  serializeCustomsDeclaration(cd, cdIndex, i3),
+                ),
+              ),
+          });
+          return joinLines([
+            `${i2}<cac:TransportHandlingUnit>`,
+            ...thuInner,
+            `${i2}</cac:TransportHandlingUnit>`,
+          ]);
         }),
       )
     : '';
@@ -250,4 +225,60 @@ function serializeShipment(shipment: DeliveryInput['shipment'], indent: string):
   });
   const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
   return [`${indent}<cac:Shipment>`, body, `${indent}</cac:Shipment>`].join('\n');
+}
+
+/**
+ * `cac:CustomsDeclaration` → XML fragment. Sequence: CUSTOMS_DECLARATION_SEQ
+ * (ID → ValidityPeriod → ApplicableTransportMeans → IssuerParty).
+ *
+ * @param index 0 tabanlı sıra — `cd.id` boşsa konum numarası ID'ye düşer.
+ */
+function serializeCustomsDeclaration(cd: CustomsDeclarationInput, index: number, indent: string): string {
+  const i2 = indent + '  ';
+  const i3 = indent + '    ';
+  const i4 = indent + '      ';
+
+  const inner = emitInOrder(CUSTOMS_DECLARATION_SEQ, {
+    /* 🔴 `cbc:ID` KOŞULSUZ yazılır — UBL `CustomsDeclarationType` onu ZORUNLU
+     * kılar (minOccurs=1). Eskiden yalnız `cd.id` doluysa yazılıyordu; İHRAÇ
+     * KAYITLI akışında mapper `alicidibsatirkod`tan yalnız `issuerParty`
+     * ürettiği için ID hiç gelmiyor ve belge XSD'den düşüyordu:
+     *   «"IssuerParty" elementi bu konumda geçersiz. Beklenen: ID.»
+     * Bu, ihraç kayıtlı satışın TAMAMINI kesilemez yapıyordu (kaplama seferi,
+     * 6 profil × IHRACKAYITLI).
+     *
+     * Şematron bu alanın DEĞERİNİ denetlemez (yalnız IssuerParty altındaki
+     * ALICIDIBSATIRKOD'a bakar), dolayısıyla iş verisi uydurmak gerekmez.
+     * Konum sırası yazılır — `Shipment/ID`'de zaten uygulanan emsalin aynısı. */
+    ID: () => `${i2}${cbcRequiredTag('ID', isNonEmpty(cd.id) ? cd.id : String(index + 1), 'CustomsDeclaration')}`,
+
+    /* 🔴 UBL-TR `PartyType` bu bağlamda ÜÇÜNÜ birden ister:
+     * PartyIdentification + PartyName + PostalAddress. Yalnız kimlik
+     * yazılan belge «"IssuerParty" elementinin içeriği eksik» ile
+     * XSD'den düşer (canlı ölçüm). Ad ve adres alıcıdan gelir —
+     * ALICIDIBSATIRKOD zaten alıcının kodudur. */
+    IssuerParty: () => {
+      const issuer = cd.issuerParty;
+      if (!issuer?.partyIdentifications?.length) return '';
+      return joinLines([
+        `${i2}<cac:IssuerParty>`,
+        ...issuer.partyIdentifications.flatMap(pi => [
+          `${i3}<cac:PartyIdentification>`,
+          `${i4}${cbcRequiredTag('ID', pi.id, 'CustomsDeclaration/IssuerParty/PartyIdentification', { schemeID: pi.schemeID })}`,
+          `${i3}</cac:PartyIdentification>`,
+        ]),
+        ...(isNonEmpty(issuer.name)
+          ? [
+              `${i3}<cac:PartyName>`,
+              `${i4}${cbcRequiredTag('Name', issuer.name, 'CustomsDeclaration/IssuerParty/PartyName')}`,
+              `${i3}</cac:PartyName>`,
+            ]
+          : []),
+        ...(issuer.postalAddress ? [serializeAddress(issuer.postalAddress, 'PostalAddress', i3)] : []),
+        `${i2}</cac:IssuerParty>`,
+      ]);
+    },
+  });
+
+  return joinLines([`${indent}<cac:CustomsDeclaration>`, ...inner, `${indent}</cac:CustomsDeclaration>`]);
 }

@@ -1,7 +1,15 @@
 import type { PartyInput, BuyerCustomerInput, TaxRepresentativeInput, SignatureInput } from '../types/common';
 import { cbcOptionalTag, cbcRequiredTag, joinLines } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
-import { ADDRESS_SEQ, PERSON_SEQ, emitInOrder } from './xsd-sequence';
+import {
+  ADDRESS_SEQ,
+  CONTACT_SEQ,
+  PARTY_LEGAL_ENTITY_SEQ,
+  PARTY_SEQ,
+  PARTY_TAX_SCHEME_SEQ,
+  PERSON_SEQ,
+  emitInOrder,
+} from './xsd-sequence';
 
 /** Party → XML fragment (cac:Party içeriği) */
 export function serializeParty(party: PartyInput, indent: string = ''): string {
@@ -21,80 +29,118 @@ export function serializePartyAs(party: PartyInput, tagName: string, indent: str
   const i = indent;
   const i2 = indent + '  ';
   const i3 = indent + '    ';
-  const i4 = indent + '      ';
-  const lines: string[] = [];
 
-  lines.push(`${i}<cac:${tagName}>`);
+  const inner = emitInOrder(PARTY_SEQ, {
+    WebsiteURI: () => (isNonEmpty(party.websiteUri) ? `${i2}${cbcOptionalTag('WebsiteURI', party.websiteUri)}` : ''),
 
-  // WebsiteURI
-  if (isNonEmpty(party.websiteUri)) {
-    lines.push(`${i2}${cbcOptionalTag('WebsiteURI', party.websiteUri)}`);
-  }
+    // PartyIdentification (VKN/TCKN + ek tanımlayıcılar)
+    //
+    // ⚠️ İlk sarmalayıcı KOŞULSUZ yazılır — `vknTckn` boş olsa bile
+    // `<cac:PartyIdentification/>` çifti çıkar (yerleşik davranış).
+    PartyIdentification: () =>
+      joinLines([
+        ...partyIdentificationBlock(party.vknTckn, party.taxIdType, i2, i3),
+        ...(party.additionalIdentifiers ?? []).flatMap(aid =>
+          partyIdentificationBlock(aid.value, aid.schemeId, i2, i3),
+        ),
+      ]),
 
-  // PartyIdentification (VKN/TCKN + ek tanımlayıcılar)
-  lines.push(`${i2}<cac:PartyIdentification>`);
-  lines.push(`${i3}${cbcOptionalTag('ID', party.vknTckn, { schemeID: party.taxIdType })}`);
-  lines.push(`${i2}</cac:PartyIdentification>`);
+    // PartyName (VKN ise)
+    PartyName: () =>
+      isNonEmpty(party.name)
+        ? joinLines([
+            `${i2}<cac:PartyName>`,
+            `${i3}${cbcOptionalTag('Name', party.name)}`,
+            `${i2}</cac:PartyName>`,
+          ])
+        : '',
 
-  if (party.additionalIdentifiers) {
-    for (const aid of party.additionalIdentifiers) {
-      lines.push(`${i2}<cac:PartyIdentification>`);
-      lines.push(`${i3}${cbcOptionalTag('ID', aid.value, { schemeID: aid.schemeId })}`);
-      lines.push(`${i2}</cac:PartyIdentification>`);
-    }
-  }
+    PostalAddress: () => joinLines(serializePostalAddress(party, i2)),
 
-  // PartyName (VKN ise)
-  if (isNonEmpty(party.name)) {
-    lines.push(`${i2}<cac:PartyName>`);
-    lines.push(`${i3}${cbcOptionalTag('Name', party.name)}`);
-    lines.push(`${i2}</cac:PartyName>`);
-  }
+    PartyTaxScheme: () => serializePartyTaxScheme(party.taxOffice, i2),
 
-  // PostalAddress
-  lines.push(...serializePostalAddress(party, i2));
+    PartyLegalEntity: () => serializePartyLegalEntity(party.registrationName, i2),
 
-  // PartyTaxScheme
-  if (isNonEmpty(party.taxOffice)) {
-    lines.push(`${i2}<cac:PartyTaxScheme>`);
-    lines.push(`${i3}<cac:TaxScheme>`);
-    lines.push(`${i4}${cbcOptionalTag('Name', party.taxOffice)}`);
-    lines.push(`${i3}</cac:TaxScheme>`);
-    lines.push(`${i2}</cac:PartyTaxScheme>`);
-  }
+    Contact: () => serializeContact(party, i2),
 
-  // PartyLegalEntity
-  if (isNonEmpty(party.registrationName)) {
-    lines.push(`${i2}<cac:PartyLegalEntity>`);
-    lines.push(`${i3}${cbcOptionalTag('RegistrationName', party.registrationName)}`);
-    lines.push(`${i2}</cac:PartyLegalEntity>`);
-  }
+    // Person (TCKN ise) — B-20 fix: PERSON_SEQ (FirstName → FamilyName → Title → MiddleName → NameSuffix → NationalityID)
+    Person: () =>
+      party.taxIdType === 'TCKN'
+        ? serializePersonBlock(
+            {
+              firstName: party.firstName,
+              familyName: party.familyName,
+              middleName: party.middleName,
+              nationalityId: party.nationalityId,
+              passportId: party.passportId,
+            },
+            i2,
+          )
+        : '',
+  });
 
-  // Contact
-  if (isNonEmpty(party.telephone) || isNonEmpty(party.telefax) || isNonEmpty(party.email)) {
-    lines.push(`${i2}<cac:Contact>`);
-    if (isNonEmpty(party.telephone)) lines.push(`${i3}${cbcOptionalTag('Telephone', party.telephone)}`);
-    if (isNonEmpty(party.telefax)) lines.push(`${i3}${cbcOptionalTag('Telefax', party.telefax)}`);
-    if (isNonEmpty(party.email)) lines.push(`${i3}${cbcOptionalTag('ElectronicMail', party.email)}`);
-    lines.push(`${i2}</cac:Contact>`);
-  }
+  return joinLines([`${i}<cac:${tagName}>`, ...inner, `${i}</cac:${tagName}>`]);
+}
 
-  // Person (TCKN ise) — B-20 fix: PERSON_SEQ (FirstName → FamilyName → Title → MiddleName → NameSuffix → NationalityID)
-  if (party.taxIdType === 'TCKN') {
-    lines.push(serializePersonBlock(
-      {
-        firstName: party.firstName,
-        familyName: party.familyName,
-        middleName: party.middleName,
-        nationalityId: party.nationalityId,
-        passportId: party.passportId,
-      },
-      i2,
-    ));
-  }
+/** Tek `cac:PartyIdentification` sarmalayıcısı (3 satır). */
+function partyIdentificationBlock(
+  id: string | undefined,
+  schemeId: string,
+  indent: string,
+  childIndent: string,
+): string[] {
+  return [
+    `${indent}<cac:PartyIdentification>`,
+    `${childIndent}${cbcOptionalTag('ID', id, { schemeID: schemeId })}`,
+    `${indent}</cac:PartyIdentification>`,
+  ];
+}
 
-  lines.push(`${i}</cac:${tagName}>`);
-  return joinLines(lines);
+/**
+ * `cac:PartyTaxScheme` — vergi dairesi adı. Sequence: PARTY_TAX_SCHEME_SEQ.
+ * Ad yoksa hiç yazılmaz (boş `PartyTaxScheme` şema-geçersizdir).
+ */
+function serializePartyTaxScheme(taxOffice: string | undefined, indent: string): string {
+  if (!isNonEmpty(taxOffice)) return '';
+  const i2 = indent + '  ';
+  const i3 = indent + '    ';
+  const inner = emitInOrder(PARTY_TAX_SCHEME_SEQ, {
+    TaxScheme: () =>
+      joinLines([`${i2}<cac:TaxScheme>`, `${i3}${cbcOptionalTag('Name', taxOffice)}`, `${i2}</cac:TaxScheme>`]),
+  });
+  return joinLines([`${indent}<cac:PartyTaxScheme>`, ...inner, `${indent}</cac:PartyTaxScheme>`]);
+}
+
+/** `cac:PartyLegalEntity` — ünvan. Sequence: PARTY_LEGAL_ENTITY_SEQ. */
+function serializePartyLegalEntity(registrationName: string | undefined, indent: string): string {
+  if (!isNonEmpty(registrationName)) return '';
+  const i2 = indent + '  ';
+  const inner = emitInOrder(PARTY_LEGAL_ENTITY_SEQ, {
+    RegistrationName: () => cbcOptionalTag('RegistrationName', registrationName),
+  });
+  return joinLines([
+    `${indent}<cac:PartyLegalEntity>`,
+    ...inner.map(s => i2 + s),
+    `${indent}</cac:PartyLegalEntity>`,
+  ]);
+}
+
+/**
+ * `cac:Contact` — telefon/faks/e-posta. Sequence: CONTACT_SEQ.
+ * Üçü de boşsa hiç yazılmaz (çocuksuz `Contact` şema-geçersizdir).
+ */
+function serializeContact(
+  party: Pick<PartyInput, 'telephone' | 'telefax' | 'email'>,
+  indent: string,
+): string {
+  const i2 = indent + '  ';
+  const inner = emitInOrder(CONTACT_SEQ, {
+    Telephone: () => cbcOptionalTag('Telephone', party.telephone),
+    Telefax: () => cbcOptionalTag('Telefax', party.telefax),
+    ElectronicMail: () => cbcOptionalTag('ElectronicMail', party.email),
+  });
+  if (inner.length === 0) return '';
+  return joinLines([`${indent}<cac:Contact>`, ...inner.map(s => i2 + s), `${indent}</cac:Contact>`]);
 }
 
 /**
@@ -203,130 +249,104 @@ export function serializeAccountingCustomerParty(party: PartyInput, indent: stri
 /** BuyerCustomerParty → XML (§3.3 IHRACAT / §3.4 YOLCU / §3.6 KAMU) */
 export function serializeBuyerCustomerParty(buyer: BuyerCustomerInput, indent: string = ''): string {
   const i2 = indent + '  ';
-  const lines: string[] = [];
-
-  lines.push(`${indent}<cac:BuyerCustomerParty>`);
-  lines.push(`${i2}<cac:Party>`);
-
-  // PartyIdentification ile PARTYTYPE (sadece IHRACAT/YOLCU için)
-  if (buyer.partyType) {
-    lines.push(`${i2}  <cac:PartyIdentification>`);
-    lines.push(`${i2}    ${cbcOptionalTag('ID', buyer.partyType, { schemeID: 'PARTYTYPE' })}`);
-    lines.push(`${i2}  </cac:PartyIdentification>`);
-  }
-
-  // Party içeriği (PartyIdentification hariç, zaten yukarda)
+  const p1 = i2 + '  '; // Party çocukları (cac)
+  const p2 = i2 + '    '; // onların cbc çocukları
   const party = buyer.party;
 
-  // VKN/TCKN
-  if (isNonEmpty(party.vknTckn)) {
-    lines.push(`${i2}  <cac:PartyIdentification>`);
-    lines.push(`${i2}    ${cbcOptionalTag('ID', party.vknTckn, { schemeID: party.taxIdType })}`);
-    lines.push(`${i2}  </cac:PartyIdentification>`);
-  }
+  const inner = emitInOrder(PARTY_SEQ, {
+    PartyIdentification: () =>
+      joinLines([
+        // PARTYTYPE (sadece IHRACAT/YOLCU için)
+        ...(buyer.partyType ? partyIdentificationBlock(buyer.partyType, 'PARTYTYPE', p1, p2) : []),
+        // VKN/TCKN
+        ...(isNonEmpty(party.vknTckn)
+          ? partyIdentificationBlock(party.vknTckn, party.taxIdType, p1, p2)
+          : []),
+        // B-83: additionalIdentifiers emit — KAMU aracı kurum MUSTERINO/MERSISNO vb.
+        ...(party.additionalIdentifiers ?? []).flatMap(aid =>
+          partyIdentificationBlock(aid.value, aid.schemeId, p1, p2),
+        ),
+      ]),
 
-  // B-83: additionalIdentifiers emit — KAMU aracı kurum MUSTERINO/MERSISNO vb.
-  if (party.additionalIdentifiers) {
-    for (const aid of party.additionalIdentifiers) {
-      lines.push(`${i2}  <cac:PartyIdentification>`);
-      lines.push(`${i2}    ${cbcOptionalTag('ID', aid.value, { schemeID: aid.schemeId })}`);
-      lines.push(`${i2}  </cac:PartyIdentification>`);
-    }
-  }
+    PartyName: () =>
+      isNonEmpty(party.name)
+        ? joinLines([`${p1}<cac:PartyName>`, `${p2}${cbcOptionalTag('Name', party.name)}`, `${p1}</cac:PartyName>`])
+        : '',
 
-  if (isNonEmpty(party.name)) {
-    lines.push(`${i2}  <cac:PartyName>`);
-    lines.push(`${i2}    ${cbcOptionalTag('Name', party.name)}`);
-    lines.push(`${i2}  </cac:PartyName>`);
-  }
+    // B-36: PostalAddress — citySubdivisionName+cityName varsa emit
+    PostalAddress: () =>
+      isNonEmpty(party.citySubdivisionName) && isNonEmpty(party.cityName)
+        ? joinLines(serializePostalAddress(party, p1))
+        : '',
 
-  // B-36: PostalAddress — citySubdivisionName+cityName varsa emit
-  if (isNonEmpty(party.citySubdivisionName) && isNonEmpty(party.cityName)) {
-    lines.push(...serializePostalAddress(party, i2 + '  '));
-  }
+    // B-36: PartyTaxScheme (VKN için)
+    PartyTaxScheme: () => serializePartyTaxScheme(party.taxOffice, p1),
 
-  // B-36: PartyTaxScheme (VKN için)
-  if (isNonEmpty(party.taxOffice)) {
-    lines.push(`${i2}  <cac:PartyTaxScheme>`);
-    lines.push(`${i2}    <cac:TaxScheme>`);
-    lines.push(`${i2}      ${cbcOptionalTag('Name', party.taxOffice)}`);
-    lines.push(`${i2}    </cac:TaxScheme>`);
-    lines.push(`${i2}  </cac:PartyTaxScheme>`);
-  }
+    PartyLegalEntity: () => serializePartyLegalEntity(party.registrationName, p1),
 
-  // PartyLegalEntity
-  if (isNonEmpty(party.registrationName)) {
-    lines.push(`${i2}  <cac:PartyLegalEntity>`);
-    lines.push(`${i2}    ${cbcOptionalTag('RegistrationName', party.registrationName)}`);
-    lines.push(`${i2}  </cac:PartyLegalEntity>`);
-  }
+    // B-36: Contact
+    Contact: () => serializeContact(party, p1),
 
-  // B-36: Contact
-  if (isNonEmpty(party.telephone) || isNonEmpty(party.telefax) || isNonEmpty(party.email)) {
-    lines.push(`${i2}  <cac:Contact>`);
-    if (isNonEmpty(party.telephone)) lines.push(`${i2}    ${cbcOptionalTag('Telephone', party.telephone)}`);
-    if (isNonEmpty(party.telefax)) lines.push(`${i2}    ${cbcOptionalTag('Telefax', party.telefax)}`);
-    if (isNonEmpty(party.email)) lines.push(`${i2}    ${cbcOptionalTag('ElectronicMail', party.email)}`);
-    lines.push(`${i2}  </cac:Contact>`);
-  }
+    // Person (TAXFREE için) — B-20 fix: PERSON_SEQ
+    Person: () =>
+      party.taxIdType === 'TCKN' || isNonEmpty(party.firstName) || isNonEmpty(party.nationalityId)
+        ? serializePersonBlock(
+            {
+              firstName: party.firstName,
+              familyName: party.familyName,
+              middleName: party.middleName,
+              nationalityId: party.nationalityId,
+              passportId: party.passportId,
+            },
+            p1,
+          )
+        : '',
+  });
 
-  // Person (TAXFREE için) — B-20 fix: PERSON_SEQ
-  if (party.taxIdType === 'TCKN' || isNonEmpty(party.firstName) || isNonEmpty(party.nationalityId)) {
-    lines.push(serializePersonBlock(
-      {
-        firstName: party.firstName,
-        familyName: party.familyName,
-        middleName: party.middleName,
-        nationalityId: party.nationalityId,
-        passportId: party.passportId,
-      },
-      i2 + '  ',
-    ));
-  }
-
-  lines.push(`${i2}</cac:Party>`);
-  lines.push(`${indent}</cac:BuyerCustomerParty>`);
-  return joinLines(lines);
+  return joinLines([
+    `${indent}<cac:BuyerCustomerParty>`,
+    `${i2}<cac:Party>`,
+    ...inner,
+    `${i2}</cac:Party>`,
+    `${indent}</cac:BuyerCustomerParty>`,
+  ]);
 }
 
-/** TaxRepresentativeParty → XML (§3.4 YOLCU) */
+/** TaxRepresentativeParty → XML (§3.4 YOLCU). Sequence: PARTY_SEQ. */
 export function serializeTaxRepresentativeParty(trp: TaxRepresentativeInput, indent: string = ''): string {
   const i2 = indent + '  ';
   const i3 = indent + '    ';
-  const lines: string[] = [];
 
-  lines.push(`${indent}<cac:TaxRepresentativeParty>`);
-  lines.push(`${i2}<cac:PartyIdentification>`);
-  lines.push(`${i2}  ${cbcOptionalTag('ID', trp.intermediaryVknTckn, { schemeID: 'ARACIKURUMVKN' })}`);
-  lines.push(`${i2}</cac:PartyIdentification>`);
-  lines.push(`${i2}<cac:PartyIdentification>`);
-  lines.push(`${i2}  ${cbcOptionalTag('ID', trp.intermediaryLabel, { schemeID: 'ARACIKURUMETIKET' })}`);
-  lines.push(`${i2}</cac:PartyIdentification>`);
+  const inner = emitInOrder(PARTY_SEQ, {
+    PartyIdentification: () =>
+      joinLines([
+        ...partyIdentificationBlock(trp.intermediaryVknTckn, 'ARACIKURUMVKN', i2, i3),
+        ...partyIdentificationBlock(trp.intermediaryLabel, 'ARACIKURUMETIKET', i2, i3),
+        ...(trp.additionalIdentifiers ?? []).flatMap(aid =>
+          partyIdentificationBlock(aid.value, aid.schemeId, i2, i3),
+        ),
+      ]),
 
-  if (trp.additionalIdentifiers) {
-    for (const aid of trp.additionalIdentifiers) {
-      lines.push(`${i2}<cac:PartyIdentification>`);
-      lines.push(`${i2}  ${cbcOptionalTag('ID', aid.value, { schemeID: aid.schemeId })}`);
-      lines.push(`${i2}</cac:PartyIdentification>`);
-    }
-  }
+    // B-37: PartyName
+    PartyName: () =>
+      isNonEmpty(trp.name)
+        ? joinLines([`${i2}<cac:PartyName>`, `${i3}${cbcOptionalTag('Name', trp.name)}`, `${i2}</cac:PartyName>`])
+        : '',
 
-  // B-37: PartyName
-  if (isNonEmpty(trp.name)) {
-    lines.push(`${i2}<cac:PartyName>`);
-    lines.push(`${i3}${cbcOptionalTag('Name', trp.name)}`);
-    lines.push(`${i2}</cac:PartyName>`);
-  }
+    // B-37: PostalAddress
+    PostalAddress: () => {
+      if (!trp.postalAddress) return '';
+      // AddressInput → PartyInput compat (vknTckn/taxIdType dummy, sadece adres alanları okunur)
+      const addrAsParty = { ...trp.postalAddress, vknTckn: '', taxIdType: 'VKN' } as PartyInput;
+      return joinLines(serializePostalAddress(addrAsParty, i2));
+    },
+  });
 
-  // B-37: PostalAddress
-  if (trp.postalAddress) {
-    // AddressInput → PartyInput compat (vknTckn/taxIdType dummy, sadece adres alanları okunur)
-    const addrAsParty = { ...trp.postalAddress, vknTckn: '', taxIdType: 'VKN' } as PartyInput;
-    lines.push(...serializePostalAddress(addrAsParty, i2));
-  }
-
-  lines.push(`${indent}</cac:TaxRepresentativeParty>`);
-  return joinLines(lines);
+  return joinLines([
+    `${indent}<cac:TaxRepresentativeParty>`,
+    ...inner,
+    `${indent}</cac:TaxRepresentativeParty>`,
+  ]);
 }
 
 /** cac:Signature → XML */

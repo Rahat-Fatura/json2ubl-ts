@@ -7,24 +7,21 @@ import {
 } from '../utils/xml-helpers';
 import { formatDecimal, formatDecimalRange } from '../utils/formatters';
 import {
+  TAX_TOTAL_SEQ,
   TAX_SUBTOTAL_SEQ,
   TAX_CATEGORY_SEQ,
   TAX_SCHEME_SEQ,
   emitInOrder,
 } from './xsd-sequence';
 
-/** TaxTotal → XML fragment. XSD sequence: TaxAmount → TaxSubtotal. */
+/** TaxTotal → XML fragment. Sequence: TAX_TOTAL_SEQ (TaxAmount → TaxSubtotal). */
 export function serializeTaxTotal(tt: TaxTotalInput, currencyCode: string, indent: string = ''): string {
   const i2 = indent + '  ';
-  const lines: string[] = [];
-
-  lines.push(`${indent}<cac:TaxTotal>`);
-  lines.push(`${i2}${cbcOptionalAmountTag('TaxAmount', tt.taxAmount, currencyCode)}`);
-  for (const ts of tt.taxSubtotals) {
-    lines.push(serializeTaxSubtotal(ts, currencyCode, i2));
-  }
-  lines.push(`${indent}</cac:TaxTotal>`);
-  return joinLines(lines);
+  const inner = emitInOrder(TAX_TOTAL_SEQ, {
+    TaxAmount: () => `${i2}${cbcOptionalAmountTag('TaxAmount', tt.taxAmount, currencyCode)}`,
+    TaxSubtotal: () => joinLines(tt.taxSubtotals.map(ts => serializeTaxSubtotal(ts, currencyCode, i2))),
+  });
+  return joinLines([`${indent}<cac:TaxTotal>`, ...inner, `${indent}</cac:TaxTotal>`]);
 }
 
 /**
@@ -83,18 +80,15 @@ function serializeTaxScheme(taxTypeCode: string, taxTypeName: string | undefined
   return [`${indent}<cac:TaxScheme>`, body, `${indent}</cac:TaxScheme>`].filter(Boolean).join('\n');
 }
 
-/** WithholdingTaxTotal → XML fragment (UBL-TR). */
+/** WithholdingTaxTotal → XML fragment (UBL-TR). Sequence: TAX_TOTAL_SEQ (aynı `TaxTotalType`). */
 export function serializeWithholdingTaxTotal(wtt: WithholdingTaxTotalInput, currencyCode: string, indent: string = ''): string {
   const i2 = indent + '  ';
-  const lines: string[] = [];
-
-  lines.push(`${indent}<cac:WithholdingTaxTotal>`);
-  lines.push(`${i2}${cbcOptionalAmountTag('TaxAmount', wtt.taxAmount, currencyCode)}`);
-  for (const ts of wtt.taxSubtotals) {
-    lines.push(serializeWithholdingSubtotal(ts, currencyCode, i2));
-  }
-  lines.push(`${indent}</cac:WithholdingTaxTotal>`);
-  return joinLines(lines);
+  const inner = emitInOrder(TAX_TOTAL_SEQ, {
+    TaxAmount: () => `${i2}${cbcOptionalAmountTag('TaxAmount', wtt.taxAmount, currencyCode)}`,
+    TaxSubtotal: () =>
+      joinLines(wtt.taxSubtotals.map(ts => serializeWithholdingSubtotal(ts, currencyCode, i2))),
+  });
+  return joinLines([`${indent}<cac:WithholdingTaxTotal>`, ...inner, `${indent}</cac:WithholdingTaxTotal>`]);
 }
 
 /**

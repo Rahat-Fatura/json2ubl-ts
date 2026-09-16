@@ -6,7 +6,7 @@ import { serializeParty, serializePartyAs } from './party-serializer';
 import { serializeAddress } from './delivery-serializer';
 import { serializeDespatchLine } from './line-serializer';
 import { serializeAdditionalDocument, serializeOrderReference } from './reference-serializer';
-import { DESPATCH_SEQ, PERSON_SEQ, emitInOrder } from './xsd-sequence';
+import { DESPATCH_SEQ, PERSON_SEQ, TRANSPORT_HANDLING_UNIT_SEQ, emitInOrder } from './xsd-sequence';
 
 /**
  * DespatchAdvice JSON → tam UBL-TR XML string (§5.7 sırasında)
@@ -196,12 +196,20 @@ function serializeShipmentBlock(input: DespatchInput, indent: string): string {
   lines.push(`${i2}</cac:Delivery>`);
 
   // B-49: TransportHandlingUnit canonical DORSEPLAKA path (XSD sequence: Delivery < THU)
+  // İç sıra TRANSPORT_HANDLING_UNIT_SEQ'ten gelir — bugün tek slot dolu
+  // (TransportEquipment), ama düğüm faturadaki ile AYNI tabloya bağlı.
   for (const thu of s.transportHandlingUnits ?? []) {
-    lines.push(`${i2}<cac:TransportHandlingUnit>`);
-    lines.push(`${i3}<cac:TransportEquipment>`);
-    lines.push(`${i3}  ${cbcOptionalTag('ID', thu.transportEquipmentId, { schemeID: thu.schemeId ?? 'DORSEPLAKA' })}`);
-    lines.push(`${i3}</cac:TransportEquipment>`);
-    lines.push(`${i2}</cac:TransportHandlingUnit>`);
+    const thuInner = emitInOrder(TRANSPORT_HANDLING_UNIT_SEQ, {
+      TransportEquipment: () =>
+        joinLines([
+          `${i3}<cac:TransportEquipment>`,
+          `${i3}  ${cbcOptionalTag('ID', thu.transportEquipmentId, { schemeID: thu.schemeId ?? 'DORSEPLAKA' })}`,
+          `${i3}</cac:TransportEquipment>`,
+        ]),
+    });
+    lines.push(
+      joinLines([`${i2}<cac:TransportHandlingUnit>`, ...thuInner, `${i2}</cac:TransportHandlingUnit>`]),
+    );
   }
 
   lines.push(`${indent}</cac:Shipment>`);
