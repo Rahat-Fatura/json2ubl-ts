@@ -7,4 +7,5 @@ tsconfig.json
 .gitignore
 coverage/
 schematrons/
+schemas/
 xmls/
