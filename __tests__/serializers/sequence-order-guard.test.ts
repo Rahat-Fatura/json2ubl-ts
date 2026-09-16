@@ -355,7 +355,7 @@ describe('sekans bekçisi — kapsam', () => {
     // Bu test korpus testlerinden SONRA koşar (vitest dosya içi sırayı korur),
     // `exercisedTypes` o koşumlarda dolar.
     const all = Object.keys(SEQUENCE_BY_COMPLEX_TYPE).sort();
-    expect(all.length).toBe(29);
+    expect(all.length).toBe(46);
     expect(all.filter(t => !exercisedTypes.has(t))).toEqual([]);
   });
 });

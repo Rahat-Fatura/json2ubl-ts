@@ -153,6 +153,19 @@ const TABLES: readonly TableSpec[] = [
       '13 slot vardı ve `PricingExchangeRate` İKİ KEZ yazılmıştı.',
     ],
   },
+  {
+    constName: 'ITEM_IDENTIFICATION_SEQ',
+    complexType: 'ItemIdentificationType',
+    notes: [
+      'Beş eleman aynı tiptedir: `BuyersItemIdentification`, `SellersItemIdentification`,',
+      '`ManufacturersItemIdentification`, `AdditionalItemIdentification`, `ItemIdentification`.',
+      'GİB tipi TEK elemana (`cbc:ID`, 1..1) daraltmıştır — değersiz blok şema-geçersizdir.',
+    ],
+  },
+  { constName: 'COMMODITY_CLASSIFICATION_SEQ', complexType: 'CommodityClassificationType' },
+  { constName: 'ITEM_INSTANCE_SEQ', complexType: 'ItemInstanceType' },
+  { constName: 'ORDER_LINE_REFERENCE_SEQ', complexType: 'OrderLineReferenceType' },
+  { constName: 'FINANCIAL_ACCOUNT_SEQ', complexType: 'FinancialAccountType' },
 
   // ─── Taraf ───────────────────────────────────────────────────────────────
   {
@@ -160,6 +173,26 @@ const TABLES: readonly TableSpec[] = [
     complexType: 'PartyType',
     notes: ['B-34: `PostalAddress` Party verildiğinde her zaman emit edilir (XSD\'de de 1..1\'dir).'],
   },
+  {
+    constName: 'SUPPLIER_PARTY_SEQ',
+    complexType: 'SupplierPartyType',
+    notes: [
+      '🔴 UBL\'de KALITIM YOKTUR: `SupplierPartyType` `PartyType`\'tan TÜREMEZ, içinde bir',
+      '`cac:Party` TAŞIR. `AccountingSupplierParty` / `DespatchSupplierParty` /',
+      '`SellerSupplierParty` bu tiptedir — sarmalayıcı bileşen buna göre kurulur.',
+    ],
+  },
+  {
+    constName: 'CUSTOMER_PARTY_SEQ',
+    complexType: 'CustomerPartyType',
+    notes: [
+      'Sarmalayıcı ikizi: `AccountingCustomerParty` / `DeliveryCustomerParty` /',
+      '`BuyerCustomerParty` / `OriginatorCustomerParty`. İkinci slot `DeliveryContact`\'tır',
+      '(tedarikçi tarafındaki `DespatchContact`\'ın karşılığı).',
+    ],
+  },
+  { constName: 'PARTY_NAME_SEQ', complexType: 'PartyNameType' },
+  { constName: 'PARTY_IDENTIFICATION_SEQ', complexType: 'PartyIdentificationType' },
   {
     constName: 'PERSON_SEQ',
     complexType: 'PersonType',
@@ -183,6 +216,14 @@ const TABLES: readonly TableSpec[] = [
     complexType: 'AddressType',
     notes: ['B-35: `CitySubdivisionName` + `CityName` GİB\'de zorunludur ve bu sırayla yazılır.'],
   },
+  {
+    constName: 'COUNTRY_SEQ',
+    complexType: 'CountryType',
+    notes: [
+      'B-100: `IdentificationCode` → `Name`. GİB `Name`\'i 1..1\'e daraltmıştır; yalnız kod',
+      'verilen `cac:Country` şema-geçersizdir (bkz. `originCountryBlock`).',
+    ],
+  },
 
   // ─── Teslimat / sevkiyat ─────────────────────────────────────────────────
   {
@@ -194,7 +235,30 @@ const TABLES: readonly TableSpec[] = [
       'ikisini TERS çevirmiştir. UBL-TR belgesi ürettiğimiz için GİB sırası bağlayıcıdır.',
     ],
   },
+  {
+    constName: 'DELIVERY_DESPATCH_SEQ',
+    complexType: 'DespatchType',
+    notes: [
+      '⚠️ Bu `cac:Delivery/cac:Despatch` (sevk olayı) tablosudur — belge KÖKÜ olan',
+      '`DespatchAdviceType` (`DESPATCH_SEQ`) ile karıştırılmamalıdır. İrsaliyede',
+      '`ActualDespatchDate` + `ActualDespatchTime` buradan yazılır.',
+    ],
+  },
+  { constName: 'DELIVERY_TERMS_SEQ', complexType: 'DeliveryTermsType' },
   { constName: 'SHIPMENT_SEQ', complexType: 'ShipmentType' },
+  { constName: 'GOODS_ITEM_SEQ', complexType: 'GoodsItemType' },
+  {
+    constName: 'SHIPMENT_STAGE_SEQ',
+    complexType: 'ShipmentStageType',
+    notes: [
+      'İrsaliye plaka + sürücü yolu: `TransportMeans` (→ `RoadTransport/LicensePlateID`)',
+      'ÖNCE, `DriverPerson` SONRA. Fatura tarafı aynı tipte `TransportModeCode`',
+      'kullanır (İHRACAT) — iki belge tipi tek tabloyu paylaşır.',
+    ],
+  },
+  { constName: 'TRANSPORT_MEANS_SEQ', complexType: 'TransportMeansType' },
+  { constName: 'ROAD_TRANSPORT_SEQ', complexType: 'RoadTransportType' },
+  { constName: 'TRANSPORT_EQUIPMENT_SEQ', complexType: 'TransportEquipmentType' },
   {
     constName: 'TRANSPORT_HANDLING_UNIT_SEQ',
     complexType: 'TransportHandlingUnitType',

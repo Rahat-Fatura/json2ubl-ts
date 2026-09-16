@@ -273,6 +273,59 @@ export const PRICE_SEQ = [
 ] as const;
 
 /**
+ * `ItemIdentificationType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ *
+ * Beş eleman aynı tiptedir: `BuyersItemIdentification`, `SellersItemIdentification`,
+ * `ManufacturersItemIdentification`, `AdditionalItemIdentification`, `ItemIdentification`.
+ * GİB tipi TEK elemana (`cbc:ID`, 1..1) daraltmıştır — değersiz blok şema-geçersizdir.
+ */
+export const ITEM_IDENTIFICATION_SEQ = [
+  'ID',
+] as const;
+
+/**
+ * `CommodityClassificationType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ */
+export const COMMODITY_CLASSIFICATION_SEQ = [
+  'ItemClassificationCode',
+] as const;
+
+/**
+ * `ItemInstanceType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ */
+export const ITEM_INSTANCE_SEQ = [
+  'ProductTraceID',
+  'ManufactureDate',
+  'ManufactureTime',
+  'BestBeforeDate',
+  'RegistrationID',
+  'SerialID',
+  'AdditionalItemProperty',
+  'LotIdentification',
+] as const;
+
+/**
+ * `OrderLineReferenceType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ */
+export const ORDER_LINE_REFERENCE_SEQ = [
+  'LineID',
+  'SalesOrderLineID',
+  'UUID',
+  'LineStatusCode',
+  'OrderReference',
+] as const;
+
+/**
+ * `FinancialAccountType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ */
+export const FINANCIAL_ACCOUNT_SEQ = [
+  'ID',
+  'CurrencyCode',
+  'PaymentNote',
+  'FinancialInstitutionBranch',
+] as const;
+
+/**
  * `PartyType` — common/UBL-CommonAggregateComponents-2.1.xsd
  *
  * B-34: `PostalAddress` Party verildiğinde her zaman emit edilir (XSD'de de 1..1'dir).
@@ -290,6 +343,44 @@ export const PARTY_SEQ = [
   'Contact',
   'Person',
   'AgentParty',
+] as const;
+
+/**
+ * `SupplierPartyType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ *
+ * 🔴 UBL'de KALITIM YOKTUR: `SupplierPartyType` `PartyType`'tan TÜREMEZ, içinde bir
+ * `cac:Party` TAŞIR. `AccountingSupplierParty` / `DespatchSupplierParty` /
+ * `SellerSupplierParty` bu tiptedir — sarmalayıcı bileşen buna göre kurulur.
+ */
+export const SUPPLIER_PARTY_SEQ = [
+  'Party',
+  'DespatchContact',
+] as const;
+
+/**
+ * `CustomerPartyType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ *
+ * Sarmalayıcı ikizi: `AccountingCustomerParty` / `DeliveryCustomerParty` /
+ * `BuyerCustomerParty` / `OriginatorCustomerParty`. İkinci slot `DeliveryContact`'tır
+ * (tedarikçi tarafındaki `DespatchContact`'ın karşılığı).
+ */
+export const CUSTOMER_PARTY_SEQ = [
+  'Party',
+  'DeliveryContact',
+] as const;
+
+/**
+ * `PartyNameType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ */
+export const PARTY_NAME_SEQ = [
+  'Name',
+] as const;
+
+/**
+ * `PartyIdentificationType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ */
+export const PARTY_IDENTIFICATION_SEQ = [
+  'ID',
 ] as const;
 
 /**
@@ -370,6 +461,17 @@ export const ADDRESS_SEQ = [
 ] as const;
 
 /**
+ * `CountryType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ *
+ * B-100: `IdentificationCode` → `Name`. GİB `Name`'i 1..1'e daraltmıştır; yalnız kod
+ * verilen `cac:Country` şema-geçersizdir (bkz. `originCountryBlock`).
+ */
+export const COUNTRY_SEQ = [
+  'IdentificationCode',
+  'Name',
+] as const;
+
+/**
  * `DeliveryType` — common/UBL-CommonAggregateComponents-2.1.xsd
  *
  * B-14 / B-101: `DeliveryAddress` → `CarrierParty` → `Despatch`.
@@ -392,6 +494,33 @@ export const DELIVERY_SEQ = [
   'Despatch',
   'DeliveryTerms',
   'Shipment',
+] as const;
+
+/**
+ * `DespatchType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ *
+ * ⚠️ Bu `cac:Delivery/cac:Despatch` (sevk olayı) tablosudur — belge KÖKÜ olan
+ * `DespatchAdviceType` (`DESPATCH_SEQ`) ile karıştırılmamalıdır. İrsaliyede
+ * `ActualDespatchDate` + `ActualDespatchTime` buradan yazılır.
+ */
+export const DELIVERY_DESPATCH_SEQ = [
+  'ID',
+  'ActualDespatchDate',
+  'ActualDespatchTime',
+  'Instructions',
+  'DespatchAddress',
+  'DespatchParty',
+  'Contact',
+  'EstimatedDespatchPeriod',
+] as const;
+
+/**
+ * `DeliveryTermsType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ */
+export const DELIVERY_TERMS_SEQ = [
+  'ID',
+  'SpecialTerms',
+  'Amount',
 ] as const;
 
 /**
@@ -420,6 +549,93 @@ export const SHIPMENT_SEQ = [
   'ReturnAddress',
   'FirstArrivalPortLocation',
   'LastExitPortLocation',
+] as const;
+
+/**
+ * `GoodsItemType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ */
+export const GOODS_ITEM_SEQ = [
+  'ID',
+  'Description',
+  'HazardousRiskIndicator',
+  'DeclaredCustomsValueAmount',
+  'DeclaredForCarriageValueAmount',
+  'DeclaredStatisticsValueAmount',
+  'FreeOnBoardValueAmount',
+  'InsuranceValueAmount',
+  'ValueAmount',
+  'GrossWeightMeasure',
+  'NetWeightMeasure',
+  'ChargeableWeightMeasure',
+  'GrossVolumeMeasure',
+  'NetVolumeMeasure',
+  'Quantity',
+  'RequiredCustomsID',
+  'CustomsStatusCode',
+  'CustomsTariffQuantity',
+  'CustomsImportClassifiedIndicator',
+  'ChargeableQuantity',
+  'ReturnableQuantity',
+  'TraceID',
+  'Item',
+  'FreightAllowanceCharge',
+  'InvoiceLine',
+  'Temperature',
+  'OriginAddress',
+  'MeasurementDimension',
+] as const;
+
+/**
+ * `ShipmentStageType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ *
+ * İrsaliye plaka + sürücü yolu: `TransportMeans` (→ `RoadTransport/LicensePlateID`)
+ * ÖNCE, `DriverPerson` SONRA. Fatura tarafı aynı tipte `TransportModeCode`
+ * kullanır (İHRACAT) — iki belge tipi tek tabloyu paylaşır.
+ */
+export const SHIPMENT_STAGE_SEQ = [
+  'ID',
+  'TransportModeCode',
+  'TransportMeansTypeCode',
+  'TransitDirectionCode',
+  'Instructions',
+  'TransitPeriod',
+  'TransportMeans',
+  'DriverPerson',
+] as const;
+
+/**
+ * `TransportMeansType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ */
+export const TRANSPORT_MEANS_SEQ = [
+  'JourneyID',
+  'RegistrationNationalityID',
+  'RegistrationNationality',
+  'DirectionCode',
+  'TransportMeansTypeCode',
+  'TradeServiceCode',
+  'Stowage',
+  'AirTransport',
+  'RoadTransport',
+  'RailTransport',
+  'MaritimeTransport',
+  'OwnerParty',
+  'MeasurementDimension',
+] as const;
+
+/**
+ * `RoadTransportType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ */
+export const ROAD_TRANSPORT_SEQ = [
+  'LicensePlateID',
+] as const;
+
+/**
+ * `TransportEquipmentType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ */
+export const TRANSPORT_EQUIPMENT_SEQ = [
+  'ID',
+  'TransportEquipmentTypeCode',
+  'Description',
 ] as const;
 
 /**
@@ -544,10 +760,14 @@ export const PERIOD_SEQ = [
  */
 export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   AccountingContact: 'ContactType',
+  AccountingCustomerParty: 'CustomerPartyType',
+  AccountingSupplierParty: 'SupplierPartyType',
   ActivityPeriod: 'PeriodType',
   ActualPackage: 'PackageType',
+  AdditionalCommodityClassification: 'CommodityClassificationType',
   AdditionalDocumentReference: 'DocumentReferenceType',
   AdditionalInformationParty: 'PartyType',
+  AdditionalItemIdentification: 'ItemIdentificationType',
   Address: 'AddressType',
   AgentParty: 'PartyType',
   AllowanceCharge: 'AllowanceChargeType',
@@ -559,45 +779,62 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   ApplicablePeriod: 'PeriodType',
   ApplicableTaxCategory: 'TaxCategoryType',
   ApplicableTerritoryAddress: 'AddressType',
+  ApplicableTransportMeans: 'TransportMeansType',
+  AttachedTransportEquipment: 'TransportEquipmentType',
   BeneficiaryParty: 'PartyType',
   BillingReference: 'BillingReferenceType',
   BillOfLadingHolderParty: 'PartyType',
   BillToParty: 'PartyType',
   BuyerContact: 'ContactType',
+  BuyerCustomerParty: 'CustomerPartyType',
+  BuyersItemIdentification: 'ItemIdentificationType',
   CallForTendersDocumentReference: 'DocumentReferenceType',
   CarrierParty: 'PartyType',
   CatalogueDocumentReference: 'DocumentReferenceType',
+  CatalogueItemIdentification: 'ItemIdentificationType',
   ClassifiedTaxCategory: 'TaxCategoryType',
+  CommodityClassification: 'CommodityClassificationType',
   ConsigneeParty: 'PartyType',
   ConsignorParty: 'PartyType',
   ConsolidatedShipment: 'ShipmentType',
   ConstitutionPeriod: 'PeriodType',
   Contact: 'ContactType',
   ContactParty: 'PartyType',
+  ContainedGoodsItem: 'GoodsItemType',
+  ContainedInTransportEquipment: 'TransportEquipmentType',
   ContainedPackage: 'PackageType',
   ContainingPackage: 'PackageType',
+  ContainingTransportEquipment: 'TransportEquipmentType',
   ContractAcceptancePeriod: 'PeriodType',
   ContractDocumentReference: 'DocumentReferenceType',
   ContractFormalizationPeriod: 'PeriodType',
+  ContractorCustomerParty: 'CustomerPartyType',
   ContractResponsibleParty: 'PartyType',
   ContractualDelivery: 'DeliveryType',
   ContractualDocumentReference: 'DocumentReferenceType',
+  Country: 'CountryType',
   CreditNoteDocumentReference: 'DocumentReferenceType',
   CrewMemberPerson: 'PersonType',
+  CustomerParty: 'CustomerPartyType',
   CustomsAgentParty: 'PartyType',
   CustomsDeclaration: 'CustomsDeclarationType',
   DebitNoteDocumentReference: 'DocumentReferenceType',
   Delivery: 'DeliveryType',
   DeliveryAddress: 'AddressType',
   DeliveryContact: 'ContactType',
+  DeliveryCustomerParty: 'CustomerPartyType',
   DeliveryParty: 'PartyType',
   DeliveryPeriod: 'PeriodType',
+  DeliveryTerms: 'DeliveryTermsType',
+  Despatch: 'DespatchType',
   DespatchAddress: 'AddressType',
   DespatchAdvice: 'DespatchAdviceType',
   DespatchContact: 'ContactType',
   DespatchDocumentReference: 'DocumentReferenceType',
   DespatchLine: 'DespatchLineType',
   DespatchParty: 'PartyType',
+  DespatchSupplierParty: 'SupplierPartyType',
+  DestinationCountry: 'CountryType',
   DocumentAvailabilityPeriod: 'PeriodType',
   DocumentProviderParty: 'PartyType',
   DocumentReference: 'DocumentReferenceType',
@@ -614,15 +851,20 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   EvidenceIssuingParty: 'PartyType',
   ExceptionObservationPeriod: 'PeriodType',
   ExchangeRate: 'ExchangeRateType',
+  ExportCountry: 'CountryType',
   ExporterParty: 'PartyType',
   ExtraAllowanceCharge: 'AllowanceChargeType',
   FinalDeliveryParty: 'PartyType',
+  FinalDestinationCountry: 'CountryType',
+  FinancialAccount: 'FinancialAccountType',
+  FinancingFinancialAccount: 'FinancialAccountType',
   FinancingParty: 'PartyType',
   FiscalLegislationDocumentReference: 'DocumentReferenceType',
   ForecastPeriod: 'PeriodType',
   FreightAllowanceCharge: 'AllowanceChargeType',
   FreightForwarderParty: 'PartyType',
   FrequencyPeriod: 'PeriodType',
+  GoodsItem: 'GoodsItemType',
   GuaranteeDocumentReference: 'DocumentReferenceType',
   GuarantorParty: 'PartyType',
   GuidanceDocumentReference: 'DocumentReferenceType',
@@ -642,7 +884,10 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   InvoiceLine: 'InvoiceLineType',
   InvoicePeriod: 'PeriodType',
   IssuerParty: 'PartyType',
+  IssuingCountry: 'CountryType',
   Item: 'ItemType',
+  ItemIdentification: 'ItemIdentificationType',
+  ItemInstance: 'ItemInstanceType',
   ItemSpecificationDocumentReference: 'DocumentReferenceType',
   JurisdictionRegionAddress: 'AddressType',
   LegalDocumentReference: 'DocumentReferenceType',
@@ -651,9 +896,12 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   LoadingProofParty: 'PartyType',
   LocationAddress: 'AddressType',
   LogisticsOperatorParty: 'PartyType',
+  MainCarriageShipmentStage: 'ShipmentStageType',
+  MainCommodityClassification: 'CommodityClassificationType',
   MainPeriod: 'PeriodType',
   MandateDocumentReference: 'DocumentReferenceType',
   ManufacturerParty: 'PartyType',
+  ManufacturersItemIdentification: 'ItemIdentificationType',
   MasterPerson: 'PersonType',
   MediationParty: 'PartyType',
   MinutesDocumentReference: 'DocumentReferenceType',
@@ -664,25 +912,34 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   NoticeDocumentReference: 'DocumentReferenceType',
   NotificationPeriod: 'PeriodType',
   NotifyParty: 'PartyType',
+  OnCarriageShipmentStage: 'ShipmentStageType',
   OperatingParty: 'PartyType',
   OptionValidityPeriod: 'PeriodType',
   OrderDocumentReference: 'DocumentReferenceType',
+  OrderLineReference: 'OrderLineReferenceType',
   OrderReference: 'OrderReferenceType',
   OriginAddress: 'AddressType',
+  OriginalDepartureCountry: 'CountryType',
   OriginalDespatchParty: 'PartyType',
   OriginalDocumentReference: 'DocumentReferenceType',
+  OriginatorCustomerParty: 'CustomerPartyType',
   OriginatorDocumentReference: 'DocumentReferenceType',
   OriginatorParty: 'PartyType',
+  OriginCountry: 'CountryType',
   OwnerParty: 'PartyType',
   Package: 'PackageType',
   PackagedTransportHandlingUnit: 'TransportHandlingUnitType',
   ParentDocumentReference: 'DocumentReferenceType',
   ParticipationRequestReceptionPeriod: 'PeriodType',
   Party: 'PartyType',
+  PartyIdentification: 'PartyIdentificationType',
   PartyLegalEntity: 'PartyLegalEntityType',
+  PartyName: 'PartyNameType',
   PartyTaxScheme: 'PartyTaxSchemeType',
   PassengerPerson: 'PersonType',
+  PayeeFinancialAccount: 'FinancialAccountType',
   PayeeParty: 'PartyType',
+  PayerFinancialAccount: 'FinancialAccountType',
   PayerParty: 'PartyType',
   PaymentAlternativeExchangeRate: 'ExchangeRateType',
   PaymentExchangeRate: 'ExchangeRateType',
@@ -695,6 +952,7 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   PickupParty: 'PartyType',
   PlannedPeriod: 'PeriodType',
   PostalAddress: 'AddressType',
+  PreCarriageShipmentStage: 'ShipmentStageType',
   PreparationParty: 'PartyType',
   PreSelectedParty: 'PartyType',
   PresentationPeriod: 'PeriodType',
@@ -708,9 +966,12 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   QuotedMonetaryTotal: 'MonetaryTotalType',
   ReceiptDocumentReference: 'DocumentReferenceType',
   ReceiverParty: 'PartyType',
+  RecipientCustomerParty: 'CustomerPartyType',
   RecipientParty: 'PartyType',
+  ReferencedGoodsItem: 'GoodsItemType',
   ReferencedPackage: 'PackageType',
   ReferencedShipment: 'ShipmentType',
+  ReferencedTransportEquipment: 'TransportEquipmentType',
   RegistrationAddress: 'AddressType',
   RegistryCertificateDocumentReference: 'DocumentReferenceType',
   ReminderDocumentReference: 'DocumentReferenceType',
@@ -728,11 +989,15 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   ResidenceAddress: 'AddressType',
   ResolutionDocumentReference: 'DocumentReferenceType',
   ResponsibleTransportServiceProviderParty: 'PartyType',
+  RetailerCustomerParty: 'CustomerPartyType',
   ReturnAddress: 'AddressType',
+  RoadTransport: 'RoadTransportType',
   SecurityOfficerPerson: 'PersonType',
   SelfBilledCreditNoteDocumentReference: 'DocumentReferenceType',
   SelfBilledInvoiceDocumentReference: 'DocumentReferenceType',
   SellerContact: 'ContactType',
+  SellersItemIdentification: 'ItemIdentificationType',
+  SellerSupplierParty: 'SupplierPartyType',
   SenderParty: 'PartyType',
   ServiceAllowanceCharge: 'AllowanceChargeType',
   ServiceEndTimePeriod: 'PeriodType',
@@ -740,10 +1005,12 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   SettlementPeriod: 'PeriodType',
   Shipment: 'ShipmentType',
   ShipmentDocumentReference: 'DocumentReferenceType',
+  ShipmentStage: 'ShipmentStageType',
   ShipsSurgeonPerson: 'PersonType',
   SignatoryContact: 'ContactType',
   SignatoryParty: 'PartyType',
   SourceIssuerParty: 'PartyType',
+  StandardItemIdentification: 'ItemIdentificationType',
   StatementDocumentReference: 'DocumentReferenceType',
   StatementPeriod: 'PeriodType',
   StatusPeriod: 'PeriodType',
@@ -751,7 +1018,10 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   SubInvoiceLine: 'InvoiceLineType',
   SubscriberParty: 'PartyType',
   SubstituteCarrierParty: 'PartyType',
+  SupplierParty: 'SupplierPartyType',
   SupplyItem: 'ItemType',
+  SupportedCommodityClassification: 'CommodityClassificationType',
+  SupportedTransportEquipment: 'TransportEquipmentType',
   SupportingDocumentReference: 'DocumentReferenceType',
   TaxCategory: 'TaxCategoryType',
   TaxExchangeRate: 'ExchangeRateType',
@@ -772,12 +1042,15 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   TenderSubmissionDeadlinePeriod: 'PeriodType',
   TenderValidityPeriod: 'PeriodType',
   TerminalOperatorParty: 'PartyType',
+  TransitCountry: 'CountryType',
   TransitPeriod: 'PeriodType',
   TransportAdvisorParty: 'PartyType',
   TransportationStatusRequestDocumentReference: 'DocumentReferenceType',
+  TransportEquipment: 'TransportEquipmentType',
   TransportExecutionPlanDocumentReference: 'DocumentReferenceType',
   TransportExecutionPlanRequestDocumentReference: 'DocumentReferenceType',
   TransportHandlingUnit: 'TransportHandlingUnitType',
+  TransportMeans: 'TransportMeansType',
   TransportProgressStatusRequestDocumentReference: 'DocumentReferenceType',
   TransportServiceDescriptionDocumentReference: 'DocumentReferenceType',
   TransportServiceDescriptionRequestDocumentReference: 'DocumentReferenceType',
@@ -786,6 +1059,8 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   TransportServiceProviderResponseRequiredPeriod: 'PeriodType',
   TransportUserParty: 'PartyType',
   TransportUserResponseRequiredPeriod: 'PeriodType',
+  UnsupportedCommodityClassification: 'CommodityClassificationType',
+  UnsupportedTransportEquipment: 'TransportEquipmentType',
   UsabilityPeriod: 'PeriodType',
   UtilityCustomerParty: 'PartyType',
   UtilitySupplierParty: 'PartyType',
@@ -818,14 +1093,31 @@ export const SEQUENCE_BY_COMPLEX_TYPE: Readonly<Record<string, readonly string[]
   PaymentMeansType: PAYMENT_MEANS_SEQ,
   ItemType: ITEM_SEQ,
   PriceType: PRICE_SEQ,
+  ItemIdentificationType: ITEM_IDENTIFICATION_SEQ,
+  CommodityClassificationType: COMMODITY_CLASSIFICATION_SEQ,
+  ItemInstanceType: ITEM_INSTANCE_SEQ,
+  OrderLineReferenceType: ORDER_LINE_REFERENCE_SEQ,
+  FinancialAccountType: FINANCIAL_ACCOUNT_SEQ,
   PartyType: PARTY_SEQ,
+  SupplierPartyType: SUPPLIER_PARTY_SEQ,
+  CustomerPartyType: CUSTOMER_PARTY_SEQ,
+  PartyNameType: PARTY_NAME_SEQ,
+  PartyIdentificationType: PARTY_IDENTIFICATION_SEQ,
   PersonType: PERSON_SEQ,
   ContactType: CONTACT_SEQ,
   PartyTaxSchemeType: PARTY_TAX_SCHEME_SEQ,
   PartyLegalEntityType: PARTY_LEGAL_ENTITY_SEQ,
   AddressType: ADDRESS_SEQ,
+  CountryType: COUNTRY_SEQ,
   DeliveryType: DELIVERY_SEQ,
+  DespatchType: DELIVERY_DESPATCH_SEQ,
+  DeliveryTermsType: DELIVERY_TERMS_SEQ,
   ShipmentType: SHIPMENT_SEQ,
+  GoodsItemType: GOODS_ITEM_SEQ,
+  ShipmentStageType: SHIPMENT_STAGE_SEQ,
+  TransportMeansType: TRANSPORT_MEANS_SEQ,
+  RoadTransportType: ROAD_TRANSPORT_SEQ,
+  TransportEquipmentType: TRANSPORT_EQUIPMENT_SEQ,
   TransportHandlingUnitType: TRANSPORT_HANDLING_UNIT_SEQ,
   PackageType: PACKAGE_SEQ,
   CustomsDeclarationType: CUSTOMS_DECLARATION_SEQ,
