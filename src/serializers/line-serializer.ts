@@ -12,7 +12,8 @@ import {
 import { isNonEmpty } from '../utils/formatters';
 import { serializeTaxTotal, serializeWithholdingTaxTotal } from './tax-serializer';
 import { serializeAllowanceCharge } from './common-serializer';
-import { serializeCountry, serializeLineDelivery } from './delivery-serializer';
+import { serializeCountry } from './address-serializer';
+import { serializeLineDelivery } from './delivery-serializer';
 import {
   INVOICE_LINE_SEQ,
   ITEM_SEQ,

@@ -194,6 +194,14 @@ const TABLES: readonly TableSpec[] = [
   { constName: 'PARTY_NAME_SEQ', complexType: 'PartyNameType' },
   { constName: 'PARTY_IDENTIFICATION_SEQ', complexType: 'PartyIdentificationType' },
   {
+    constName: 'SIGNATURE_SEQ',
+    complexType: 'SignatureType',
+    notes: [
+      '`cac:SignatoryParty` de bir `PartyType`\'tır — ortak taraf gövdesinden geçer.',
+      'Kütüphane imza ÜRETMEZ; bu tablo `serializeSignature`\'ın sırasını bağlar.',
+    ],
+  },
+  {
     constName: 'PERSON_SEQ',
     complexType: 'PersonType',
     notes: [

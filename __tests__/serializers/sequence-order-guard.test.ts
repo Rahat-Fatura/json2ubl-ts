@@ -8,6 +8,7 @@ import {
   SEQUENCE_BY_COMPLEX_TYPE,
 } from '../../src/serializers/xsd-sequence';
 import { serializeDelivery } from '../../src/serializers/delivery-serializer';
+import { serializeSignature } from '../../src/serializers/party-serializer';
 import type { DeliveryInput } from '../../src/types/common';
 import { GOLDEN_SCENARIOS } from '../golden/scenarios';
 
@@ -274,6 +275,30 @@ function syntheticPackageXml(): string {
   return `<Root>\n${serializeDelivery(delivery)}\n</Root>`;
 }
 
+/**
+ * `SIGNATURE_SEQ`i tetikleyen sentetik parça.
+ *
+ * Kütüphane `cac:Signature` ÜRETMEZ (imzayı entegratör/imzalayıcı ekler), bu
+ * yüzden hiçbir korpus senaryosu bu düğümü içermez. Ama `serializeSignature`
+ * kodda VARDIR ve `cac:SignatoryParty` de bir `PartyType`'tır — bekçinin
+ * kapsamadığı üretici, bekçisiz üreticidir.
+ */
+function syntheticSignatureXml(): string {
+  const xml = serializeSignature({
+    id: '1234567890',
+    signatoryParty: {
+      vknTckn: '1234567890',
+      taxIdType: 'VKN',
+      name: 'Test A.Ş.',
+      citySubdivisionName: 'Üsküdar',
+      cityName: 'İstanbul',
+      country: 'Türkiye',
+    },
+    digitalSignatureUri: '#Sig',
+  });
+  return `<Root>\n${xml}\n</Root>`;
+}
+
 // ─── Testler ──────────────────────────────────────────────────────────────
 
 describe('sekans bekçisi — canlı üretilen XML sırası tabloların alt-dizisidir', () => {
@@ -295,6 +320,14 @@ describe('sekans bekçisi — canlı üretilen XML sırası tabloların alt-dizi
     const xml = syntheticPackageXml();
     expect(xml).toContain('<cac:ActualPackage>');
     expect(violationsIn(xml, 'synthetic:ActualPackage')).toEqual([]);
+  });
+
+  it('sentetik Signature parçası (SIGNATURE_SEQ + SignatoryParty = PartyType)', () => {
+    const xml = syntheticSignatureXml();
+    expect(xml).toContain('<cac:SignatoryParty>');
+    // `cac:SignatoryParty` bir `PartyType`'tır — içinde AYRICA `<cac:Party>` YOKTUR.
+    expect(xml).not.toContain('<cac:Party>');
+    expect(violationsIn(xml, 'synthetic:Signature')).toEqual([]);
   });
 });
 
@@ -355,7 +388,7 @@ describe('sekans bekçisi — kapsam', () => {
     // Bu test korpus testlerinden SONRA koşar (vitest dosya içi sırayı korur),
     // `exercisedTypes` o koşumlarda dolar.
     const all = Object.keys(SEQUENCE_BY_COMPLEX_TYPE).sort();
-    expect(all.length).toBe(46);
+    expect(all.length).toBe(47);
     expect(all.filter(t => !exercisedTypes.has(t))).toEqual([]);
   });
 });

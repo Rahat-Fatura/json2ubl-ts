@@ -1,8 +1,11 @@
 import type { DespatchInput } from '../types/despatch-input';
 import { DESPATCH_NAMESPACES, UBL_CONSTANTS } from '../config/namespaces';
 import { cbcOptionalTag, cbcRequiredTag, joinLines, xmlDeclaration, rootOpenTag, ublExtensionsSkeleton } from '../utils/xml-helpers';
-import { isNonEmpty } from '../utils/formatters';
-import { serializeParty } from './party-serializer';
+import {
+  serializeParty,
+  serializeCustomerPartyContainer,
+  serializeSupplierPartyContainer,
+} from './party-serializer';
 import { serializeShipmentElement } from './delivery-serializer';
 import { serializeDespatchLine } from './line-serializer';
 import { serializeAdditionalDocument, serializeOrderReference } from './reference-serializer';
@@ -29,19 +32,14 @@ export function serializeDespatch(
   const ind = prettyPrint ? '  ' : '';
 
   /**
-   * `<cac:X><cac:Party>…</cac:Party></cac:X>` sarmalayıcısı — beş taraf slotu için ortak.
+   * `CustomerPartyType` sarmalayıcısı — dört müşteri slotu için ortak.
    *
    * ⚠️ `party` ZORUNLU parametredir: opsiyonel tarafların «yoksa yazma» kararı
-   * çağıran tarafta verilir. Böylece zorunlu tarafın (supplier/customer) eksik
-   * gelmesi eskisi gibi çağrı anında patlar, sessizce atlanmaz.
+   * çağıran tarafta verilir. Böylece zorunlu tarafın eksik gelmesi eskisi gibi
+   * çağrı anında patlar, sessizce atlanmaz.
    */
-  const partyWrapper = (tagName: string, party: DespatchInput['supplier'], extra: string[] = []): string =>
-    joinLines([
-      `${ind}<cac:${tagName}>`,
-      serializeParty(party, ind + '  '),
-      ...extra,
-      `${ind}</cac:${tagName}>`,
-    ]);
+  const customerWrapper = (tagName: string, party: DespatchInput['supplier']): string =>
+    serializeCustomerPartyContainer(tagName, serializeParty(party, ind + '  '), ind);
 
   const body = emitInOrder(DESPATCH_SEQ, {
     // UBLExtensions — DESPATCH_SEQ'in İLK slotu (4.1.0, opsiyonel bayrak)
@@ -81,29 +79,21 @@ export function serializeDespatch(
 
     // Signature — business logic tarafından eklenir, serializer üretmez
 
-    // DespatchSupplierParty (+ B-19: DespatchContact/Name)
+    // DespatchSupplierParty (+ B-19: DespatchContact/Name) — SUPPLIER_PARTY_SEQ
     DespatchSupplierParty: () =>
-      partyWrapper(
-        'DespatchSupplierParty',
-        input.supplier,
-        isNonEmpty(input.despatchContactName)
-          ? [
-              `${ind}  <cac:DespatchContact>`,
-              `${ind}    ${cbcOptionalTag('Name', input.despatchContactName)}`,
-              `${ind}  </cac:DespatchContact>`,
-            ]
-          : [],
-      ),
+      serializeSupplierPartyContainer('DespatchSupplierParty', input.supplier, ind, input.despatchContactName),
 
-    DeliveryCustomerParty: () => partyWrapper('DeliveryCustomerParty', input.customer),
+    DeliveryCustomerParty: () => customerWrapper('DeliveryCustomerParty', input.customer),
 
     // B-48: Opsiyonel 3 party (XSD sırası: Buyer → Seller → Originator)
     BuyerCustomerParty: () =>
-      input.buyerCustomer ? partyWrapper('BuyerCustomerParty', input.buyerCustomer) : '',
+      input.buyerCustomer ? customerWrapper('BuyerCustomerParty', input.buyerCustomer) : '',
     SellerSupplierParty: () =>
-      input.sellerSupplier ? partyWrapper('SellerSupplierParty', input.sellerSupplier) : '',
+      input.sellerSupplier
+        ? serializeSupplierPartyContainer('SellerSupplierParty', input.sellerSupplier, ind)
+        : '',
     OriginatorCustomerParty: () =>
-      input.originator ? partyWrapper('OriginatorCustomerParty', input.originator) : '',
+      input.originator ? customerWrapper('OriginatorCustomerParty', input.originator) : '',
 
     Shipment: () => serializeShipmentBlock(input, ind),
 

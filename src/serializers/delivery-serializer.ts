@@ -1,7 +1,6 @@
 import type {
   DeliveryInput,
   LineDeliveryInput,
-  AddressInput,
   CustomsDeclarationInput,
   ActualPackageInput,
   DespatchEventInput,
@@ -9,13 +8,12 @@ import type {
 import { cbcOptionalTag, cbcRequiredTag, joinLines, tag } from '../utils/xml-helpers';
 import { escapeXml, isNonEmpty } from '../utils/formatters';
 import { normalizeGtip } from '../utils/gtip';
-import { serializePartyAs } from './party-serializer';
+import { serializeAddress } from './address-serializer';
+import { serializePartyAs, serializePartyBody } from './party-serializer';
 import {
   DELIVERY_SEQ,
   DELIVERY_DESPATCH_SEQ,
   DELIVERY_TERMS_SEQ,
-  ADDRESS_SEQ,
-  COUNTRY_SEQ,
   SHIPMENT_SEQ,
   GOODS_ITEM_SEQ,
   SHIPMENT_STAGE_SEQ,
@@ -99,65 +97,6 @@ function serializeDespatchEvent(despatch: DespatchEventInput | undefined, indent
     `${indent}<cac:Despatch>`,
     ...inner.map(s => `${indent}  ${s}`),
     `${indent}</cac:Despatch>`,
-  ]);
-}
-
-/**
- * Address → XML fragment. Sequence: ADDRESS_SEQ.
- * B-35 fix: CityName + CitySubdivisionName required (AddressInput tipinde required).
- */
-export function serializeAddress(addr: AddressInput, tagName: string, indent: string = ''): string {
-  const inner = emitInOrder(ADDRESS_SEQ, {
-    Postbox: () => cbcOptionalTag('Postbox', addr.postbox),
-    Room: () => cbcOptionalTag('Room', addr.room),
-    StreetName: () => cbcOptionalTag('StreetName', addr.streetName),
-    BlockName: () => cbcOptionalTag('BlockName', addr.blockName),
-    BuildingName: () => cbcOptionalTag('BuildingName', addr.buildingName),
-    BuildingNumber: () => cbcOptionalTag('BuildingNumber', addr.buildingNumber),
-    CitySubdivisionName: () => cbcRequiredTag('CitySubdivisionName', addr.citySubdivisionName, tagName),
-    CityName: () => cbcRequiredTag('CityName', addr.cityName, tagName),
-    PostalZone: () => cbcOptionalTag('PostalZone', addr.postalZone),
-    Region: () => cbcOptionalTag('Region', addr.region),
-    District: () => cbcOptionalTag('District', addr.district),
-    Country: () => serializeCountry(addr.countryCode, addr.country, indent + '  '),
-  });
-  const body = joinLines(inner.map(s => (s.startsWith(indent + '  ') ? s : indent + '  ' + s)));
-  return [`${indent}<cac:${tagName}>`, body, `${indent}</cac:${tagName}>`].join('\n');
-}
-
-/**
- * `CountryType` → XML. TEK üretici; sıra `COUNTRY_SEQ`
- * (B-100: `IdentificationCode` 0..1 → `Name` **1..1**).
- *
- * İki eleman adıyla çıkar: adres altında `cac:Country`, kalem altında
- * `cac:OriginCountry`. S2b öncesinde ÜÇ kopyası vardı (`delivery-serializer`,
- * `party-serializer`, `line-serializer.originCountryBlock`) ve üçü aynı
- * davranmıyordu:
- *
- * 🔴 `cac:Country` kopyaları YALNIZ KOD verildiğinde bloğu yine de yazıyordu.
- * GİB `CountryType`'ta `cbc:Name` minOccurs=1'dir, yani o çıktı ŞEMA-GEÇERSİZDİ
- * («"Country" elementinin içeriği eksik. Zorunlu element(ler): Name»). Doğru
- * davranış `originCountryBlock`'ta zaten vardı ve buraya taşındı: isim yoksa
- * blok HİÇ yazılmaz — geçersiz belge üretmektense eksik veri görünür kalır.
- *
- * Bu bir veri uydurma değildir; eksik ülke adı uydurulmaz, yalnız geçersiz
- * düğüm yazılmaz.
- */
-export function serializeCountry(
-  countryCode: string | undefined,
-  countryName: string | undefined,
-  indent: string,
-  tagName: 'Country' | 'OriginCountry' = 'Country',
-): string {
-  if (!isNonEmpty(countryName)) return '';
-  const inner = emitInOrder(COUNTRY_SEQ, {
-    IdentificationCode: () => cbcOptionalTag('IdentificationCode', countryCode),
-    Name: () => cbcRequiredTag('Name', countryName, tagName),
-  });
-  return joinLines([
-    `${indent}<cac:${tagName}>`,
-    ...inner.map(s => `${indent}  ${s}`),
-    `${indent}</cac:${tagName}>`,
   ]);
 }
 
@@ -473,8 +412,6 @@ function serializeShipment(shipment: DeliveryInput['shipment'], indent: string):
  */
 function serializeCustomsDeclaration(cd: CustomsDeclarationInput, index: number, indent: string): string {
   const i2 = indent + '  ';
-  const i3 = indent + '    ';
-  const i4 = indent + '      ';
 
   const inner = emitInOrder(CUSTOMS_DECLARATION_SEQ, {
     /* 🔴 `cbc:ID` KOŞULSUZ yazılır — UBL `CustomsDeclarationType` onu ZORUNLU
@@ -498,23 +435,19 @@ function serializeCustomsDeclaration(cd: CustomsDeclarationInput, index: number,
     IssuerParty: () => {
       const issuer = cd.issuerParty;
       if (!issuer?.partyIdentifications?.length) return '';
-      return joinLines([
-        `${i2}<cac:IssuerParty>`,
-        ...issuer.partyIdentifications.flatMap(pi => [
-          `${i3}<cac:PartyIdentification>`,
-          `${i4}${cbcRequiredTag('ID', pi.id, 'CustomsDeclaration/IssuerParty/PartyIdentification', { schemeID: pi.schemeID })}`,
-          `${i3}</cac:PartyIdentification>`,
-        ]),
-        ...(isNonEmpty(issuer.name)
-          ? [
-              `${i3}<cac:PartyName>`,
-              `${i4}${cbcRequiredTag('Name', issuer.name, 'CustomsDeclaration/IssuerParty/PartyName')}`,
-              `${i3}</cac:PartyName>`,
-            ]
-          : []),
-        ...(issuer.postalAddress ? [serializeAddress(issuer.postalAddress, 'PostalAddress', i3)] : []),
-        `${i2}</cac:IssuerParty>`,
-      ]);
+      /* S2b: ORTAK taraf gövdesi. Burada da elle yazılmış bir `PartyType` vardı —
+       * `CarrierParty` vakasının düzeltilmemiş ikizi. Kimlik/ad/adres üçlüsü
+       * artık `PARTY_SEQ`ten geçer; tipe yarın bir slot eklenirse burada da
+       * doğru yere düşer, "hangi kopyayı unuttuk" sorusu ortadan kalkar. */
+      return serializePartyBody(
+        {
+          identifiers: issuer.partyIdentifications.map(pi => ({ value: pi.id, schemeId: pi.schemeID })),
+          name: issuer.name,
+          address: issuer.postalAddress,
+        },
+        'IssuerParty',
+        i2,
+      );
     },
   });
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { serializeAddress } from '../../src/serializers/delivery-serializer';
+import { serializeAddress } from '../../src/serializers/address-serializer';
 import type { AddressInput } from '../../src/types/common';
 
 function baseAddress(): AddressInput {

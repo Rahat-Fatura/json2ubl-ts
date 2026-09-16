@@ -338,8 +338,19 @@ export interface DespatchEventInput {
   actualDespatchTime: string;
 }
 
-/** Adres bilgileri — M6: parent opsiyonel, verilirse cityName+citySubdivisionName zorunlu (B-35). */
-export interface AddressInput {
+/**
+ * `AddressType` alanlarının GEVŞEK şekli — tek adres serileştiricisinin girdisi.
+ *
+ * Neden ayrı: `PartyInput` adres alanlarını DÜZ taşır (ayrı bir `address`
+ * nesnesi yoktur) ve orada il/ilçe opsiyoneldir; `AddressInput` ise ikisini
+ * zorunlu kılar. İki şekil de aynı `ADDRESS_SEQ` gövdesinden geçmelidir —
+ * S2b öncesinde bu gövdenin İKİ kopyası vardı (`delivery-serializer.serializeAddress`
+ * ve `party-serializer.serializePostalAddress`), 12 emitter'ı birebir aynıydı.
+ *
+ * Zorunluluk TİPTE değil EMİT anında uygulanır (`cbcRequiredTag`), böylece iki
+ * çağıran da aynı kapıdan geçer.
+ */
+export interface AddressFields {
   streetName?: string;
   buildingName?: string;
   buildingNumber?: string;
@@ -350,16 +361,22 @@ export interface AddressInput {
   district?: string;
   /** Posta kutusu — B-98 */
   postbox?: string;
-  /** İlçe adı — XSD zorunlu (B-35) */
-  citySubdivisionName: string;
-  /** Şehir adı — XSD zorunlu (B-35) */
-  cityName: string;
+  citySubdivisionName?: string;
+  cityName?: string;
   postalZone?: string;
   region?: string;
   /** Ülke adı — cac:Country/cbc:Name */
   country?: string;
   /** Ülke kodu ISO 3166-1 alpha-2 — cac:Country/cbc:IdentificationCode (B-100) */
   countryCode?: string;
+}
+
+/** Adres bilgileri — M6: parent opsiyonel, verilirse cityName+citySubdivisionName zorunlu (B-35). */
+export interface AddressInput extends AddressFields {
+  /** İlçe adı — XSD zorunlu (B-35) */
+  citySubdivisionName: string;
+  /** Şehir adı — XSD zorunlu (B-35) */
+  cityName: string;
 }
 
 /** Teslimat koşulları — §3.3 IHRACAT */

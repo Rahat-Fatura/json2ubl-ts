@@ -384,6 +384,18 @@ export const PARTY_IDENTIFICATION_SEQ = [
 ] as const;
 
 /**
+ * `SignatureType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ *
+ * `cac:SignatoryParty` de bir `PartyType`'tır — ortak taraf gövdesinden geçer.
+ * Kütüphane imza ÜRETMEZ; bu tablo `serializeSignature`'ın sırasını bağlar.
+ */
+export const SIGNATURE_SEQ = [
+  'ID',
+  'SignatoryParty',
+  'DigitalSignatureAttachment',
+] as const;
+
+/**
  * `PersonType` — common/UBL-CommonAggregateComponents-2.1.xsd
  *
  * B-20: `Title`, `MiddleName` ÖNCESİNDEDİR. Eski elle kopyada `ResidenceAddress`
@@ -1009,6 +1021,7 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   ShipsSurgeonPerson: 'PersonType',
   SignatoryContact: 'ContactType',
   SignatoryParty: 'PartyType',
+  Signature: 'SignatureType',
   SourceIssuerParty: 'PartyType',
   StandardItemIdentification: 'ItemIdentificationType',
   StatementDocumentReference: 'DocumentReferenceType',
@@ -1103,6 +1116,7 @@ export const SEQUENCE_BY_COMPLEX_TYPE: Readonly<Record<string, readonly string[]
   CustomerPartyType: CUSTOMER_PARTY_SEQ,
   PartyNameType: PARTY_NAME_SEQ,
   PartyIdentificationType: PARTY_IDENTIFICATION_SEQ,
+  SignatureType: SIGNATURE_SEQ,
   PersonType: PERSON_SEQ,
   ContactType: CONTACT_SEQ,
   PartyTaxSchemeType: PARTY_TAX_SCHEME_SEQ,
