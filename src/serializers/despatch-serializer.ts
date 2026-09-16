@@ -2,11 +2,11 @@ import type { DespatchInput } from '../types/despatch-input';
 import { DESPATCH_NAMESPACES, UBL_CONSTANTS } from '../config/namespaces';
 import { cbcOptionalTag, cbcRequiredTag, joinLines, xmlDeclaration, rootOpenTag, ublExtensionsSkeleton } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
-import { serializeParty, serializePartyAs } from './party-serializer';
-import { serializeAddress } from './delivery-serializer';
+import { serializeParty } from './party-serializer';
+import { serializeShipmentElement } from './delivery-serializer';
 import { serializeDespatchLine } from './line-serializer';
 import { serializeAdditionalDocument, serializeOrderReference } from './reference-serializer';
-import { DESPATCH_SEQ, PERSON_SEQ, TRANSPORT_HANDLING_UNIT_SEQ, emitInOrder } from './xsd-sequence';
+import { DESPATCH_SEQ, emitInOrder } from './xsd-sequence';
 
 /**
  * DespatchAdvice JSON → tam UBL-TR XML string (§5.7 sırasında)
@@ -119,104 +119,48 @@ export function serializeDespatch(
   ]);
 }
 
-/** Shipment bloğu serialize */
+/**
+ * İrsaliye tarafı adaptörü: `DespatchShipmentInput` → `ShipmentModel`.
+ *
+ * 🔴 Burada eskiden ELLE `lines.push()` yazan 90 satırlık ikinci bir `Shipment`
+ * üreticisi vardı. Hiçbir sekans tablosuna bağlı olmadığı için sıra bekçisinin
+ * kapsamı DIŞINDAYDI: `GoodsItem` / `ShipmentStage` / `TransportMeans` /
+ * `RoadTransport` / `Delivery` / `Despatch` / `TransportEquipment` düğümlerinin
+ * hiçbirinin çocuk sırası denetlenmiyordu. Fatura tarafı aynı UBL tipini
+ * (`ShipmentType`) baştan beri tablodan yazıyordu — sapma kaldırıldı.
+ *
+ * Bu fonksiyon artık XML ŞEKLİ ÜRETMEZ, yalnız modeli doldurur.
+ *
+ * ⚠️ Koşulsuz yazılan iki sarmalayıcı (`<cac:GoodsItem>` ve `<cac:ShipmentStage>`)
+ * bilerek korundu: irsaliyenin bugünkü çıktısı bunları veri olmasa da basıyor,
+ * kaldırmak bu adımın kapsamı dışında bir davranış değişikliği olurdu.
+ */
 function serializeShipmentBlock(input: DespatchInput, indent: string): string {
-  const i2 = indent + '  ';
-  const i3 = indent + '    ';
-  const i4 = indent + '      ';
   const s = input.shipment;
-  const lines: string[] = [];
 
-  lines.push(`${indent}<cac:Shipment>`);
-  // B-72: shipmentId override (default '1')
-  lines.push(`${i2}${cbcOptionalTag('ID', s.shipmentId ?? '1')}`);
+  return serializeShipmentElement(
+    {
+      // B-72: shipmentId override (default '1')
+      id: s.shipmentId ?? '1',
 
-  // GoodsItem — B-73: opsiyonel ValueAmount (XSD sequence: ValueAmount(1689) → RequiredCustomsID(1696))
-  lines.push(`${i2}<cac:GoodsItem>`);
-  if (s.goodsItem?.valueAmount !== undefined) {
-    const va = s.goodsItem.valueAmount;
-    lines.push(`${i3}<cbc:ValueAmount currencyID="${va.currencyId ?? 'TRY'}">${va.value}</cbc:ValueAmount>`);
-  }
-  lines.push(`${i3}${cbcOptionalTag('RequiredCustomsID', '')}`);
-  lines.push(`${i2}</cac:GoodsItem>`);
+      // B-73: opsiyonel ValueAmount. Tek GoodsItem KOŞULSUZ yazılır (yerleşik davranış).
+      goodsItems: [{ valueAmount: s.goodsItem?.valueAmount }],
 
-  // ShipmentStage
-  lines.push(`${i2}<cac:ShipmentStage>`);
+      // Tek ShipmentStage KOŞULSUZ yazılır; plaka/sürücü yoksa içi boş kalır.
+      stages: [{ licensePlates: s.licensePlates, driverPersons: s.driverPersons }],
 
-  // TransportMeans + LicensePlates
-  if (s.licensePlates && s.licensePlates.length > 0) {
-    lines.push(`${i3}<cac:TransportMeans>`);
-    lines.push(`${i4}<cac:RoadTransport>`);
-    for (const lp of s.licensePlates) {
-      lines.push(`${i4}  ${cbcOptionalTag('LicensePlateID', lp.plateNumber, { schemeID: lp.schemeId })}`);
-    }
-    lines.push(`${i4}</cac:RoadTransport>`);
-    lines.push(`${i3}</cac:TransportMeans>`);
-  }
+      // B-14: `cac:Delivery` artık DELIVERY_SEQ'ten geçer (DeliveryAddress → CarrierParty → Despatch).
+      delivery: {
+        deliveryAddress: s.deliveryAddress,
+        carrierParty: s.carrierParty,
+        despatch: { actualDespatchDate: s.actualDespatchDate, actualDespatchTime: s.actualDespatchTime },
+      },
 
-  // DriverPerson — B-20 + AR-2: PERSON_SEQ her sürücü için (XSD maxOccurs=unbounded)
-  for (const dp of s.driverPersons ?? []) {
-    const personInner = emitInOrder(PERSON_SEQ, {
-      FirstName: () => cbcRequiredTag('FirstName', dp.firstName, 'DriverPerson'),
-      FamilyName: () => cbcRequiredTag('FamilyName', dp.familyName, 'DriverPerson'),
-      Title: () => cbcOptionalTag('Title', dp.title),
-      NationalityID: () => cbcRequiredTag('NationalityID', dp.nationalityId, 'DriverPerson'),
-    });
-    const personBody = joinLines(personInner.map(s2 => i4 + s2));
-    lines.push([`${i3}<cac:DriverPerson>`, personBody, `${i3}</cac:DriverPerson>`].join('\n'));
-  }
-
-  lines.push(`${i2}</cac:ShipmentStage>`);
-
-  // Delivery — B-14 fix: XSD sequence DeliveryAddress → CarrierParty → Despatch
-  lines.push(`${i2}<cac:Delivery>`);
-
-  // DeliveryAddress (1)
-  lines.push(serializeAddress(s.deliveryAddress, 'DeliveryAddress', i3));
-
-  /* CarrierParty (2) — ORTAK taraf serileştiricisi.
-   *
-   * 🔴 Burada eskiden elle yazılmış bir blok vardı ve yalnız `PartyIdentification`
-   * + `PartyName` basıyordu. `cac:PostalAddress` UBL-TR `PartyType`'ta ZORUNLU
-   * olduğu için (minOccurs=1) o blok şoförsüz irsaliyeyi GİB kapısında her zaman
-   * reddettiriyordu; TCKN dalındaki `firstName`/`familyName` de hiçbir yere
-   * yazılmıyordu. Fatura tarafı aynı düğümü baştan beri `serializePartyAs` ile
-   * basıyor (`delivery-serializer.ts:23`) — sapma kaldırıldı, iki belge tipi
-   * artık AYNI satırdan geçiyor. */
-  if (s.carrierParty) {
-    lines.push(serializePartyAs(s.carrierParty, 'CarrierParty', i3));
-  }
-
-  // Despatch (3) — ActualDespatchDate/Time
-  lines.push(`${i3}<cac:Despatch>`);
-  lines.push(`${i4}${cbcRequiredTag('ActualDespatchDate', s.actualDespatchDate, 'Despatch')}`);
-  lines.push(`${i4}${cbcRequiredTag('ActualDespatchTime', s.actualDespatchTime, 'Despatch')}`);
-  lines.push(`${i3}</cac:Despatch>`);
-
-  lines.push(`${i2}</cac:Delivery>`);
-
-  // B-49: TransportHandlingUnit canonical DORSEPLAKA path (XSD sequence: Delivery < THU)
-  // İç sıra TRANSPORT_HANDLING_UNIT_SEQ'ten gelir — bugün tek slot dolu
-  // (TransportEquipment), ama düğüm faturadaki ile AYNI tabloya bağlı.
-  for (const thu of s.transportHandlingUnits ?? []) {
-    const thuInner = emitInOrder(TRANSPORT_HANDLING_UNIT_SEQ, {
-      TransportEquipment: () =>
-        joinLines([
-          `${i3}<cac:TransportEquipment>`,
-          `${i3}  ${cbcOptionalTag('ID', thu.transportEquipmentId, { schemeID: thu.schemeId ?? 'DORSEPLAKA' })}`,
-          `${i3}</cac:TransportEquipment>`,
-        ]),
-    });
-    lines.push(
-      joinLines([`${i2}<cac:TransportHandlingUnit>`, ...thuInner, `${i2}</cac:TransportHandlingUnit>`]),
-    );
-  }
-
-  lines.push(`${indent}</cac:Shipment>`);
-
-  return joinLines(lines);
+      // B-49: canonical DORSEPLAKA yolu
+      transportHandlingUnits: (s.transportHandlingUnits ?? []).map(thu => ({
+        transportEquipments: [{ id: thu.transportEquipmentId, schemeId: thu.schemeId }],
+      })),
+    },
+    indent,
+  );
 }
-
-// function indentBlock(xml: string, indentStr: string): string {
-//   return xml.split('\n').map(line => indentStr + line).join('\n');
-// }

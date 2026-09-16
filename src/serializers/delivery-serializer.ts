@@ -1,12 +1,28 @@
-import type { DeliveryInput, LineDeliveryInput, AddressInput, CustomsDeclarationInput } from '../types/common';
-import { cbcOptionalTag, cbcRequiredTag, joinLines } from '../utils/xml-helpers';
-import { isNonEmpty } from '../utils/formatters';
+import type {
+  DeliveryInput,
+  LineDeliveryInput,
+  AddressInput,
+  CustomsDeclarationInput,
+  ActualPackageInput,
+  DespatchEventInput,
+} from '../types/common';
+import { cbcOptionalTag, cbcRequiredTag, joinLines, tag } from '../utils/xml-helpers';
+import { escapeXml, isNonEmpty } from '../utils/formatters';
 import { normalizeGtip } from '../utils/gtip';
 import { serializePartyAs } from './party-serializer';
 import {
   DELIVERY_SEQ,
+  DELIVERY_DESPATCH_SEQ,
+  DELIVERY_TERMS_SEQ,
   ADDRESS_SEQ,
+  COUNTRY_SEQ,
   SHIPMENT_SEQ,
+  GOODS_ITEM_SEQ,
+  SHIPMENT_STAGE_SEQ,
+  TRANSPORT_MEANS_SEQ,
+  ROAD_TRANSPORT_SEQ,
+  TRANSPORT_EQUIPMENT_SEQ,
+  PERSON_SEQ,
   PACKAGE_SEQ,
   TRANSPORT_HANDLING_UNIT_SEQ,
   CUSTOMS_DECLARATION_SEQ,
@@ -29,14 +45,8 @@ export function serializeDelivery(del: DeliveryInput, indent: string = ''): stri
     ActualDeliveryDate: () => cbcOptionalTag('ActualDeliveryDate', del.actualDeliveryDate),
     DeliveryAddress: () => (del.deliveryAddress ? serializeAddress(del.deliveryAddress, 'DeliveryAddress', i2) : ''),
     CarrierParty: () => (del.carrierParty ? serializePartyAs(del.carrierParty, 'CarrierParty', i2) : ''),
-    DeliveryTerms: () =>
-      del.deliveryTerms
-        ? [
-            `${i2}<cac:DeliveryTerms>`,
-            `${i2}  ${cbcRequiredTag('ID', del.deliveryTerms.id, 'DeliveryTerms', { schemeID: 'INCOTERMS' })}`,
-            `${i2}</cac:DeliveryTerms>`,
-          ].join('\n')
-        : '',
+    Despatch: () => serializeDespatchEvent(del.despatch, i2),
+    DeliveryTerms: () => serializeDeliveryTerms(del.deliveryTerms, i2),
     Shipment: () => (del.shipment ? serializeShipment(del.shipment, i2) : ''),
   });
   const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
@@ -49,18 +59,47 @@ export function serializeLineDelivery(del: LineDeliveryInput, indent: string = '
 
   const inner = emitInOrder(DELIVERY_SEQ, {
     DeliveryAddress: () => (del.deliveryAddress ? serializeAddress(del.deliveryAddress, 'DeliveryAddress', i2) : ''),
-    DeliveryTerms: () =>
-      del.deliveryTerms
-        ? [
-            `${i2}<cac:DeliveryTerms>`,
-            `${i2}  ${cbcRequiredTag('ID', del.deliveryTerms.id, 'DeliveryTerms', { schemeID: 'INCOTERMS' })}`,
-            `${i2}</cac:DeliveryTerms>`,
-          ].join('\n')
-        : '',
+    DeliveryTerms: () => serializeDeliveryTerms(del.deliveryTerms, i2),
     Shipment: () => (del.shipment ? serializeShipment(del.shipment, i2) : ''),
   });
   const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
   return [`${indent}<cac:Delivery>`, body, `${indent}</cac:Delivery>`].join('\n');
+}
+
+/**
+ * `cac:DeliveryTerms` — INCOTERMS kodu. Sıra: `DELIVERY_TERMS_SEQ`.
+ * Belge ve satır seviyesindeki iki kopya tekleşti (ikisi de birebir aynıydı).
+ */
+function serializeDeliveryTerms(terms: DeliveryInput['deliveryTerms'], indent: string): string {
+  if (!terms) return '';
+  const inner = emitInOrder(DELIVERY_TERMS_SEQ, {
+    ID: () => cbcRequiredTag('ID', terms.id, 'DeliveryTerms', { schemeID: 'INCOTERMS' }),
+  });
+  return joinLines([
+    `${indent}<cac:DeliveryTerms>`,
+    ...inner.map(s => `${indent}  ${s}`),
+    `${indent}</cac:DeliveryTerms>`,
+  ]);
+}
+
+/**
+ * `cac:Despatch` — sevk olayı. Sıra: `DELIVERY_DESPATCH_SEQ`.
+ *
+ * Blok verildiyse tarih VE saat ZORUNLUDUR (`cbcRequiredTag`): irsaliyenin
+ * sevk beyanı bunlarsız anlamsızdır. Blok verilmediyse hiç yazılmaz — fatura
+ * tarafının bugünkü davranışı budur.
+ */
+function serializeDespatchEvent(despatch: DespatchEventInput | undefined, indent: string): string {
+  if (!despatch) return '';
+  const inner = emitInOrder(DELIVERY_DESPATCH_SEQ, {
+    ActualDespatchDate: () => cbcRequiredTag('ActualDespatchDate', despatch.actualDespatchDate, 'Despatch'),
+    ActualDespatchTime: () => cbcRequiredTag('ActualDespatchTime', despatch.actualDespatchTime, 'Despatch'),
+  });
+  return joinLines([
+    `${indent}<cac:Despatch>`,
+    ...inner.map(s => `${indent}  ${s}`),
+    `${indent}</cac:Despatch>`,
+  ]);
 }
 
 /**
@@ -86,36 +125,296 @@ export function serializeAddress(addr: AddressInput, tagName: string, indent: st
   return [`${indent}<cac:${tagName}>`, body, `${indent}</cac:${tagName}>`].join('\n');
 }
 
-/** cac:Country bloğu — B-100 IdentificationCode + Name (XSD sırası) */
-function serializeCountry(
+/** `cac:Country` — B-100 IdentificationCode → Name. Sıra: `COUNTRY_SEQ`. */
+export function serializeCountry(
   countryCode: string | undefined,
   countryName: string | undefined,
   indent: string,
 ): string {
-  if (!isNonEmpty(countryCode) && !isNonEmpty(countryName)) return '';
-  const inner: string[] = [];
-  if (isNonEmpty(countryCode)) {
-    inner.push(`${indent}  ${cbcOptionalTag('IdentificationCode', countryCode)}`);
-  }
-  if (isNonEmpty(countryName)) {
-    inner.push(`${indent}  ${cbcOptionalTag('Name', countryName)}`);
-  }
-  return [`${indent}<cac:Country>`, ...inner, `${indent}</cac:Country>`].join('\n');
+  const inner = emitInOrder(COUNTRY_SEQ, {
+    IdentificationCode: () => cbcOptionalTag('IdentificationCode', countryCode),
+    Name: () => cbcOptionalTag('Name', countryName),
+  });
+  if (inner.length === 0) return '';
+  return [`${indent}<cac:Country>`, ...inner.map(s => `${indent}  ${s}`), `${indent}</cac:Country>`].join('\n');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ORTAK `cac:Shipment` BİLEŞENİ
+//
+// UBL'de `ShipmentType` TEK tiptir ve dört yoldan yazılır:
+//   /DespatchAdvice/cac:Shipment
+//   /DespatchAdvice/cac:DespatchLine/cac:Shipment
+//   /Invoice/cac:Delivery/cac:Shipment
+//   /Invoice/cac:InvoiceLine/cac:Delivery/cac:Shipment
+//
+// S2b öncesinde İKİ ayrı üretici vardı: buradaki tablo-sürümlü fatura yolu ve
+// `despatch-serializer.ts` içinde ELLE `lines.push()` yazan irsaliye yolu. İkinci
+// üretici hiçbir sekans tablosuna bağlı değildi, dolayısıyla sıra bekçisinin de
+// kapsamı dışındaydı. Aşağıdaki model + emitter ikisini tekleştirir; belge
+// tipleri artık yalnız MODELİ doldurur, XML şeklini doldurmaz.
+//
+// ⚠️ Model, iki tarafın alanlarının BİRLEŞİMİDİR; hangi slotun dolacağı
+// çağırana kalmıştır. Bu bilinçli: irsaliyenin `ValueAmount`ı ile faturanın
+// GTİP'i aynı `cac:GoodsItem` içinde farklı slotlardır, ikisi de artık aynı
+// emitter'dan geçer.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** `cac:GoodsItem` modeli — fatura GTİP yolu + irsaliye sevk değeri yolu. */
+export interface GoodsItemModel {
+  /** `cbc:ValueAmount` — irsaliye sevk değeri (B-73). */
+  valueAmount?: { value: number; currencyId?: string };
+  /** `cbc:RequiredCustomsID` — IHRACAT GTİP; emit anında noktasızlaştırılır. */
+  requiredCustomsId?: string;
+}
+
+/** `cac:ShipmentStage` modeli — taşıma modu (fatura) + plaka/sürücü (irsaliye). */
+export interface ShipmentStageModel {
+  /** `cbc:TransportModeCode` — IHRACAT taşıma modu. */
+  transportModeCode?: string;
+  /** `cac:TransportMeans/cac:RoadTransport/cbc:LicensePlateID` — irsaliye plakaları. */
+  licensePlates?: ReadonlyArray<{ plateNumber: string; schemeId?: string }>;
+  /** `cac:DriverPerson` — irsaliye sürücüleri (XSD maxOccurs=unbounded). */
+  driverPersons?: ReadonlyArray<{
+    firstName?: string;
+    familyName?: string;
+    title?: string;
+    nationalityId?: string;
+  }>;
+}
+
+/** `cac:TransportHandlingUnit` modeli — paket (fatura), dorse (irsaliye), gümrük beyanı (702). */
+export interface TransportHandlingUnitModel {
+  actualPackages?: readonly ActualPackageInput[];
+  /** `cac:TransportEquipment/cbc:ID` — irsaliye DORSEPLAKA yolu (B-49). */
+  transportEquipments?: ReadonlyArray<{ id: string; schemeId?: string }>;
+  customsDeclarations?: readonly CustomsDeclarationInput[];
+}
+
+/** `cac:Shipment` modeli — iki belge tipinin ortak paydası. */
+export interface ShipmentModel {
+  /** `cbc:ID` — UBL'de 1..1. Verilmezse `'1'`. */
+  id?: string;
+  goodsItems?: readonly GoodsItemModel[];
+  stages?: readonly ShipmentStageModel[];
+  /** `cac:Delivery` — irsaliyede teslimat adresi + taşıyıcı + sevk olayı. */
+  delivery?: DeliveryInput;
+  transportHandlingUnits?: readonly TransportHandlingUnitModel[];
 }
 
 /**
- * Shipment → XML fragment (IHRACAT sevkiyat).
- * Sequence: SHIPMENT_SEQ. B-99 fix: ShipmentStage tek yerden emit — shipmentStages verilmişse
- * onlar kullanılır, yoksa shipment.transportModeCode fallback olarak tek ShipmentStage üretir.
+ * `cac:Shipment` → XML. TEK üretici; sıra `SHIPMENT_SEQ`ten gelir.
+ *
+ * 🔴 `cbc:ID` ZORUNLU yazılır (UBL `ShipmentType`'ta 1..1). İrsaliye tarafı
+ * eskiden `cbcOptionalTag` kullanıyordu: `shipmentId: ''` verildiğinde eleman
+ * sessizce DÜŞÜYOR ve belge XSD'den kalıyordu. Artık boş değer açık hata verir.
  */
-function serializeShipment(shipment: DeliveryInput['shipment'], indent: string): string {
-  if (!shipment) return '';
+export function serializeShipmentElement(model: ShipmentModel, indent: string = ''): string {
   const i2 = indent + '  ';
   const i3 = indent + '    ';
 
-  /* B-99: shipmentStages var ise onları kullan; yoksa transportModeCode fallback tek stage.
-   *
-   * 🔴 TAŞIMA MODU UYDURULMAZ. Şematron `LineDeliveryCheck` IHRACAT'ta bu kodu
+  const inner = emitInOrder(SHIPMENT_SEQ, {
+    ID: () => cbcRequiredTag('ID', model.id ?? '1', 'Shipment'),
+    GoodsItem: () => joinLines((model.goodsItems ?? []).map(gi => serializeGoodsItem(gi, i2))),
+    ShipmentStage: () => joinLines((model.stages ?? []).map(st => serializeShipmentStage(st, i2))),
+    Delivery: () => (model.delivery ? serializeDelivery(model.delivery, i2) : ''),
+    TransportHandlingUnit: () =>
+      joinLines((model.transportHandlingUnits ?? []).map(thu => serializeTransportHandlingUnit(thu, i2, i3))),
+  });
+
+  const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
+  return [`${indent}<cac:Shipment>`, body, `${indent}</cac:Shipment>`].join('\n');
+}
+
+/**
+ * `cac:GoodsItem` → XML. Sıra: `GOODS_ITEM_SEQ` (`ValueAmount` #9 → `RequiredCustomsID` #16).
+ *
+ * ⚠️ Sarmalayıcı, içi BOŞ kalsa da yazılır. İki taraf da bugün böyle davranıyor
+ * (irsaliye koşulsuz bir `<cac:GoodsItem/>` çifti basar, fatura `goodsItems: [{}]`
+ * verildiğinde aynısını yapar) ve davranış BİLEREK korundu: boş düğümün GİB
+ * kapısında zararsız olduğu ölçüldü, kaldırmak ise bu refactor'ın kapsamı
+ * dışında bir davranış değişikliği olurdu.
+ *
+ * 🔴 GTİP XML'e NOKTASIZ yazılır — tel biçimi budur.
+ *
+ * GİB 17.01.2017 IHRACAT entegratör test duyurusu: «GTİP noktasız 12 hane».
+ * Şematron `Common:326` da KARAKTER sayar (`string-length(normalize-space(...))
+ * = 12`) — `normalize-space` noktayı ELEMEZ. Yani kullanıcının gayet meşru
+ * yazdığı `8471.30.0000.00` (15 karakter) ham hâliyle gönderilirse GİB
+ * reddeder, GTB tarafında `1230` olarak patlardı.
+ *
+ * Burası tüm yolların (mapper → InvoiceInput → XML ve builder → InvoiceInput
+ * → XML) ortak son kapısıdır; normalizasyon TEK yerde, burada yapılır.
+ *
+ * Bu bir DEĞER UYDURMA değildir: yalnız biçim ayracı silinir, hane
+ * eklenmez/kırpılmaz. Hane sayısı yanlışsa belge buraya zaten ULAŞMAZ —
+ * `profile-validators` (IHRACAT) ve `ihrackayitli-validator` (702) o kapıyı
+ * hata ile kapatır. Kullanıcının YAZDIĞI alan da değiştirilmez; değişen
+ * yalnız tele giden temsildir.
+ */
+function serializeGoodsItem(item: GoodsItemModel, indent: string): string {
+  const inner = emitInOrder(GOODS_ITEM_SEQ, {
+    /* ⚠️ `cbcOptionalAmountTag` DEĞİL: o yardımcı 2 ondalığa yuvarlar
+     * (`decimalCheck` gereği) ve irsaliyenin bugünkü `12500` çıktısını
+     * `12500.00` yapardı. `cbc:ValueAmount` `decimalCheck` kapsamında
+     * değildir; değer kullanıcının verdiği gibi yazılır. */
+    ValueAmount: () =>
+      item.valueAmount === undefined
+        ? ''
+        : tag('cbc:ValueAmount', {
+            content: escapeXml(String(item.valueAmount.value)),
+            attrs: { currencyID: item.valueAmount.currencyId ?? 'TRY' },
+          }),
+    RequiredCustomsID: () => cbcOptionalTag('RequiredCustomsID', normalizeGtip(item.requiredCustomsId)),
+  });
+  return joinLines([
+    `${indent}<cac:GoodsItem>`,
+    ...inner.map(s => `${indent}  ${s}`),
+    `${indent}</cac:GoodsItem>`,
+  ]);
+}
+
+/**
+ * `cac:ShipmentStage` → XML. Sıra: `SHIPMENT_STAGE_SEQ`
+ * (`TransportModeCode` #2 → `TransportMeans` #7 → `DriverPerson` #8).
+ */
+function serializeShipmentStage(stage: ShipmentStageModel, indent: string): string {
+  const i2 = indent + '  ';
+  const inner = emitInOrder(SHIPMENT_STAGE_SEQ, {
+    TransportModeCode: () => cbcOptionalTag('TransportModeCode', stage.transportModeCode),
+    TransportMeans: () => serializeTransportMeans(stage.licensePlates, i2),
+    // B-20 + AR-2: her sürücü için ayrı `cac:DriverPerson` (XSD maxOccurs=unbounded).
+    DriverPerson: () =>
+      joinLines((stage.driverPersons ?? []).map(dp => serializeDriverPerson(dp, i2))),
+  });
+  return joinLines([
+    `${indent}<cac:ShipmentStage>`,
+    ...inner.map(s => (s.startsWith(i2) ? s : i2 + s)),
+    `${indent}</cac:ShipmentStage>`,
+  ]);
+}
+
+/** `cac:TransportMeans` → `cac:RoadTransport` → `cbc:LicensePlateID`. Sıra: TRANSPORT_MEANS/ROAD_TRANSPORT_SEQ. */
+function serializeTransportMeans(
+  plates: ShipmentStageModel['licensePlates'],
+  indent: string,
+): string {
+  if (!plates || plates.length === 0) return '';
+  const i2 = indent + '  ';
+  const i3 = indent + '    ';
+
+  const roadInner = emitInOrder(ROAD_TRANSPORT_SEQ, {
+    LicensePlateID: () =>
+      joinLines(
+        plates.map(
+          lp =>
+            `${i3}${cbcOptionalTag('LicensePlateID', lp.plateNumber, lp.schemeId ? { schemeID: lp.schemeId } : undefined)}`,
+        ),
+      ),
+  });
+  const meansInner = emitInOrder(TRANSPORT_MEANS_SEQ, {
+    RoadTransport: () =>
+      joinLines([`${i2}<cac:RoadTransport>`, ...roadInner, `${i2}</cac:RoadTransport>`]),
+  });
+  return joinLines([`${indent}<cac:TransportMeans>`, ...meansInner, `${indent}</cac:TransportMeans>`]);
+}
+
+/**
+ * `cac:DriverPerson` → XML. Sıra: `PERSON_SEQ`.
+ *
+ * Üç alan ZORUNLUDUR (`cbcRequiredTag`): GİB e-İrsaliye kılavuzu sürücü
+ * kimliğini ad + soyad + TCKN üçlüsüyle ister. `cac:Person`daki opsiyonel
+ * davranışla karıştırılmamalıdır — orası alıcı/satıcı gerçek kişisidir.
+ */
+function serializeDriverPerson(
+  driver: NonNullable<ShipmentStageModel['driverPersons']>[number],
+  indent: string,
+): string {
+  const inner = emitInOrder(PERSON_SEQ, {
+    FirstName: () => cbcRequiredTag('FirstName', driver.firstName, 'DriverPerson'),
+    FamilyName: () => cbcRequiredTag('FamilyName', driver.familyName, 'DriverPerson'),
+    Title: () => cbcOptionalTag('Title', driver.title),
+    NationalityID: () => cbcRequiredTag('NationalityID', driver.nationalityId, 'DriverPerson'),
+  });
+  return joinLines([
+    `${indent}<cac:DriverPerson>`,
+    ...inner.map(s => `${indent}  ${s}`),
+    `${indent}</cac:DriverPerson>`,
+  ]);
+}
+
+/**
+ * `cac:TransportHandlingUnit` → XML. Sıra: `TRANSPORT_HANDLING_UNIT_SEQ`
+ * (`ActualPackage` #10 → `TransportEquipment` #11 → `CustomsDeclaration` #20).
+ *
+ * Üç slotun üçü de tek yerden yazılır: paket fatura yolundan, dorse plakası
+ * irsaliye yolundan, gümrük beyannamesi IHRACKAYITLI/702 yolundan gelir.
+ */
+function serializeTransportHandlingUnit(
+  thu: TransportHandlingUnitModel,
+  indent: string,
+  childIndent: string,
+): string {
+  const inner = emitInOrder(TRANSPORT_HANDLING_UNIT_SEQ, {
+    /* B-102: ActualPackage içi sıra PACKAGE_SEQ'ten gelir
+     * (ID → Quantity → PackagingTypeCode). Önceki kod PackagingTypeCode'u
+     * Quantity'den ÖNCE yazıyordu; ikisi birlikte verildiğinde şema-geçersizdi. */
+    ActualPackage: () =>
+      joinLines(
+        (thu.actualPackages ?? []).map(pkg => {
+          const pkgInner = emitInOrder(PACKAGE_SEQ, {
+            ID: () => cbcOptionalTag('ID', pkg.id),
+            Quantity: () => (pkg.quantity !== undefined ? cbcOptionalTag('Quantity', String(pkg.quantity)) : ''),
+            PackagingTypeCode: () => cbcOptionalTag('PackagingTypeCode', pkg.packagingTypeCode),
+          });
+          return joinLines([
+            `${childIndent}<cac:ActualPackage>`,
+            ...pkgInner.map(p => `${childIndent}  ${p}`),
+            `${childIndent}</cac:ActualPackage>`,
+          ]);
+        }),
+      ),
+
+    // B-49: canonical DORSEPLAKA yolu — Shipment/TransportHandlingUnit/TransportEquipment/ID
+    TransportEquipment: () =>
+      joinLines(
+        (thu.transportEquipments ?? []).map(eq => {
+          const eqInner = emitInOrder(TRANSPORT_EQUIPMENT_SEQ, {
+            ID: () => cbcOptionalTag('ID', eq.id, { schemeID: eq.schemeId ?? 'DORSEPLAKA' }),
+          });
+          return joinLines([
+            `${childIndent}<cac:TransportEquipment>`,
+            ...eqInner.map(e => `${childIndent}  ${e}`),
+            `${childIndent}</cac:TransportEquipment>`,
+          ]);
+        }),
+      ),
+
+    // CustomsDeclaration — IHRACKAYITLI + 702 için (B-14, Schematron satır 322/451)
+    CustomsDeclaration: () =>
+      joinLines(
+        (thu.customsDeclarations ?? []).map((cd, cdIndex) =>
+          serializeCustomsDeclaration(cd, cdIndex, childIndent),
+        ),
+      ),
+  });
+  return joinLines([
+    `${indent}<cac:TransportHandlingUnit>`,
+    ...inner,
+    `${indent}</cac:TransportHandlingUnit>`,
+  ]);
+}
+
+/**
+ * Fatura tarafı adaptörü: `ShipmentInput` → `ShipmentModel`.
+ *
+ * B-99: `shipmentStages` verilmişse onlar kullanılır, yoksa
+ * `shipment.transportModeCode` fallback olarak tek stage üretir.
+ */
+function serializeShipment(shipment: DeliveryInput['shipment'], indent: string): string {
+  if (!shipment) return '';
+
+  /* 🔴 TAŞIMA MODU UYDURULMAZ. Şematron `LineDeliveryCheck` IHRACAT'ta bu kodu
    * ZORUNLU tutar, ama eksikliğin çaresi burada bir varsayılan (örn. "4 =
    * Havayolu") basmak DEĞİLDİR: uydurulan kod belgeye GERÇEK OLMAYAN bir
    * taşıma beyanı yazar ve kullanıcı eksiğini hiç öğrenmez. Değer yoksa hiçbir
@@ -125,7 +424,7 @@ function serializeShipment(shipment: DeliveryInput['shipment'], indent: string):
    * İçi tamamen boş kalacak stage'ler de ELENİR: çocuksuz bir
    * `<cac:ShipmentStage>` hiçbir şematron kuralını karşılamaz, yalnız gürültü
    * üretir (kullanıcı `shipmentStages: [{}]` verdiğinde oluşuyordu). */
-  const stagesSource: Array<{ transportModeCode?: string }> = (
+  const stages: ShipmentStageModel[] = (
     shipment.shipmentStages && shipment.shipmentStages.length > 0
       ? shipment.shipmentStages
       : isNonEmpty(shipment.transportModeCode)
@@ -133,98 +432,15 @@ function serializeShipment(shipment: DeliveryInput['shipment'], indent: string):
         : []
   ).filter(stage => isNonEmpty(stage.transportModeCode));
 
-  /* 🔴 GTİP XML'e NOKTASIZ yazılır — tel biçimi budur.
-   *
-   * GİB 17.01.2017 İHRACAT entegratör test duyurusu: «GTİP noktasız 12 hane».
-   * Şematron `Common:326` da KARAKTER sayar (`string-length(normalize-space(...))
-   * = 12`) — `normalize-space` noktayı ELEMEZ. Yani kullanıcının gayet meşru
-   * yazdığı `8471.30.0000.00` (15 karakter) ham hâliyle gönderilirse GİB
-   * reddeder, GTB tarafında `1230` olarak patlardı.
-   *
-   * Burası tüm yolların (mapper → InvoiceInput → XML ve builder → InvoiceInput
-   * → XML) ortak son kapısıdır; normalizasyon TEK yerde, burada yapılır.
-   *
-   * Bu bir DEĞER UYDURMA değildir: yalnız biçim ayracı silinir, hane
-   * eklenmez/kırpılmaz. Hane sayısı yanlışsa belge buraya zaten ULAŞMAZ —
-   * `profile-validators` (İHRACAT) ve `ihrackayitli-validator` (702) o kapıyı
-   * hata ile kapatır. Kullanıcının YAZDIĞI alan da değiştirilmez; değişen
-   * yalnız tele giden temsildir. */
-  const goodsItemsXml = shipment.goodsItems
-    ? joinLines(
-        shipment.goodsItems.map(gi => {
-          const giLines: string[] = [`${i2}<cac:GoodsItem>`];
-          const customsId = normalizeGtip(gi.requiredCustomsId);
-          if (isNonEmpty(customsId)) {
-            giLines.push(`${i3}${cbcOptionalTag('RequiredCustomsID', customsId)}`);
-          }
-          giLines.push(`${i2}</cac:GoodsItem>`);
-          return giLines.join('\n');
-        }),
-      )
-    : '';
-
-  const stagesXml = stagesSource.length
-    ? joinLines(
-        stagesSource.map(st => {
-          const stLines: string[] = [`${i2}<cac:ShipmentStage>`];
-          if (isNonEmpty(st.transportModeCode)) {
-            stLines.push(`${i3}${cbcOptionalTag('TransportModeCode', st.transportModeCode)}`);
-          }
-          stLines.push(`${i2}</cac:ShipmentStage>`);
-          return stLines.join('\n');
-        }),
-      )
-    : '';
-
-  const thuXml = shipment.transportHandlingUnits
-    ? joinLines(
-        shipment.transportHandlingUnits.map(thu => {
-          // Sequence: TRANSPORT_HANDLING_UNIT_SEQ — ActualPackage (12) → CustomsDeclaration (21).
-          const thuInner = emitInOrder(TRANSPORT_HANDLING_UNIT_SEQ, {
-            /* B-102: ActualPackage içi sıra PACKAGE_SEQ'ten gelir
-             * (ID → Quantity → PackagingTypeCode). Önceki kod PackagingTypeCode'u
-             * Quantity'den ÖNCE yazıyordu; ikisi birlikte verildiğinde şema-geçersizdi. */
-            ActualPackage: () =>
-              joinLines(
-                (thu.actualPackages ?? []).map(pkg => {
-                  const pkgInner = emitInOrder(PACKAGE_SEQ, {
-                    ID: () => cbcOptionalTag('ID', pkg.id),
-                    Quantity: () => (pkg.quantity !== undefined ? cbcOptionalTag('Quantity', String(pkg.quantity)) : ''),
-                    PackagingTypeCode: () => cbcOptionalTag('PackagingTypeCode', pkg.packagingTypeCode),
-                  });
-                  return joinLines([
-                    `${i3}<cac:ActualPackage>`,
-                    ...pkgInner.map(p => `${i3}  ${p}`),
-                    `${i3}</cac:ActualPackage>`,
-                  ]);
-                }),
-              ),
-
-            // CustomsDeclaration — IHRACKAYITLI + 702 için (B-14, Schematron satır 322/451)
-            CustomsDeclaration: () =>
-              joinLines(
-                (thu.customsDeclarations ?? []).map((cd, cdIndex) =>
-                  serializeCustomsDeclaration(cd, cdIndex, i3),
-                ),
-              ),
-          });
-          return joinLines([
-            `${i2}<cac:TransportHandlingUnit>`,
-            ...thuInner,
-            `${i2}</cac:TransportHandlingUnit>`,
-          ]);
-        }),
-      )
-    : '';
-
-  const inner = emitInOrder(SHIPMENT_SEQ, {
-    ID: () => cbcRequiredTag('ID', '1', 'Shipment'),
-    GoodsItem: () => goodsItemsXml,
-    ShipmentStage: () => stagesXml,
-    TransportHandlingUnit: () => thuXml,
-  });
-  const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
-  return [`${indent}<cac:Shipment>`, body, `${indent}</cac:Shipment>`].join('\n');
+  return serializeShipmentElement(
+    {
+      id: '1',
+      goodsItems: shipment.goodsItems,
+      stages,
+      transportHandlingUnits: shipment.transportHandlingUnits,
+    },
+    indent,
+  );
 }
 
 /**

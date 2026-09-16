@@ -310,8 +310,32 @@ export interface DeliveryInput {
    * XSD sırası: `EstimatedDeliveryPeriod` sonrası, `DeliveryParty` ÖNCESİ (GİB UBL-TR).
    */
   carrierParty?: PartyInput;
+  /**
+   * Sevk olayı — `cac:Despatch` (gerçekleşen sevk tarihi/saati).
+   *
+   * İrsaliyede ZORUNLUDUR ve `cac:Shipment/cac:Delivery` altından yazılır;
+   * faturada bugün kullanılmaz. Slot `DELIVERY_SEQ`te zaten vardı — irsaliye
+   * tarafı `cac:Delivery`yi ELLE yazdığı için tabloya HİÇ uğramıyordu (S2b'de
+   * iki üretici tekleşti).
+   */
+  despatch?: DespatchEventInput;
   deliveryTerms?: DeliveryTermsInput;
   shipment?: ShipmentInput;
+}
+
+/**
+ * Sevk olayı — `cac:Despatch`. Sıra: `DELIVERY_DESPATCH_SEQ` (`DespatchType`).
+ *
+ * ⚠️ `DespatchType` ile belge kökü `DespatchAdviceType` AYNI ŞEY DEĞİLDİR.
+ *
+ * Blok verildiyse her iki alan da ZORUNLUDUR: tarihsiz/saatsiz bir sevk beyanı
+ * irsaliyede anlamsızdır ve GİB kapısında reddedilir.
+ */
+export interface DespatchEventInput {
+  /** Gerçekleşen sevk tarihi — `cbc:ActualDespatchDate` (YYYY-MM-DD). */
+  actualDespatchDate: string;
+  /** Gerçekleşen sevk saati — `cbc:ActualDespatchTime` (HH:mm:ss). */
+  actualDespatchTime: string;
 }
 
 /** Adres bilgileri — M6: parent opsiyonel, verilirse cityName+citySubdivisionName zorunlu (B-35). */
