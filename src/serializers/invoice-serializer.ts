@@ -37,9 +37,16 @@ import {
     isAmountInWordsNote,
 } from "../utils/amount-in-words";
 import { normalizeTime } from "../utils/formatters";
+import { INVOICE_SEQ, emitInOrder } from "./xsd-sequence";
 
 /**
  * Invoice JSON → tam UBL-TR XML string (§1.10 sırasında)
+ *
+ * 🔑 Eleman SIRASI `INVOICE_SEQ`ten gelir — elle `push` edilmez. Tablo, GİB'in
+ * `maindoc/UBL-Invoice-2.1.xsd` `InvoiceType` sequence'ının aynısıdır; sıra
+ * artık kod ile truth-source arasında GERÇEK bir bağdır. Yeni bir eleman
+ * eklemek için önce tabloda slotu bulunmalıdır; tabloda olmayan bir alan
+ * sessizce yazılamaz.
  *
  * @param includeUblExtensions 4.1.0 — boş `ext:UBLExtensions` iskeleti emit
  *   edilsin mi (varsayılan `false`, geriye uyumlu). Ayrıntı için
@@ -52,268 +59,206 @@ export function serializeInvoice(
 ): string {
     const ind = prettyPrint ? "  " : "";
     const cc = input.currencyCode;
-    const parts: string[] = [];
 
-    // XML Declaration
-    parts.push(xmlDeclaration());
+    const body = emitInOrder(INVOICE_SEQ, {
+        // UBLExtensions — INVOICE_SEQ'in İLK slotu. Opsiyonel bayrak (4.1.0):
+        // imzayı kendi atan tüketiciler için boş iskelet; kapalıyken hiç yazılmaz.
+        UBLExtensions: () => (includeUblExtensions ? ublExtensionsSkeleton(ind) : ""),
 
-    // Invoice açılış tag'i
-    parts.push(rootOpenTag("Invoice", INVOICE_NAMESPACES));
+        UBLVersionID: () =>
+            `${ind}${cbcOptionalTag("UBLVersionID", UBL_CONSTANTS.ublVersionId)}`,
+        CustomizationID: () =>
+            `${ind}${cbcOptionalTag("CustomizationID", UBL_CONSTANTS.customizationId)}`,
+        ProfileID: () => `${ind}${cbcOptionalTag("ProfileID", input.profileId)}`,
+        ID: () => `${ind}${cbcOptionalTag("ID", input.id)}`,
+        CopyIndicator: () =>
+            `${ind}${cbcOptionalTag("CopyIndicator", UBL_CONSTANTS.copyIndicator)}`,
+        UUID: () => `${ind}${cbcOptionalTag("UUID", input.uuid)}`,
+        IssueDate: () => `${ind}${cbcOptionalTag("IssueDate", input.issueDate)}`,
 
-    // 1. UBLExtensions — INVOICE_SEQ'in İLK slotu. Opsiyonel bayrak (4.1.0):
-    //    imzayı kendi atan tüketiciler için boş iskelet; kapalıyken hiç yazılmaz.
-    if (includeUblExtensions) {
-        parts.push(ublExtensionsSkeleton(ind));
-    }
+        // IssueTime (opsiyonel) — `HH:mm` gelirse saniye tamamlanır (XSD `xs:time`)
+        IssueTime: () =>
+            input.issueTime
+                ? `${ind}${cbcOptionalTag("IssueTime", normalizeTime(input.issueTime))}`
+                : "",
 
-    // UBLVersionID, CustomizationID
-    parts.push(`${ind}${cbcOptionalTag("UBLVersionID", UBL_CONSTANTS.ublVersionId)}`);
-    parts.push(
-        `${ind}${cbcOptionalTag("CustomizationID", UBL_CONSTANTS.customizationId)}`,
-    );
+        InvoiceTypeCode: () =>
+            `${ind}${cbcOptionalTag("InvoiceTypeCode", input.invoiceTypeCode)}`,
 
-    // 4. ProfileID
-    parts.push(`${ind}${cbcOptionalTag("ProfileID", input.profileId)}`);
+        /* Note (çoklu)
+         *
+         * v3.0.0 — KOŞULSUZ "yazıyla tutar" notu: PayableAmount'tan türetilen
+         * `#YAZIYLA:...#` notu HER faturaya, notların İLKİ olarak eklenir.
+         * Tüketicinin elle yazdığı yazıyla-notları atılır (çelişen iki not olmasın);
+         * diğer notlar sırasını koruyarak arkadan gelir. */
+        Note: () => {
+            const notes: string[] = [];
+            const amountInWordsNote = formatAmountInWordsNote(
+                input.legalMonetaryTotal?.payableAmount,
+                cc,
+            );
+            if (amountInWordsNote) {
+                notes.push(`${ind}${cbcOptionalTag("Note", amountInWordsNote)}`);
+            }
+            for (const note of input.notes ?? []) {
+                if (isAmountInWordsNote(note)) continue;
+                notes.push(`${ind}${cbcOptionalTag("Note", note)}`);
+            }
+            return joinLines(notes);
+        },
 
-    // 5. ID
-    parts.push(`${ind}${cbcOptionalTag("ID", input.id)}`);
-
-    // 6. CopyIndicator
-    parts.push(`${ind}${cbcOptionalTag("CopyIndicator", UBL_CONSTANTS.copyIndicator)}`);
-
-    // 7. UUID
-    parts.push(`${ind}${cbcOptionalTag("UUID", input.uuid)}`);
-
-    // 8. IssueDate
-    parts.push(`${ind}${cbcOptionalTag("IssueDate", input.issueDate)}`);
-
-    // 9. IssueTime (opsiyonel) — `HH:mm` gelirse saniye tamamlanır (XSD `xs:time`)
-    if (input.issueTime) {
-        parts.push(`${ind}${cbcOptionalTag("IssueTime", normalizeTime(input.issueTime))}`);
-    }
-
-    // 10. InvoiceTypeCode
-    parts.push(`${ind}${cbcOptionalTag("InvoiceTypeCode", input.invoiceTypeCode)}`);
-
-    // 11. Note (çoklu)
-    //
-    // v3.0.0 — KOŞULSUZ "yazıyla tutar" notu: PayableAmount'tan türetilen
-    // `#YAZIYLA:...#` notu HER faturaya, notların İLKİ olarak eklenir.
-    // Tüketicinin elle yazdığı yazıyla-notları atılır (çelişen iki not olmasın);
-    // diğer notlar sırasını koruyarak arkadan gelir.
-    const amountInWordsNote = formatAmountInWordsNote(
-        input.legalMonetaryTotal?.payableAmount,
-        cc,
-    );
-    if (amountInWordsNote) {
-        parts.push(`${ind}${cbcOptionalTag("Note", amountInWordsNote)}`);
-    }
-    if (input.notes) {
-        for (const note of input.notes) {
-            if (isAmountInWordsNote(note)) continue;
-            parts.push(`${ind}${cbcOptionalTag("Note", note)}`);
-        }
-    }
-
-    // 12. DocumentCurrencyCode
-    parts.push(`${ind}${cbcOptionalTag("DocumentCurrencyCode", cc)}`);
-
-    // 13. TaxCurrencyCode (opsiyonel)
-    if (input.taxCurrencyCode) {
-        parts.push(`${ind}${cbcOptionalTag("TaxCurrencyCode", input.taxCurrencyCode)}`);
-    }
-
-    // 14. PricingCurrencyCode (opsiyonel)
-    if (input.pricingCurrencyCode) {
-        parts.push(
+        DocumentCurrencyCode: () =>
+            `${ind}${cbcOptionalTag("DocumentCurrencyCode", cc)}`,
+        TaxCurrencyCode: () =>
+            `${ind}${cbcOptionalTag("TaxCurrencyCode", input.taxCurrencyCode)}`,
+        PricingCurrencyCode: () =>
             `${ind}${cbcOptionalTag("PricingCurrencyCode", input.pricingCurrencyCode)}`,
-        );
-    }
-
-    // 15. PaymentCurrencyCode — B-74 (XSD:23, cbc:PaymentCurrencyCode)
-    if (input.paymentCurrencyCode) {
-        parts.push(
+        // PaymentCurrencyCode — B-74 (XSD:23, cbc:PaymentCurrencyCode)
+        PaymentCurrencyCode: () =>
             `${ind}${cbcOptionalTag("PaymentCurrencyCode", input.paymentCurrencyCode)}`,
-        );
-    }
 
-    // 18. AccountingCost (opsiyonel — SGK faturaları için)
-    if (input.accountingCost) {
-        parts.push(`${ind}${cbcOptionalTag("AccountingCost", input.accountingCost)}`);
-    }
+        // AccountingCost (opsiyonel — SGK faturaları için)
+        AccountingCost: () =>
+            `${ind}${cbcOptionalTag("AccountingCost", input.accountingCost)}`,
 
-    // 19. LineCountNumeric
-    parts.push(
-        `${ind}${cbcOptionalTag("LineCountNumeric", String(input.lines.length))}`,
-    );
+        LineCountNumeric: () =>
+            `${ind}${cbcOptionalTag("LineCountNumeric", String(input.lines.length))}`,
 
-    // 20. InvoicePeriod (opsiyonel)
-    if (input.invoicePeriod) {
-        parts.push(serializePeriod(input.invoicePeriod, ind));
-    }
+        // InvoicePeriod (opsiyonel)
+        InvoicePeriod: () =>
+            input.invoicePeriod ? serializePeriod(input.invoicePeriod, ind) : "",
 
-    // 21. OrderReference (opsiyonel)
-    if (input.orderReference) {
-        parts.push(serializeOrderReference(input.orderReference, ind));
-    }
+        // OrderReference (opsiyonel)
+        OrderReference: () =>
+            input.orderReference ? serializeOrderReference(input.orderReference, ind) : "",
 
-    // 22. BillingReference (opsiyonel — IADE grubu için zorunlu)
-    if (input.billingReferences) {
-        for (const br of input.billingReferences) {
-            parts.push(serializeBillingReference(br, ind));
-        }
-    }
+        // BillingReference (opsiyonel — IADE grubu için zorunlu)
+        BillingReference: () =>
+            joinLines(
+                (input.billingReferences ?? []).map(br => serializeBillingReference(br, ind)),
+            ),
 
-    // 23. DespatchDocumentReference (opsiyonel)
-    if (input.despatchReferences) {
-        for (const ref of input.despatchReferences) {
-            parts.push(
-                serializeDocumentReference(
-                    ref,
-                    "DespatchDocumentReference",
-                    ind,
+        // DespatchDocumentReference (opsiyonel)
+        DespatchDocumentReference: () =>
+            joinLines(
+                (input.despatchReferences ?? []).map(ref =>
+                    serializeDocumentReference(ref, "DespatchDocumentReference", ind),
                 ),
-            );
-        }
-    }
+            ),
 
-    // 24. ReceiptDocumentReference (opsiyonel)
-    if (input.receiptReferences) {
-        for (const ref of input.receiptReferences) {
-            parts.push(
-                serializeDocumentReference(
-                    ref,
-                    "ReceiptDocumentReference",
-                    ind,
+        // ReceiptDocumentReference (opsiyonel)
+        ReceiptDocumentReference: () =>
+            joinLines(
+                (input.receiptReferences ?? []).map(ref =>
+                    serializeDocumentReference(ref, "ReceiptDocumentReference", ind),
                 ),
-            );
-        }
-    }
+            ),
 
-    // 25. OriginatorDocumentReference — B-39 (XSD:32, cac:OriginatorDocumentReference 0..n)
-    if (input.originatorDocumentReferences) {
-        for (const ref of input.originatorDocumentReferences) {
-            parts.push(
-                serializeDocumentReference(
-                    ref,
-                    "OriginatorDocumentReference",
-                    ind,
+        // OriginatorDocumentReference — B-39 (XSD:32, cac:OriginatorDocumentReference 0..n)
+        OriginatorDocumentReference: () =>
+            joinLines(
+                (input.originatorDocumentReferences ?? []).map(ref =>
+                    serializeDocumentReference(ref, "OriginatorDocumentReference", ind),
                 ),
-            );
-        }
-    }
+            ),
 
-    // 26. ContractDocumentReference (opsiyonel — YATIRIMTESVIK için zorunlu)
-    //     Referans tarihi verilmediyse faturanın tarihine düşülür (XSD IssueDate 1..1).
-    if (input.contractReference) {
-        parts.push(serializeContractReference(input.contractReference, ind, input.issueDate));
-    }
+        // ContractDocumentReference (opsiyonel — YATIRIMTESVIK için zorunlu)
+        // Referans tarihi verilmediyse faturanın tarihine düşülür (XSD IssueDate 1..1).
+        ContractDocumentReference: () =>
+            input.contractReference
+                ? serializeContractReference(input.contractReference, ind, input.issueDate)
+                : "",
 
-    // 27. AdditionalDocumentReference (opsiyonel) — aynı IssueDate yedeği
-    if (input.additionalDocuments) {
-        for (const doc of input.additionalDocuments) {
-            parts.push(serializeAdditionalDocument(doc, ind, input.issueDate));
-        }
-    }
+        // AdditionalDocumentReference (opsiyonel) — aynı IssueDate yedeği
+        AdditionalDocumentReference: () =>
+            joinLines(
+                (input.additionalDocuments ?? []).map(doc =>
+                    serializeAdditionalDocument(doc, ind, input.issueDate),
+                ),
+            ),
 
-    // 29. Signature — business logic tarafından eklenir, serializer üretmez
+        // Signature — business logic tarafından eklenir, serializer üretmez
 
-    // 30. AccountingSupplierParty
-    parts.push(serializeAccountingSupplierParty(input.supplier, ind));
+        AccountingSupplierParty: () =>
+            serializeAccountingSupplierParty(input.supplier, ind),
+        AccountingCustomerParty: () =>
+            serializeAccountingCustomerParty(input.customer, ind),
 
-    // 31. AccountingCustomerParty
-    parts.push(serializeAccountingCustomerParty(input.customer, ind));
+        // BuyerCustomerParty (opsiyonel — IHRACAT/YOLCU)
+        BuyerCustomerParty: () =>
+            input.buyerCustomer ? serializeBuyerCustomerParty(input.buyerCustomer, ind) : "",
 
-    // 33. BuyerCustomerParty (opsiyonel — IHRACAT/YOLCU)
-    if (input.buyerCustomer) {
-        parts.push(serializeBuyerCustomerParty(input.buyerCustomer, ind));
-    }
+        // TaxRepresentativeParty (opsiyonel — YOLCU)
+        TaxRepresentativeParty: () =>
+            input.taxRepresentativeParty
+                ? serializeTaxRepresentativeParty(input.taxRepresentativeParty, ind)
+                : "",
 
-    // 35. TaxRepresentativeParty (opsiyonel — YOLCU)
-    if (input.taxRepresentativeParty) {
-        parts.push(
-            serializeTaxRepresentativeParty(input.taxRepresentativeParty, ind),
-        );
-    }
+        // Delivery (opsiyonel — IHRACAT)
+        Delivery: () => (input.delivery ? serializeDelivery(input.delivery, ind) : ""),
 
-    // 36. Delivery (opsiyonel — IHRACAT)
-    if (input.delivery) {
-        parts.push(serializeDelivery(input.delivery, ind));
-    }
+        // PaymentMeans (opsiyonel — KAMU)
+        PaymentMeans: () =>
+            joinLines((input.paymentMeans ?? []).map(pm => serializePaymentMeans(pm, ind))),
 
-    // 38. PaymentMeans (opsiyonel — KAMU)
-    if (input.paymentMeans) {
-        for (const pm of input.paymentMeans) {
-            parts.push(serializePaymentMeans(pm, ind));
-        }
-    }
+        // PaymentTerms (opsiyonel)
+        PaymentTerms: () => {
+            const pt = input.paymentTerms;
+            if (!pt) return "";
+            const lines: string[] = [`${ind}<cac:PaymentTerms>`];
+            if (pt.note) {
+                lines.push(`${ind}  ${cbcOptionalTag("Note", pt.note)}`);
+            }
+            if (pt.penaltySurchargePercent !== undefined) {
+                lines.push(
+                    `${ind}  ${cbcOptionalTag("PenaltySurchargePercent", String(pt.penaltySurchargePercent))}`,
+                );
+            }
+            if (pt.amount !== undefined) {
+                lines.push(`${ind}  ${cbcOptionalTag("Amount", String(pt.amount))}`);
+            }
+            lines.push(`${ind}</cac:PaymentTerms>`);
+            return joinLines(lines);
+        },
 
-    // 39. PaymentTerms (opsiyonel)
-    if (input.paymentTerms) {
-        parts.push(`${ind}<cac:PaymentTerms>`);
-        if (input.paymentTerms.note) {
-            parts.push(`${ind}  ${cbcOptionalTag("Note", input.paymentTerms.note)}`);
-        }
-        if (input.paymentTerms.penaltySurchargePercent !== undefined) {
-            parts.push(
-                `${ind}  ${cbcOptionalTag("PenaltySurchargePercent", String(input.paymentTerms.penaltySurchargePercent))}`,
-            );
-        }
-        if (input.paymentTerms.amount !== undefined) {
-            parts.push(
-                `${ind}  ${cbcOptionalTag("Amount", String(input.paymentTerms.amount))}`,
-            );
-        }
-        parts.push(`${ind}</cac:PaymentTerms>`);
-    }
+        // AllowanceCharge (opsiyonel) — B-11 fix: ExchangeRate ÖNCESİNE taşındı
+        AllowanceCharge: () =>
+            joinLines(
+                (input.allowanceCharges ?? []).map(ac => serializeAllowanceCharge(ac, cc, ind)),
+            ),
 
-    // 41. AllowanceCharge (opsiyonel) — B-11 fix: ExchangeRate ÖNCESİNE taşındı
-    if (input.allowanceCharges) {
-        for (const ac of input.allowanceCharges) {
-            parts.push(serializeAllowanceCharge(ac, cc, ind));
-        }
-    }
+        // ExchangeRate (dövizli faturalarda) — B-11 fix: AllowanceCharge SONRASI
+        // B-71: TaxExchangeRate (XSD:45) — PricingExchangeRate'ten önce emit
+        TaxExchangeRate: () =>
+            input.taxExchangeRate
+                ? serializeExchangeRate(input.taxExchangeRate, ind, "TaxExchangeRate")
+                : "",
+        PricingExchangeRate: () =>
+            input.exchangeRate ? serializeExchangeRate(input.exchangeRate, ind) : "",
 
-    // 42-45. ExchangeRate (dövizli faturalarda) — B-11 fix: AllowanceCharge SONRASI
-    // UBL-Invoice-2.1.xsd:45-48 (TaxExchangeRate/PricingExchangeRate/...)
-    // B-71: TaxExchangeRate (XSD:45) — PricingExchangeRate'ten önce emit
-    if (input.taxExchangeRate) {
-        parts.push(serializeExchangeRate(input.taxExchangeRate, ind, 'TaxExchangeRate'));
-    }
-    if (input.exchangeRate) {
-        parts.push(serializeExchangeRate(input.exchangeRate, ind));
-    }
+        // TaxTotal (zorunlu)
+        TaxTotal: () => joinLines(input.taxTotals.map(tt => serializeTaxTotal(tt, cc, ind))),
 
-    // 46. TaxTotal (zorunlu)
-    for (const tt of input.taxTotals) {
-        parts.push(serializeTaxTotal(tt, cc, ind));
-    }
+        // WithholdingTaxTotal (opsiyonel — TEVKIFAT/SGK/SARJ)
+        WithholdingTaxTotal: () =>
+            joinLines(
+                (input.withholdingTaxTotals ?? []).map(wtt =>
+                    serializeWithholdingTaxTotal(wtt, cc, ind),
+                ),
+            ),
 
-    // 47. WithholdingTaxTotal (opsiyonel — TEVKIFAT/SGK/SARJ)
-    if (input.withholdingTaxTotals) {
-        for (const wtt of input.withholdingTaxTotals) {
-            parts.push(serializeWithholdingTaxTotal(wtt, cc, ind));
-        }
-    }
+        // LegalMonetaryTotal (zorunlu)
+        LegalMonetaryTotal: () =>
+            serializeLegalMonetaryTotal(input.legalMonetaryTotal, cc, ind),
 
-    // 48. LegalMonetaryTotal (zorunlu)
-    parts.push(serializeLegalMonetaryTotal(input.legalMonetaryTotal, cc, ind));
+        // InvoiceLine (zorunlu, çoklu)
+        InvoiceLine: () => joinLines(input.lines.map(line => serializeInvoiceLine(line, cc, ind))),
+    });
 
-    // 49. InvoiceLine (zorunlu, çoklu)
-    for (const line of input.lines) {
-        parts.push(serializeInvoiceLine(line, cc, ind));
-    }
-
-    // Kapanış
-    parts.push("</Invoice>");
-
-    return joinLines(parts);
+    return joinLines([
+        xmlDeclaration(),
+        rootOpenTag("Invoice", INVOICE_NAMESPACES),
+        ...body,
+        "</Invoice>",
+    ]);
 }
-
-/** İndent yardımcı fonksiyon */
-// function indent(xml: string, indentStr: string): string {
-//     return xml
-//         .split("\n")
-//         .map((line) => indentStr + line)
-//         .join("\n");
-// }

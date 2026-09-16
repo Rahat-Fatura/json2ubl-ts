@@ -6,10 +6,15 @@ import { serializeParty, serializePartyAs } from './party-serializer';
 import { serializeAddress } from './delivery-serializer';
 import { serializeDespatchLine } from './line-serializer';
 import { serializeAdditionalDocument, serializeOrderReference } from './reference-serializer';
-import { PERSON_SEQ, emitInOrder } from './xsd-sequence';
+import { DESPATCH_SEQ, PERSON_SEQ, emitInOrder } from './xsd-sequence';
 
 /**
  * DespatchAdvice JSON → tam UBL-TR XML string (§5.7 sırasında)
+ *
+ * 🔑 Eleman SIRASI `DESPATCH_SEQ`ten gelir — elle `push` edilmez. Tablo, GİB'in
+ * `maindoc/UBL-DespatchAdvice-2.1.xsd` `DespatchAdviceType` sequence'ıyla
+ * örtüşür; fatura kökünde olduğu gibi sıra artık kod ile truth-source arasında
+ * GERÇEK bir bağdır.
  *
  * @param includeUblExtensions 4.1.0 — boş `ext:UBLExtensions` iskeleti emit
  *   edilsin mi (varsayılan `false`). `UBL-DespatchAdvice-2.1.xsd` kök
@@ -22,108 +27,96 @@ export function serializeDespatch(
   includeUblExtensions: boolean = false,
 ): string {
   const ind = prettyPrint ? '  ' : '';
-  const parts: string[] = [];
 
-  parts.push(xmlDeclaration());
-  parts.push(rootOpenTag('DespatchAdvice', DESPATCH_NAMESPACES));
+  /**
+   * `<cac:X><cac:Party>…</cac:Party></cac:X>` sarmalayıcısı — beş taraf slotu için ortak.
+   *
+   * ⚠️ `party` ZORUNLU parametredir: opsiyonel tarafların «yoksa yazma» kararı
+   * çağıran tarafta verilir. Böylece zorunlu tarafın (supplier/customer) eksik
+   * gelmesi eskisi gibi çağrı anında patlar, sessizce atlanmaz.
+   */
+  const partyWrapper = (tagName: string, party: DespatchInput['supplier'], extra: string[] = []): string =>
+    joinLines([
+      `${ind}<cac:${tagName}>`,
+      serializeParty(party, ind + '  '),
+      ...extra,
+      `${ind}</cac:${tagName}>`,
+    ]);
 
-  // 1. UBLExtensions — DESPATCH_SEQ'in İLK slotu (4.1.0, opsiyonel bayrak)
-  if (includeUblExtensions) {
-    parts.push(ublExtensionsSkeleton(ind));
-  }
+  const body = emitInOrder(DESPATCH_SEQ, {
+    // UBLExtensions — DESPATCH_SEQ'in İLK slotu (4.1.0, opsiyonel bayrak)
+    UBLExtensions: () => (includeUblExtensions ? ublExtensionsSkeleton(ind) : ''),
 
-  // UBLVersionID, CustomizationID
-  parts.push(`${ind}${cbcOptionalTag('UBLVersionID', UBL_CONSTANTS.ublVersionId)}`);
-  parts.push(`${ind}${cbcOptionalTag('CustomizationID', UBL_CONSTANTS.customizationId)}`);
+    UBLVersionID: () => `${ind}${cbcOptionalTag('UBLVersionID', UBL_CONSTANTS.ublVersionId)}`,
+    CustomizationID: () => `${ind}${cbcOptionalTag('CustomizationID', UBL_CONSTANTS.customizationId)}`,
+    ProfileID: () => `${ind}${cbcOptionalTag('ProfileID', input.profileId)}`,
+    ID: () => `${ind}${cbcOptionalTag('ID', input.id)}`,
+    CopyIndicator: () => `${ind}${cbcOptionalTag('CopyIndicator', UBL_CONSTANTS.copyIndicator)}`,
+    UUID: () => `${ind}${cbcOptionalTag('UUID', input.uuid)}`,
+    IssueDate: () => `${ind}${cbcRequiredTag('IssueDate', input.issueDate, 'DespatchAdvice')}`,
+    // IssueTime — B-18: XSD zorunlu
+    IssueTime: () => `${ind}${cbcRequiredTag('IssueTime', input.issueTime, 'DespatchAdvice')}`,
 
-  // 4. ProfileID
-  parts.push(`${ind}${cbcOptionalTag('ProfileID', input.profileId)}`);
+    DespatchAdviceTypeCode: () =>
+      `${ind}${cbcOptionalTag('DespatchAdviceTypeCode', input.despatchTypeCode)}`,
 
-  // 5. ID
-  parts.push(`${ind}${cbcOptionalTag('ID', input.id)}`);
+    // Note (XSD:19)
+    Note: () => joinLines((input.notes ?? []).map(note => `${ind}${cbcOptionalTag('Note', note)}`)),
 
-  // 6. CopyIndicator
-  parts.push(`${ind}${cbcOptionalTag('CopyIndicator', UBL_CONSTANTS.copyIndicator)}`);
+    // LineCountNumeric — B-52 (XSD:20, otomatik input.lines.length)
+    LineCountNumeric: () => `${ind}${cbcOptionalTag('LineCountNumeric', input.lines.length)}`,
 
-  // 7. UUID
-  parts.push(`${ind}${cbcOptionalTag('UUID', input.uuid)}`);
+    // OrderReference — B-53 (XSD:21, 0..n)
+    OrderReference: () =>
+      joinLines((input.orderReferences ?? []).map(ref => serializeOrderReference(ref, ind))),
 
-  // 8. IssueDate
-  parts.push(`${ind}${cbcRequiredTag('IssueDate', input.issueDate, 'DespatchAdvice')}`);
+    // AdditionalDocumentReference (MATBUDAN için zorunlu)
+    // IssueDate XSD'de 1..1 — verilmediyse irsaliyenin kendi tarihine düşülür.
+    AdditionalDocumentReference: () =>
+      joinLines(
+        (input.additionalDocuments ?? []).map(doc =>
+          serializeAdditionalDocument(doc, ind, input.issueDate),
+        ),
+      ),
 
-  // 9. IssueTime — B-18: XSD zorunlu
-  parts.push(`${ind}${cbcRequiredTag('IssueTime', input.issueTime, 'DespatchAdvice')}`);
+    // Signature — business logic tarafından eklenir, serializer üretmez
 
-  // 10. DespatchAdviceTypeCode
-  parts.push(`${ind}${cbcOptionalTag('DespatchAdviceTypeCode', input.despatchTypeCode)}`);
+    // DespatchSupplierParty (+ B-19: DespatchContact/Name)
+    DespatchSupplierParty: () =>
+      partyWrapper(
+        'DespatchSupplierParty',
+        input.supplier,
+        isNonEmpty(input.despatchContactName)
+          ? [
+              `${ind}  <cac:DespatchContact>`,
+              `${ind}    ${cbcOptionalTag('Name', input.despatchContactName)}`,
+              `${ind}  </cac:DespatchContact>`,
+            ]
+          : [],
+      ),
 
-  // 11. Note (XSD:19)
-  if (input.notes) {
-    for (const note of input.notes) {
-      parts.push(`${ind}${cbcOptionalTag('Note', note)}`);
-    }
-  }
+    DeliveryCustomerParty: () => partyWrapper('DeliveryCustomerParty', input.customer),
 
-  // 12. LineCountNumeric — B-52 (XSD:20, otomatik input.lines.length)
-  parts.push(`${ind}${cbcOptionalTag('LineCountNumeric', input.lines.length)}`);
+    // B-48: Opsiyonel 3 party (XSD sırası: Buyer → Seller → Originator)
+    BuyerCustomerParty: () =>
+      input.buyerCustomer ? partyWrapper('BuyerCustomerParty', input.buyerCustomer) : '',
+    SellerSupplierParty: () =>
+      input.sellerSupplier ? partyWrapper('SellerSupplierParty', input.sellerSupplier) : '',
+    OriginatorCustomerParty: () =>
+      input.originator ? partyWrapper('OriginatorCustomerParty', input.originator) : '',
 
-  // 13. OrderReference — B-53 (XSD:21, 0..n)
-  for (const ref of input.orderReferences ?? []) {
-    parts.push(serializeOrderReference(ref, ind));
-  }
+    Shipment: () => serializeShipmentBlock(input, ind),
 
-  // 13. AdditionalDocumentReference (MATBUDAN için zorunlu)
-  //     IssueDate XSD'de 1..1 — verilmediyse irsaliyenin kendi tarihine düşülür.
-  if (input.additionalDocuments) {
-    for (const doc of input.additionalDocuments) {
-      parts.push(serializeAdditionalDocument(doc, ind, input.issueDate));
-    }
-  }
+    // DespatchLine (zorunlu, çoklu)
+    DespatchLine: () => joinLines(input.lines.map(line => serializeDespatchLine(line, ind))),
+  });
 
-  // 14. Signature — business logic tarafından eklenir, serializer üretmez
-
-  // 15. DespatchSupplierParty (+ B-19: DespatchContact/Name)
-  parts.push(`${ind}<cac:DespatchSupplierParty>`);
-  parts.push(serializeParty(input.supplier, ind + '  '));
-  if (isNonEmpty(input.despatchContactName)) {
-    parts.push(`${ind}  <cac:DespatchContact>`);
-    parts.push(`${ind}    ${cbcOptionalTag('Name', input.despatchContactName)}`);
-    parts.push(`${ind}  </cac:DespatchContact>`);
-  }
-  parts.push(`${ind}</cac:DespatchSupplierParty>`);
-
-  // 16. DeliveryCustomerParty
-  parts.push(`${ind}<cac:DeliveryCustomerParty>`);
-  parts.push(serializeParty(input.customer, ind + '  '));
-  parts.push(`${ind}</cac:DeliveryCustomerParty>`);
-
-  // 17-19. B-48: Opsiyonel 3 party (XSD sırası: Buyer → Seller → Originator)
-  if (input.buyerCustomer) {
-    parts.push(`${ind}<cac:BuyerCustomerParty>`);
-    parts.push(serializeParty(input.buyerCustomer, ind + '  '));
-    parts.push(`${ind}</cac:BuyerCustomerParty>`);
-  }
-  if (input.sellerSupplier) {
-    parts.push(`${ind}<cac:SellerSupplierParty>`);
-    parts.push(serializeParty(input.sellerSupplier, ind + '  '));
-    parts.push(`${ind}</cac:SellerSupplierParty>`);
-  }
-  if (input.originator) {
-    parts.push(`${ind}<cac:OriginatorCustomerParty>`);
-    parts.push(serializeParty(input.originator, ind + '  '));
-    parts.push(`${ind}</cac:OriginatorCustomerParty>`);
-  }
-
-  // 20. Shipment
-  parts.push(serializeShipmentBlock(input, ind));
-
-  // 20. DespatchLine (zorunlu, çoklu)
-  for (const line of input.lines) {
-    parts.push(serializeDespatchLine(line, ind));
-  }
-
-  parts.push('</DespatchAdvice>');
-  return joinLines(parts);
+  return joinLines([
+    xmlDeclaration(),
+    rootOpenTag('DespatchAdvice', DESPATCH_NAMESPACES),
+    ...body,
+    '</DespatchAdvice>',
+  ]);
 }
 
 /** Shipment bloğu serialize */
