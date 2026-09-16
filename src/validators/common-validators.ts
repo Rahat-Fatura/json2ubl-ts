@@ -20,6 +20,7 @@ import { missingField, invalidFormat, invalidValue } from './validation-result';
 import { isNonEmpty } from '../utils/formatters';
 import { runFieldBindings } from './rules/field-rule';
 import { INVOICE_HEADER_BINDINGS } from './rules/header-bindings';
+import { INVOICE_CARDINALITY_BINDINGS, runCardinalityBindings } from './rules/cardinality-bindings';
 
 /**
  * §1 e-Fatura ortak zorunluluk validasyonu.
@@ -146,6 +147,12 @@ export function validateCommon(input: InvoiceInput): ValidationError[] {
       errors.push(...validateAddress(line.delivery.deliveryAddress, `lines[${i}].delivery.deliveryAddress`));
     }
   });
+
+  /* §1.9 XSD kardinalitesi — şematronun GÖRMEDİĞİ kusur sınıfı.
+   * Serileştirici bir düğümü yazıp zorunlu çocuğunu yazamadığında belge
+   * sessizce XSD-geçersiz oluyordu; kapı artık BİZDE. Tablo:
+   * `rules/cardinality-bindings.ts`, yüklemler `rules/xsd-cardinality-rules.ts`. */
+  errors.push(...runCardinalityBindings(INVOICE_CARDINALITY_BINDINGS, input));
 
   return errors;
 }
