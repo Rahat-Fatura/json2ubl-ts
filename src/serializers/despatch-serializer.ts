@@ -1,6 +1,6 @@
 import type { DespatchInput } from '../types/despatch-input';
 import { DESPATCH_NAMESPACES, UBL_CONSTANTS } from '../config/namespaces';
-import { cbcOptionalTag, cbcRequiredTag, joinLines, xmlDeclaration, despatchOpenTag, ublExtensionsSkeleton } from '../utils/xml-helpers';
+import { cbcOptionalTag, cbcRequiredTag, joinLines, xmlDeclaration, rootOpenTag, ublExtensionsSkeleton } from '../utils/xml-helpers';
 import { isNonEmpty } from '../utils/formatters';
 import { serializeParty, serializePartyAs } from './party-serializer';
 import { serializeAddress } from './delivery-serializer';
@@ -25,7 +25,7 @@ export function serializeDespatch(
   const parts: string[] = [];
 
   parts.push(xmlDeclaration());
-  parts.push(despatchOpenTag(DESPATCH_NAMESPACES));
+  parts.push(rootOpenTag('DespatchAdvice', DESPATCH_NAMESPACES));
 
   // 1. UBLExtensions — DESPATCH_SEQ'in İLK slotu (4.1.0, opsiyonel bayrak)
   if (includeUblExtensions) {

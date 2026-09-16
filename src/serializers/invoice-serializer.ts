@@ -4,7 +4,7 @@ import {
     cbcOptionalTag,
     joinLines,
     xmlDeclaration,
-    invoiceOpenTag,
+    rootOpenTag,
     ublExtensionsSkeleton,
 } from "../utils/xml-helpers";
 import {
@@ -58,7 +58,7 @@ export function serializeInvoice(
     parts.push(xmlDeclaration());
 
     // Invoice açılış tag'i
-    parts.push(invoiceOpenTag(INVOICE_NAMESPACES));
+    parts.push(rootOpenTag("Invoice", INVOICE_NAMESPACES));
 
     // 1. UBLExtensions — INVOICE_SEQ'in İLK slotu. Opsiyonel bayrak (4.1.0):
     //    imzayı kendi atan tüketiciler için boş iskelet; kapalıyken hiç yazılmaz.

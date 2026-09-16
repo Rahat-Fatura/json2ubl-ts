@@ -236,8 +236,19 @@ export function ublExtensionsSkeleton(indent: string = ''): string {
   ].join('\n');
 }
 
-/** Invoice root element açılış tag'i oluşturur */
-export function invoiceOpenTag(namespaces: Record<string, string>): string {
+/**
+ * Kök eleman açılış tag'i — HER belge türü için tek fonksiyon.
+ *
+ * Ad alanı bildirimleri `namespaces` haritasının ANAHTAR SIRASINDA yazılır
+ * (`namespacesFor`, bkz. `config/namespaces.ts`). İki özel anahtar vardır:
+ * `default` → `xmlns`, `schemaLocation` → `xsi:schemaLocation`; kalan her
+ * anahtar `xmlns:<anahtar>` olur.
+ *
+ * Fatura ve irsaliyede eskiden iki ayrı kopya (`invoiceOpenTag` /
+ * `despatchOpenTag`) vardı; 12 satırın 11'i birebir aynıydı ve tek fark son
+ * satırdaki kök adıydı. e-SMM + e-MM eklenince kopya sayısı dörde çıkacaktı.
+ */
+export function rootOpenTag(root: string, namespaces: Record<string, string>): string {
   const attrs: string[] = [];
   for (const [key, value] of Object.entries(namespaces)) {
     if (key === 'default') {
@@ -248,21 +259,6 @@ export function invoiceOpenTag(namespaces: Record<string, string>): string {
       attrs.push(`xmlns:${key}="${value}"`);
     }
   }
-  return `<Invoice ${attrs.join('\n  ')}>`;
-}
-
-/** DespatchAdvice root element açılış tag'i oluşturur */
-export function despatchOpenTag(namespaces: Record<string, string>): string {
-  const attrs: string[] = [];
-  for (const [key, value] of Object.entries(namespaces)) {
-    if (key === 'default') {
-      attrs.push(`xmlns="${value}"`);
-    } else if (key === 'schemaLocation') {
-      attrs.push(`xsi:schemaLocation="${value}"`);
-    } else {
-      attrs.push(`xmlns:${key}="${value}"`);
-    }
-  }
-  return `<DespatchAdvice ${attrs.join('\n  ')}>`;
+  return `<${root} ${attrs.join('\n  ')}>`;
 }
 
