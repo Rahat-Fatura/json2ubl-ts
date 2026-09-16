@@ -14,6 +14,7 @@ import { missingField, invalidFormat, invalidValue, profileRequirement } from '.
 import { isNonEmpty } from '../utils/formatters';
 import { runFieldBindings } from './rules/field-rule';
 import { despatchHeaderBindings } from './rules/header-bindings';
+import { licensePlateCardinalityRule } from './rules/xsd-cardinality-rules';
 
 /**
  * Doğrulamanın koştuğu AŞAMA.
@@ -161,6 +162,12 @@ export function validateDespatch(
         actual: `${s.licensePlates?.length ?? 0} kayıt`,
       });
     }
+
+    /* S3 — XSD kardinalitesi: `cac:RoadTransport/cbc:LicensePlateID` 1..1.
+     * Şematronda karşılığı YOKTUR (bu yüzden `hasUsablePlate` kapısı ALT sınıra
+     * bakıyor, ÜST sınıra kimse bakmıyordu) — kaynak GİB XSD'sinin kendisidir.
+     * Ölçüldü: iki plaka canlı doğrulayıcıda `cvc-complex-type.2.4.d`. */
+    errors.push(...licensePlateCardinalityRule(s.licensePlates, 'shipment.licensePlates'));
 
     // B-85: CarrierParty VKN/TCKN format + schemeID whitelist (CommonSchematron:505-509)
     if (s.carrierParty) {
