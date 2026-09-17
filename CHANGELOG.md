@@ -241,6 +241,82 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 - **Fikstürler SENTETİKTİR.** 12 gerçek prod e-SMM'in yalnız YAPISI okundu;
   içerik hiçbir yere kopyalanmadı.
 
+### S5b — e-MM (Müstahsil Makbuzu) katmanı
+
+> **DÖRDÜNCÜ BELGE TİPİ — ve ilk `CreditNote` köklü olanı.** `src/documents/
+> producer-receipt/`, e-SMM ile AYNI 12 dosyalık iskelette. Ölçüm: **143 test
+> dosyası / 3153 test / 0 kırmızı / 0 skip** (`npm run test:strict`, doğrulayıcı
+> ayakta); e-MM payı 97 test. Kanıt 27 gerçek prod e-MM belgesinin YAPISAL
+> ölçümüdür — içerik hiçbir yere kopyalanmadı.
+>
+> 🔴 **AYRI KATMAN, AMA KOPYA DEĞİL.** e-SMM ile profil aynı (`EARSIVBELGE`),
+> kök FARKLI (`CreditNote` ↔ `Invoice`). Ayrılık ortak gövdeyi çoğaltmadan
+> yapıldı: oturum gövdesi, builder gövdesi, kur/kalem kuralları, e-Arşiv eşleme
+> yardımcıları ve satır tabanı aritmetiği ALT KATMANLARDA TEK KOPYA.
+
+#### Eklendi
+
+- **`CreditNote` kökü ortak katmanda.** `CREDIT_NOTE_SEQ` + `CREDIT_NOTE_LINE_SEQ`
+  GİB XSD'sinden ÜRETİLDİ (`schemas/ubl-tr/maindoc/UBL-CreditNote-2.1.xsd`, mevcut
+  iki XSD ile aynı paketten — SHA-256'lar tutuyor). `CREDIT_NOTE_NAMESPACES` +
+  `serializeCreditNoteLine` (gövde ORTAK bileşenlerden; ikinci bir kalem üreticisi
+  yazılmadı).
+- **`ProducerReceiptBuilder` / `SimpleProducerReceiptBuilder` /
+  `ProducerReceiptSession`** + ham/simple girdi, doğrulama, toplam zinciri ve
+  üretilmiş yol yüzeyi (`ProducerReceiptSessionPaths`). Cephe 304 → 348 ad;
+  hiçbir ad düşmedi.
+- **Ortak gövdeler (S5b'de çıkarıldı, e-SMM de onlara taşındı):**
+  `session/document-session.ts` (`DocumentSession`, ~330 satırlık tekrar),
+  `documents/shared/builder-base.ts` (`UblDocumentBuilder`),
+  `ubltr/rules/shared/currency-rules.ts`, `ubltr/rules/shared/line-rules.ts`,
+  `ubltr/rules/shared/validation-stage.ts`, `ubltr/mapping/earsiv-mapping.ts`,
+  `calculator/line-calculator.ts → calculateLineBase`.
+
+#### 🔴 Ölçülenler (tahmin değil)
+
+- **TARAF ROLLERİ TERSİNE.** Müstahsil makbuzunu satıcı değil ALICI düzenler
+  (VUK 235). 27/27 prod belgede `AccountingCustomerParty` = müstahsil
+  (`cac:Person` + TCKN), `AccountingSupplierParty` = tüccar (`PartyName` + VKN).
+  Girdi yüzeyi bu yüzden `issuer` / `producer` adlarını taşır — tüketici hangi
+  tarafı nereye yazacağını tahmin etmez.
+- **TOPLAM ZİNCİRİ ÇIKARIR.** 25/25 ölçülebilir prod belgede
+  `TaxInclusiveAmount = TaxExclusiveAmount − Σ TaxSubtotal.TaxAmount` ve
+  `PayableAmount = TaxInclusiveAmount`. UBL-TR'nin genel formülü (`TIA = TEA + Σ`)
+  e-MM'de HARFİYEN UYGULANMAZ. e-SMM'deki KAYNAKSIZ konvansiyon sabitinin muadili
+  burada YOKTUR — çünkü karar değil ölçüm var.
+- **KDV YOKTUR, her alt toplam KESİNTİDİR.** Kapalı küme `{0003, 8001, SGK_PRIM}`.
+  `SGK_PRIM` GİB kod listesinde YOK; KAYNAKSIZ olarak işaretlendi (dayanağı 25/27
+  prod belge + şematronun onu reddetmemesi).
+- **`CustomizationID` sorusu ÖLÇÜMLE KAPANDI.** Canlı şematron kuralının kendi
+  metni "'TR1.2' veya 'TR1.2.1' olmalıdır" diyor; ikisi de yeşil geçiyor (ayrı
+  test). Yürürlükteki değer `TR1.2` — 27/27 prod belge onu taşıyor.
+- **BASTIRILAN KURAL SAYISI: 0.** e-SMM iki assert'i bastıran bir profile
+  (`unsigned-esmm`) muhtaçtı; e-MM'de hiçbir profile gerek yok ve imzasız belge
+  XSD'den DE temiz geçiyor (`CreditNoteType`ta `cac:Signature` 0..n,
+  `ext:UBLExtensions` 0..1 — GİB bu şemayı daraltmamış).
+- **⚠️ ŞEMATRONUN SESSİZLİĞİ.** `CreditNote` kökünde GİB şematronu `ProfileID`,
+  `CreditNoteTypeCode` ve `TaxTypeCode` için HİÇBİR assert koşturmaz — uydurma
+  değerler geçer. Kütüphanedeki kapalı kümeler bu yüzden TEK gerçek kapıdır ve
+  sessizlik teste ÇİVİLENDİ ki yarın "şematron zaten bakıyor" diye silinmesin.
+- **Yanlışlıkla reddedilmeyenler:** `PaymentMeans` zorunlu DEĞİL (27 belgenin
+  0'ında var) · müstahsil TCKN'e kilitlenmez (ortaklık/tüzel kişi olabilir) ·
+  teslim tarihi = düzenleme tarihi DAYATILMAZ · stopaj oranı dayatılmaz (prod'da
+  %2 ve %4 ikisi de görüldü).
+
+#### Düzeltildi
+
+- **Yol üreteci takma adları GEÇİŞLİ çözüyor.** `resolveAlias` TEK HOP atıyordu;
+  zincir üç adıma çıkınca (`ProducerReceiptSendMethod → EArchiveSendMethod →
+  literal union`) alan yol yüzeyinden SESSİZCE DÜŞÜYORDU —
+  `session.update('sendMethod', …)` `UNKNOWN_PATH` alırdı. Kusur ortaklaştırmayla
+  görünür oldu; e-SMM'de zincir tek adımlıktı.
+- **Katman bekçisinin tek YUKARI-import borcu kapandı.** Aşama tipi
+  (`ValidationStage`) ortak katmana inince
+  `ubltr/rules/shared/header-bindings.ts → documents/despatch-advice/validators.ts`
+  kenarı (üstelik döngüseldi) ortadan kalktı; `KNOWN_DEBT` listesi 7 → 6.
+- **Fikstürler SENTETİKTİR.** 27 gerçek prod e-MM'in yalnız YAPISI okundu;
+  içerik (ad, VKN/TCKN, adres, tutar) hiçbir yere kopyalanmadı.
+
 ## [4.6.0] — 2026-09-15
 
 > **e-İRSALİYE OTURUM KATMANI.** İkinci belge tipi. Amaç mimari tutarlılık: dışarıdan
