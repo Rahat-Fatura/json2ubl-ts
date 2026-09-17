@@ -26,13 +26,22 @@ import { describe, it, expect } from 'vitest';
 
 const SRC = path.resolve(__dirname, '..', 'src');
 
-type Layer = 'ubl' | 'ubltr' | 'doc:invoice' | 'doc:despatch' | 'calculator' | 'session' | 'leaf';
+type Layer =
+    | 'ubl'
+    | 'ubltr'
+    | 'doc:invoice'
+    | 'doc:despatch'
+    | 'doc:self-employed-voucher'
+    | 'calculator'
+    | 'session'
+    | 'leaf';
 
 const LAYER_PREFIXES: ReadonlyArray<readonly [string, Layer]> = [
     ['ubl/', 'ubl'],
     ['ubltr/', 'ubltr'],
     ['documents/invoice/', 'doc:invoice'],
     ['documents/despatch-advice/', 'doc:despatch'],
+    ['documents/self-employed-voucher/', 'doc:self-employed-voucher'],
     ['calculator/', 'calculator'],
     ['session/', 'session'],
 ];
@@ -43,6 +52,7 @@ const RANK: Partial<Record<Layer, number>> = {
     ubltr: 2,
     'doc:invoice': 3,
     'doc:despatch': 3,
+    'doc:self-employed-voucher': 3,
 };
 
 function layerOf(relative: string): Layer {
@@ -166,8 +176,29 @@ describe('katman bekçisi — documents/* → ubltr/ → ubl/', () => {
         const siblings = violations.filter((v) => v.startsWith('KARDEŞ'));
         expect(
             siblings,
-            'documents/invoice ile documents/despatch-advice birbirinden bağımsızdır. ' +
-                'Ortak ihtiyaç ubltr/rules/shared altına iner.',
+            'documents/invoice · documents/despatch-advice · documents/self-employed-voucher ' +
+                'birbirinden bağımsızdır. Ortak ihtiyaç ubltr/rules/shared altına iner.',
+        ).toEqual([]);
+    });
+
+    it('her belge türü klasörü bekçinin KAPSAMINDA olmalı', () => {
+        /* Kapsam dışı bir klasör 'leaf' sayılır ve kardeş/yukarı kuralları ona
+         * HİÇ uygulanmaz — yani bekçi onu sessizce geçirir. Yeni bir belge türü
+         * eklenip LAYER_PREFIXES güncellenmezse testler yeşil kalır ve ayrım
+         * ilk acelede kaybolur. Bu test o sessizliği kapatır. */
+        const documentsDir = path.join(SRC, 'documents');
+        const folders = fs
+            .readdirSync(documentsDir, { withFileTypes: true })
+            .filter((d) => d.isDirectory())
+            .map((d) => `documents/${d.name}/`)
+            .sort();
+        const covered = LAYER_PREFIXES.map(([prefix]) => prefix);
+        const uncovered = folders.filter((f) => !covered.includes(f));
+        expect(
+            uncovered,
+            'Bu belge türü klasörleri katman bekçisinin LAYER_PREFIXES tablosunda YOK. ' +
+                'Kapsam dışı klasöre kardeş/yukarı kuralı UYGULANMAZ — tabloya ekleyin ' +
+                've RANK değerini 3 verin.',
         ).toEqual([]);
     });
 

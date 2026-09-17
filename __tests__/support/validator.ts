@@ -40,11 +40,28 @@ const PROBE_TIMEOUT_MS = 15_000;
 /** Yoklama için kullanılan golden (diskte hazır, deterministik, şematron-temiz). */
 const PROBE_GOLDEN = path.join(__dirname, '..', 'golden', '__golden__', 'a-basit-satis-tek-kdv.xml');
 
+/**
+ * Doğrulama profili bir assert'i bastırdığında servisin döndürdüğü kanıt.
+ *
+ * 🔑 Bastırmanın KENDİSİ ölçülebilir olmalıdır: "yeşil geldi" ile "kural
+ * bastırıldı da yeşil geldi" aynı şey değildir. Test bu yüzden bastırılan
+ * kuralların ADINI da doğrular — profil yanlışlıkla fazla şey bastırırsa fark
+ * edilir.
+ */
+export interface SuppressionInfo {
+  profile: string;
+  totalRawErrors: number;
+  suppressedCount: number;
+  suppressedErrors: Array<{ ruleId: string; message: string }>;
+}
+
 export interface ValidateResult {
   validSchema: boolean;
   validSchematron: boolean;
   schemaValidationErrors: string[] | null;
   schematronValidationErrors: Array<{ ruleId: string; message: string }> | null;
+  /** Profil verilmediyse `null`. */
+  suppressionInfo?: SuppressionInfo | null;
 }
 
 /**
@@ -53,6 +70,9 @@ export interface ValidateResult {
  *   • `parameters` — Schematron XSLT parametreleri (JSON dizi); `type` KÜÇÜK HARF
  *                    olmalıdır (`efatura` / `earchive`) — fail-closed, büyük harf
  *                    sessizce yanlış şematron seçtirmez, doğrudan reddedilir.
+ *   • `profile`    — OPSİYONEL doğrulama profili (`unsigned-esmm` gibi). Servis
+ *                    tarafında tanımlıdır (`validation-profiles.yml`); istemci
+ *                    belge mutasyonu YAPMAZ, yalnız adı geçer.
  * Yanıt zarfı: `{ errorMessage, result: { ... } }`.
  */
 export async function validateLive(
@@ -60,10 +80,12 @@ export async function validateLive(
   type: string,
   url: string = VALIDATOR_URL,
   timeoutMs = 30_000,
+  profile?: string,
 ): Promise<ValidateResult> {
   const form = new FormData();
   form.append('source', new Blob([xml], { type: 'application/xml' }), 'invoice.xml');
   form.append('parameters', JSON.stringify([{ key: 'type', value: type }]));
+  if (profile) form.append('profile', profile);
 
   const res = await fetch(url, {
     method: 'POST',

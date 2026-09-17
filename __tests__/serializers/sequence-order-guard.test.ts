@@ -11,6 +11,8 @@ import { serializeDelivery } from '../../src/ubl/components/delivery';
 import { serializeSignature } from '../../src/ubl/components/party';
 import type { DeliveryInput } from '../../src/types/common';
 import { GOLDEN_SCENARIOS } from '../golden/scenarios';
+import { SimpleSelfEmployedVoucherBuilder } from '../../src/documents/self-employed-voucher';
+import { SELF_EMPLOYED_VOUCHER_SCENARIOS } from '../self-employed-voucher/scenarios';
 
 /**
  * SEKANS BEKÇİSİ — "tablolar gerçekten taşıyıcı mı?" sorusunun tek kanıtı.
@@ -315,6 +317,23 @@ describe('sekans bekçisi — canlı üretilen XML sırası tabloların alt-dizi
   it.each(GOLDEN_SCENARIOS.map(s => [s.slug, s.input] as const))('golden/%s', (slug, input) => {
     expect(violationsIn(buildXml('invoice', input), `golden/${slug}`)).toEqual([]);
   });
+
+  /* e-SMM `Invoice` KÖKLÜDÜR — GİB'in `UBL-Invoice-2.1.xsd` sekansı AYNEN
+   * geçerlidir ve bu bekçi o çıktıyı da taramalıdır. Belge türü korpusa
+   * eklenmezse yeni bir serializer bekçisiz kalır; e-SMM `INVOICE_SEQ`ten
+   * farklı bir SLOT KÜMESİ doldurduğu için (Signature/Delivery/PaymentMeans yok,
+   * PricingExchangeRate var) kapsam kendiliğinden gelmiyor. */
+  it.each(SELF_EMPLOYED_VOUCHER_SCENARIOS.map(s => [s.slug, s.input] as const))(
+    'esmm/%s',
+    (slug, input) => {
+      const xml = new SimpleSelfEmployedVoucherBuilder({
+        prettyPrint: true,
+        validationLevel: 'strict',
+        includeUblExtensions: true,
+      }).build(input).xml;
+      expect(violationsIn(xml, `esmm/${slug}`)).toEqual([]);
+    },
+  );
 
   it('sentetik ActualPackage parçası (PACKAGE_SEQ + CUSTOMS_DECLARATION_SEQ)', () => {
     const xml = syntheticPackageXml();
