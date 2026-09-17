@@ -212,15 +212,12 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 
 #### Notlar
 
-- 🔴 **`TaxInclusiveAmount` konvansiyonu KAYNAKSIZDIR.** UBL-TR formülü
-  `TIA = TaxExclusive + Σ(TaxTotal.TaxAmount)` der; `0003` ve `9015` de TaxTotal
-  düzleminde olduğu için 10.000 brüt / %20 stopaj / %20 KDV belgesinde **14.000**
-  çıkardı. Kütüphane **12.000** (brüt + hesaplanan KDV) diyor. GİB metni YOKTUR
-  ve **12 prod belgenin hiçbiri bu dalı test etmiyor** (hepsi stopajsız).
-  Karar TEK YERDE toplandı —
-  `SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION` (`documents/self-employed-voucher/totals.ts`)
-  — ve teste çivilendi. **Stopajlı gerçek bir prod örneği bu soruyu tek başına
-  kapatır**; geldiğinde değişecek tek satır odur.
+- ~~🔴 **`TaxInclusiveAmount` konvansiyonu KAYNAKSIZDIR.**~~ **→ S5c'de KAPANDI.**
+  O gün kütüphane iki okuma arasında seçim yapamıyordu ve kararı bir sabitte
+  (`SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION`) GÖRÜNÜR tutmakla yetinmişti.
+  Kullanıcının üretim çıktısı `9015` eksenini kapattı, sabit ve alternatif dal
+  kaldırıldı. Ayrıntı ve hâlâ açık kalan `0003` ekseni için aşağıdaki **S5c**
+  bloğuna bakın.
 - **Doğrulayıcıya `type=earchive` + `profile=unsigned-esmm` ile gidilir.**
   `EARSIVBELGE` ve `SERBESTMESLEKMAKBUZU` `UBL-TR_Codelist.xml`'de YOKTUR, bu
   yüzden Main şematron profilsiz çağrıda belgeyi DAİMA reddeder
@@ -316,6 +313,83 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
   kenarı (üstelik döngüseldi) ortadan kalktı; `KNOWN_DEBT` listesi 7 → 6.
 - **Fikstürler SENTETİKTİR.** 27 gerçek prod e-MM'in yalnız YAPISI okundu;
   içerik (ad, VKN/TCKN, adres, tutar) hiçbir yere kopyalanmadı.
+
+### S5c — e-SMM `TaxInclusiveAmount` kararı KAPANDI
+
+> **KOD DEĞİL, BELİRSİZLİK DEĞİŞTİ.** Üretilen hiçbir XML etkilenmedi: 202 XML'in
+> **202'si byte-exact AYNI** (örnek + matris korpusu yeniden üretilip SHA-256 ile
+> karşılaştırıldı). Ölçüm: **144 test dosyası / 3157 test / 0 kırmızı / 0 skip**
+> (`npm run test:strict`, doğrulayıcı ayakta).
+
+#### ⚠️ Kırıcı olabilecek — CEPHE DARALMASI
+
+- **`SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION` (değer) ve
+  `SelfEmployedVoucherTaxInclusiveConvention` (tip) KALDIRILDI.** Cephe
+  **348 → 346**. İkisini de içe aktaran bir tüketici artık derlenmez; tutulacak
+  bir davranış YOKTUR, çünkü sabit zaten tek değerdeydi (`'gross-plus-vat'`) ve
+  alternatif dal hiç kullanılmamıştı. Yapılacak şey ithali SİLMEKTİR.
+
+#### Değişti
+
+- **Konvansiyon anahtarı artık YOK — kod tek yolu yazıyor.** `TIA = brüt +
+  hesaplanan KDV`; stopaj ve KDV tevkifatı yalnız `PayableAmount`ı etkiler.
+  Kullanıcı kararı (2026-09-17): *"stopajı aynı faturadaki ve e-MM'deki gibi
+  uygulayacaksın; tutar onlarda nasıl hesaplanıyorsa o şekilde hesaplanacak."*
+  Dayanak, kullanıcının ÜRETİM şablonunun kendi çıktısıdır (2.000 hizmet ·
+  %20 KDV = 400 · %40 KDV tevkifatı = 160 → **Vergiler Dahil 2.400** ·
+  **Ödenecek 2.240**). Bu çıktı, UBL-TR formülünün harfi harfine okunuşunu
+  (aynı belgede 2.560) DIŞLIYOR; eski `'ubltr-formula'` dalı böylece ölü koda
+  düştü ve kaldırıldı.
+- **"🔴 KAYNAKSIZ KARAR — stopajlı prod örneği BEKLENİYOR" notu kalktı.**
+  Yerine gerçek gerekçe yazıldı: kullanıcı kararı + fatura düzlemiyle ÖLÇÜLMÜŞ
+  şekil eşitliği.
+
+#### Eklendi
+
+- **Fatura düzlemiyle eşitlik TESTE ÇİVİLENDİ** —
+  `__tests__/self-employed-voucher/invoice-parity.test.ts` (5 test). Aynı
+  girdiden (2.000 brüt · %20 KDV · %40 tevkifat) fatura hattı ile e-SMM hattı
+  karşılaştırılır; karşılaştırma yardımcı fonksiyonda DEĞİL **üretilen XML'de**
+  yapılır, çünkü iki serileştirme yolu ayrıdır. Kullanıcının üretim çıktısındaki
+  2.000/400/160/2.400/2.240 ayrı bir vaka olarak çivilidir. Çivinin ısırdığı
+  mutasyonla kanıtlandı: TIA'yı UBL-TR formülüne çevirmek **11**, faturanın
+  `TaxTotal` dalına çevirmek **12** test kırıyor (golden XML'ler dahil).
+
+#### 🔴 Ölçülenler (tahmin değil)
+
+- **Ayrışan tek şey `TaxInclusiveAmount`; `PayableAmount` HER okumada AYNI.**
+  Fatura motoru `cac:TaxTotal` altındaki `baseStat:false` kodlarını (`0003`,
+  `9015`) NEGATİF yazar ve o düzlemde `TIA`yı da düşürür; `cac:WithholdingTaxTotal`
+  düzleminde ise `TIA`ya dokunmaz. Ölçülen tablo (2.000 · %20 KDV · %40 tevkifat):
+
+  | Hat | TIA | Ödenecek |
+  |---|---|---|
+  | fatura · tevkifat `WithholdingTaxTotal`da | 2.400 | 2.240 |
+  | e-SMM · tevkifat `TaxTotal[9015]`te | 2.400 | 2.240 |
+  | fatura · tevkifat `TaxTotal[9015]`te | 2.240 | 2.240 |
+
+  e-SMM yapısal olarak `TaxTotal` düzlemindedir (`9015`in `WithholdingTaxTotal`da
+  yazılması YASAK) ama üretim çıktısı 2.400 diyor — yani e-SMM bu kuralı İZLEMEZ.
+  Fark BİLİNÇLİDİR ve teste çivilidir ki biri "tutarsızlık" sanıp e-SMM'i sessizce
+  2.240'a çekmesin.
+
+#### ⚠️ HÂLÂ AÇIK
+
+- **`0003` gelir vergisi stopajı ekseni.** Üretim çıktısında **stopaj satırı
+  YOKTUR**; kapanan eksen `9015`tir. 10.000 brüt / %20 KDV / %20 stopajda fatura
+  `TIA` **10.000** (stopaj `TaxTotal`a negatif girer), e-SMM `TIA` **12.000**
+  verir — `PayableAmount` ikisinde de 10.000. Fark ölçülüp teste kondu, İDDİA
+  olarak değil ÖLÇÜM olarak. Stopajlı bir üretim çıktısı geldiğinde kapanacak TEK
+  yer `selfEmployedVoucherTotals` gövdesidir.
+
+#### Notlar
+
+- **e-MM farkı ÇELİŞKİ DEĞİL.** `producer-receipt/totals.ts`te `TIA = brüt −
+  kesinti` ölçülmüştür (25/25 prod belge) ve doğrudur: e-MM'de müstahsil KDV
+  mükellefi olmadığı için **ÇIKIŞ KDV'Sİ YOKTUR**, dolayısıyla "eklenecek" vergi
+  de yoktur. İki dosyaya karşılıklı birer açıklama notu kondu ki gelecekte biri
+  bunu tutarsızlık sanıp birini bozmasın. İkisinin ORTAK yanı **ödenecek tutarın
+  kesinti düşülerek** bulunmasıdır.
 
 ## [4.6.0] — 2026-09-15
 
