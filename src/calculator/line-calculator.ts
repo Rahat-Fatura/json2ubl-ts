@@ -74,6 +74,46 @@ export interface CalculatedLine {
 
 // ─── Hesaplama Fonksiyonu ───────────────────────────────────────────────────────
 
+/** `calculateLineBase` sonucu — vergiden ÖNCEKİ satır tutarları. */
+export interface CalculatedLineBase {
+  allowanceObject: CalculatedAllowance;
+  /** `price × quantity − indirim` — UBL-TR `cbc:LineExtensionAmount` kaynağı. */
+  lineExtensionAmount: number;
+}
+
+/**
+ * Satırın VERGİDEN ÖNCEKİ tutarları: brüt, iskonto, satır tutarı.
+ *
+ * 🔑 NİYE AYRI: bu üç adım belge türünden BAĞIMSIZDIR — her belgede
+ * `lineExtensionAmount = price × quantity − indirim`. Vergi semantiği ise
+ * bağımsız DEĞİLDİR: `calculateLine`ın geri kalanı fatura/e-SMM düzlemini
+ * (KDV matrahı, `baseStat`/`baseCalculate`, tevkifat) uygular ve o düzlem
+ * e-MM'de GEÇERSİZDİR — müstahsil makbuzunda KDV yoktur, `cac:TaxTotal`
+ * altındaki her şey KESİNTİDİR ve matrahı daima satır tutarıdır (27 prod
+ * belgede ölçüldü: `TaxableAmount == LineExtensionAmount`, her kod için).
+ *
+ * e-MM `calculateLine`ı olduğu gibi çağırsaydı çıktısına ZORLA bir `0015` KDV
+ * alt toplamı girerdi (motor onu koşulsuz ekler) — prod'da hiç bulunmayan bir
+ * eleman. Bu yüzden ORTAKLAŞAN parça tam olarak burasıdır: iskonto aritmetiği
+ * tek yerde kalır, vergi semantiği belgeye ait olduğu yerde.
+ */
+export function calculateLineBase(line: {
+  price: number;
+  quantity: number;
+  allowancePercent?: number;
+}): CalculatedLineBase {
+  const grossAmount = line.price * line.quantity;
+
+  const allowanceObject: CalculatedAllowance = {
+    percent: line.allowancePercent ?? 0,
+    base: line.allowancePercent ? grossAmount : 0,
+    amount: line.allowancePercent ? grossAmount * (line.allowancePercent / 100) : 0,
+  };
+
+  return { allowanceObject, lineExtensionAmount: grossAmount - allowanceObject.amount };
+}
+
+
 /**
  * Tek bir fatura satırını hesaplar.
  *
@@ -94,18 +134,7 @@ export function calculateLine(
   index: number,
   currencyCode: string,
 ): CalculatedLine {
-  const grossAmount = line.price * line.quantity;
-
-  // İskonto hesabı
-  const allowanceObject: CalculatedAllowance = {
-    percent: line.allowancePercent ?? 0,
-    base: line.allowancePercent ? grossAmount : 0,
-    amount: line.allowancePercent
-      ? grossAmount * (line.allowancePercent / 100)
-      : 0,
-  };
-
-  const lineExtensionAmount = grossAmount - allowanceObject.amount;
+  const { allowanceObject, lineExtensionAmount } = calculateLineBase(line);
   let lineExtensionAmountForCalculation = lineExtensionAmount;
 
   // Ek vergiler (KDV hariç: ÖTV, Damga V., ÖİV vb.)
