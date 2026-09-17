@@ -78,9 +78,10 @@ export interface SelfEmployedVoucherTotals {
   allowanceTotalAmount: number;
   payableAmount: number;
   /**
-   * **Net Ücret** — brüt − stopaj. UBL'de KARŞILIĞI YOKTUR; makbuzun
-   * görüntüsünde ve karekodda (`netucret` anahtarı) geçer, XML'e yazılmaz.
-   * Türetimi burada durur ki tüketici kendi formülünü uydurmasın.
+   * **Net Ücret** — brüt − stopaj. UBL'de KARŞILIĞI YOKTUR, XML'e YAZILMAZ;
+   * makbuzun GÖRÜNTÜSÜNE aittir ve orayı `tpl-forge` çizer. Türetimi yine de
+   * burada durur ki tüketici kendi formülünü uydurmasın — tek doğru formül
+   * budur, kullanan taraf onu buradan okur.
    */
   netFee: number;
   /** `cac:TaxTotal/cbc:TaxAmount` — alt toplamların TOPLAMI (UBL-TR yapısal kuralı). */
