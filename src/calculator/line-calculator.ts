@@ -115,11 +115,34 @@ export function calculateLine(
     taxSubtotals: [],
   };
 
+  /* 🔴 MATRAHI HESAPLANAN KDV OLAN VERGİLER ERTELENİR.
+   *
+   * `baseIsCalculatedVat` taşıyan kod (bugün yalnız `9015` KDV Tevkifatı) KDV
+   * HESAPLANMADAN önce hesaplanamaz — matrahı KDV'nin kendisidir. Bu yüzden
+   * ilk geçişte toplanır, KDV kurulduktan SONRA işlenir.
+   *
+   * Sıra sonucu: `0003` → `0015` → `9015`. Bu zaten e-SMM'in toplam zincirinin
+   * okunma sırasıdır (brüt → stopaj → KDV → KDV tevkifatı) ve prod belgelerin
+   * sırasıyla uyumludur. */
+  const deferredVatBasedTaxes: Array<{ percent: number; def: ReturnType<typeof configManager.getTax> }> = [];
+
   if (line.taxes && line.taxes.length > 0) {
     for (const tax of line.taxes) {
       const taxDef = configManager.getTax(tax.code);
       if (!taxDef) {
         throw new Error(`Geçersiz vergi kodu: ${tax.code}. Tanımlı vergi kodları için tax-config.ts dosyasına bakınız.`);
+      }
+
+      if (taxDef.baseIsCalculatedVat) {
+        if (taxDef.baseStat) {
+          // Matrahı KDV olan bir vergi KDV matrahını değiştiremez — döngü olurdu.
+          throw new Error(
+            `Tutarsız vergi tanımı: ${taxDef.code} hem 'baseIsCalculatedVat' hem 'baseStat' taşıyor. ` +
+              `Matrahı hesaplanan KDV olan bir vergi, KDV matrahını DEĞİŞTİREMEZ.`,
+          );
+        }
+        deferredVatBasedTaxes.push({ percent: tax.percent, def: taxDef });
+        continue;
       }
 
       const taxPrice = lineExtensionAmount * (tax.percent / 100);
@@ -157,6 +180,22 @@ export function calculateLine(
   };
 
   taxes.taxSubtotals.push(kdvSubtotal);
+
+  /* Ertelenmiş vergiler: MATRAH = hesaplanan KDV (satır tutarı DEĞİL). */
+  for (const deferred of deferredVatBasedTaxes) {
+    const taxDef = deferred.def!;
+    const taxPrice = kdvSubtotal.amount * (deferred.percent / 100);
+    taxes.taxSubtotals.push({
+      taxable: kdvSubtotal.amount,
+      amount: taxPrice,
+      // `baseStat === false` garantili (yukarıda reddediliyor) → daima negatif etki.
+      taxForCalculate: -taxPrice,
+      percent: deferred.percent,
+      code: taxDef.code,
+      name: taxDef.name,
+    });
+  }
+
   taxes.taxTotal = taxes.taxSubtotals.reduce((total, t) => total + t.amount, 0);
   taxes.taxForCalculate = taxes.taxSubtotals.reduce((total, t) => total + t.taxForCalculate, 0);
 

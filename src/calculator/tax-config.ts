@@ -24,6 +24,30 @@ export interface TaxDefinition {
    * hiçbiri taşımaz, tip geriye uyumludur.
    */
   labelProvisional?: boolean;
+  /**
+   * 🔴 `true` ise verginin MATRAHI satır tutarı DEĞİL, o satırda HESAPLANAN KDV'dir.
+   *
+   * Varsayılan (bayrak yok) davranış: `matrah = lineExtensionAmount`. Bu kütüphanedeki
+   * 30 vergi kodunun 29'u için doğrudur — hepsi satır tutarı üzerinden hesaplanır.
+   * TEK istisna `9015` (KDV Tevkifatı): tevkifat, işlem bedelinin değil **hesaplanan
+   * KDV'nin** bir kesridir.
+   *
+   * KANIT (GİB'in KENDİ örneği, `gib-claude-skills/xmls/YTB_Tevkıfat_Efatura.xml`):
+   *   satır 225,00 · KDV %10 = 22,50 · tevkifat `TaxableAmount` = **22,50** ·
+   *   %90 × 22,50 = 20,25.
+   * İkinci kanıt kod listesinin kendisidir: `WithholdingTaxTotalCheck` oranları
+   * `,60690,` gibi kod+oran anahtarlarıyla arar ve `602 → 9/10` oranları KDV'nin
+   * kesri olarak tanımlanır.
+   *
+   * Bayraksız hâlde `taxes: [{ code: '9015', percent: 50 }]` veren çağıran
+   * matrahı satır tutarı üzerinden alıyordu → %20 KDV'li bir satırda tutar
+   * **5 KAT** büyük çıkıyordu. `withholdingTaxCode` yolu (→ `cac:WithholdingTaxTotal`)
+   * matrahı zaten KDV'den alıyordu; sapma yalnız `TaxTotal` düzlemindeydi.
+   *
+   * ⚠️ `baseStat: true` ile BİRLİKTE kullanılamaz: KDV matrahını değiştiren bir
+   * verginin matrahı KDV olamaz (döngü). `calculateLine` bu bileşimi reddeder.
+   */
+  baseIsCalculatedVat?: boolean;
 }
 
 export const TAX_DEFINITIONS: ReadonlyArray<TaxDefinition> = [
@@ -68,7 +92,10 @@ export const TAX_DEFINITIONS: ReadonlyArray<TaxDefinition> = [
   //
   // baseStat=false/baseCalculate=false: tevkifat KDV matrahını DEĞİŞTİRMEZ,
   // toplam vergiden DÜŞER (0003 Gelir Vergisi Stopajı ile aynı davranış).
-  { code: '9015', name: 'KDV Tevkifatı', shortName: 'KDV Tevkifatı', baseStat: false, baseCalculate: false, labelProvisional: true },
+  //
+  // 🔴 `baseIsCalculatedVat: true` (S5a): matrahı satır tutarı DEĞİL hesaplanan
+  // KDV'dir. Gerekçe ve kanıt `TaxDefinition.baseIsCalculatedVat` JSDoc'unda.
+  { code: '9015', name: 'KDV Tevkifatı', shortName: 'KDV Tevkifatı', baseStat: false, baseCalculate: false, labelProvisional: true, baseIsCalculatedVat: true },
   { code: '9021', name: '4961 Banka Sigorta Muameleleri Vergisi', shortName: 'BSMV', baseStat: true, baseCalculate: false },
   { code: '9040', name: 'Mera Fonu', shortName: 'Mera Fonu', baseStat: false, baseCalculate: false },
   { code: '9077', name: 'Motorlu Taşıt ÖTV [2. Liste]', shortName: 'ÖTV 2. Liste', baseStat: true, baseCalculate: true },
