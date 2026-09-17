@@ -27,6 +27,7 @@
     "generate:paths": "tsx scripts/generate-session-paths.ts",
     "verify:paths": "tsx scripts/generate-session-paths.ts --check",
     "generate:sequences": "tsx scripts/generate-sequences.ts",
+    "generate:api": "tsx scripts/public-api-surface.ts --write",
     "verify:sequences": "tsx scripts/generate-sequences.ts --check",
     "prebuild": "npm run verify:paths && npm run verify:sequences",
     "prepublishOnly": "npm run test:strict && npm run build",
