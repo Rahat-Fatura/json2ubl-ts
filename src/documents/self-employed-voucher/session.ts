@@ -142,13 +142,18 @@ export interface SelfEmployedVoucherSessionOptions {
 const SELF_EMPLOYED_VOUCHER_ADAPTER: DocumentSessionAdapter<
   SimpleSelfEmployedVoucherInput,
   CalculatedSelfEmployedVoucher,
-  SelfEmployedVoucherInput
+  SelfEmployedVoucherInput,
+  SelfEmployedVoucherIdentificationParty
 > = {
   emptyInput: () => ({
     supplier: emptySessionParty(),
     customer: emptySessionParty(),
     lines: [],
   }),
+  /* e-SMM'de UBL yuvası ile rol AYNI adı taşır: belgeyi düzenleyen serbest
+   * meslek erbabı zaten satıcıdır. e-MM'de bu ikisi AYRIŞIR — ortak gövdenin
+   * taraf adlarını adaptörden alma sebebi tam olarak budur. */
+  partyFields: ['supplier', 'customer'],
   calculate: calculateSelfEmployedVoucher,
   toRawInput: mapSimpleToSelfEmployedVoucherInput,
   validateSession: raw => validateSelfEmployedVoucher(raw, { stage: 'session' }),
@@ -166,7 +171,8 @@ export class SelfEmployedVoucherSession extends DocumentSession<
   SimpleSelfEmployedVoucherLineInput,
   CalculatedSelfEmployedVoucher,
   SelfEmployedVoucherInput,
-  SelfEmployedVoucherUnsetScope
+  SelfEmployedVoucherUnsetScope,
+  SelfEmployedVoucherIdentificationParty
 > {
   constructor(options?: SelfEmployedVoucherSessionOptions) {
     super(SELF_EMPLOYED_VOUCHER_ADAPTER, options?.initialInput);

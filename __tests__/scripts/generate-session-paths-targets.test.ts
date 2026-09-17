@@ -212,10 +212,12 @@ describe('tip-parametrik üreteç — e-İrsaliye hedefi', () => {
 });
 
 describe('tip-parametrik üreteç — hedef tablosu', () => {
-  it('üç hedef kayıtlı (fatura · irsaliye · e-SMM) ve her biri AYRI dosyaya üretiyor', () => {
-    // S5a'da e-SMM hedefi eklendi. Sayı burada ÇİVİLİ: yeni bir hedef eklendiğinde
-    // bu test kırılır ve ekleyen kişi aşağıdaki ad-çakışma kapısını da görür.
-    expect(TARGETS).toHaveLength(3);
+  it('dört hedef kayıtlı (fatura · irsaliye · e-SMM · e-MM) ve her biri AYRI dosyaya üretiyor', () => {
+    // S5a'da e-SMM, S5b'de e-MM hedefi eklendi. Sayı burada ÇİVİLİ: yeni bir hedef
+    // eklendiğinde bu test kırılır ve ekleyen kişi aşağıdaki ad-çakışma kapısını
+    // da görür — e-MM'in yol adları (`issuerTaxNumber`, `producerName`) e-SMM'in
+    // adlarıyla çakışmadığı için hedefler ayrı dosyalarda yaşayabiliyor.
+    expect(TARGETS).toHaveLength(4);
     const outputs = TARGETS.map(t => t.outputFile);
     expect(new Set(outputs).size).toBe(outputs.length);
   });

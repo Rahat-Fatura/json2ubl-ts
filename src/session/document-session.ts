@@ -39,15 +39,18 @@ import { applyPathUpdate, readPath, deepEqual } from '../calculator/session-path
 import { runPathGates } from './path-gates';
 import type { ValidationWarning } from './validation-warning';
 
-/** Oturumun üzerinde çalıştığı girdinin ZORUNLU ekseni — iki taraf + kalemler. */
+/**
+ * Oturumun üzerinde çalıştığı girdinin ZORUNLU ekseni.
+ *
+ * 🔴 TARAF ALANLARI BURADA YOKTUR — ve olmamalıdır. `supplier`/`customer`
+ * sabitlenseydi e-MM (Müstahsil Makbuzu) bu gövdeyi kullanamazdı: orada belgeyi
+ * ALICI düzenler ve girdi yüzeyi rolün gerçek adını taşır (`issuer`/`producer`).
+ * Taraf alan ADLARI adaptörden gelir (`partyFields`); ortak gövde yalnız
+ * "bunlar taraf alanlarıdır" bilgisini kullanır.
+ */
 export interface DocumentSessionInputShape<TLine> {
-  supplier: SimplePartyInput;
-  customer: SimplePartyInput;
   lines: TLine[];
 }
-
-/** `removeIdentification` / `setIdentifications` taraf seçicisi. */
-export type DocumentSessionParty = 'supplier' | 'customer';
 
 /** `buildXml` seçenekleri — üç belge türünde de aynı. */
 export interface DocumentSessionBuildOptions {
@@ -61,9 +64,16 @@ export interface DocumentSessionBuildOptions {
  * bilgisi budur; bu yüzden yeni bir belge türü oturum gövdesine DOKUNMADAN
  * eklenebilir.
  */
-export interface DocumentSessionAdapter<TInput, TCalc, TRaw> {
+export interface DocumentSessionAdapter<TInput, TCalc, TRaw, TParty extends string = string> {
   /** Zorunlu alanların BOŞ DEĞERLE mount edilmiş hâli (yapıcı iskeleti). */
   emptyInput(): TInput;
+  /**
+   * Taraf alanlarının ADLARI — kimlik CRUD'u bunların üzerinde yürür.
+   *
+   * e-SMM: `['supplier', 'customer']` · e-MM: `['issuer', 'producer']`.
+   * Ortak gövde UBL yuvalarını değil, GİRDİ alan adlarını görür.
+   */
+  partyFields: readonly TParty[];
   /** Toplam zincirini çözer — XML üretmez. */
   calculate(input: TInput): TCalc;
   /** Basit girdiyi ham UBL girdisine çevirir. */
@@ -113,28 +123,32 @@ export abstract class DocumentSession<
   TCalc,
   TRaw,
   TScope extends string,
+  TParty extends string = string,
 > extends EventEmitter {
-  private readonly adapter: DocumentSessionAdapter<TInput, TCalc, TRaw>;
+  private readonly adapter: DocumentSessionAdapter<TInput, TCalc, TRaw, TParty>;
   private _input: TInput;
   private _warnings: ValidationWarning[];
 
   protected constructor(
-    adapter: DocumentSessionAdapter<TInput, TCalc, TRaw>,
+    adapter: DocumentSessionAdapter<TInput, TCalc, TRaw, TParty>,
     initialInput?: Partial<TInput>,
   ) {
     super();
     this.adapter = adapter;
 
-    /* Zorunlu alanlar BOŞ DEĞERLE mount edilir ki `update('supplier.name', …)`
-     * ilk çağrıda çalışsın. */
+    /* Zorunlu alanlar BOŞ DEĞERLE mount edilir ki `update('<taraf>.name', …)`
+     * ilk çağrıda çalışsın.
+     *
+     * İskeletten gelen HİÇBİR anahtar `undefined` ile ezilemez: `initialInput`
+     * bir anahtarı taşıyıp değeri `undefined` verirse (çağıranın nesnesinde
+     * `{ producer: undefined }` gibi) düz spread zorunlu alanı SİLERDİ ve
+     * `update('producer.name', …)` ilk çağrıda patlardı. */
     const empty = adapter.emptyInput();
-    this._input = {
-      ...empty,
-      ...initialInput,
-      supplier: initialInput?.supplier ?? empty.supplier,
-      customer: initialInput?.customer ?? empty.customer,
-      lines: initialInput?.lines ?? empty.lines,
-    } as TInput;
+    const merged = { ...empty, ...initialInput } as Record<string, unknown>;
+    for (const [key, value] of Object.entries(empty as Record<string, unknown>)) {
+      if (merged[key] === undefined) merged[key] = value;
+    }
+    this._input = merged as TInput;
 
     this._warnings = computeValidation(adapter, this._input).warnings;
   }
@@ -249,8 +263,8 @@ export abstract class DocumentSession<
    * Yol tabanlı `update()` dizide indeks KAYDIRAMAZ. Son eleman silinince alan
    * `undefined` yapılır — şematron boş `schemeID` taşıyan `cbc:ID`yi reddeder.
    */
-  removeIdentification(party: DocumentSessionParty, index: number): void {
-    const arr = this._input[party]?.identifications;
+  removeIdentification(party: TParty, index: number): void {
+    const arr = this.partyAt(party)?.identifications;
     if (!arr || index < 0 || index >= arr.length) return;
     const next = arr.length === 1 ? undefined : arr.filter((_, i) => i !== index);
     this.setIdentificationsInternal(party, next);
@@ -258,18 +272,24 @@ export abstract class DocumentSession<
 
   /** Taraf kimlikleri dizisini tümüyle değiştirir (boş dizi → `undefined`). */
   setIdentifications(
-    party: DocumentSessionParty,
+    party: TParty,
     identifications: SimplePartyIdentification[] | undefined,
   ): void {
     const next = !identifications || identifications.length === 0 ? undefined : identifications;
     this.setIdentificationsInternal(party, next);
   }
 
+  /** Taraf alanını adıyla okur — alan adları adaptörden gelir. */
+  private partyAt(party: TParty): SimplePartyInput | undefined {
+    if (!this.adapter.partyFields.includes(party)) return undefined;
+    return (this._input as Record<string, unknown>)[party] as SimplePartyInput | undefined;
+  }
+
   private setIdentificationsInternal(
-    party: DocumentSessionParty,
+    party: TParty,
     next: SimplePartyIdentification[] | undefined,
   ): void {
-    const partyObj = this._input[party];
+    const partyObj = this.partyAt(party);
     if (!partyObj) return;
 
     const previousValue = partyObj.identifications;

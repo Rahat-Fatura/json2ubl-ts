@@ -145,15 +145,35 @@ function isPrimitive(type: string): boolean {
  * birinci kaynağın alias'ları ikinciye sızıyor, ikinci belgenin KENDİ kaynak
  * kümesinde tanımlı olmayan bir tip sessizce çözümlenmiş gibi davranıyordu.
  * Tek kaynak varken zararsızdı; tip-parametrik üreteçte sessiz yanlış çıktıydı.
+ *
+ * 🔴 ÇÖZÜM GEÇİŞLİDİR (tek hop DEĞİL). Eskiden tek adım atılıyordu ve takma ad
+ * bir takma ada işaret ettiğinde zincir yarıda kalıyordu: çözülmeyen ad ilkel
+ * sayılmadığı için alan yol yüzeyinden SESSİZCE DÜŞÜYORDU — `session.update()`
+ * onu `UNKNOWN_PATH` ile reddederdi ve hiçbir test bunu söylemezdi.
+ *
+ * Kusur ortaklaştırmayla GÖRÜNÜR oldu: e-MM'in `sendMethod` alanı
+ * `ProducerReceiptSendMethod → EArchiveSendMethod → 'ELEKTRONIK' | 'KAGIT'`
+ * zincirini izliyor (ortak tip `ubltr/mapping/earsiv-mapping`te). e-SMM'de
+ * zincir tek adımlıktı, o yüzden kusur yıllarca görünmedi.
+ *
+ * Döngü koruması: görülen adlar kümesi. `type A = B; type B = A` üretece
+ * sonsuz döngü yaptıramaz.
  */
 function resolveAlias(type: string, aliases: ReadonlyMap<string, string>): string {
-  const resolved = aliases.get(type);
-  if (!resolved) return type;
-  // Multi-line union normalize: '| A\n  | B\n  | C' → 'A | B | C'
-  return resolved
-    .replace(/^\s*\|\s*/, '')       // leading pipe strip
-    .replace(/\s+/g, ' ')            // whitespace collapse (multi-line → single)
-    .trim();
+  const seen = new Set<string>();
+  let current = type;
+
+  while (aliases.has(current) && !seen.has(current)) {
+    seen.add(current);
+    // Multi-line union normalize: '| A\n  | B\n  | C' → 'A | B | C'
+    current = aliases
+      .get(current)!
+      .replace(/^\s*\|\s*/, '')       // leading pipe strip
+      .replace(/\s+/g, ' ')            // whitespace collapse (multi-line → single)
+      .trim();
+  }
+
+  return current;
 }
 
 function stripUndefined(type: string): string {
@@ -688,11 +708,50 @@ export const SELF_EMPLOYED_VOUCHER_TARGET: GeneratorTarget = {
   exampleIndexedPath: 'lines[0].kdvPercent',
 };
 
+/**
+ * e-MM hedefi — `ProducerReceiptSession`'ın path yüzeyi.
+ *
+ * Kök arayüz yine `Simple*` katmanıdır (fatura/irsaliye/e-SMM ile aynı gerekçe).
+ *
+ * `maxDepth: 3` yeterlidir — en derin yol `issuer.identifications[i].schemeId`.
+ *
+ * 🔴 YOL ADLARI ROLÜ TAŞIR: `supplierTaxNumber` DEĞİL `issuerTaxNumber`,
+ * `customerName` DEĞİL `producerName`. Müstahsil makbuzunu ALICI düzenler ve
+ * UBL'in `Supplier`/`Customer` yuvaları rolü TERS gösterir; üretilen yol yüzeyi
+ * tüketicinin gördüğü yüzeydir ve orada rolün GERÇEK adı durmalıdır.
+ *
+ * `dependencyFiles`e `ubltr/mapping/earsiv-mapping.ts` EKLENDİ: `sendMethod`
+ * alanının tipi (`EArchiveSendMethod`) ortak katmandan gelir — e-SMM'de bu tip
+ * yereldi, ortaklaştırma sonrası üretecin onu da okuması gerekiyor.
+ *
+ * `manualEntries` / `readOnlyPaths` BOŞ: e-MM'de `liability` ya da `isExport`
+ * muadili bir oturum-durumu YOKTUR.
+ */
+export const PRODUCER_RECEIPT_TARGET: GeneratorTarget = {
+  sourceFile: 'src/documents/producer-receipt/simple-input.ts',
+  rootInterface: 'SimpleProducerReceiptInput',
+  outputFile: 'src/documents/producer-receipt/session-paths.generated.ts',
+  constName: 'ProducerReceiptSessionPaths',
+  mapTypeName: 'ProducerReceiptSessionPathMap',
+  overloadsName: 'ProducerReceiptSessionUpdateOverloads',
+  templatesName: 'PRODUCER_RECEIPT_KNOWN_PATH_TEMPLATES',
+  readOnlyName: 'PRODUCER_RECEIPT_READ_ONLY_PATHS',
+  manualEntries: [],
+  readOnlyPaths: [],
+  maxDepth: 3,
+  dependencyFiles: [
+    'src/calculator/simple-types.ts',
+    'src/ubltr/mapping/earsiv-mapping.ts',
+  ],
+  exampleIndexedPath: 'lines[0].incomeTaxWithholdingPercent',
+};
+
 /** Üretilecek tüm hedefler — `main()` ve `--check` bunun üzerinde döner. */
 export const TARGETS: readonly GeneratorTarget[] = [
   INVOICE_TARGET,
   DESPATCH_TARGET,
   SELF_EMPLOYED_VOUCHER_TARGET,
+  PRODUCER_RECEIPT_TARGET,
 ];
 
 // ─── Çıktı üretimi ────────────────────────────────────────────────────────────
