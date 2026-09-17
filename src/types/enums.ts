@@ -38,6 +38,33 @@ export enum InvoiceTypeCode {
   YTBTEVKIFATIADE = 'YTBTEVKIFATIADE',
 }
 
+/**
+ * e-SMM (Serbest Meslek Makbuzu) profil türleri — **KENDİ EKSENİ**.
+ *
+ * 🔴 `InvoiceProfileId`e EKLENMEZ. Gerekçe GİB'in kendi ayrımıdır: `ProfileIDType*`
+ * ailesi şemada belge başına AYRI tanımlıdır. Tek enuma toplamak, fatura
+ * seçicilerine (profil×tip matrisi, `resolveProfileForType`, görünürlük türetimi)
+ * ait olmayan bir değeri sızdırırdı.
+ *
+ * ⚠️ `EARSIVBELGE` **`UBL-TR_Codelist.xml`'de YOKTUR** — GİB e-SMM belge GÖVDESİ
+ * için yayınlanmış format/XSD/şematron TANIMLAMAZ; normatif olan yalnız e-Arşiv
+ * RAPOR katmanıdır. Gövdedeki bu kullanım BİZİM sözleşmemizdir ve Main şematron
+ * `ProfileIDCheck` ile REDDEDER (doğrulama tarafında bastırma profili gerekir).
+ */
+export enum SelfEmployedVoucherProfileId {
+  EARSIVBELGE = 'EARSIVBELGE',
+}
+
+/**
+ * e-SMM belge tip kodları — **KENDİ EKSENİ** (bkz. `SelfEmployedVoucherProfileId`).
+ *
+ * ⚠️ `SERBESTMESLEKMAKBUZU` da `UBL-TR_Codelist.xml`'de yoktur; Main şematron
+ * `InvoiceTypeCodeCheck` ile reddeder.
+ */
+export enum SelfEmployedVoucherTypeCode {
+  SERBESTMESLEKMAKBUZU = 'SERBESTMESLEKMAKBUZU',
+}
+
 /** e-İrsaliye profil türleri */
 export enum DespatchProfileId {
   TEMELIRSALIYE = 'TEMELIRSALIYE',
