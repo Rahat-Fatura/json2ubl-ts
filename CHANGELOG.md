@@ -4,30 +4,150 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 
 ## [Yayınlanmamış]
 
-> **GÜVENLİK AĞI — canlı GİB doğrulaması artık sessizce kaybolamaz.** Test-only;
-> `src/` ve üretilen XML DEĞİŞMEDİ (128 dosya / 2731 test, doğrulayıcı ayaktayken yeşil).
+> **S0→S4: GÜVENLİK AĞI, UBL BİLEŞENLERİNİN TEKLEŞMESİ, KURAL KATMANI, KLASÖR
+> MİMARİSİ.** 4.6.0 (YAYINLANMADI) sonrasında biriken işin tamamı.
+>
+> 🔴 **Bu blok bir kez yanlış yazılmıştı.** "Test-only; `src/` ve üretilen XML
+> DEĞİŞMEDİ" diyordu — o cümle yalnız S0 için doğruydu ve S1/S2/S3 onu geride
+> bıraktı. Gerçek: `src/` kapsamlı biçimde değişti, **üç kasıtlı sıkılaşma**
+> bugüne kadar sessizce geçen girdileri artık reddediyor ve **bir çıktı davranışı**
+> değişti (`cac:Country`). Aşağısı commit geçmişi okunarak yeniden yazılmıştır.
+>
+> Ölçüm: **134 test dosyası / 2965 test / 0 kırmızı / 0 skip** (`npm run test:strict`,
+> doğrulayıcı ayakta) · 37 örnek + 167 matris senaryosu · 168 byte-exact XML.
 
-### Changed
+### ⚠️ Kırıcı olabilecek davranışlar
 
-- **Canlı şematron katmanı üç durumlu oldu.** Doğrulayıcı VAR → testler koşar;
-  YOK + `REQUIRE_VALIDATOR=1` → koşum KIRMIZI; YOK + bayraksız → **SKIPPED**
-  (passed DEĞİL) + koşumun başında ve sonunda göze batan uyarı.
-  Ölçülen kusur şuydu: doğrulayıcı kapalıyken koşum `exit 0` veriyor, hiçbir uyarı
-  basılmıyor ve "12 şematron testi ATLANDI" bilgisi yalnız özet satırının içinde
-  kalıyordu — yani "XML'imiz GİB'e geçer" kanıtı sessizce kayboluyordu.
-- **Bekçi testi artık nöbeti bırakmıyor.** Eski `doğrulayıcı erişilemezse … görünür
-  olmalı` testi tam da yakalaması gereken durumda `ctx.skip()` ediyordu; hiçbir
-  koşulda düşemezdi. Yerine HER koşumda çalışan `güvenlik ağı: …` testi geldi.
+- **`cac:Country` yalnız `countryCode` verildiğinde artık HİÇ YAZILMAZ.** Bu
+  sürümdeki TEK çıktı davranışı değişikliğidir. GİB `CountryType` sekansı
+  `IdentificationCode` (0..1) → `Name` (**minOccurs=1**); yalnız kod yazan blok
+  XSD'den düşüyordu. Canlı doğrulayıcıyla kanıtlandı («"Country" elementinin
+  içeriği eksik. Zorunlu element(ler): Name.»). Korpusta bu girdiyi veren senaryo
+  YOK — 158 üretilmiş XML'in hiçbiri değişmedi.
+- **`issue-date-range` artık e-İrsaliyeye de bağlı.** GİB'in ORTAK kuralı
+  (`Common_Schematron:169-170`) `InvoiceInput`e bağlı bir fonksiyonun gövdesine
+  gömülüydü; e-İrsaliye onu HİÇ almıyordu. 1999 tarihli ya da gelecek yıla
+  düzenlenmiş bir irsaliye kütüphaneden sessizce geçiyordu — artık geçmiyor.
+- **Üç YOLCUBERABER + bir e-İrsaliye XSD kardinalite kapısı açıldı.** Bu girdiler
+  bugüne kadar da GEÇERSİZ XML üretiyordu; kural onları bozmadı, **bozuk
+  olduklarını görünür yaptı**: `Person/FirstName`+`FamilyName` 1..1,
+  `IdentityDocumentReference/IssueDate` 1..1, `Party/PostalAddress` 1..1,
+  `RoadTransportType/LicensePlateID` 1..1.
+- **`cac:Shipment/cbc:ID` artık zorunlu emit.** İrsaliye tarafı `cbcOptionalTag`
+  kullanıyordu: `shipmentId: ''` verildiğinde eleman sessizce düşüyor, belge
+  XSD'den kalıyordu. Artık boş değer açık hata verir.
+
+### Eklendi
+
+- **Canlı GİB doğrulaması için güvenlik ağı (S0).** `__tests__/support/validator.ts`
+  (`/v1/validate` sözleşmesi + `probeValidator()` — port değil SÖZLEŞME yoklar),
+  vitest `globalSetup` kapısı ve `npm run test:strict` (`REQUIRE_VALIDATOR=1`).
+  Doğrulayıcı VAR → koşar; YOK + bayrak → koşum KIRMIZI; YOK + bayraksız →
+  **SKIPPED** (passed DEĞİL) + başta ve sonda göze batan uyarı.
+- **Sekans tabloları artık GİB XSD'sinden ÜRETİLİYOR.** `scripts/generate-sequences.ts`
+  + `npm run generate:sequences` / `verify:sequences` (koşum: `npm test` ve
+  `prebuild`). Üretecin okuduğu üç XSD `schemas/ubl-tr/` altında repoda
+  (`.npmignore`da — yayınlanan pakete girmez). Elle kopyalanan stok OASIS
+  tablolarının taşıdığı fazlalıklar döküldü (ör. `PRICE_SEQ` −12: GİB'in
+  `PriceType`ı TEK elemandır; eski tabloda `PricingExchangeRate` İKİ KEZ yazılıydı).
+- **Sekans bekçisi.** Emit edilen her çocuk elemanın tablonun ÜYESİ olduğunu ve
+  sıranın tablonun ALT-DİZİSİ olduğunu doğrular. XML diskten okunmaz, koşum anında
+  üretilir — snapshot'lar birlikte tazelense bile bekçi kırmızı kalır.
+- **Çoklu araç GERÇEKTEN destekleniyor** — `buildVehicleStages(plates, drivers)`:
+  N çekici plakası → N `cac:ShipmentStage`. XSD `RoadTransportType/LicensePlateID`
+  1..1 olduğu için bir aşama en fazla bir plaka taşır. Sürücüler GİB'in tek
+  yayımlanmış desenini (Kılavuz §2.3.21 + `Irsaliye-Ornek1.xml`) izleyerek İLK
+  aşamada toplanır; girdide plaka↔sürücü bağı olmadığı için eşleme uydurulmaz.
+- **YOLCUBERABER girdi YÜZEYİ genişledi** (Gümrük İşlemleri Kılavuzu V1.8 §4.2.1):
+  `PartyInput.passportIssueDate` · `SimpleBuyerCustomerInput.{firstName,
+  familyName, passportIssueDate}` · `SimpleTaxRepresentativeInput.{address,
+  district, city, country, zipCode}` + 8 yeni session-path. Alanlar OPSİYONELDİR;
+  zorunluluk kardinalite kapılarından gelir. `2005-01-01` sabitini kütüphane
+  KOYMAZ (veri uydurmak olurdu), çağıran verir.
+- **`DOCUMENT_ID_REGEX`** — desen fatura kuralı değil, GİB'in e-belge numarası
+  kuralıdır (fatura + irsaliye + iade referansı aynı; e-SMM/e-MM de kullanacak).
+  `INVOICE_ID_REGEX` **aynı `RegExp` nesnesini gösteren geriye-uyumlu takma ad**
+  olarak dışa açık kalır.
+- **`DespatchValidationStage`** (`'document'` | `'session'`) — irsaliye
+  doğrulayıcısı artık "bitmiş belge" ile "düzenlenmekte olan form" ayrımını
+  yapıyor. Varsayılan `'document'`; çağrı şekli değişmeyen her çağıran eski
+  davranışı aynen alır.
+- **Üç XSD kardinalite yüklemi + bağlama tablosu** — `rules/xsd-cardinality-rules.ts`
+  (saf yüklem) ve `rules/cardinality-bindings.ts` (bağlama). `validateCommon`dan
+  koşar, `validateByProfile`dan DEĞİL: bunlar profil şartı değil UBL tip tanımıdır.
+- **`DeliveryInput.despatch`** · `ShipmentStageModel` · `DespatchDimensions.trailerPlates`
+  · `AddressFields` · `PartyBodyModel`.
+- **Cephe tamlık bekçisi.** `__tests__/public-api.snapshot.txt` (260 ad) +
+  `npm run generate:api`. Tip denetçisiyle ölçer — `export * from` zincirlerini
+  metin araması göremez. Ad kaybı, anlam daralması (`value+type` → `type`) ve
+  çalışma zamanında bulunmayan `value` ayrı ayrı kırmızıya düşer.
+- **Katman bekçisi.** `documents/* → ubltr/ → ubl/` tek yönlülüğünü ve kardeş
+  belge türlerinin birbirini görmemesini ölçer; devralınan yedi ihlal
+  gerekçeleriyle sayılı ve liste iki yönden kapalı (ne büyür ne eskir).
+
+### Değişti
+
+- 🔴 **Klasör mimarisi üç katmana ayrıldı (S4).** `ubl/` (belge türü BİLMEZ:
+  primitives · sequences · components · namespaces) → `ubltr/` (belge türü BİLMEZ:
+  vocabulary · rules/{global,shared}) → `documents/` (İNCE BAĞLAYICI: invoice ·
+  despatch-advice). 48 dosya taşındı, 85 dosyanın import yolu yeniden bağlandı.
+  **Cephe DEĞİŞMEDİ** — `src/index.ts`in 260 adı bire bir duruyor, çıktı byte-nötr.
+- 🔴 **Kural = yüklem ⟂ bağlama (S3).** GİB kendi şematronunu böyle böler
+  (Common: 132 soyut kural / 283 assert / 0 context · Main: 9 pattern / 0 assert /
+  122 context / 209 `extends`); bizde bu ayrım YOKTU. Artık belge türü BİLMEYEN saf
+  yüklemler (`documentIdRule`, `uuidRule`, `dateFormatRule`, `timeFormatRule`,
+  `issueDateRangeRule`, `enumValueRule`) ve belge başına VERİ tablosu var. Zincir
+  anlamı eski `else if` merdiveninin birebiridir (ilk ihlalde durulur).
+- 🔴 **Elle yazılmış UBL ikizleri kalktı (S2).** Tek `ShipmentType` · tek `ItemType`
+  · tek `PartyType` gövdesi · tek `AddressType` · tek `CountryType`. Öncesinde
+  `cac:Shipment` iki, `cac:Item` iki, taraf üreticisi DÖRT ayrı yerde yazılıydı ve
+  hiçbiri diğeriyle aynı davranmıyordu. `cac:SignatoryParty` eski hâlinde
+  `serializeParty` çıktısını `.split('\n').filter(...)` ile AYIKLIYORDU.
+- **`DespatchItemInput` artık `ItemInput`** (`CarrierPartyInput = PartyInput`
+  deseni). İrsaliye kalemi faturanınkiyle AYNI 12 slotu tanır; üst küme olduğu
+  için geriye uyumlu.
+- **Kök açılış etiketi ve ad alanları tekleşti** — `rootOpenTag(root, ns)` +
+  `namespacesFor(root)`. `INVOICE_NAMESPACES` / `DESPATCH_NAMESPACES` yerinde ve
+  jenerik şablon-literal tipi sayesinde LİTERAL tiplerini koruyor.
+- **Kök sekans tabloları artık GERÇEKTEN kullanılıyor.** `INVOICE_SEQ` /
+  `DESPATCH_SEQ` tanımlıydı ama hiçbir yerden çağrılmıyordu — sıra elle
+  `parts.push()` ile kuruluyordu, tablo ile kod arasında bağ yoktu. Ayrıca 7 ölü
+  tablo ve 17 tablosuz UBL tipi bağlandı; bekçinin kapsamı 29 → 47 tabloya çıktı.
 - **`prepublishOnly` → `npm run test:strict`.** Canlı GİB kanıtı olmadan paket
   yayınlanamaz.
 
-### Added
+### Düzeltildi
 
-- **`__tests__/support/validator.ts`** — `/v1/validate` sözleşmesi, `probeValidator()`
-  (port değil SÖZLEŞME yoklar) ve ortak uyarı metinleri; tek kaynak.
-- **`__tests__/support/global-setup.ts`** — vitest `globalSetup` kapısı. Worker
-  dışında koştuğu için uyarı çıktı-tamponuna takılmaz.
-- **`npm run test:strict`** (`REQUIRE_VALIDATOR=1 npm test`) — CI koşum yolu.
+- **`cac:CarrierParty/cac:PostalAddress` hiç basılmıyordu** — UBL-TR'de 1..1 olduğu
+  için **şoför verilmeyen HER irsaliye GİB kapısında reddediliyordu**, `validate()`
+  ise TEMİZ diyordu. Kök neden: irsaliye, faturanın baştan beri kullandığı ortak
+  taraf serileştiricisinden SAPMIŞTI.
+- **TCKN taşıyıcının `cac:Person` bloğu sessizce kayboluyordu** — eşleyici
+  `firstName`/`familyName` dolduruyor, serileştirici hiçbir yere yazmıyordu.
+- **`unitCode="Adet"` ham hâliyle GİB'e gidiyordu** (`GeneralUnitCodeCheck`).
+  `resolveUnitCode` fatura yolunda hesaplayıcıda koşuyor, irsaliyede
+  koşmuyordu — ikilik yamayla değil KÖKÜNDEN kaldırıldı.
+- **İrsaliye oturumunda belge numarası zorunlu sanılıyordu.** Tamamen doldurulmuş
+  bir irsaliye ekranda "İrsaliye numarası zorunludur" diyordu; numara gönderim
+  anında seri/numara motorundan gelir, form düzenlenirken alan BOŞ OLMALIDIR —
+  kullanıcıya kapatamayacağı bir hata gösteriliyordu.
+- **N plaka TEK `cac:RoadTransport` içine basılıyordu** → `cvc-complex-type.2.4.d`.
+  Kusur şematronda görünmez; mevcut `LicensePlateIDCheck` yalnız ALT sınıra
+  bakıyordu, üst sınıra kimse bakmıyordu.
+- **Dorse/römork plakası yanlış slottaydı** — kanonik yer
+  `cac:TransportHandlingUnit/cac:TransportEquipment/cbc:ID` (B-49); iki fikstür
+  XSD-geçersiz çıktı donduruyordu.
+- **`__tests__/serializers/address-extensions.test.ts` geçersiz çıktıyı
+  KİLİTLİYORDU** — test canlı kanıtla birlikte tersine çevrildi (`cac:Country`).
+
+### Notlar
+
+- **Yeşil test doğruluk kanıtı değildir.** Bu bloktaki kusurların çoğu 2731 yeşil
+  testin arasından geçip canlı GİB kapısında yakalandı; snapshot "eskisiyle aynı
+  mı?" diye sorar, "doğru mu?" diye değil — ve yanlış XML'i de dondurur.
+- **Kalan bilinen açık:** üretilen 158 XML'in tamamında `UBLExtensions` bulgusu var
+  (imzalayıcının işi, ayrı konu). Katman bekçisinin `KNOWN_DEBT` listesindeki yedi
+  bağımlılık ihlali de burada duruyor: sözlüğün gövdesi hâlâ `calculator/` altında.
 
 ## [4.6.0] — 2026-09-15
 
