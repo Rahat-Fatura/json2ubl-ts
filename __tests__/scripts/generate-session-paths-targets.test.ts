@@ -212,8 +212,10 @@ describe('tip-parametrik üreteç — e-İrsaliye hedefi', () => {
 });
 
 describe('tip-parametrik üreteç — hedef tablosu', () => {
-  it('iki hedef kayıtlı ve her biri AYRI dosyaya üretiyor', () => {
-    expect(TARGETS).toHaveLength(2);
+  it('üç hedef kayıtlı (fatura · irsaliye · e-SMM) ve her biri AYRI dosyaya üretiyor', () => {
+    // S5a'da e-SMM hedefi eklendi. Sayı burada ÇİVİLİ: yeni bir hedef eklendiğinde
+    // bu test kırılır ve ekleyen kişi aşağıdaki ad-çakışma kapısını da görür.
+    expect(TARGETS).toHaveLength(3);
     const outputs = TARGETS.map(t => t.outputFile);
     expect(new Set(outputs).size).toBe(outputs.length);
   });

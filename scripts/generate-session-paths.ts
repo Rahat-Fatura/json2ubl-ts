@@ -657,8 +657,43 @@ export const DESPATCH_TARGET: GeneratorTarget = {
   exampleIndexedPath: 'lines[0].quantity',
 };
 
+/**
+ * e-SMM hedefi — `SelfEmployedVoucherSession`'ın path yüzeyi.
+ *
+ * Kök arayüz yine `Simple*` katmanıdır (fatura/irsaliye ile aynı gerekçe:
+ * oturum o dili konuşur ve düz string alanlar `update()` çağrısını doğal kılar).
+ *
+ * `maxDepth: 3` yeterlidir — en derin yol `supplier.identifications[i].schemeId`.
+ * İrsaliyedeki 4. seviye (`shipment.deliveryAddress.city`) e-SMM'de yoktur;
+ * makbuzda sevkiyat kavramı bulunmaz.
+ *
+ * `dependencyFiles` yalnız `simple-types.ts`: `SimplePartyInput` ORTAKTIR.
+ * `manualEntries` / `readOnlyPaths` BOŞ: e-SMM'de `liability` (mükellefiyet) ya
+ * da `isExport` (ihracat kilidi) muadili bir oturum-durumu YOKTUR — profil ve
+ * tip TEK DEĞERLİ olduğu için kilitlenecek bir eksen de yok.
+ */
+export const SELF_EMPLOYED_VOUCHER_TARGET: GeneratorTarget = {
+  sourceFile: 'src/documents/self-employed-voucher/simple-input.ts',
+  rootInterface: 'SimpleSelfEmployedVoucherInput',
+  outputFile: 'src/documents/self-employed-voucher/session-paths.generated.ts',
+  constName: 'SelfEmployedVoucherSessionPaths',
+  mapTypeName: 'SelfEmployedVoucherSessionPathMap',
+  overloadsName: 'SelfEmployedVoucherSessionUpdateOverloads',
+  templatesName: 'SELF_EMPLOYED_VOUCHER_KNOWN_PATH_TEMPLATES',
+  readOnlyName: 'SELF_EMPLOYED_VOUCHER_READ_ONLY_PATHS',
+  manualEntries: [],
+  readOnlyPaths: [],
+  maxDepth: 3,
+  dependencyFiles: ['src/calculator/simple-types.ts'],
+  exampleIndexedPath: 'lines[0].kdvPercent',
+};
+
 /** Üretilecek tüm hedefler — `main()` ve `--check` bunun üzerinde döner. */
-export const TARGETS: readonly GeneratorTarget[] = [INVOICE_TARGET, DESPATCH_TARGET];
+export const TARGETS: readonly GeneratorTarget[] = [
+  INVOICE_TARGET,
+  DESPATCH_TARGET,
+  SELF_EMPLOYED_VOUCHER_TARGET,
+];
 
 // ─── Çıktı üretimi ────────────────────────────────────────────────────────────
 
