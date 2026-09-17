@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest';
 import {
   INVOICE_HEADER_BINDINGS,
   despatchHeaderBindings,
-} from '../../src/validators/rules/header-bindings';
+} from '../../src/ubltr/rules/shared/header-bindings';
 import {
   documentIdRule,
   uuidRule,
@@ -23,10 +23,10 @@ import {
   issueDateRangeRule,
   turkeyToday,
   ISSUE_DATE_MIN,
-} from '../../src/validators/rules/common-field-rules';
-import { validateDespatch } from '../../src/validators/despatch-validators';
-import { validateCommon } from '../../src/validators/common-validators';
-import type { FieldBinding } from '../../src/validators/rules/field-rule';
+} from '../../src/ubltr/rules/global/common-field-rules';
+import { validateDespatch } from '../../src/documents/despatch-advice/validators';
+import { validateCommon } from '../../src/ubltr/rules/shared/common-validators';
+import type { FieldBinding } from '../../src/ubltr/rules/field-rule';
 import type { DespatchInput } from '../../src/types/despatch-input';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 import { DespatchProfileId, DespatchTypeCode, InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';

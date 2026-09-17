@@ -448,7 +448,7 @@ describe('belge numarası — oturum aşaması', () => {
   });
 
   it('BİTMİŞ belge yolu numarayı hâlâ ZORUNLU tutar (DespatchBuilder değişmedi)', async () => {
-    const { DespatchBuilder } = await import('../../src/builders/despatch-builder');
+    const { DespatchBuilder } = await import('../../src/documents/despatch-advice/builder');
     const { mapSimpleToDespatchInput } = await import('../../src/calculator/simple-despatch-mapper');
     /* Ham `ValidationError` alanı `path`tir (`field` DEĞİL) — oturumun yaydığı
        `ValidationWarning`den farklı şekil; köprü ikisini birbirine çevirir. */

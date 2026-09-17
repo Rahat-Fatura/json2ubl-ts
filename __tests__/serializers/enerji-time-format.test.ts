@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeTime } from '../../src/utils/formatters';
-import { serializePeriod } from '../../src/serializers/common-serializer';
+import { serializePeriod } from '../../src/ubl/components/allowance-charge';
 import { SimpleInvoiceBuilder } from '../../src/calculator/simple-invoice-builder';
-import { validateProfileRequirements } from '../../src/validators/profile-requirement-validator';
+import { validateProfileRequirements } from '../../src/documents/invoice/validators/profile-requirement-validator';
 import type { SimpleInvoiceInput } from '../../src/calculator/simple-types';
 
 /**

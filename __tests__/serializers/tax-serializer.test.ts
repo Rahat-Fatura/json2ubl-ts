@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { serializeTaxSubtotal, serializeWithholdingTaxTotal } from '../../src/serializers/tax-serializer';
+import { serializeTaxSubtotal, serializeWithholdingTaxTotal } from '../../src/ubl/components/tax-total';
 import type { TaxSubtotalInput, WithholdingTaxTotalInput } from '../../src/types/common';
 
 /**

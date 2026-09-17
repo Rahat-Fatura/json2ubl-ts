@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { serializeAddress } from '../../src/serializers/address-serializer';
+import { serializeAddress } from '../../src/ubl/components/address';
 import type { AddressInput } from '../../src/types/common';
 
 function baseAddress(): AddressInput {

@@ -11,7 +11,7 @@ import {
   DEMIRBAS_KDV_EXEMPTION_CODES,
   NON_ISTISNA_REASON_CODES,
   ADDITIONAL_ITEM_ID_SCHEME_IDS,
-} from '../../src/config/constants';
+} from '../../src/ubltr/vocabulary/constants';
 import { TAX_DEFINITIONS, KDV_TAX_CODE } from '../../src/calculator/tax-config';
 import { WITHHOLDING_TAX_DEFINITIONS } from '../../src/calculator/withholding-config';
 import { EXEMPTION_DEFINITIONS } from '../../src/calculator/exemption-config';

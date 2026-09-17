@@ -114,7 +114,7 @@ export interface SimpleShipmentInput {
    *
    * Çoklu araçta şoförler araçlara DAĞITILMAZ; tamamı ilk `cac:ShipmentStage`e
    * yazılır. Gerekçe (kılavuzda eşleşme kuralı YOK + GİB örneği iki şoförü tek
-   * aşamada gösteriyor): `serializers/delivery-serializer.ts`
+   * aşamada gösteriyor): `ubl/components/delivery.ts`
    * → `buildVehicleStages`.
    */
   drivers?: SimpleDriverInput[];

@@ -3,7 +3,7 @@ import {
   CURRENCY_DEFINITIONS,
   isValidCurrencyCode,
 } from '../../src/calculator/currency-config';
-import { CURRENCY_CODES } from '../../src/config/constants';
+import { CURRENCY_CODES } from '../../src/ubltr/vocabulary/constants';
 
 describe('currency-config', () => {
   describe('B-28 — TRL (eski Türk Lirası) kaldırıldı', () => {

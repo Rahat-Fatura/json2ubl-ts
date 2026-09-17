@@ -11,8 +11,8 @@
  */
 
 import type { SimpleLineInput, SimpleInvoiceInput } from './simple-types';
-import { WITHHOLDING_ALLOWED_TYPES } from '../config/constants';
-import { isYatirimTesvikScope } from '../config/schematron-scopes';
+import { WITHHOLDING_ALLOWED_TYPES } from '../ubltr/vocabulary/constants';
+import { isYatirimTesvikScope } from '../ubltr/vocabulary/schematron-scopes';
 import { configManager } from './config-manager';
 import type { InvoiceTypeCode } from '../types/enums';
 

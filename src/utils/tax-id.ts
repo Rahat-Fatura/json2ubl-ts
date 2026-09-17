@@ -6,7 +6,7 @@
  * Bu çıkarım fatura, irsaliye ve gelecek belge tiplerinde AYNI olmak ZORUNDA —
  * tip başına kopyalanırsa aşağıdaki hata tip başına yeniden doğar.
  */
-import { TCKN_REGEX } from '../config/constants';
+import { TCKN_REGEX } from '../ubltr/vocabulary/constants';
 import type { TaxIdType } from '../types/enums';
 
 /**

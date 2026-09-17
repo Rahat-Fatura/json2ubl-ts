@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateHksOwnerFields } from '../../src/validators/hks-owner-validator';
+import { validateHksOwnerFields } from '../../src/documents/invoice/validators/hks-owner-validator';
 import { InvoiceSession } from '../../src/calculator/invoice-session';
 import type { SimpleInvoiceInput, SimpleLineInput } from '../../src/calculator/simple-types';
 

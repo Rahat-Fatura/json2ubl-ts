@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validatePhantomKdv } from '../../src/validators/phantom-kdv-validator';
+import { validatePhantomKdv } from '../../src/documents/invoice/validators/phantom-kdv-validator';
 import type { SimpleInvoiceInput } from '../../src/calculator/simple-types';
 
 const sender = {

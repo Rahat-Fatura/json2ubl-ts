@@ -11,7 +11,7 @@ import {
   isYatirimTesvikScope,
   isYatirimTesvikKdvScope,
   isYatirimTesvikIstisnaScope,
-} from '../../src/config/schematron-scopes';
+} from '../../src/ubltr/vocabulary/schematron-scopes';
 import type { SimpleLineInput } from '../../src/calculator/simple-types';
 
 /**

@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { serializeInvoice } from '../../src/serializers/invoice-serializer';
+import { serializeInvoice } from '../../src/documents/invoice/serializer';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 

@@ -3,7 +3,7 @@
  *
  * ── İKİ AYRI ŞEY, KARIŞTIRILMASIN ───────────────────────────────────────────
  *
- *  1. **GEÇERLİ KOD KÜMESİ** — `PAYMENT_MEANS_CODES` (`config/constants.ts`),
+ *  1. **GEÇERLİ KOD KÜMESİ** — `PAYMENT_MEANS_CODES` (`ubltr/vocabulary/constants.ts`),
  *     şematronun `$PaymentMeansCodeTypeList` değişkeninden birebir: 75 kod.
  *     "Bu kod GİB kapısından geçer mi" sorusunun cevabı ORASIDIR.
  *  2. **ADLANDIRILMIŞ ÖNERİLER** — aşağıdaki `PAYMENT_MEANS_DEFINITIONS`,
@@ -18,7 +18,7 @@
  * Yüklem artık şematron kümesini okur.
  */
 
-import { PAYMENT_MEANS_CODES } from '../config/constants';
+import { PAYMENT_MEANS_CODES } from '../ubltr/vocabulary/constants';
 
 export interface PaymentMeansDefinition {
   code: string;

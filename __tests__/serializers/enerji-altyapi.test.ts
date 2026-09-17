@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { serializePeriod } from '../../src/serializers/common-serializer';
-import { serializeAdditionalDocument } from '../../src/serializers/reference-serializer';
-import { PERIOD_SEQ } from '../../src/serializers/xsd-sequence';
+import { serializePeriod } from '../../src/ubl/components/allowance-charge';
+import { serializeAdditionalDocument } from '../../src/ubl/components/document-reference';
+import { PERIOD_SEQ } from '../../src/ubl/sequences/xsd-sequence';
 
 /**
  * Sprint 9 adım 7 — SARJ kurallarının ön koşulu olan iki alan.

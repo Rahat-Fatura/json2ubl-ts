@@ -17,7 +17,7 @@ import { SimpleInvoiceBuilder } from '../../src/calculator/simple-invoice-builde
 import { mapSimpleToInvoiceInput } from '../../src/calculator/simple-invoice-mapper';
 import { InvoiceSession } from '../../src/calculator/invoice-session';
 import { SessionPaths } from '../../src/calculator/session-paths.generated';
-import { validateIhrackayitli702 } from '../../src/validators/ihrackayitli-validator';
+import { validateIhrackayitli702 } from '../../src/documents/invoice/validators/ihrackayitli-validator';
 import type { SimpleInvoiceInput, SimpleLineDeliveryInput } from '../../src/calculator/simple-types';
 
 const ALICI = '12345678901'; // 11 hane — 702 kuralının şart koştuğu uzunluk

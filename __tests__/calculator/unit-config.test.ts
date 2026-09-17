@@ -5,7 +5,7 @@ import {
   isValidUnitCode,
 } from '../../src/calculator/unit-config';
 import { configManager } from '../../src/calculator/config-manager';
-import { UNIT_CODES } from '../../src/config/constants';
+import { UNIT_CODES } from '../../src/ubltr/vocabulary/constants';
 
 describe('unit-config', () => {
   describe('B-58 — TWH etiketi düzeltildi', () => {

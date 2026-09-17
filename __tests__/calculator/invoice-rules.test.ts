@@ -6,8 +6,8 @@ import {
   resolveProfileForType,
   deriveFieldVisibility,
 } from '../../src/calculator/invoice-rules';
-import { PROFILE_TYPE_MATRIX } from '../../src/config/constants';
-import { UBL_CONSTANTS } from '../../src/config/namespaces';
+import { PROFILE_TYPE_MATRIX } from '../../src/ubltr/vocabulary/constants';
+import { UBL_CONSTANTS } from '../../src/ubl/namespaces';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 
 describe('invoice-rules — matris tekleştirme (Sprint 1, M1/M2/M8)', () => {

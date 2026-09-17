@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { validateCommon, validateParty } from '../../src/validators/common-validators';
+import { validateCommon, validateParty } from '../../src/ubltr/rules/shared/common-validators';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 import type { PartyInput } from '../../src/types/common';

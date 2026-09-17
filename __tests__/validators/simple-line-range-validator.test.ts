@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateSimpleLineRanges } from '../../src/validators/simple-line-range-validator';
+import { validateSimpleLineRanges } from '../../src/documents/invoice/validators/simple-line-range-validator';
 import type { SimpleInvoiceInput } from '../../src/calculator/simple-types';
 
 function baseInput(overrides: Partial<SimpleInvoiceInput> = {}): SimpleInvoiceInput {

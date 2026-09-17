@@ -2,8 +2,8 @@
 export * from "./types";
 
 // Builders
-export { InvoiceBuilder } from "./builders/invoice-builder";
-export { DespatchBuilder } from "./builders/despatch-builder";
+export { InvoiceBuilder } from "./documents/invoice/builder";
+export { DespatchBuilder } from "./documents/despatch-advice/builder";
 
 // Calculator — Basitleştirilmiş fatura giriş ve hesaplama motoru
 export * from "./calculator";
@@ -17,7 +17,7 @@ export {
     INVOICE_NAMESPACES,
     DESPATCH_NAMESPACES,
     UBL_CONSTANTS,
-} from "./config/namespaces";
+} from "./ubl/namespaces";
 export {
     IADE_GROUP_TYPES,
     TEVKIFAT_GROUP_TYPES,
@@ -53,8 +53,8 @@ export {
     ADDITIONAL_ITEM_ID_SCHEME_IDS,
     DELIVERY_TERM_CODES,
     TRANSPORT_MODE_CODES,
-} from "./config/constants";
-export type { PartyIdentificationSchemeId } from "./config/constants";
+} from "./ubltr/vocabulary/constants";
+export type { PartyIdentificationSchemeId } from "./ubltr/vocabulary/constants";
 
 /* 🔑 4.5.2 — ŞEMATRON KAPSAM YÜKLEMLERİ DIŞA AÇILDI.
  *
@@ -71,14 +71,14 @@ export {
     isYatirimTesvikScope,
     isYatirimTesvikKdvScope,
     isYatirimTesvikIstisnaScope,
-} from "./config/schematron-scopes";
+} from "./ubltr/vocabulary/schematron-scopes";
 
 /**
  * 4.1.0 — türev whitelist'leri (`TAX_TYPE_CODES` vb.) `configManager`'ın GÜNCEL
  * durumundan elle yeniden hesaplar. Normalde GEREKMEZ: `configManager` her
  * değiştiğinde otomatik tetiklenir. Yalnız kaçış kapağıdır.
  */
-export { refreshDerivedConfig } from "./config/derived-config";
+export { refreshDerivedConfig } from "./ubltr/vocabulary/derived-config";
 
 /* GTİP — noktasız 12 hane (GİB 17.01.2017 İHRACAT entegratör test duyurusu).
  *
@@ -112,5 +112,5 @@ export {
     DEFAULT_MINOR_UNIT,
     DEFAULT_CURRENCY_CODE_FOR_WORDS,
     getAmountInWordsUnits,
-} from "./config/amount-in-words-config";
-export type { AmountInWordsUnits } from "./config/amount-in-words-config";
+} from "./ubltr/vocabulary/amount-in-words-config";
+export type { AmountInWordsUnits } from "./ubltr/vocabulary/amount-in-words-config";

@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateSgkInput } from '../../src/validators/sgk-input-validator';
+import { validateSgkInput } from '../../src/documents/invoice/validators/sgk-input-validator';
 import type { SimpleInvoiceInput } from '../../src/calculator/simple-types';
 
 function baseInput(overrides: Partial<SimpleInvoiceInput> = {}): SimpleInvoiceInput {

@@ -43,7 +43,7 @@ import type {
   DeliveryInput,
 } from '../types/common';
 import { isNonEmpty, normalizeTime } from '../utils/formatters';
-import { canBuildCarrierParty } from '../validators/online-sale-validator';
+import { canBuildCarrierParty } from '../documents/invoice/validators/online-sale-validator';
 
 
 // ─── Ana Dönüşüm Fonksiyonu ────────────────────────────────────────────────────

@@ -5,7 +5,7 @@ import {
   validateDocumentReference,
   validateOrderReference,
   validatePartyAddressFields,
-} from '../../src/validators/common-validators';
+} from '../../src/ubltr/rules/shared/common-validators';
 import type {
   AddressInput,
   PaymentMeansInput,

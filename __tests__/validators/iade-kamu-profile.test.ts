@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { PROFILE_TYPE_MATRIX } from '../../src/config/constants';
+import { PROFILE_TYPE_MATRIX } from '../../src/ubltr/vocabulary/constants';
 import {
   getAllowedProfilesForType,
   resolveProfileForType,
 } from '../../src/calculator/invoice-rules';
-import { validateCrossMatrix } from '../../src/validators/cross-validators';
+import { validateCrossMatrix } from '../../src/documents/invoice/validators/cross-validators';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 

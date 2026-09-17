@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateDespatch } from '../../src/validators/despatch-validators';
+import { validateDespatch } from '../../src/documents/despatch-advice/validators';
 import type { DespatchInput } from '../../src/types/despatch-input';
 
 const CODE = 'DESPATCH_ACTUAL_BEFORE_ISSUE';

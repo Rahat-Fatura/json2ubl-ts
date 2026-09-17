@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { validateYatirimTesvikExemptionScope } from '../../src/validators/yatirim-tesvik-validator';
+import { validateYatirimTesvikExemptionScope } from '../../src/documents/invoice/validators/yatirim-tesvik-validator';
 import { InvoiceTypeCode, InvoiceProfileId } from '../../src/types/enums';
 import {
   YATIRIM_TESVIK_ONLY_EXEMPTION_CODES,
   YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES,
   YATIRIM_TESVIK_EARSIV_TYPES,
-} from '../../src/config/constants';
+} from '../../src/ubltr/vocabulary/constants';
 import type { InvoiceInput, InvoiceLineInput } from '../../src/types/invoice-input';
 
 /**

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DespatchBuilder } from '../../src/builders/despatch-builder';
+import { DespatchBuilder } from '../../src/documents/despatch-advice/builder';
 import { DespatchProfileId, DespatchTypeCode } from '../../src/types/enums';
 import type { DespatchInput } from '../../src/types/despatch-input';
 
@@ -259,7 +259,7 @@ describe('DespatchBuilder — B-48 3 opsiyonel party tipi', () => {
 
 // Sprint 7.3 — K1/K3/K4 regression guard (Sprint 6 devri, denetim 06 no-op teyit)
 // + B-T09 XSD sequence coverage (FIX-PLANI-v3 §296-315).
-// XSD_ELEMENTS truth source: src/serializers/xsd-sequence.ts (DESPATCH_SEQ, PERSON_SEQ, DELIVERY_SEQ, SHIPMENT_SEQ).
+// XSD_ELEMENTS truth source: src/ubl/sequences/xsd-sequence.ts (DESPATCH_SEQ, PERSON_SEQ, DELIVERY_SEQ, SHIPMENT_SEQ).
 
 describe('Sprint 7.3 — K1/K3/K4 regression guard', () => {
   it('K1 (B-18): IssueTime cbcRequiredTag ile emit edilir', () => {

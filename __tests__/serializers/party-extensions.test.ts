@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   serializeBuyerCustomerParty,
   serializeTaxRepresentativeParty,
-} from '../../src/serializers/party-serializer';
+} from '../../src/ubl/components/party';
 import type { BuyerCustomerInput, TaxRepresentativeInput } from '../../src/types/common';
 
 describe('serializeBuyerCustomerParty — B-36 PostalAddress + PartyTaxScheme + Contact', () => {

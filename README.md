@@ -631,7 +631,7 @@ const xml = builder.build({
 ## 5. Profil × Tip Uyumluluk Matrisi
 
 > **Bu tablo bir SEÇİM listesidir** — "GİB'in tanıdığı tipler" listesi değil.
-> `PROFILE_TYPE_MATRIX` (`src/config/constants.ts`) tek kaynaktır; üretim kapısı
+> `PROFILE_TYPE_MATRIX` (`src/ubltr/vocabulary/constants.ts`) tek kaynaktır; üretim kapısı
 > `validateCrossMatrix`. Bir tipin burada olmaması, o tipin OKUNAMAYACAĞI anlamına
 > gelmez (bkz. `TEVKIFATIADE` notu).
 
@@ -794,7 +794,7 @@ string'in **birebir aynı yuvarlamasından** türetilir — not ile belgedeki tu
 bu bilinçli, düzeltmeyin. **Seçilen** adlar (GBP) ise doğru Türkçe yazımla yazılır.
 
 Tablo tek satırla genişletilebilir: `AMOUNT_IN_WORDS_UNITS`
-(`src/config/amount-in-words-config.ts`).
+(`src/ubltr/vocabulary/amount-in-words-config.ts`).
 
 `notes` dizinizde elle yazılmış bir yazıyla-notu (`YAZIYLA:` ile başlayan) varsa
 **serileştirmede atılır** — belgede çelişen iki not bulunmasın diye. Girdi nesneniz değişmez.
@@ -864,17 +864,17 @@ Kütüphane hangi karardan sorumlu, hangisinden değil. Tüketici kodunun bilmes
 | **M2** | IHRACAT/YOLCU/OZELFATURA yalnızca ISTISNA tipi kabul eder | `src/calculator/invoice-rules.ts` |
 | **M3** (B-95) | **650 dinamik stopaj** — kullanıcı `withholdingTaxPercent: 0-100` girer; UR-2 `65000+percent` combo XML'de | `src/calculator/withholding-config.ts` · [examples/10](./examples/10-ticarifatura-tevkifat-650-dinamik/) |
 | **M4** (B-96) | **555 Demirbaş KDV** — `BuilderOptions.allowReducedKdvRate: true` opt-in flag zorunlu; default false reject eder | `src/types/builder-options.ts` · [examples/30](./examples/30-feature-555-demirbas-kdv/) |
-| **M5** | **TAX_EXEMPTION_MATRIX** — istisna kodu × fatura tipi whitelist/forbidden + `requiresZeroKdvLine` | `src/validators/cross-check-matrix.ts` |
-| **M6** | Parent-child conditional required — parent opsiyonel, parent varsa child zorunlu | `src/validators/*-validators.ts` |
+| **M5** | **TAX_EXEMPTION_MATRIX** — istisna kodu × fatura tipi whitelist/forbidden + `requiresZeroKdvLine` | `src/documents/invoice/validators/cross-check-matrix.ts` |
+| **M6** | Parent-child conditional required — parent opsiyonel, parent varsa child zorunlu | `src/documents/invoice/validators/*.ts` |
 | **M7** | Exemption-config → cross-check matrisi otomatik türetilir | `src/calculator/exemption-config.ts` |
-| **M8** | **CustomizationID:** Fatura `TR1.2`, e-İrsaliye `TR1.2.1` — kütüphane builder'da sabitler | `src/config/namespaces.ts` |
+| **M8** | **CustomizationID:** Fatura `TR1.2`, e-İrsaliye `TR1.2.1` — kütüphane builder'da sabitler | `src/ubl/namespaces.ts` |
 | **M9** (B-102) | **Calculator tam float**, yuvarlama yalnızca XML yazım anında `toFixed(2)` XSD-yuvarlamalı alanlarda | `src/calculator/*.ts` · `src/serializers/*.ts` |
 | **M10** (B-102) | **`setLiability()` `isExport=true` iken no-op** (error yerine) | `src/calculator/invoice-rules.ts` |
-| **M11** (Sprint 8c, B-NEW-11) | **Self-exemption tipleri** (ISTISNA, IHRACKAYITLI, OZELMATRAH + IHRACAT, YOLCUBERABERFATURA, OZELFATURA, YATIRIMTESVIK profilleri) kendi istisna kodlarını taşır; dışındaki tiplerde KDV=0 kalem için **kullanıcıdan 351 manuel zorunlu** (calculator otomatik atamaz) | `src/config/self-exemption-types.ts` · `src/validators/manual-exemption-validator.ts` |
+| **M11** (Sprint 8c, B-NEW-11) | **Self-exemption tipleri** (ISTISNA, IHRACKAYITLI, OZELMATRAH + IHRACAT, YOLCUBERABERFATURA, OZELFATURA, YATIRIMTESVIK profilleri) kendi istisna kodlarını taşır; dışındaki tiplerde KDV=0 kalem için **kullanıcıdan 351 manuel zorunlu** (calculator otomatik atamaz) | `src/ubltr/vocabulary/self-exemption-types.ts` · `src/validators/manual-exemption-validator.ts` |
 | **M12** (Sprint 8d) | **Phantom KDV (Vazgeçilen KDV Tutarı)** — YATIRIMTESVIK+ISTISNA ve EARSIVFATURA+YTBISTISNA'da satır KDV matematiği TaxSubtotal içinde taşınır fakat LegalMonetaryTotal + parent TaxTotal'a dahil edilmez; `CalculationSequenceNumeric=-1` otomatik. Her satırda `0 < kdvPercent ≤ 100` + exemption code (308 Makine/01, 339 İnşaat/02) zorunlu. Kaynak: GİB Yatırım Teşvik Teknik Kılavuzu v1.1 (Aralık 2025) | `src/calculator/phantom-kdv-rules.ts` · `src/validators/phantom-kdv-validator.ts` |
-| **M13** (v3.0.0) | **Yazıyla tutar notu** — `YAZIYLA:#...#` HER faturaya, notların İLKİ olarak, KOŞULSUZ eklenir (opsiyon yok). Biçim 88 gerçek fatura notundan ÖLÇÜLDÜ. Kaynak `PayableAmount`; tam sayı VE kesir yazıyla, kuruş sıfırsa kesir hiç yazılmaz. Tüketicinin elle yazdığı yazıyla-notları serileştirmede elenir. İrsaliye etkilenmez | `src/utils/amount-in-words.ts` · `src/utils/turkish-number-words.ts` · `src/config/amount-in-words-config.ts` · [§7.1](#71-yazıyla-tutar-notu-v300) |
-| **M14** (v4.0.0) | **GİB Schematron 20260701 uyumu** — Enerji/Şarj 4 zorunluluk, e-İrsaliye plaka zorunluluğu + format, 308/339 YATIRIMTESVIK kapsam kısıtı, İDİS `SE-`/`ES-`, IADE+KAMU, kod 233. Yeni kurallar **koşulsuz** uygulanır (`issueDate` koşullu geçiş dönemi YOK). Enerji kuralları `basic` seviyede de çalışır. Yürürlük 14.09.2026 | `src/validators/enerji-validator.ts` · `src/validators/despatch-validators.ts` · `src/validators/yatirim-tesvik-validator.ts` · [audit/sprint-09-plan.md](./audit/sprint-09-plan.md) |
-| **AR-1** | `cbcTag` → `cbcRequiredTag` + `cbcOptionalTag` split | `src/utils/xml-helpers.ts` |
+| **M13** (v3.0.0) | **Yazıyla tutar notu** — `YAZIYLA:#...#` HER faturaya, notların İLKİ olarak, KOŞULSUZ eklenir (opsiyon yok). Biçim 88 gerçek fatura notundan ÖLÇÜLDÜ. Kaynak `PayableAmount`; tam sayı VE kesir yazıyla, kuruş sıfırsa kesir hiç yazılmaz. Tüketicinin elle yazdığı yazıyla-notları serileştirmede elenir. İrsaliye etkilenmez | `src/utils/amount-in-words.ts` · `src/utils/turkish-number-words.ts` · `src/ubltr/vocabulary/amount-in-words-config.ts` · [§7.1](#71-yazıyla-tutar-notu-v300) |
+| **M14** (v4.0.0) | **GİB Schematron 20260701 uyumu** — Enerji/Şarj 4 zorunluluk, e-İrsaliye plaka zorunluluğu + format, 308/339 YATIRIMTESVIK kapsam kısıtı, İDİS `SE-`/`ES-`, IADE+KAMU, kod 233. Yeni kurallar **koşulsuz** uygulanır (`issueDate` koşullu geçiş dönemi YOK). Enerji kuralları `basic` seviyede de çalışır. Yürürlük 14.09.2026 | `src/documents/invoice/validators/enerji-validator.ts` · `src/validators/despatch-validators.ts` · `src/validators/yatirim-tesvik-validator.ts` · [audit/sprint-09-plan.md](./audit/sprint-09-plan.md) |
+| **AR-1** | `cbcTag` → `cbcRequiredTag` + `cbcOptionalTag` split | `src/ubl/primitives/xml-helpers.ts` |
 | **AR-2** | `driverPerson` → `driverPersons[]` array (çoklu sürücü desteği) | `src/types/despatch-input.ts` · [examples/34](./examples/34-irsaliye-temel-sevk-coklu-sofor/) |
 | **AR-3..5** | PROFILE_TYPE_MATRIX helper API; map/matrix export edilmez | `src/calculator/invoice-rules.ts` |
 | **AR-6** | Eski dead PaymentMeansCode set kaldırıldı | `src/calculator/payment-means-config.ts` |
@@ -882,8 +882,8 @@ Kütüphane hangi karardan sorumlu, hangisinden değil. Tüketici kodunun bilmes
 | **AR-8** | Outstanding/Oversupply input alanları kaldırıldı | `src/types/*.ts` |
 | **AR-9** (Sprint 8c, isim konuldu) | **Reactive InvoiceSession (vision)** — kullanıcı girişi akış tabanlı validator feedback. Mevcut `src/invoice-session.ts` snapshot validator rolü korunur; reaktif katman v2.1.0'da yeni modül olarak eklenecek | `audit/reactive-session-design-notes.md` |
 | **AR-10** (Sprint 8h, v2.1.0) | **Reactive InvoiceSession (concrete realization)** — AR-9 vision'ın somut implementation'ı: path-based `update(path, value)` API + `SessionPaths` map + field-level events (`fieldChanged`/`fieldActivated`/`fieldDeactivated`/`lineFieldChanged`) + line-level FieldVisibility + validator pipeline (5 validator) + B-78 parametre köprüsü + structured `pathError` event. 19 eski setter kaldırıldı (BREAKING). `liability` `update(SessionPaths.liability, x)` ile yönetilir; `isExport` constructor-locked readonly. M10 kontratı korunur. | `src/calculator/invoice-session.ts` · `src/calculator/session-paths.generated.ts` · `audit/sprint-08h-plan.md` · `audit/sprint-08h-implementation-log.md` |
-| **B-07** | IHRACKAYITLI + 702 için **GTİP (12 hane) + AlıcıDİBKod (11 hane)** zorunlu; simple-input'ta `SimpleLineDeliveryInput.alicidibsatirkod` alanı (B-NEW-12 / Sprint 8c). 4.5.1: **izinli** ikinci kod `saticidibsatirkod` (`SATICIDIBSATIRKOD` schemeID) — zorunlu DEĞİL, uzunluk şartı YOK | `src/validators/profile-validators.ts` · [examples/07](./examples/07-temelfatura-ihrackayitli-702/) |
-| **B-08** | YATIRIMTESVIK: `ytbNo` (6 hane) + Kod 01 Makine için `productTraceId+serialId+brand+model`; IADE grubunda muaf | `src/validators/profile-validators.ts` · [examples/12](./examples/12-yatirimtesvik-satis-makina/) |
+| **B-07** | IHRACKAYITLI + 702 için **GTİP (12 hane) + AlıcıDİBKod (11 hane)** zorunlu; simple-input'ta `SimpleLineDeliveryInput.alicidibsatirkod` alanı (B-NEW-12 / Sprint 8c). 4.5.1: **izinli** ikinci kod `saticidibsatirkod` (`SATICIDIBSATIRKOD` schemeID) — zorunlu DEĞİL, uzunluk şartı YOK | `src/documents/invoice/validators/profile-validators.ts` · [examples/07](./examples/07-temelfatura-ihrackayitli-702/) |
+| **B-08** | YATIRIMTESVIK: `ytbNo` (6 hane) + Kod 01 Makine için `productTraceId+serialId+brand+model`; IADE grubunda muaf | `src/documents/invoice/validators/profile-validators.ts` · [examples/12](./examples/12-yatirimtesvik-satis-makina/) |
 | **B-83** | KAMU: `buyerCustomer` + `paymentMeans` + TR IBAN zorunlu; additionalIdentifiers (MUSTERINO) | [examples/15](./examples/15-kamu-satis/) |
 | **B-104** | Despatch `DriverPerson.nationalityId` 11-hane TCKN zorunlu (ISO kodu reddedilir) | `src/validators/despatch-validators.ts` |
 | **B-NEW-13** (Sprint 8c) | YOLCUBERABERFATURA: `SimpleBuyerCustomerInput.nationalityId + passportId` + belge seviyesi `SimpleInvoiceInput.taxRepresentativeParty` zorunlu | `src/calculator/simple-types.ts` · [examples/20](./examples/20-yolcu-beraber-istisna-yabanci/) |

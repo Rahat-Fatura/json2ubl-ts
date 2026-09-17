@@ -13,7 +13,7 @@
  * fakat LegalMonetaryTotal ve parent TaxTotal/TaxAmount'a dahil edilmez.
  */
 
-import { isYatirimTesvikIstisnaScope } from '../config/schematron-scopes';
+import { isYatirimTesvikIstisnaScope } from '../ubltr/vocabulary/schematron-scopes';
 
 /** Kütüphane otomatik olarak set eder — kullanıcıdan alınmaz. */
 export const PHANTOM_KDV_CALCULATION_SEQUENCE_NUMERIC = -1;

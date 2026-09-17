@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateByType } from '../../src/validators/type-validators';
-import { validateByProfile } from '../../src/validators/profile-validators';
+import { validateByType } from '../../src/documents/invoice/validators/type-validators';
+import { validateByProfile } from '../../src/documents/invoice/validators/profile-validators';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 

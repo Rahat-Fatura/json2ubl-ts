@@ -1,6 +1,6 @@
 import type { SuggestionRule, Suggestion } from '../suggestion-types';
 import type { SimpleLineInput } from '../simple-types';
-import { isYatirimTesvikScope } from '../../config/schematron-scopes';
+import { isYatirimTesvikScope } from '../../ubltr/vocabulary/schematron-scopes';
 
 /**
  * Sprint 8i.5 / AR-10 Faz 2 — YATIRIMTESVIK grubu suggestion kuralları (4 kural).

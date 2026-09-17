@@ -32,7 +32,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { DespatchBuilder, mapSimpleToDespatchInput } from '../../src';
-import { buildVehicleStages } from '../../src/serializers/delivery-serializer';
+import { buildVehicleStages } from '../../src/ubl/components/delivery';
 import { DespatchProfileId, DespatchTypeCode } from '../../src/types/enums';
 import type { DespatchInput, LicensePlateInput, DriverPersonInput } from '../../src/types/despatch-input';
 

@@ -12,9 +12,9 @@ import { configManager } from './config-manager';
 import type { WithholdingTaxDefinition } from './withholding-config';
 import type { ExemptionDefinition } from './exemption-config';
 import { BillingDocumentTypeCode } from './simple-types';
-import { PROFILE_TYPE_MATRIX, WITHHOLDING_ALLOWED_TYPES } from '../config/constants';
-import { isYatirimTesvikScope, isYatirimTesvikKdvScope } from '../config/schematron-scopes';
-import { TAX_EXEMPTION_MATRIX } from '../validators/cross-check-matrix';
+import { PROFILE_TYPE_MATRIX, WITHHOLDING_ALLOWED_TYPES } from '../ubltr/vocabulary/constants';
+import { isYatirimTesvikScope, isYatirimTesvikKdvScope } from '../ubltr/vocabulary/schematron-scopes';
+import { TAX_EXEMPTION_MATRIX } from '../documents/invoice/validators/cross-check-matrix';
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 import type { ValidationWarning } from '../session/validation-warning';
 

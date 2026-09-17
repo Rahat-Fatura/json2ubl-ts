@@ -274,7 +274,7 @@ describe('document-calculator', () => {
     });
 
     // B-T06: Özel profil coverage (Sprint 7.2) — SGK bir InvoiceTypeCode,
-    // profile değil (PROFILE_TYPE_MATRIX satır 13 src/config/constants.ts).
+    // profile değil (PROFILE_TYPE_MATRIX satır 13 src/ubltr/vocabulary/constants.ts).
     it('B-T06: YATIRIMTESVIK profili override çalışmalı', () => {
       const result = calculateDocument(makeInput({ profile: 'YATIRIMTESVIK' }));
       expect(result.profile).toBe('YATIRIMTESVIK');

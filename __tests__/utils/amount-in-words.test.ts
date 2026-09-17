@@ -17,7 +17,7 @@ import {
   getAmountInWordsUnits,
   AMOUNT_IN_WORDS_UNITS,
   DEFAULT_MINOR_UNIT,
-} from '../../src/config/amount-in-words-config';
+} from '../../src/ubltr/vocabulary/amount-in-words-config';
 import { formatDecimal } from '../../src/utils/formatters';
 
 describe('SAHA KANITI — gerçek faturalardaki notu BİREBİR üretir', () => {

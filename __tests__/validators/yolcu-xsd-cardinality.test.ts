@@ -20,8 +20,8 @@ import {
   personNameCardinalityRule,
   documentReferenceCardinalityRule,
   partyPostalAddressCardinalityRule,
-} from '../../src/validators/rules/xsd-cardinality-rules';
-import { validateCommon } from '../../src/validators/common-validators';
+} from '../../src/ubltr/rules/xsd-cardinality-rules';
+import { validateCommon } from '../../src/ubltr/rules/shared/common-validators';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 import { SimpleInvoiceBuilder } from '../../src';

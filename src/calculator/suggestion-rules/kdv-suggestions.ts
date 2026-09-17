@@ -1,6 +1,6 @@
 import type { SuggestionRule, Suggestion } from '../suggestion-types';
-import { isSelfExemptionInvoice } from '../../config/self-exemption-types';
-import { isYatirimTesvikIstisnaScope } from '../../config/schematron-scopes';
+import { isSelfExemptionInvoice } from '../../ubltr/vocabulary/self-exemption-types';
+import { isYatirimTesvikIstisnaScope } from '../../ubltr/vocabulary/schematron-scopes';
 
 /**
  * Sprint 8i.2 / AR-10 Faz 2 — KDV grubu suggestion kuralları (7 kural).

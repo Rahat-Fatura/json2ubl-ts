@@ -8,7 +8,7 @@ import {
   SELF_EXEMPTION_INVOICE_TYPES,
   SELF_EXEMPTION_INVOICE_PROFILES,
   isSelfExemptionInvoice,
-} from '../../src/config/self-exemption-types';
+} from '../../src/ubltr/vocabulary/self-exemption-types';
 
 describe('M11 Self-Exemption Types', () => {
   describe('SELF_EXEMPTION_INVOICE_TYPES', () => {

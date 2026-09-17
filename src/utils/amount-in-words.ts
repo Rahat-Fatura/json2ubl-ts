@@ -49,7 +49,7 @@
  *   belgeleri pozitif tutar + farklı tip koduyla düzenlenir). Yine de savunmacı
  *   davranılır: işaret sessizce yutulmaz, `EKSİ` öneki yazılır. Yuvarlama
  *   sonrası sıfırlanan negatifler (`-0,001` → `0,00`) `EKSİ` ALMAZ.
- * - **Bilinmeyen para birimi:** bkz. `config/amount-in-words-config.ts`.
+ * - **Bilinmeyen para birimi:** bkz. `ubltr/vocabulary/amount-in-words-config.ts`.
  * - **Okunamayan tutar:** sonlu olmayan veya güvenli tam sayı aralığı dışındaki
  *   tutarlarda `null` döner ve not HİÇ yazılmaz. Gerekçe: kozmetik bir not
  *   yüzünden serializer'ın patlaması ve geçerli bir belgenin üretilememesi
@@ -58,7 +58,7 @@
 
 import { formatDecimal } from './formatters';
 import { numberToTurkishWords, TURKISH_MINUS_WORD } from './turkish-number-words';
-import { getAmountInWordsUnits } from '../config/amount-in-words-config';
+import { getAmountInWordsUnits } from '../ubltr/vocabulary/amount-in-words-config';
 
 /** Not öneki — `YAZIYLA:#` (sahada 88/88). */
 export const AMOUNT_IN_WORDS_PREFIX = 'YAZIYLA:#';

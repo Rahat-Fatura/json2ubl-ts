@@ -1,7 +1,7 @@
 /**
  * XSD sekans üreteci (S2a).
  *
- * `src/serializers/xsd-sequence.generated.ts` dosyasını **GİB UBL-TR XSD'sinden**
+ * `src/ubl/sequences/xsd-sequence.generated.ts` dosyasını **GİB UBL-TR XSD'sinden**
  * üretir. Daha önce tablolar stok OASIS şemasından ELLE kopyalanmıştı; GİB'in
  * daralttığı slotlar tabloda kalmış, bir alan adı da (`CorporationStockAmount`)
  * yanlış yazılmıştı. Tablolar `emitInOrder` ile **taşıyıcı** hâle geldiğinden
@@ -47,7 +47,7 @@ function absPath(repoRelative: string): string {
 }
 
 /** Üretilen dosya — repo köküne göreli POSIX yolu. */
-const OUTPUT_FILE = 'src/serializers/xsd-sequence.generated.ts';
+const OUTPUT_FILE = 'src/ubl/sequences/xsd-sequence.generated.ts';
 
 /** Repoya taşınmış GİB XSD kökü — repo köküne göreli POSIX yolu. */
 const DEFAULT_SOURCE_ROOT = 'schemas/ubl-tr';

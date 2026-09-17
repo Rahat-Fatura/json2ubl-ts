@@ -5,7 +5,7 @@ import {
   isValidPackagingTypeCode,
   getPackagingTypeCodeDefinition,
 } from '../../src/calculator/package-type-code-config';
-import { PACKAGING_TYPE_CODES } from '../../src/config/constants';
+import { PACKAGING_TYPE_CODES } from '../../src/ubltr/vocabulary/constants';
 
 describe('package-type-code-config (D1)', () => {
   describe('B-60 — 27 sık kod tanımlı', () => {

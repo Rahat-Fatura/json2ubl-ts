@@ -5,7 +5,7 @@ import {
   validateEnerjiCustomerPlaka,
   validateEnerjiItemInstanceSerialId,
   validateEnerji,
-} from '../../src/validators/enerji-validator';
+} from '../../src/documents/invoice/validators/enerji-validator';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput, InvoiceLineInput } from '../../src/types/invoice-input';
 

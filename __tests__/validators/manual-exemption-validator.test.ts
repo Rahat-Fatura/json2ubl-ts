@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateManualExemption } from '../../src/validators/manual-exemption-validator';
+import { validateManualExemption } from '../../src/documents/invoice/validators/manual-exemption-validator';
 import type { SimpleInvoiceInput } from '../../src/calculator/simple-types';
 
 function baseInput(overrides: Partial<SimpleInvoiceInput> = {}): SimpleInvoiceInput {

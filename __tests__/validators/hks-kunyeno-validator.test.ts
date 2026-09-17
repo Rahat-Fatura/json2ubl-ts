@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateHksKunyeNo } from '../../src/validators/hks-kunyeno-validator';
+import { validateHksKunyeNo } from '../../src/documents/invoice/validators/hks-kunyeno-validator';
 import { InvoiceSession } from '../../src/calculator/invoice-session';
 import type { SimpleInvoiceInput, SimpleLineInput } from '../../src/calculator/simple-types';
 

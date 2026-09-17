@@ -11,7 +11,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { PROFILE_TYPE_MATRIX } from '../../src/config/constants';
+import { PROFILE_TYPE_MATRIX } from '../../src/ubltr/vocabulary/constants';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 
 const MATRIX_ROOT = path.resolve(__dirname, '..');

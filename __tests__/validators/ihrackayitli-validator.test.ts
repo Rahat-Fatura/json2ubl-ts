@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateIhrackayitli702 } from '../../src/validators/ihrackayitli-validator';
-import { serializeLineDelivery } from '../../src/serializers/delivery-serializer';
+import { validateIhrackayitli702 } from '../../src/documents/invoice/validators/ihrackayitli-validator';
+import { serializeLineDelivery } from '../../src/ubl/components/delivery';
 import { InvoiceTypeCode, InvoiceProfileId } from '../../src/types/enums';
 import type { InvoiceInput, InvoiceLineInput } from '../../src/types/invoice-input';
 import type { LineDeliveryInput } from '../../src/types/common';

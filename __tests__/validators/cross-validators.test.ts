@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateCrossMatrix } from '../../src/validators/cross-validators';
+import { validateCrossMatrix } from '../../src/documents/invoice/validators/cross-validators';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 import { SimpleInvoiceBuilder } from '../../src/calculator/simple-invoice-builder';

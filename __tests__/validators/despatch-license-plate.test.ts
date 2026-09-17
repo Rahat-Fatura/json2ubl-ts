@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { validateDespatch } from '../../src/validators/despatch-validators';
+import { validateDespatch } from '../../src/documents/despatch-advice/validators';
 import { DespatchProfileId, DespatchTypeCode } from '../../src/types/enums';
 import {
   LICENSE_PLATE_SCHEME_IDS,
   TR_LICENSE_PLATE_REGEX,
   FOREIGN_LICENSE_PLATE_REGEX,
-} from '../../src/config/constants';
+} from '../../src/ubltr/vocabulary/constants';
 import type { DespatchInput, LicensePlateInput } from '../../src/types/despatch-input';
 
 /**

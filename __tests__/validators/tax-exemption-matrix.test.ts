@@ -3,8 +3,8 @@ import {
   TAX_EXEMPTION_MATRIX,
   validateExemptionCode,
   type TaxExemptionRule,
-} from '../../src/validators/cross-check-matrix';
-import { validateTaxExemptionMatrix } from '../../src/validators/cross-validators';
+} from '../../src/documents/invoice/validators/cross-check-matrix';
+import { validateTaxExemptionMatrix } from '../../src/documents/invoice/validators/cross-validators';
 import { InvoiceTypeCode, InvoiceProfileId } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 

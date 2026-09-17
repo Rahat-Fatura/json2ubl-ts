@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { SEVKIYAT_NO_REGEX } from '../../src/config/constants';
-import { validateByProfile } from '../../src/validators/profile-validators';
-import { validateDespatch } from '../../src/validators/despatch-validators';
+import { SEVKIYAT_NO_REGEX } from '../../src/ubltr/vocabulary/constants';
+import { validateByProfile } from '../../src/documents/invoice/validators/profile-validators';
+import { validateDespatch } from '../../src/documents/despatch-advice/validators';
 import { InvoiceProfileId, InvoiceTypeCode, DespatchProfileId, DespatchTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 import type { DespatchInput } from '../../src/types/despatch-input';

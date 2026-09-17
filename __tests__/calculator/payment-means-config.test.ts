@@ -7,7 +7,7 @@ import {
   isValidPaymentMeansCode,
   getPaymentMeansDefinition,
 } from '../../src/calculator/payment-means-config';
-import { PAYMENT_MEANS_CODES } from '../../src/config/constants';
+import { PAYMENT_MEANS_CODES } from '../../src/ubltr/vocabulary/constants';
 
 /**
  * Şematronun `$PaymentMeansCodeTypeList` değişkenini paketteki XML'den OKUR.

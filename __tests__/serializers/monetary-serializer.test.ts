@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { serializeLegalMonetaryTotal } from '../../src/serializers/monetary-serializer';
+import { serializeLegalMonetaryTotal } from '../../src/ubl/components/monetary';
 import type { MonetaryTotalInput } from '../../src/types/common';
 
 /**

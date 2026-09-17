@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateDespatch } from '../../src/validators/despatch-validators';
+import { validateDespatch } from '../../src/documents/despatch-advice/validators';
 import { DespatchProfileId, DespatchTypeCode } from '../../src/types/enums';
 import type { DespatchInput } from '../../src/types/despatch-input';
 

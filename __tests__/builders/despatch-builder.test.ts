@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DespatchBuilder } from '../../src/builders/despatch-builder';
+import { DespatchBuilder } from '../../src/documents/despatch-advice/builder';
 import { UblBuildError } from '../../src/errors/ubl-build-error';
 import { DespatchProfileId, DespatchTypeCode } from '../../src/types/enums';
 import type { DespatchInput } from '../../src/types/despatch-input';
@@ -182,7 +182,7 @@ describe('DespatchBuilder', () => {
       const builder = new DespatchBuilder();
       const input = createValidDespatchInput();
       input.profileId = DespatchProfileId.IDISIRSALIYE;
-      // SEVKIYATNO formatı: SE-0000000 (src/config/constants.ts §289)
+      // SEVKIYATNO formatı: SE-0000000 (src/ubltr/vocabulary/constants.ts §289)
       input.supplier.additionalIdentifiers = [
         { schemeId: 'SEVKIYATNO', value: 'SE-0000123' },
       ];

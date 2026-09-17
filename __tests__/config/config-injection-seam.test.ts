@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest';
-import { InvoiceBuilder } from '../../src/builders/invoice-builder';
+import { InvoiceBuilder } from '../../src/documents/invoice/builder';
 import { configManager } from '../../src/calculator/config-manager';
 import { TAX_DEFINITIONS, type TaxDefinition } from '../../src/calculator/tax-config';
 import { WITHHOLDING_TAX_DEFINITIONS } from '../../src/calculator/withholding-config';
@@ -32,8 +32,8 @@ import {
   IHRAC_EXEMPTION_REASON_CODES,
   UNIT_CODES,
   CURRENCY_CODES,
-} from '../../src/config/constants';
-import { TAX_EXEMPTION_MATRIX } from '../../src/validators/cross-check-matrix';
+} from '../../src/ubltr/vocabulary/constants';
+import { TAX_EXEMPTION_MATRIX } from '../../src/documents/invoice/validators/cross-check-matrix';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateProfileRequirements } from '../../src/validators/profile-requirement-validator';
+import { validateProfileRequirements } from '../../src/documents/invoice/validators/profile-requirement-validator';
 import type { SimpleInvoiceInput, SimpleLineInput } from '../../src/calculator/simple-types';
 
 /**

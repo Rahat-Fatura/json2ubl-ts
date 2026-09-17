@@ -1,0 +1,456 @@
+import type { ValidationError } from '../../../errors/ubl-build-error';
+import type { InvoiceInput } from '../../../types/invoice-input';
+import { InvoiceProfileId } from '../../../types/enums';
+import {
+  TR_IBAN_REGEX, SEVKIYAT_NO_REGEX, ETIKET_NO_REGEX,
+  DELIVERY_TERM_CODES, TRANSPORT_MODE_CODES, YTB_ITEM_CLASSIFICATION_CODES,
+} from '../../../ubltr/vocabulary/constants';
+import { isYatirimTesvikScope } from '../../../ubltr/vocabulary/schematron-scopes';
+import { profileRequirement, invalidFormat, yatirimTesvikRequiresYtbNo } from '../../../ubltr/rules/validation-result';
+import { isNonEmpty, isNumeric, hasLength } from '../../../utils/formatters';
+import { isValidGtip, describeGtipDefect } from '../../../utils/gtip';
+
+/**
+ * §3 Profil-bazlı validasyon — ProfileID'ye göre ek kurallar
+ */
+export function validateByProfile(input: InvoiceInput): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const profile = input.profileId;
+
+  switch (profile) {
+    case InvoiceProfileId.IHRACAT:
+      errors.push(...validateIhracat(input));
+      break;
+    case InvoiceProfileId.YOLCUBERABERFATURA:
+      errors.push(...validateYolcuBeraber(input));
+      break;
+    case InvoiceProfileId.KAMU:
+      errors.push(...validateKamu(input));
+      break;
+    case InvoiceProfileId.HKS:
+      errors.push(...validateHks(input));
+      break;
+    case InvoiceProfileId.ILAC_TIBBICIHAZ:
+      errors.push(...validateIlacTibbiCihaz(input));
+      break;
+    case InvoiceProfileId.YATIRIMTESVIK:
+      errors.push(...validateYatirimTesvik(input));
+      break;
+    case InvoiceProfileId.IDIS:
+      errors.push(...validateIdis(input));
+      break;
+    case InvoiceProfileId.EARSIVFATURA:
+      errors.push(...validateEarsiv(input));
+      break;
+  }
+
+  return errors;
+}
+
+/**
+ * Bir Delivery bloğundaki DOLU taşıma modu kodlarını toplar.
+ *
+ * İki şekil de okunur, çünkü serileştirici ikisini de basar (`delivery-serializer`
+ * B-99): `shipment.transportModeCode` kısayolu ve `shipment.shipmentStages[]`
+ * dizisi. Belge düzeyi (`InvoiceInput.delivery`) ve satır düzeyi
+ * (`InvoiceLineInput.delivery`) aynı `shipment` şeklini taşır.
+ */
+function collectTransportModeCodes(
+  delivery: { shipment?: { transportModeCode?: string; shipmentStages?: Array<{ transportModeCode?: string }> } } | undefined,
+): string[] {
+  const shipment = delivery?.shipment;
+  if (!shipment) return [];
+  const codes = [
+    shipment.transportModeCode,
+    ...(shipment.shipmentStages ?? []).map(stage => stage.transportModeCode),
+  ];
+  return codes.filter((code): code is string => isNonEmpty(code)).map(code => code.trim());
+}
+
+/** §3.3 IHRACAT profili */
+function validateIhracat(input: InvoiceInput): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const p = InvoiceProfileId.IHRACAT;
+
+  // BuyerCustomerParty zorunlu (PARTYTYPE=EXPORT)
+  if (!input.buyerCustomer) {
+    errors.push(profileRequirement(p, 'buyerCustomer', 'IHRACAT profilinde BuyerCustomerParty zorunludur'));
+  } else {
+    if (input.buyerCustomer.partyType !== 'EXPORT') {
+      errors.push(profileRequirement(p, 'buyerCustomer.partyType', 'IHRACAT profilinde partyType EXPORT olmalıdır'));
+    }
+    if (!isNonEmpty(input.buyerCustomer.party?.registrationName)) {
+      errors.push(profileRequirement(p, 'buyerCustomer.party.registrationName',
+        'IHRACAT profilinde BuyerCustomerParty RegistrationName zorunludur'));
+    }
+  }
+
+  // Supplier PartyTaxScheme Name zorunlu
+  if (!isNonEmpty(input.supplier?.taxOffice)) {
+    errors.push(profileRequirement(p, 'supplier.taxOffice',
+      'IHRACAT profilinde satıcı vergi dairesi adı zorunludur'));
+  }
+
+  /* Belge düzeyi taşıma modu — şematron `LineDeliveryCheck`
+   * (`UBL-TR_Common_Schematron.xml:434`) satır ya da BELGE düzeyinden BİRİNİ
+   * yeterli sayar. Satır döngüsünün dışında bir kez ölçülür. */
+  const documentTransportModes = collectTransportModeCodes(input.delivery);
+  for (const code of documentTransportModes) {
+    if (!TRANSPORT_MODE_CODES.has(code)) {
+      errors.push(profileRequirement(p, 'delivery.shipment.transportModeCode',
+        `Geçersiz taşıma modu: ${code}`));
+    }
+  }
+
+  // Her satırda: PriceAmount+LineExtensionAmount (B-29) ve DeliveryTerms/DeliveryAddress/TransportModeCode/RequiredCustomsID
+  input.lines?.forEach((line, i) => {
+    // B-29: IHRACAT satır PriceAmount + LineExtensionAmount > 0 (CommonSchematron:404-406)
+    const priceAmount = line.price?.priceAmount;
+    if (typeof priceAmount !== 'number' || priceAmount <= 0) {
+      errors.push(profileRequirement(p, `lines[${i}].price.priceAmount`,
+        'IHRACAT satırında PriceAmount zorunlu ve pozitif olmalıdır (B-29)'));
+    }
+    if (typeof line.lineExtensionAmount !== 'number' || line.lineExtensionAmount <= 0) {
+      errors.push(profileRequirement(p, `lines[${i}].lineExtensionAmount`,
+        'IHRACAT satırında LineExtensionAmount zorunlu ve pozitif olmalıdır (B-29)'));
+    }
+
+    const del = line.delivery;
+    if (!del) {
+      errors.push(profileRequirement(p, `lines[${i}].delivery`,
+        'IHRACAT profilinde her satırda Delivery zorunludur'));
+      return;
+    }
+
+    // DeliveryTerms (INCOTERMS)
+    if (!del.deliveryTerms || !isNonEmpty(del.deliveryTerms.id)) {
+      errors.push(profileRequirement(p, `lines[${i}].delivery.deliveryTerms.id`,
+        'IHRACAT: DeliveryTerms (INCOTERMS) zorunludur'));
+    } else if (!DELIVERY_TERM_CODES.has(del.deliveryTerms.id)) {
+      errors.push(profileRequirement(p, `lines[${i}].delivery.deliveryTerms.id`,
+        `Geçersiz INCOTERMS kodu: ${del.deliveryTerms.id}`));
+    }
+
+    /* TransportModeCode — 🔴 ZORUNLU, "varsa doğrula" DEĞİL.
+     *
+     * Eski kod `!== undefined` kapısıyla alanı fiilen OPSİYONEL sayıyordu;
+     * şematron ise zorunlu tutuyor ve belgeyi reddediyor:
+     *   `LineDeliveryCheck` (`UBL-TR_Common_Schematron.xml:434`) — «ProfileID
+     *   IHRACAT iken, InvoiceLine Delivery/.../TransportModeCode içermiyorsa
+     *   Invoice Delivery/.../TransportModeCode içermelidir».
+     * Yani kural "satır YA DA belge" biçiminde bir VEYA'dır; ikisi de boşsa red.
+     * Doğrulayıcı artık şematronun bu iki-şıklı hâlini birebir kurar.
+     *
+     * 🔴 EKSİK DEĞER UYDURULMAZ. Serileştirici hiçbir varsayılan basmaz
+     * (bkz. `delivery-serializer`); kullanıcı vermediyse kapı BURADA, açık
+     * hatayla kapanır. Sessiz varsayılan bu depoda defalarca ısırmıştır.
+     *
+     * `shipmentStages[]` de okunur: serileştirici hem `transportModeCode`
+     * kısayolunu hem de çoklu `shipmentStages` şeklini basar; yalnız birini
+     * denetlemek, diğerini kullanan geçerli belgede YANLIŞ hata üretirdi. */
+    const lineTransportModes = collectTransportModeCodes(del);
+    if (lineTransportModes.length === 0 && documentTransportModes.length === 0) {
+      errors.push(profileRequirement(p, `lines[${i}].delivery.shipment.transportModeCode`,
+        'IHRACAT: Taşıma modu (TransportModeCode) zorunludur — satırda ya da belge '
+        + 'düzeyinde verilmelidir (şematron LineDeliveryCheck)'));
+    }
+    for (const code of lineTransportModes) {
+      if (!TRANSPORT_MODE_CODES.has(code)) {
+        errors.push(profileRequirement(p, `lines[${i}].delivery.shipment.transportModeCode`,
+          `Geçersiz taşıma modu: ${code}`));
+      }
+    }
+
+    /* RequiredCustomsID (GTİP) — 🔴 VARLIK YETMEZ, BİÇİM DE DENETLENİR.
+     *
+     * Eski kapı yalnız `isNonEmpty` bakıyordu; `8471.30` gibi 6 haneli bir
+     * değer buradan sessizce geçiyordu. Şematron da yakalamıyor:
+     * `UBL-TR_Common_Schematron.xml:436` İHRACAT'ta YALNIZ
+     * `string-length(...) != 0` şartı koyar, hane SAYMAZ. Yani yanlış biçim
+     * tüm yerel kontrollerden geçip GTB tarafında `1230` reddi olarak
+     * patlıyordu (GİB SSS 34'e göre usulsüzlük cezası riski).
+     *
+     * 12 hane şartının dayanağı GİB'in 17.01.2017 tarihli İHRACAT entegratör
+     * test duyurusudur: «GTİP noktasız 12 hane». Ayrıntı: `utils/gtip`. */
+    const goodsItems = del.shipment?.goodsItems;
+    const gtipPath = `lines[${i}].delivery.shipment.goodsItems[0].requiredCustomsId`;
+    const gtipRaw = goodsItems?.[0]?.requiredCustomsId;
+    if (!goodsItems || goodsItems.length === 0 || !isNonEmpty(gtipRaw)) {
+      errors.push(profileRequirement(p, gtipPath,
+        'IHRACAT: RequiredCustomsID (GTİP) zorunludur'));
+    } else if (!isValidGtip(gtipRaw)) {
+      errors.push(profileRequirement(p, gtipPath,
+        `IHRACAT: ${describeGtipDefect(gtipRaw)}`));
+    }
+  });
+
+  return errors;
+}
+
+/** §3.4 YOLCUBERABERFATURA profili */
+function validateYolcuBeraber(input: InvoiceInput): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const p = InvoiceProfileId.YOLCUBERABERFATURA;
+
+  // BuyerCustomerParty zorunlu (PARTYTYPE=TAXFREE)
+  if (!input.buyerCustomer) {
+    errors.push(profileRequirement(p, 'buyerCustomer', 'YOLCUBERABERFATURA profilinde BuyerCustomerParty zorunludur'));
+  } else {
+    if (input.buyerCustomer.partyType !== 'TAXFREE') {
+      errors.push(profileRequirement(p, 'buyerCustomer.partyType', 'YOLCUBERABERFATURA profilinde partyType TAXFREE olmalıdır'));
+    }
+    const party = input.buyerCustomer.party;
+    if (!isNonEmpty(party?.nationalityId)) {
+      errors.push(profileRequirement(p, 'buyerCustomer.party.nationalityId', 'NationalityID zorunludur'));
+    }
+    if (!isNonEmpty(party?.passportId)) {
+      errors.push(profileRequirement(p, 'buyerCustomer.party.passportId', 'Pasaport numarası zorunludur'));
+    }
+  }
+
+  // TaxRepresentativeParty zorunlu
+  if (!input.taxRepresentativeParty) {
+    errors.push(profileRequirement(p, 'taxRepresentativeParty', 'YOLCUBERABERFATURA profilinde TaxRepresentativeParty zorunludur'));
+  } else {
+    const trp = input.taxRepresentativeParty;
+    if (!isNonEmpty(trp.intermediaryVknTckn)) {
+      errors.push(profileRequirement(p, 'taxRepresentativeParty.intermediaryVknTckn', 'ARACIKURUMVKN zorunludur'));
+    } else {
+      const len = trp.intermediaryVknTckn.length;
+      if (len !== 10 && len !== 11) {
+        errors.push(invalidFormat('taxRepresentativeParty.intermediaryVknTckn', '10 veya 11 hane', String(len)));
+      }
+    }
+    if (!isNonEmpty(trp.intermediaryLabel)) {
+      errors.push(profileRequirement(p, 'taxRepresentativeParty.intermediaryLabel', 'ARACIKURUMETIKET zorunludur'));
+    }
+  }
+
+  return errors;
+}
+
+/** §3.6 KAMU profili */
+function validateKamu(input: InvoiceInput): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const p = InvoiceProfileId.KAMU;
+
+  // PaymentMeans zorunlu (Schematron: KamuFaturaCheck)
+  if (!input.paymentMeans || input.paymentMeans.length === 0) {
+    errors.push(profileRequirement(p, 'paymentMeans', 'KAMU profilinde PaymentMeans zorunludur'));
+  } else {
+    input.paymentMeans.forEach((pm, i) => {
+      const iban = pm.payeeFinancialAccount?.id;
+      if (!isNonEmpty(iban)) {
+        errors.push(profileRequirement(p, `paymentMeans[${i}].payeeFinancialAccount.id`, 'IBAN zorunludur'));
+      } else if (!TR_IBAN_REGEX.test(iban)) {
+        errors.push(invalidFormat(`paymentMeans[${i}].payeeFinancialAccount.id`,
+          'TR IBAN formatı: ^TR\\d{7}[A-Z0-9]{17}$', iban));
+      }
+    });
+  }
+
+  // BuyerCustomerParty zorunlu
+  if (!input.buyerCustomer) {
+    errors.push(profileRequirement(p, 'buyerCustomer', 'KAMU profilinde BuyerCustomerParty (alıcı kurum) zorunludur'));
+  } else {
+    const party = input.buyerCustomer.party;
+    if (!isNonEmpty(party?.vknTckn)) {
+      errors.push(profileRequirement(p, 'buyerCustomer.party.vknTckn', 'KAMU: Alıcı kurum VKN/TCKN zorunludur'));
+    }
+    if (!isNonEmpty(party?.name) && !isNonEmpty(party?.firstName)) {
+      errors.push(profileRequirement(p, 'buyerCustomer.party.name', 'KAMU: Alıcı kurum adı zorunludur'));
+    }
+  }
+
+  return errors;
+}
+
+/** §3.7 HKS profili */
+function validateHks(input: InvoiceInput): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const p = InvoiceProfileId.HKS;
+
+  input.lines?.forEach((line, i) => {
+    const kunyeNo = line.item?.additionalItemIdentifications?.find(a => a.schemeId === 'KUNYENO');
+    if (!kunyeNo || !isNonEmpty(kunyeNo.value)) {
+      errors.push(profileRequirement(p, `lines[${i}].item.additionalItemIdentifications`,
+        'HKS profilinde her satırda KUNYENO zorunludur'));
+    } else if (kunyeNo.value.length !== 19) {
+      errors.push(profileRequirement(p, `lines[${i}].item.additionalItemIdentifications.KUNYENO`,
+        `KUNYENO 19 karakter olmalıdır (gelen: ${kunyeNo.value.length})`));
+    }
+  });
+
+  return errors;
+}
+
+/** §3.9 ILAC_TIBBICIHAZ profili */
+function validateIlacTibbiCihaz(input: InvoiceInput): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const p = InvoiceProfileId.ILAC_TIBBICIHAZ;
+  const validSchemes = new Set(['ILAC', 'TIBBICIHAZ', 'DIGER']);
+
+  input.lines?.forEach((line, i) => {
+    const hasValidId = line.item?.additionalItemIdentifications?.some(
+      a => validSchemes.has(a.schemeId) && isNonEmpty(a.value)
+    );
+    if (!hasValidId) {
+      errors.push(profileRequirement(p, `lines[${i}].item.additionalItemIdentifications`,
+        'ILAC_TIBBICIHAZ profilinde her satırda ILAC, TIBBICIHAZ veya DIGER AdditionalItemIdentification zorunludur'));
+    }
+  });
+
+  return errors;
+}
+
+/** §3.10 YATIRIMTESVIK profili */
+function validateYatirimTesvik(input: InvoiceInput): ValidationError[] {
+  return validateYatirimTesvikRules(input, InvoiceProfileId.YATIRIMTESVIK);
+}
+
+/** YATIRIMTESVIK kuralları — hem profil hem EARSIV+YTB tipi için ortak */
+export function validateYatirimTesvikRules(input: InvoiceInput, source: string): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const isIstisna = input.invoiceTypeCode === 'ISTISNA' || input.invoiceTypeCode === 'YTBISTISNA';
+
+  // ContractDocumentReference → YTBNO (6 haneli numerik) zorunlu
+  // Sprint 8f.3 (Bug #3): semantik net hata mesajı için YATIRIMTESVIK_REQUIRES_YTBNO code'u
+  if (!input.contractReference) {
+    errors.push(yatirimTesvikRequiresYtbNo('contractReference',
+      'YATIRIMTESVIK profilinde YTBNO (6 haneli numerik) zorunludur'));
+  } else {
+    const id = input.contractReference.id;
+    if (!isNonEmpty(id)) {
+      errors.push(yatirimTesvikRequiresYtbNo('contractReference.id',
+        'YATIRIMTESVIK profilinde YTBNO zorunludur'));
+    } else if (!hasLength(id, 6) || !isNumeric(id)) {
+      errors.push(invalidFormat('contractReference.id', '6 haneli numerik YTBNO', id));
+    }
+  }
+
+  // Her satırda ItemClassificationCode zorunlu
+  input.lines?.forEach((line, i) => {
+    const code = line.item?.commodityClassification?.itemClassificationCode;
+    if (!isNonEmpty(code)) {
+      errors.push(profileRequirement(source, `lines[${i}].item.commodityClassification.itemClassificationCode`,
+        'Yatırım Teşvik profilinde ItemClassificationCode zorunludur'));
+    } else if (!YTB_ITEM_CLASSIFICATION_CODES.has(code)) {
+      errors.push(profileRequirement(source, `lines[${i}].item.commodityClassification.itemClassificationCode`,
+        `Geçersiz ItemClassificationCode: ${code}. Geçerli değerler: 01, 02, 03, 04`));
+    }
+
+    // ISTISNA tipinde ItemClassificationCode sadece 01 veya 02 olabilir
+    // Schematron: YatirimTesvikItemClassificationCodeIstisnaCheck
+    if (isIstisna && isNonEmpty(code) && code !== '01' && code !== '02') {
+      errors.push(profileRequirement(source, `lines[${i}].item.commodityClassification.itemClassificationCode`,
+        `ISTISNA tipinde Harcama Tipi sadece 01 veya 02 olabilir (gelen: ${code})`));
+    }
+
+    // B-67: ISTISNA tipinde satır KDV subtotal calculationSequenceNumeric=-1 zorunlu
+    // Schematron: CommonSchematron:467-469 (YatirimTesvikCalculationSequenceNumericCheck)
+    if (isIstisna) {
+      const kdvSub = line.taxTotal?.taxSubtotals?.find(ts => ts.taxTypeCode === '0015');
+      if (kdvSub && kdvSub.calculationSequenceNumeric !== -1) {
+        errors.push(profileRequirement(source, `lines[${i}].taxTotal.taxSubtotals.calculationSequenceNumeric`,
+          `YTB ISTISNA satırı KDV subtotal CalculationSequenceNumeric=-1 olmalıdır (gelen: ${kdvSub.calculationSequenceNumeric ?? 'yok'}) (B-67)`));
+      }
+    }
+
+    // ISTISNA + Kod 01 → TaxExemptionReasonCode 308 zorunlu
+    // Schematron: YatirimTesvikTaxExemptionReasonCode308Check
+    if (isIstisna && code === '01') {
+      const hasCode308 = line.taxTotal?.taxSubtotals?.some(
+        ts => ts.taxTypeCode === '0015' && ts.taxExemptionReasonCode === '308'
+      );
+      if (!hasCode308) {
+        errors.push(profileRequirement(source, `lines[${i}].taxTotal.taxExemptionReasonCode`,
+          'ISTISNA + Harcama Tipi 01 için TaxExemptionReasonCode 308 zorunludur'));
+      }
+    }
+
+    // ISTISNA + Kod 02 → TaxExemptionReasonCode 339 zorunlu
+    // Schematron: YatirimTesvikTaxExemptionReasonCode339Check
+    if (isIstisna && code === '02') {
+      const hasCode339 = line.taxTotal?.taxSubtotals?.some(
+        ts => ts.taxTypeCode === '0015' && ts.taxExemptionReasonCode === '339'
+      );
+      if (!hasCode339) {
+        errors.push(profileRequirement(source, `lines[${i}].taxTotal.taxExemptionReasonCode`,
+          'ISTISNA + Harcama Tipi 02 için TaxExemptionReasonCode 339 zorunludur'));
+      }
+    }
+
+    // Kod 01 (Makine/Teçhizat): ModelName, ProductTraceID, SerialID zorunlu
+    // Schematron: YatirimTesvikItemInstanceCheck
+    if (code === '01') {
+      if (!isNonEmpty(line.item?.modelName)) {
+        errors.push(profileRequirement(source, `lines[${i}].item.modelName`,
+          'Kod 01 (Makine/Teçhizat) için ModelName zorunludur'));
+      }
+      const instances = line.item?.itemInstances;
+      if (!instances || instances.length === 0) {
+        errors.push(profileRequirement(source, `lines[${i}].item.itemInstances`,
+          'Kod 01 (Makine/Teçhizat) için ItemInstance zorunludur'));
+      } else {
+        instances.forEach((inst, j) => {
+          if (!isNonEmpty(inst.productTraceId)) {
+            errors.push(profileRequirement(source, `lines[${i}].item.itemInstances[${j}].productTraceId`,
+              'Kod 01 için ProductTraceID zorunludur'));
+          }
+          if (!isNonEmpty(inst.serialId)) {
+            errors.push(profileRequirement(source, `lines[${i}].item.itemInstances[${j}].serialId`,
+              'Kod 01 için SerialID zorunludur'));
+          }
+        });
+      }
+    }
+  });
+
+  return errors;
+}
+
+/** §3.11 IDIS profili */
+function validateIdis(input: InvoiceInput): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const p = InvoiceProfileId.IDIS;
+
+  // Supplier SEVKIYATNO zorunlu
+  const sevkiyatNo = input.supplier?.additionalIdentifiers?.find(a => a.schemeId === 'SEVKIYATNO');
+  if (!sevkiyatNo || !isNonEmpty(sevkiyatNo.value)) {
+    errors.push(profileRequirement(p, 'supplier.additionalIdentifiers.SEVKIYATNO',
+      'IDIS profilinde satıcıda SEVKIYATNO zorunludur'));
+  } else if (!SEVKIYAT_NO_REGEX.test(sevkiyatNo.value)) {
+    errors.push(invalidFormat('supplier.additionalIdentifiers.SEVKIYATNO',
+      'SE-0000000 veya ES-0000000 formatı (10 karakter)', sevkiyatNo.value));
+  }
+
+  // Her satırda ETIKETNO zorunlu
+  input.lines?.forEach((line, i) => {
+    const etiketNo = line.item?.additionalItemIdentifications?.find(a => a.schemeId === 'ETIKETNO');
+    if (!etiketNo || !isNonEmpty(etiketNo.value)) {
+      errors.push(profileRequirement(p, `lines[${i}].item.additionalItemIdentifications.ETIKETNO`,
+        'IDIS profilinde her satırda ETIKETNO zorunludur'));
+    } else if (!ETIKET_NO_REGEX.test(etiketNo.value)) {
+      errors.push(invalidFormat(`lines[${i}].item.additionalItemIdentifications.ETIKETNO`,
+        '2 harf + 7 rakam (9 karakter)', etiketNo.value));
+    }
+  });
+
+  return errors;
+}
+
+/** §3.12 EARSIVFATURA profili — YTB tipleri için YATIRIMTESVIK kuralları */
+function validateEarsiv(input: InvoiceInput): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  /* YTB tipleri kullanılıyorsa YATIRIMTESVIK kuralları uygulanır.
+   * Kapsam yüklemi TEK KAYNAK (`config/schematron-scopes`, 4.5.2): burada zaten
+   * EARSIVFATURA dalındayız, dolayısıyla yüklem tip listesine indirgenir — ama
+   * listeyi elle tekrarlamak yerine ortak yüklemi çağırmak, liste değiştiğinde
+   * bu dalın sessizce eskimesini engeller. */
+  if (isYatirimTesvikScope(input.profileId, input.invoiceTypeCode)) {
+    errors.push(...validateYatirimTesvikRules(input, `EARSIV+${input.invoiceTypeCode}`));
+  }
+
+  return errors;
+}

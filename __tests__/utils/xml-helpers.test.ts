@@ -7,7 +7,7 @@ import {
   cbcRequiredQuantityTag,
   cbcOptionalQuantityTag,
   cacTag,
-} from '../../src/utils/xml-helpers';
+} from '../../src/ubl/primitives/xml-helpers';
 import { MissingRequiredFieldError } from '../../src/utils/errors';
 
 describe('AR-1: cbcRequired/Optional split (B-97)', () => {

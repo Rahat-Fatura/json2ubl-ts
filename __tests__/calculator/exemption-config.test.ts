@@ -11,7 +11,7 @@ import {
   OZEL_MATRAH_TAX_EXEMPTION_REASON_CODES,
   NON_ISTISNA_REASON_CODES,
   DEMIRBAS_KDV_EXEMPTION_CODES,
-} from '../../src/config/constants';
+} from '../../src/ubltr/vocabulary/constants';
 
 describe('exemption-config', () => {
   describe('B-03 — geçersiz kodlar config\'de yok', () => {

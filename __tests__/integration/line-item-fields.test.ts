@@ -43,7 +43,7 @@
 import { describe, it, expect } from 'vitest';
 import { SimpleInvoiceBuilder } from '../../src';
 import type { SimpleInvoiceInput, SimpleLineInput } from '../../src/calculator/simple-types';
-import { InvoiceBuilder } from '../../src/builders/invoice-builder';
+import { InvoiceBuilder } from '../../src/documents/invoice/builder';
 import type { InvoiceInput } from '../../src/types/invoice-input';
 
 function baseInput(line: Partial<SimpleLineInput>): SimpleInvoiceInput {

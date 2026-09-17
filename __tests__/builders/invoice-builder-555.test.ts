@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { InvoiceBuilder } from '../../src/builders/invoice-builder';
+import { InvoiceBuilder } from '../../src/documents/invoice/builder';
 import { UblBuildError } from '../../src/errors/ubl-build-error';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';

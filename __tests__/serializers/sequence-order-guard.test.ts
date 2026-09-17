@@ -6,9 +6,9 @@ import type { SimpleInvoiceInput, DespatchInput } from '../../src';
 import {
   ELEMENT_COMPLEX_TYPE,
   SEQUENCE_BY_COMPLEX_TYPE,
-} from '../../src/serializers/xsd-sequence';
-import { serializeDelivery } from '../../src/serializers/delivery-serializer';
-import { serializeSignature } from '../../src/serializers/party-serializer';
+} from '../../src/ubl/sequences/xsd-sequence';
+import { serializeDelivery } from '../../src/ubl/components/delivery';
+import { serializeSignature } from '../../src/ubl/components/party';
 import type { DeliveryInput } from '../../src/types/common';
 import { GOLDEN_SCENARIOS } from '../golden/scenarios';
 

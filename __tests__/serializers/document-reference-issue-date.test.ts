@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   serializeAdditionalDocument,
   serializeContractReference,
-} from '../../src/serializers/reference-serializer';
+} from '../../src/ubl/components/document-reference';
 import { SimpleInvoiceBuilder } from '../../src/calculator/simple-invoice-builder';
 import type { SimpleInvoiceInput } from '../../src/calculator/simple-types';
 

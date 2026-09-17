@@ -7,7 +7,7 @@ import {
 import {
   WITHHOLDING_TAX_TYPE_CODES,
   WITHHOLDING_TAX_TYPE_WITH_PERCENT,
-} from '../../src/config/constants';
+} from '../../src/ubltr/vocabulary/constants';
 
 describe('withholding-config', () => {
     /* 🔴 4.2.0 — TEVKİFAT KODU '650' KALDIRILDI. Bu bloğu geri açmayın.

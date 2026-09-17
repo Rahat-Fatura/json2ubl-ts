@@ -25,7 +25,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { InvoiceSession } from '../../src/calculator/invoice-session';
-import { PROFILE_TYPE_MATRIX } from '../../src/config/constants';
+import { PROFILE_TYPE_MATRIX } from '../../src/ubltr/vocabulary/constants';
 import type { SimpleInvoiceInput } from '../../src/calculator/simple-types';
 
 const base = (): SimpleInvoiceInput => ({

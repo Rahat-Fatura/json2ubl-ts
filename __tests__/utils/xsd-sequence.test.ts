@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { emitInOrder, PERSON_SEQ, TAX_CATEGORY_SEQ } from '../../src/serializers/xsd-sequence';
+import { emitInOrder, PERSON_SEQ, TAX_CATEGORY_SEQ } from '../../src/ubl/sequences/xsd-sequence';
 
 describe('emitInOrder (xsd-sequence)', () => {
   it('seq sırasında emit fonksiyonlarını çağırır', () => {

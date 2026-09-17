@@ -25,7 +25,7 @@ import {
     SNAPSHOT_FILE,
     type PublicExport,
 } from '../scripts/public-api-surface';
-import * as publicEntry from '../src/index';
+import * as publicEntry from '../src';
 
 /** Yüzey ölçümü tam bir TS programı kurar (~1.5 sn) — bir kez yapılır. */
 const liveApi: PublicExport[] = collectPublicApi();

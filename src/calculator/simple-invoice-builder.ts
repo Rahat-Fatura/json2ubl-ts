@@ -18,17 +18,17 @@ import type { SimpleInvoiceInput } from './simple-types';
 import type { CalculatedDocument } from './document-calculator';
 import { calculateDocument } from './document-calculator';
 import { mapSimpleToInvoiceInput } from './simple-invoice-mapper';
-import { InvoiceBuilder } from '../builders/invoice-builder';
+import { InvoiceBuilder } from '../documents/invoice/builder';
 import type { BuilderOptions } from '../types/builder-options';
 import type { InvoiceInput } from '../types/invoice-input';
 import type { ValidationError } from '../errors/ubl-build-error';
-import { validateManualExemption } from '../validators/manual-exemption-validator';
-import { validateSgkInput } from '../validators/sgk-input-validator';
-import { validateSimpleLineRanges } from '../validators/simple-line-range-validator';
-import { validateProfileRequirements } from '../validators/profile-requirement-validator';
-import { validateSimpleFormats } from '../validators/simple-format-validator';
-import { validatePhantomKdv } from '../validators/phantom-kdv-validator';
-import { validateOnlineSaleShipment } from '../validators/online-sale-validator';
+import { validateManualExemption } from '../documents/invoice/validators/manual-exemption-validator';
+import { validateSgkInput } from '../documents/invoice/validators/sgk-input-validator';
+import { validateSimpleLineRanges } from '../documents/invoice/validators/simple-line-range-validator';
+import { validateProfileRequirements } from '../documents/invoice/validators/profile-requirement-validator';
+import { validateSimpleFormats } from '../documents/invoice/validators/simple-format-validator';
+import { validatePhantomKdv } from '../documents/invoice/validators/phantom-kdv-validator';
+import { validateOnlineSaleShipment } from '../documents/invoice/validators/online-sale-validator';
 import { UblBuildError } from '../errors/ubl-build-error';
 
 export interface SimpleBuilderOptions extends BuilderOptions {

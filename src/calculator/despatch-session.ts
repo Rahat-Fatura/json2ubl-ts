@@ -49,7 +49,7 @@ import { deriveDespatchUIState, DEFAULT_DESPATCH_PROFILE, DEFAULT_DESPATCH_TYPE 
 import type { ValidationWarning } from '../session/validation-warning';
 import type { DespatchInput } from '../types/despatch-input';
 import { mapSimpleToDespatchInput } from './simple-despatch-mapper';
-import { DespatchBuilder } from '../builders/despatch-builder';
+import { DespatchBuilder } from '../documents/despatch-advice/builder';
 import type { DespatchSessionUpdateOverloads } from './despatch-session-paths.generated';
 import {
   DESPATCH_KNOWN_PATH_TEMPLATES,
@@ -59,7 +59,7 @@ import { applyPathUpdate, readPath, deepEqual } from './session-path-utils';
 import { runPathGates, diffVisibility } from '../session';
 import type { SessionPathErrorCode, SessionPathErrorPayload } from '../session';
 import type { ValidationError } from '../errors/ubl-build-error';
-import { validateDespatch } from '../validators/despatch-validators';
+import { validateDespatch } from '../documents/despatch-advice/validators';
 
 // ─── Session Event Tipleri ───────────────────────────────────────────────────
 

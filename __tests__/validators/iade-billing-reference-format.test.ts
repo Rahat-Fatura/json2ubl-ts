@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateProfileRequirements } from '../../src/validators/profile-requirement-validator';
-import { INVOICE_ID_REGEX } from '../../src/config/constants';
+import { validateProfileRequirements } from '../../src/documents/invoice/validators/profile-requirement-validator';
+import { INVOICE_ID_REGEX } from '../../src/ubltr/vocabulary/constants';
 import type { SimpleInvoiceInput } from '../../src/calculator/simple-types';
 
 /**

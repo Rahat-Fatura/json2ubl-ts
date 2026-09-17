@@ -69,7 +69,7 @@ export interface DespatchShipmentInput {
    * Çoklu araçta sürücülerin TAMAMI İLK `cac:ShipmentStage`e yazılır: girdide
    * plaka↔sürücü bağı yoktur ve GİB kılavuzlarında böyle bir eşleşme kuralı da
    * yoktur (kılavuzun tek örneği iki sürücüyü TEK aşamada gösterir). Gerekçenin
-   * tamamı `serializers/delivery-serializer.ts` → `buildVehicleStages`.
+   * tamamı `ubl/components/delivery.ts` → `buildVehicleStages`.
    */
   driverPersons?: DriverPersonInput[];
   /** Taşıyıcı firma — sürücü veya taşıyıcı zorunlu */

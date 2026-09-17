@@ -21,7 +21,7 @@
 import { describe, it, expect } from 'vitest';
 import { SimpleInvoiceBuilder, InvoiceSession, SessionPaths } from '../../src';
 import { resolveBillingReferences, billingReferencePath } from '../../src/calculator/simple-types';
-import { validateProfileRequirements } from '../../src/validators/profile-requirement-validator';
+import { validateProfileRequirements } from '../../src/documents/invoice/validators/profile-requirement-validator';
 import type { SimpleInvoiceInput } from '../../src/calculator/simple-types';
 
 const SENDER = {

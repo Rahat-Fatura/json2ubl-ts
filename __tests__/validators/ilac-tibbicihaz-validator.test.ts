@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateIlacTibbiCihazItemId } from '../../src/validators/ilac-tibbicihaz-validator';
+import { validateIlacTibbiCihazItemId } from '../../src/documents/invoice/validators/ilac-tibbicihaz-validator';
 import { InvoiceSession } from '../../src/calculator/invoice-session';
 import type { SimpleInvoiceInput, SimpleLineInput } from '../../src/calculator/simple-types';
 

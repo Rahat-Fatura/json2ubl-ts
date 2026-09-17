@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   validateYatirimTesvikKdvDocument,
   validateYatirimTesvikKdvLine,
-} from '../../src/validators/yatirim-tesvik-validator';
+} from '../../src/documents/invoice/validators/yatirim-tesvik-validator';
 /* 4.5.2: kapsam yüklemi validator'dan TEK KAYNAĞA taşındı ve adı anlamıyla
  * eşitlendi (`isYatirimTesvikScope` → `isYatirimTesvikKdvScope`). */
-import { isYatirimTesvikKdvScope } from '../../src/config/schematron-scopes';
+import { isYatirimTesvikKdvScope } from '../../src/ubltr/vocabulary/schematron-scopes';
 import { InvoiceTypeCode, InvoiceProfileId } from '../../src/types/enums';
 import type { InvoiceInput, InvoiceLineInput } from '../../src/types/invoice-input';
 

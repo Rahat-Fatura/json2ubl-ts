@@ -32,9 +32,9 @@ import {
   describeGtipDefect,
   GTIP_DIGIT_COUNT,
 } from '../../src/utils/gtip';
-import { validateByProfile } from '../../src/validators/profile-validators';
-import { validateIhrackayitli702 } from '../../src/validators/ihrackayitli-validator';
-import { serializeLineDelivery } from '../../src/serializers/delivery-serializer';
+import { validateByProfile } from '../../src/documents/invoice/validators/profile-validators';
+import { validateIhrackayitli702 } from '../../src/documents/invoice/validators/ihrackayitli-validator';
+import { serializeLineDelivery } from '../../src/ubl/components/delivery';
 import { DELIVERY_SUGGESTIONS } from '../../src/calculator/suggestion-rules/delivery-suggestions';
 import { deriveUIState } from '../../src/calculator/invoice-rules';
 import { SimpleInvoiceBuilder } from '../../src';

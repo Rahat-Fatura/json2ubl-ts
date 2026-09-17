@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TAX_DEFINITIONS, TAX_MAP, KDV_TAX_CODE, isValidTaxCode } from '../../src/calculator/tax-config';
-import { TAX_TYPE_CODES } from '../../src/config/constants';
+import { TAX_TYPE_CODES } from '../../src/ubltr/vocabulary/constants';
 
 describe('tax-config', () => {
   describe('B-26 eksik kodlar eklendi', () => {
