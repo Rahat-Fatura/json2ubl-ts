@@ -157,6 +157,86 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
   (imzalayıcının işi, ayrı konu). Katman bekçisinin `KNOWN_DEBT` listesindeki yedi
   bağımlılık ihlali de burada duruyor: sözlüğün gövdesi hâlâ `calculator/` altında.
 
+### S5a — e-SMM (Serbest Meslek Makbuzu) katmanı
+
+> **ÜÇÜNCÜ BELGE TÜRÜ.** `src/documents/self-employed-voucher/` — UBL `Invoice`
+> kökü · `ProfileID=EARSIVBELGE` · `InvoiceTypeCode=SERBESTMESLEKMAKBUZU`.
+>
+> 🔴 **GİB e-SMM GÖVDESİ İÇİN FORMAT DAYATMAZ.** Yayınlanmış kılavuz / XSD /
+> şematron YOKTUR; normatif olan yalnız e-Arşiv RAPOR katmanıdır. Bu yapı BİZİM
+> sözleşmemizdir — ama UBL-TR ortak kurallarını GÖNÜLLÜ izler. Katmanlı mimarinin
+> "ortak kurallar bedava devralınır" iddiası burada sınandı ve tuttu: künye
+> yüklemlerinin (numara biçimi, ETTN, tarih aralığı, kapalı liste) ve taraf
+> kurallarının HİÇBİRİ yeniden yazılmadı, tek satırlık bağlamalarla devralındı.
+>
+> Ölçüm: **139 test dosyası / 3050 test / 0 kırmızı / 0 skip** (`npm run test:strict`,
+> doğrulayıcı ayakta). Mevcut fatura/irsaliye çıktıları **BYTE-NÖTR** — 168 XML
+> snapshot'ının ve üretilmiş yol dosyalarının hiçbiri değişmedi.
+
+#### Eklendi
+
+- **`SelfEmployedVoucherBuilder` · `SimpleSelfEmployedVoucherBuilder` ·
+  `SelfEmployedVoucherSession`** (+ `SelfEmployedVoucherSessionPaths`, üreteçten).
+  Oturum `InvoiceSession`/`DespatchSession` ile AYNI yüzeyi taşır: 4 ortak yol
+  kapısı, aynı olay adları ve SIRASI, aynı satır CRUD / `unset` / taraf kimlikleri.
+  Görünürlük türetimi ve `type/profile-changed` olayları BİLEREK YOKTUR — e-SMM'de
+  profil ve tip tek değerlidir, türetilecek karar yoktur.
+- **Vergi kümesi TİP DÜZEYİNDE `{0003, 0015, 9015}`e daraltıldı.**
+  `cac:WithholdingTaxTotal` bu belgede **yapısal olarak kurulamaz** — girdi
+  tipinde alan yoktur (doğrulama kuralı değil, tip güvencesi; çoklu plaka dersi).
+- **Döviz desteği.** TRY dışı belgede `cac:PricingExchangeRate/cbc:CalculationRate`
+  ZORUNLU ve en fazla 6 ondalık (şematron `CurrencyCodeCheck`). Dövizli e-SMM
+  normatif olarak öngörülmüştür (rapor `dovizKuru` V1.12'den beri zorunlu).
+- **Golden + 5 senaryoluk matris**: stopajsız · stopajlı · KDV tevkifatlı (9015) ·
+  dövizli · istisna (KDV=0). Hepsi CANLI GİB doğrulayıcısından geçirilir; sekans
+  bekçisinin korpusuna da eklendiler.
+- **Katman bekçisine kapsam testi**: `src/documents/` altındaki her klasörün
+  `LAYER_PREFIXES` tablosunda olduğu doğrulanır. Kapsam dışı bir klasör `leaf`
+  sayılır ve kardeş/yukarı kuralı ona HİÇ uygulanmaz — yani bekçi onu sessizce
+  geçirirdi.
+
+#### Düzeltildi
+
+- 🔴 **`9015` (KDV Tevkifatı) matrahı: satır tutarı → HESAPLANAN KDV.**
+  `taxes: [{ code: '9015', percent: 50 }]` verildiğinde motor matrahı
+  `lineExtensionAmount` alıyordu; KDV %20'li bir satırda tevkifat **5 KAT** büyük
+  çıkıyordu. Şematron toplam eşitliğini denetlemediği için hata SESSİZDİ.
+  Kanıt GİB'in kendi örneği (`YTB_Tevkıfat_Efatura.xml`: 225,00 · %10 KDV =
+  22,50 · tevkifat matrahı **22,50** · %90 → 20,25) ve kod listesinin oranları
+  KDV'nin kesri olarak vermesi (`602 → 9/10`).
+  Düzeltme koda değil **VERİYE** yazıldı: `TaxDefinition.baseIsCalculatedVat`.
+  `withholdingTaxCode` yolu (→ `cac:WithholdingTaxTotal`) matrahı zaten KDV'den
+  alıyordu; iki düzlemin aynı tutarı verdiği artık teste çivili.
+  **Mevcut çıktılar etkilenmedi** — hiçbir fikstür 9015'i `taxes[]` üzerinden
+  kullanmıyordu (byte-nötr, ölçüldü).
+
+#### Notlar
+
+- 🔴 **`TaxInclusiveAmount` konvansiyonu KAYNAKSIZDIR.** UBL-TR formülü
+  `TIA = TaxExclusive + Σ(TaxTotal.TaxAmount)` der; `0003` ve `9015` de TaxTotal
+  düzleminde olduğu için 10.000 brüt / %20 stopaj / %20 KDV belgesinde **14.000**
+  çıkardı. Kütüphane **12.000** (brüt + hesaplanan KDV) diyor. GİB metni YOKTUR
+  ve **12 prod belgenin hiçbiri bu dalı test etmiyor** (hepsi stopajsız).
+  Karar TEK YERDE toplandı —
+  `SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION` (`documents/self-employed-voucher/totals.ts`)
+  — ve teste çivilendi. **Stopajlı gerçek bir prod örneği bu soruyu tek başına
+  kapatır**; geldiğinde değişecek tek satır odur.
+- **Doğrulayıcıya `type=earchive` + `profile=unsigned-esmm` ile gidilir.**
+  `EARSIVBELGE` ve `SERBESTMESLEKMAKBUZU` `UBL-TR_Codelist.xml`'de YOKTUR, bu
+  yüzden Main şematron profilsiz çağrıda belgeyi DAİMA reddeder
+  (`ProfileIDCheck` + `InvoiceTypeCodeCheck`). Bastırmanın sahte yeşil olmadığı
+  ayrıca test edilir: profil kaldırılınca belge düşer ve düşme sebebi TAM OLARAK
+  o iki kuraldır.
+- **XSD kapısı faturayla AYNI konumda**: imzasız ara-ürün iki hata verir (boş
+  `ext:ExtensionContent` + eksik `cac:Signature`). Bu, kütüphanenin imza
+  üretmemesinden gelen bilinen sınırdır, e-SMM'e özgü yeni bir açık değildir.
+- **Yanlışlıkla reddedilmeyenler** (üçü de ölçülüp dayanaksız bulundu):
+  `PaymentMeans` zorunlu DEĞİL (12 gerçek belgenin 0'ında var) · "0003 yalnız
+  belge düzeyinde" kuralı YOK · "7 gün" kuralı YOK (VUK 236/237 tahsilat anını
+  söyler). Satıcı `cac:Person`a da kilitlenmez (noter / adi ortaklık VKN'li olabilir).
+- **Fikstürler SENTETİKTİR.** 12 gerçek prod e-SMM'in yalnız YAPISI okundu;
+  içerik hiçbir yere kopyalanmadı.
+
 ## [4.6.0] — 2026-09-15
 
 > **e-İRSALİYE OTURUM KATMANI.** İkinci belge tipi. Amaç mimari tutarlılık: dışarıdan

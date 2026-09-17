@@ -8,6 +8,66 @@ export { DespatchBuilder } from "./documents/despatch-advice/builder";
 // Calculator — Basitleştirilmiş fatura giriş ve hesaplama motoru
 export * from "./calculator";
 
+/* ── e-SMM (Serbest Meslek Makbuzu) — S5a ─────────────────────────────────────
+ *
+ * Adlar BİLEREK NİTELİKLİ (`SelfEmployedVoucher*`): paketin tepe yüzeyi tek bir
+ * ad uzayıdır ve `SessionPaths` / `UnsetScope` gibi niteliksiz adlar fatura
+ * muadilleriyle ÇAKIŞIR (irsaliyede alınan kararla aynı).
+ *
+ * `SelfEmployedVoucherProfileId` / `SelfEmployedVoucherTypeCode` enum'ları
+ * `./types` üzerinden zaten açıktır — fatura enum'una EKLENMEDİLER, kendi
+ * eksenlerinde dururlar.
+ *
+ * Dışa AÇILMAYAN: `VAT_CODE` / `INCOME_TAX_WITHHOLDING_CODE` /
+ * `VAT_WITHHOLDING_CODE` skalerleri. Niteliksiz adlardır ve tüketicinin ihtiyacı
+ * olan küme zaten `SELF_EMPLOYED_VOUCHER_TAX_TYPE_CODES` ile açıktır. */
+export {
+    SelfEmployedVoucherBuilder,
+    SimpleSelfEmployedVoucherBuilder,
+    SelfEmployedVoucherSession,
+    SelfEmployedVoucherSessionPaths,
+    SELF_EMPLOYED_VOUCHER_KNOWN_PATH_TEMPLATES,
+    SELF_EMPLOYED_VOUCHER_READ_ONLY_PATHS,
+    SELF_EMPLOYED_VOUCHER_TAX_TYPE_CODES,
+    SEND_METHOD_DOCUMENT_TYPE_CODE,
+    SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION,
+    calculateSelfEmployedVoucher,
+    mapSimpleToSelfEmployedVoucherInput,
+    selfEmployedVoucherHeaderBindings,
+    selfEmployedVoucherTotals,
+    serializeSelfEmployedVoucher,
+    validateSelfEmployedVoucher,
+} from "./documents/self-employed-voucher";
+export type {
+    SelfEmployedVoucherInput,
+    SelfEmployedVoucherLineInput,
+    SelfEmployedVoucherTaxTotalInput,
+    SelfEmployedVoucherTaxSubtotalInput,
+    SelfEmployedVoucherTaxTypeCode,
+    SimpleSelfEmployedVoucherInput,
+    SimpleSelfEmployedVoucherLineInput,
+    SimpleSelfEmployedVoucherBuilderOptions,
+    SimpleSelfEmployedVoucherBuildResult,
+    SelfEmployedVoucherSendMethod,
+    SelfEmployedVoucherValidationStage,
+    SelfEmployedVoucherValidateOptions,
+    SelfEmployedVoucherAmountChain,
+    SelfEmployedVoucherTotals,
+    SelfEmployedVoucherTaxInclusiveConvention,
+    CalculatedSelfEmployedVoucher,
+    SelfEmployedVoucherSessionEvents,
+    SelfEmployedVoucherSessionEventName,
+    SelfEmployedVoucherSessionOptions,
+    SelfEmployedVoucherSessionPathMap,
+    SelfEmployedVoucherSessionUpdateOverloads,
+    SelfEmployedVoucherUnsetScope,
+    SelfEmployedVoucherIdentificationParty,
+    SelfEmployedVoucherPathErrorCode,
+    SelfEmployedVoucherPathErrorPayload,
+    SelfEmployedVoucherFieldChangedPayload,
+    SelfEmployedVoucherLineFieldChangedPayload,
+} from "./documents/self-employed-voucher";
+
 // Errors
 export { UblBuildError } from "./errors/ubl-build-error";
 export type { ValidationError } from "./errors/ubl-build-error";
