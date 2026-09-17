@@ -132,7 +132,33 @@ describe('invoice-rules — B-78 validateInvoiceState Schematron paraleli uyarı
       hasBuyerCustomer: true,
       yolcuBuyerComplete: false,
     });
-    expect(warnings.some(w => w.field === 'buyerCustomer.party'
-      && w.message.includes('YOLCUBERABERFATURA'))).toBe(true);
+    const error = warnings.find(w => w.field === 'buyerCustomer.party');
+    expect(error).toBeDefined();
+    /* Mesaj BEŞ alanı da saymalı. Bayrağın kapsamı S3'ün XSD kapılarıyla
+     * (FirstName/FamilyName/IssueDate 1..1) genişledi; mesaj eski hâlinde
+     * kalsaydı kullanıcı eksiğin yalnız yarısını görürdü. */
+    for (const alan of ['adı', 'soyadı', 'uyruğu', 'pasaport numarası', 'pasaportun veriliş tarihi']) {
+      expect(error?.message).toContain(alan);
+    }
+  });
+
+  it('B-78.5: YOLCU + yolcuTaxRepresentativeComplete=false → aracı kurum adresi hatası', () => {
+    const warnings = validateInvoiceState({
+      type: 'ISTISNA', profile: 'YOLCUBERABERFATURA',
+      hasBuyerCustomer: true,
+      yolcuTaxRepresentativeComplete: false,
+    });
+    const error = warnings.find(w => w.field === 'taxRepresentativeParty.city');
+    expect(error).toBeDefined();
+    expect(error?.message).toContain('il ve ilçe');
+  });
+
+  it('B-78.5: iki YOLCU bayrağı da verilmezse uyarı ÜRETİLMEZ', () => {
+    // `undefined` "bilinmiyor" demektir, "eksik" değil — yanlış-pozitif üretmemeli.
+    const warnings = validateInvoiceState({
+      type: 'ISTISNA', profile: 'YOLCUBERABERFATURA', hasBuyerCustomer: true,
+    });
+    expect(warnings.some(w => w.field === 'buyerCustomer.party')).toBe(false);
+    expect(warnings.some(w => w.field === 'taxRepresentativeParty.city')).toBe(false);
   });
 });

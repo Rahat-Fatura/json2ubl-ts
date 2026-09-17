@@ -1143,7 +1143,9 @@ export class InvoiceSession extends EventEmitter {
    *  - hasGtip / hasAliciDibKod: tüm satırlarda delivery alanları (B-78.3)
    *  - has4171Code: en az bir satırda taxes[].code='4171' (B-78.4)
    *  - ihracatPartyComplete: sender.name + taxOffice (B-78.5)
-   *  - yolcuBuyerComplete: buyerCustomer.nationalityId + passportId (B-78.5)
+   *  - yolcuBuyerComplete: turistin BEŞ alanı — firstName + familyName +
+   *    nationalityId + passportId + passportIssueDate (B-78.5)
+   *  - yolcuTaxRepresentativeComplete: aracı kurumun il + ilçesi (B-78.5)
    */
   private deriveB78Params(): {
     allowReducedKdvRate: boolean;
@@ -1153,6 +1155,7 @@ export class InvoiceSession extends EventEmitter {
     has4171Code: boolean;
     ihracatPartyComplete: boolean;
     yolcuBuyerComplete: boolean;
+    yolcuTaxRepresentativeComplete: boolean;
   } {
     const lines = this._input.lines;
     const linesPresent = lines.length > 0;
@@ -1180,8 +1183,24 @@ export class InvoiceSession extends EventEmitter {
       ihracatPartyComplete: !!this._input.sender?.name?.trim()
         && !!this._input.sender?.taxOffice?.trim(),
 
-      yolcuBuyerComplete: !!this._input.buyerCustomer?.nationalityId?.trim()
-        && !!this._input.buyerCustomer?.passportId?.trim(),
+      /* 🔴 KAPSAM GENİŞLEDİ — eskiden yalnız `nationalityId` + `passportId`.
+       * S3'ün XSD kardinalite kapıları (`PersonType/cbc:FirstName` 1..1,
+       * `cbc:FamilyName` 1..1, `DocumentReferenceType/cbc:IssueDate` 1..1)
+       * eksik üç alanı SERT hataya çeviriyor; uyarı kapıdan ÖNCE haber
+       * vermezse kullanıcı bunu ancak üretim anında öğrenir. */
+      yolcuBuyerComplete: !!this._input.buyerCustomer?.firstName?.trim()
+        && !!this._input.buyerCustomer?.familyName?.trim()
+        && !!this._input.buyerCustomer?.nationalityId?.trim()
+        && !!this._input.buyerCustomer?.passportId?.trim()
+        && !!this._input.buyerCustomer?.passportIssueDate?.trim(),
+
+      /* Aracı kurum VERİLMEMİŞSE bu bayrak `true` döner: XSD kapısı da ancak
+       * `cac:TaxRepresentativeParty` düğümü yazıldığında koşar. Kurumun
+       * kendisinin zorunluluğu ayrı kuraldır (profile-validators §3.4) ve
+       * burada ikinci kez söylenirse kullanıcı tek eksik için iki hata görür. */
+      yolcuTaxRepresentativeComplete: this._input.taxRepresentativeParty === undefined
+        || (!!this._input.taxRepresentativeParty.district?.trim()
+          && !!this._input.taxRepresentativeParty.city?.trim()),
     };
   }
 

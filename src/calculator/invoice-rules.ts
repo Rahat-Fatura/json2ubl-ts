@@ -520,8 +520,37 @@ export function validateInvoiceState(state: {
   has4171Code?: boolean;
   /** IHRACAT: supplier RegistrationName ve TaxOffice dolu mu */
   ihracatPartyComplete?: boolean;
-  /** YOLCUBERABERFATURA: buyer nationalityId + passportId dolu mu */
+  /**
+   * YOLCUBERABERFATURA: turistin BEŞ alanı da dolu mu — `firstName`,
+   * `familyName`, `nationalityId`, `passportId`, `passportIssueDate`.
+   *
+   * ⚠️ Eskiden yalnız `nationalityId` + `passportId`e bakıyordu. Bayrağın
+   * kapsamı S3'ten sonra YETERSİZ kaldı: `PersonType/cbc:FirstName` ve
+   * `cbc:FamilyName` XSD'de **1..1**, `DocumentReferenceType/cbc:IssueDate`
+   * **1..1**'dir; üçü eksikken belge kütüphaneden geçiyor, XSD kapısı sert
+   * hata veriyordu. Uyarı kapıdan ÖNCE haber vermeli — sonra değil.
+   *
+   * Normatif dayanak: Gümrük İşlemleri Kılavuzu V1.8 §4.2.1 — «Person/FirstName:
+   * Turistin adı zorunludur.» · «Person/FamilyName: Turistin soyadı zorunludur.»
+   * · «IdentityDocumentReference/ID: Pasaport numarası zorunludur.» ·
+   * «IdentityDocumentReference/IssueDate: Pasaportun VERİLDİĞİ tarih zorunludur.»
+   */
   yolcuBuyerComplete?: boolean;
+  /**
+   * YOLCUBERABERFATURA: aracı kurumun POSTA ADRESİ kurulabiliyor mu
+   * (`district` + `city` birlikte dolu mu).
+   *
+   * `cac:TaxRepresentativeParty` bir UBL `PartyType`tır ve `cac:PostalAddress`
+   * onda **1..1**'dir; eşleyici adresi yalnız il+ilçe birlikte doluyken kurar,
+   * dolayısıyla ikisinden biri eksikse düğüm adressiz çıkar ve XSD kapısı
+   * («TaxRepresentativeParty içeriği eksik. Zorunlu element(ler): PostalAddress»)
+   * belgeyi durdurur.
+   *
+   * Aracı kurumun KENDİSİNİN zorunluluğu ayrı bir kuraldır
+   * (`profile-validators.ts` §3.4); bu bayrak yalnız VERİLMİŞ aracı kurumun
+   * adresini denetler — XSD kapısı da ancak düğüm yazıldığında koşar.
+   */
+  yolcuTaxRepresentativeComplete?: boolean;
 }): ValidationWarning[] {
   const warnings: ValidationWarning[] = [];
 
@@ -650,7 +679,13 @@ export function validateInvoiceState(state: {
   }
   if (state.profile === 'YOLCUBERABERFATURA' && state.yolcuBuyerComplete === false) {
     warnings.push({ field: 'buyerCustomer.party',
-      message: 'YOLCUBERABERFATURA profilinde alıcı NationalityID ve PasaportNo zorunludur.',
+      message: 'YOLCUBERABERFATURA profilinde turistin adı, soyadı, uyruğu (NationalityID), '
+        + 'pasaport numarası ve pasaportun veriliş tarihi zorunludur.',
+      severity: 'error' });
+  }
+  if (state.profile === 'YOLCUBERABERFATURA' && state.yolcuTaxRepresentativeComplete === false) {
+    warnings.push({ field: 'taxRepresentativeParty.city',
+      message: 'YOLCUBERABERFATURA aracı kurumunun posta adresi zorunludur — il ve ilçe birlikte doldurulmalıdır.',
       severity: 'error' });
   }
 
