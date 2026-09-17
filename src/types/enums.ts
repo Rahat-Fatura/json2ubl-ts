@@ -65,6 +65,40 @@ export enum SelfEmployedVoucherTypeCode {
   SERBESTMESLEKMAKBUZU = 'SERBESTMESLEKMAKBUZU',
 }
 
+/**
+ * e-MM (Müstahsil Makbuzu) profil türleri — **KENDİ EKSENİ**.
+ *
+ * 🔴 `SelfEmployedVoucherProfileId` ile DEĞERİ aynıdır (`EARSIVBELGE`) ama enum
+ * AYRIDIR. Gerekçe kök farkıdır: e-SMM `Invoice`, e-MM `CreditNote` köklüdür ve
+ * iki belge tipi aynı ekseni PAYLAŞMAZ. Tek enuma toplamak, bir belgenin profil
+ * kümesini diğerine sızdırır — `SelfEmployedVoucherProfileId`in faturadan ayrı
+ * tutulmasının gerekçesiyle birebir aynı.
+ *
+ * ⚠️ `EARSIVBELGE` `UBL-TR_Codelist.xml`'de YOKTUR. e-SMM'den FARKLI olarak bu
+ * burada bir SORUN DEĞİLDİR: CANLI ÖLÇÜLDÜ (2026-09-17, :8081) — GİB şematronu
+ * `CreditNote` kökünde `ProfileID` üzerinde HİÇBİR assert koşturmaz
+ * (`ProfileIDCheck` `Invoice`a bağlıdır). e-SMM'in ihtiyaç duyduğu bastırma
+ * profili e-MM'de GEREKMEZ.
+ */
+export enum ProducerReceiptProfileId {
+  EARSIVBELGE = 'EARSIVBELGE',
+}
+
+/**
+ * e-MM belge tip kodları — **KENDİ EKSENİ** (bkz. `ProducerReceiptProfileId`).
+ *
+ * `MUSTAHSILMAKBUZ` 27/27 gerçek prod belgede ölçülen değerdir. Yazımı
+ * KISALTILMIŞTIR (`MUSTAHSILMAKBUZU` DEĞİL) — bu bir tercih değil, sahadaki
+ * değerin kendisidir; "u" eklemek belgeyi eski sistemle uyumsuz kılardı.
+ *
+ * CANLI ÖLÇÜLDÜ: `CreditNoteTypeCode` üzerinde de assert YOKTUR — uydurma bir
+ * tip kodu bile şematrondan geçer. Kapalı küme bu yüzden TİP DÜZEYİNDE
+ * korunuyor: doğrulayıcı tutmuyorsa tutacak olan biziz.
+ */
+export enum ProducerReceiptTypeCode {
+  MUSTAHSILMAKBUZ = 'MUSTAHSILMAKBUZ',
+}
+
 /** e-İrsaliye profil türleri */
 export enum DespatchProfileId {
   TEMELIRSALIYE = 'TEMELIRSALIYE',
