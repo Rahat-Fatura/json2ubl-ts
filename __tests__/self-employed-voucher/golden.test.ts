@@ -43,11 +43,21 @@ const SUPPRESSION_PROFILE = 'unsigned-esmm';
 /**
  * Kütüphane İMZASIZ belge üretir (imzayı entegratör/imzalayıcı ekler). GİB
  * `UBL-Invoice-2.1.xsd` imzayı ZORUNLU kılar, dolayısıyla imzasız ara-ürün
- * XSD'den geçemez. CANLI ölçülen ve imza yokluğundan kaynaklanan TAM İKİ hata:
- *   1. "ExtensionContent elementinin içeriği eksik"   → XAdES buraya gelir
- *   2. "AccountingSupplierParty ... bu konumda geçersiz" → `cac:Signature` yok
- * Bunlar FATURA golden'larında da BİREBİR aynıdır (ölçüldü) — yani e-SMM
- * XSD kapısında faturayla AYNI konumdadır, yeni bir açık DEĞİLDİR.
+ * XSD'den geçemez. İmza yokluğundan doğan hatalar ÖLÇÜLDÜ (2026-09-17, :8081,
+ * şema paketi `2026-08-05-08-07-52`):
+ *
+ *   PROFİLSİZ (`type=earchive`)      → İKİ hata
+ *     1. "ExtensionContent elementinin içeriği eksik"    → XAdES buraya gelir
+ *     2. "AccountingSupplierParty ... bu konumda geçersiz" → `cac:Signature` yok
+ *   `profile=unsigned-esmm`          → TEK hata (yalnız 1; profil `cac:Signature`
+ *                                      şartını da gevşetir — "unsigned" profilin
+ *                                      tanımı budur)
+ *
+ * Aynı iki hata FATURA golden'larında da BİREBİR görülür (ölçüldü): e-SMM XSD
+ * kapısında faturayla AYNI konumdadır, yeni bir açık DEĞİLDİR.
+ *
+ * Beyaz liste İKİSİNİ de kapsar (profil davranışı değişirse test yalan söylemesin),
+ * ama profilli koşumda kalan hatanın TEK ve HANGİSİ olduğu ayrıca çivilenir.
  */
 const SIGNATURE_XSD_ERRORS = [/ExtensionContent/, /AccountingSupplierParty/];
 
@@ -202,6 +212,26 @@ describe('e-SMM canlı GİB doğrulaması (type=earchive · profile=unsigned-esm
       const ruleIds = (bare.schematronValidationErrors ?? []).map(e => e.ruleId).sort();
       expect(bare.validSchematron).toBe(false);
       expect(ruleIds).toEqual(['InvoiceTypeCodeCheck', 'ProfileIDCheck']);
+    },
+    30_000,
+  );
+
+  liveIt(
+    'profilli koşumda kalan TEK XSD hatası boş ext:ExtensionContent`tir',
+    async () => {
+      /* `unsigned-esmm` `cac:Signature` XSD şartını da gevşetir; geriye yalnız
+       * imzalayıcının dolduracağı boş `ext:ExtensionContent` kalır. Bu sayı
+       * çivili ki profil bir gün fazlasını gevşetirse fark edilsin. */
+      const result = await validateLive(
+        readGolden('b-stopajli'),
+        VALIDATE_TYPE,
+        undefined,
+        30_000,
+        SUPPRESSION_PROFILE,
+      );
+      const xsd = result.schemaValidationErrors ?? [];
+      expect(xsd).toHaveLength(1);
+      expect(xsd[0]).toMatch(/ExtensionContent/);
     },
     30_000,
   );

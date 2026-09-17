@@ -227,9 +227,13 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
   (`ProfileIDCheck` + `InvoiceTypeCodeCheck`). Bastırmanın sahte yeşil olmadığı
   ayrıca test edilir: profil kaldırılınca belge düşer ve düşme sebebi TAM OLARAK
   o iki kuraldır.
-- **XSD kapısı faturayla AYNI konumda**: imzasız ara-ürün iki hata verir (boş
-  `ext:ExtensionContent` + eksik `cac:Signature`). Bu, kütüphanenin imza
-  üretmemesinden gelen bilinen sınırdır, e-SMM'e özgü yeni bir açık değildir.
+- **XSD kapısı faturayla AYNI konumda.** Ölçüldü (2026-09-17, :8081, şema paketi
+  `2026-08-05-08-07-52`): PROFİLSİZ koşumda imzasız ara-ürün İKİ hata verir (boş
+  `ext:ExtensionContent` + eksik `cac:Signature` → "AccountingSupplierParty bu
+  konumda geçersiz"); `profile=unsigned-esmm` ile geriye TEK hata kalır (yalnız
+  `ExtensionContent` — profil `cac:Signature` şartını da gevşetir). Aynı iki hata
+  fatura golden'larında da birebir görülür: kütüphanenin imza üretmemesinden gelen
+  bilinen sınırdır, e-SMM'e özgü yeni bir açık değildir.
 - **Yanlışlıkla reddedilmeyenler** (üçü de ölçülüp dayanaksız bulundu):
   `PaymentMeans` zorunlu DEĞİL (12 gerçek belgenin 0'ında var) · "0003 yalnız
   belge düzeyinde" kuralı YOK · "7 gün" kuralı YOK (VUK 236/237 tahsilat anını
