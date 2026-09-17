@@ -68,6 +68,71 @@ export type {
     SelfEmployedVoucherLineFieldChangedPayload,
 } from "./documents/self-employed-voucher";
 
+/* ── e-MM (Müstahsil Makbuzu) — S5b ───────────────────────────────────────────
+ *
+ * Adlar BİLEREK NİTELİKLİ (`ProducerReceipt*`) — e-SMM ile aynı gerekçe: paketin
+ * tepe yüzeyi tek bir ad uzayıdır ve `SessionPaths` / `UnsetScope` gibi
+ * niteliksiz adlar kardeş belgelerle ÇAKIŞIR.
+ *
+ * `ProducerReceiptProfileId` / `ProducerReceiptTypeCode` enum'ları `./types`
+ * üzerinden zaten açıktır — e-SMM enum'una EKLENMEDİLER, kendi eksenlerinde
+ * dururlar (kökler farklı: `Invoice` ↔ `CreditNote`).
+ *
+ * 🔴 `SEND_METHOD_DOCUMENT_TYPE_CODE` BURADAN YENİDEN AÇILMAZ: e-SMM bloğunda
+ * zaten dışa veriliyor ve GÖVDESİ ortaktır (`ubltr/mapping/earsiv-mapping`).
+ * İkinci kez yazmak `export ... has already been declared` ile derlemeyi kırardı
+ * — anahtar belgeye değil e-Arşiv ekosistemine ait.
+ *
+ * Dışa AÇILMAYAN: `INCOME_TAX_WITHHOLDING_CODE` /
+ * `EXCHANGE_REGISTRATION_FEE_CODE` / `SOCIAL_SECURITY_PREMIUM_CODE` skalerleri.
+ * Niteliksiz adlardır (ilki e-SMM'dekiyle ÇAKIŞIR) ve tüketicinin ihtiyacı olan
+ * küme zaten `PRODUCER_RECEIPT_TAX_TYPE_CODES` ile açıktır. */
+export {
+    ProducerReceiptBuilder,
+    SimpleProducerReceiptBuilder,
+    ProducerReceiptSession,
+    ProducerReceiptSessionPaths,
+    PRODUCER_RECEIPT_KNOWN_PATH_TEMPLATES,
+    PRODUCER_RECEIPT_READ_ONLY_PATHS,
+    PRODUCER_RECEIPT_TAX_TYPE_CODES,
+    calculateProducerReceipt,
+    mapSimpleToProducerReceiptInput,
+    producerReceiptHeaderBindings,
+    producerReceiptTotals,
+    serializeProducerReceipt,
+    validateProducerReceipt,
+} from "./documents/producer-receipt";
+export type {
+    ProducerReceiptInput,
+    ProducerReceiptLineInput,
+    ProducerReceiptTaxTotalInput,
+    ProducerReceiptTaxSubtotalInput,
+    ProducerReceiptTaxTypeCode,
+    SimpleProducerReceiptInput,
+    SimpleProducerReceiptLineInput,
+    SimpleProducerReceiptBuilderOptions,
+    SimpleProducerReceiptBuildResult,
+    ProducerReceiptSendMethod,
+    ProducerReceiptValidationStage,
+    ProducerReceiptValidateOptions,
+    ProducerReceiptAmountChain,
+    ProducerReceiptTotals,
+    CalculatedProducerReceipt,
+    CalculatedProducerReceiptLine,
+    CalculatedDeduction,
+    ProducerReceiptSessionEvents,
+    ProducerReceiptSessionEventName,
+    ProducerReceiptSessionOptions,
+    ProducerReceiptSessionPathMap,
+    ProducerReceiptSessionUpdateOverloads,
+    ProducerReceiptUnsetScope,
+    ProducerReceiptIdentificationParty,
+    ProducerReceiptPathErrorCode,
+    ProducerReceiptPathErrorPayload,
+    ProducerReceiptFieldChangedPayload,
+    ProducerReceiptLineFieldChangedPayload,
+} from "./documents/producer-receipt";
+
 // Errors
 export { UblBuildError } from "./errors/ubl-build-error";
 export type { ValidationError } from "./errors/ubl-build-error";
@@ -76,6 +141,7 @@ export type { ValidationError } from "./errors/ubl-build-error";
 export {
     INVOICE_NAMESPACES,
     DESPATCH_NAMESPACES,
+    CREDIT_NOTE_NAMESPACES,
     UBL_CONSTANTS,
 } from "./ubl/namespaces";
 export {
