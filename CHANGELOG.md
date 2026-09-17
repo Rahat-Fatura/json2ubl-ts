@@ -137,6 +137,14 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 - **Dorse/römork plakası yanlış slottaydı** — kanonik yer
   `cac:TransportHandlingUnit/cac:TransportEquipment/cbc:ID` (B-49); iki fikstür
   XSD-geçersiz çıktı donduruyordu.
+- **YOLCUBERABERFATURA UI uyarısı XSD kapılarının GERİSİNDE kalmıştı.**
+  `yolcuBuyerComplete` yalnız `nationalityId` + `passportId`e bakıyordu; S3'ün
+  kardinalite kapıları (`FirstName`/`FamilyName`/`IssueDate` 1..1) eksik üç alanı
+  SERT hataya çevirdiği için ekran TEMİZ görünüyor, belge üretim anında
+  duruyordu. Bayrak beş alana çıktı (ad · soyad · uyruk · pasaport no · pasaport
+  veriliş tarihi) ve aracı kurumun posta adresi için kendi `field`i olan ikinci
+  bir bayrak eklendi (`yolcuTaxRepresentativeComplete` →
+  `taxRepresentativeParty.city`).
 - **`__tests__/serializers/address-extensions.test.ts` geçersiz çıktıyı
   KİLİTLİYORDU** — test canlı kanıtla birlikte tersine çevrildi (`cac:Country`).
 
