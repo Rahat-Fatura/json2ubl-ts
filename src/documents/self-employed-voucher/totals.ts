@@ -22,20 +22,30 @@
  *     Ödenecek Tutar                2.240,00   = 2.400 − 160   → tevkifat DÜŞER
  *
  * Yani `TIA = brüt + hesaplanan KDV`; kesintiler yalnız `PayableAmount`ı
- * etkiler. Bu, fatura düzleminin tevkifatı `cac:WithholdingTaxTotal`da taşıyan
- * dalıyla BİREBİR aynı şekildir ve ölçülmüştür (bkz. eşitlik testi).
- * UBL-TR formülünün harfi harfine okunuşu (`TIA = TaxExclusive + Σ TaxTotal`)
- * aynı belgede 2.560 derdi — üretim çıktısı onu DIŞLIYOR, bu yüzden o dal
- * koddan tamamen kaldırıldı (eskiden `'ubltr-formula'` anahtarıydı).
+ * etkiler. UBL-TR formülünün harfi harfine okunuşu (`TIA = TaxExclusive +
+ * Σ TaxTotal`) aynı belgede 2.560 derdi — üretim çıktısı onu DIŞLIYOR, bu yüzden
+ * o dal koddan tamamen kaldırıldı (eskiden `'ubltr-formula'` anahtarıydı).
  *
- * ── ⚠️ HÂLÂ AÇIK OLAN TEK EKSEN: `0003` GELİR VERGİSİ STOPAJI ──────────────
- * Üretim çıktısında **stopaj satırı YOKTUR**; kapanan eksen `9015`tir. Fatura
- * düzleminde `0003` `cac:TaxTotal`a NEGATİF girer, yani orada `TIA`yı da
- * düşürür (ölçüldü: 10.000 brüt / %20 KDV / %20 stopaj → fatura `TIA` 10.000,
- * e-SMM `TIA` 12.000). İki düzlemde de **`PayableAmount` AYNI** çıkar; ayrışan
- * yalnız `TIA`dır. Bu fark teste çivilidir — birileri "tutarsızlık" sanıp
- * sessizce düzeltmesin diye. Stopajlı bir üretim çıktısı geldiğinde kapanacak
- * TEK yer `selfEmployedVoucherTotals` gövdesidir.
+ * ── FATURAYLA EŞİTLİK: İKİ EKSENDE DE ÖLÇÜLDÜ ─────────────────────────────
+ * Faturanın kesintiyi taşıdığı OLAĞAN düzlem `cac:WithholdingTaxTotal`tir ve
+ * orada kesinti `TIA`yı HİÇ GÖRMEZ; düşüm yalnız `PayableAmount`ta olur.
+ * e-SMM bunun BİREBİR aynısını üretir — hem `9015` hem `0003` ekseninde:
+ *
+ *    2.000 brüt · %20 KDV · kesinti   160 → TIA  2.400 · Ödenecek  2.240 (ikisi de)
+ *   10.000 brüt · %20 KDV · kesinti 2.000 → TIA 12.000 · Ödenecek 10.000 (ikisi de)
+ *
+ * Tek fark UBL DÜZLEMİDİR: e-SMM `cac:WithholdingTaxTotal` TAŞIYAMAZ (girdi
+ * tipinde `withholdingTaxTotals` alanı yoktur; bkz. `input.ts`), aynı semantiği
+ * `cac:TaxTotal` düzleminde taşır. `0003` ile `9015` arasındaki fark ise
+ * MATRAHTIR (biri brüt, öteki hesaplanan KDV) — konvansiyon farkı DEĞİL.
+ *
+ * ⚠️ TUZAK: faturaya kesinti `taxes:[{code}]` ile verilirse `cac:TaxTotal`
+ * düzlemine düşer; motor oradaki `baseStat:false` kodlarını NEGATİF yazdığı için
+ * `TIA` da iner (10.000 brüt / %20 stopaj → fatura `TIA` 10.000). O dal faturanın
+ * OLAĞAN yolu DEĞİLDİR ve eşitliğin ölçütü de değildir; `PayableAmount` orada da
+ * AYNIDIR. Fark teste çivilidir — bu dala bakıp e-SMM'i "tutarsız" sanan biri
+ * onu sessizce bozmasın diye. Eşitliğin tamamı:
+ * `__tests__/self-employed-voucher/invoice-parity.test.ts`.
  *
  * ── e-MM İLE FARK: ÇELİŞKİ DEĞİL ──────────────────────────────────────────
  * `producer-receipt/totals.ts`te `TIA = brüt − kesinti` ölçülmüştür (25/25 prod

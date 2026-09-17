@@ -5,30 +5,43 @@
  * uygulayacaksın. tutar onlarda nasıl hesaplanıyorsa o şekilde hesaplanacak."*
  *
  * Bu dosya o kararı bir SÖZ olmaktan çıkarıp ÖLÇÜME bağlar: aynı girdiden
- * (brüt · KDV oranı · tevkifat oranı) fatura hattı ile e-SMM hattının
- * `TaxInclusiveAmount` ve `PayableAmount` ürettiği ŞEKLİ karşılaştırır.
- * Karşılaştırma iki hattın da GERÇEK giriş noktalarından geçer — yardımcı
- * fonksiyon değil, üretilen XML.
+ * fatura hattı ile e-SMM hattının `TaxInclusiveAmount` ve `PayableAmount`
+ * ürettiği ŞEKLİ karşılaştırır — yardımcı fonksiyonda değil, ÜRETİLEN XML'de.
  *
- * ── ÖLÇÜLEN TABLO (bu dosyanın tamamı buradan çıkar) ───────────────────────
+ * ── DOĞRU KARŞILAŞTIRMA DÜZLEMİ ───────────────────────────────────────────
+ * Faturanın kesintiyi taşıdığı OLAĞAN düzlem `cac:WithholdingTaxTotal`tir
+ * (`SimpleLineInput.withholdingTaxCode` tam olarak onu üretir). O düzlemde
+ * kesinti `TaxInclusiveAmount`ı HİÇ GÖRMEZ; düşüm yalnız `PayableAmount`ta olur:
  *
- *   Girdi: 2.000 brüt · %20 KDV · %40 KDV tevkifatı
- *   ┌────────────────────────────────────────────┬────────┬──────────┐
- *   │ Hat                                        │   TIA  │ Ödenecek │
- *   ├────────────────────────────────────────────┼────────┼──────────┤
- *   │ fatura · tevkifat `WithholdingTaxTotal`da  │  2.400 │    2.240 │
- *   │ e-SMM  · tevkifat `TaxTotal[9015]`te       │  2.400 │    2.240 │  ✅ AYNI
- *   │ fatura · tevkifat `TaxTotal[9015]`te       │  2.240 │    2.240 │  ⚠️ TIA ayrı
- *   └────────────────────────────────────────────┴────────┴──────────┘
+ *     TIA     = TaxExclusive + hesaplanan KDV
+ *     Payable = TIA − kesinti
  *
- * `PayableAmount` ÜÇ okumada da AYNI. Ayrışan tek şey `TaxInclusiveAmount` ve
- * ayrışmanın sebebi tevkifatın hangi UBL düzleminde durduğudur: fatura motoru
- * `cac:TaxTotal` altındaki `baseStat:false` kodlarını (`0003`, `9015`) NEGATİF
- * yazar ve böylece `TIA`yı da düşürür; `cac:WithholdingTaxTotal` düzleminde ise
- * `TIA`ya dokunmaz. e-SMM yapısal olarak `TaxTotal` düzlemindedir (`9015`in
- * `WithholdingTaxTotal`da yazılması YASAK) ama kullanıcının ÜRETİM çıktısı
- * `TIA = 2.400` diyor — yani e-SMM, düzlemi `TaxTotal` olsa bile faturanın
- * `WithholdingTaxTotal` dalıyla aynı şekli üretir. Karar budur.
+ * e-SMM bunun BİREBİR aynısını üretir. Tek fark UBL DÜZLEMİDİR: e-SMM'de
+ * `cac:WithholdingTaxTotal` YAPISAL OLARAK YOKTUR (girdi tipinde
+ * `withholdingTaxTotals` alanı bulunmaz; bkz. `self-employed-voucher/input.ts`
+ * — GİB e-SMM'de `9015` kodunu `cac:TaxTotal` altında ister). Yani e-SMM
+ * faturanın `WithholdingTaxTotal` SEMANTİĞİNİ, `TaxTotal` DÜZLEMİNDE taşır.
+ *
+ * ── ÖLÇÜLEN TABLO ─────────────────────────────────────────────────────────
+ *
+ *   Eksen 1 — KDV tevkifatı · 2.000 brüt · %20 KDV · kesinti 160
+ *   ┌──────────────────────────────────────────────┬────────┬──────────┐
+ *   │ fatura · `withholdingTaxCode:'601'` (%40)    │  2.400 │    2.240 │
+ *   │ e-SMM  · `vatWithholdingPercent: 40`         │  2.400 │    2.240 │ ✅
+ *   └──────────────────────────────────────────────┴────────┴──────────┘
+ *
+ *   Eksen 2 — gelir stopajı · 10.000 brüt · %20 KDV · kesinti 2.000
+ *   ┌──────────────────────────────────────────────┬────────┬──────────┐
+ *   │ fatura · `withholdingTaxCode:'801'` (%100)   │ 12.000 │   10.000 │
+ *   │ e-SMM  · `incomeTaxWithholdingPercent: 20`   │ 12.000 │   10.000 │ ✅
+ *   └──────────────────────────────────────────────┴────────┴──────────┘
+ *
+ * İKİ EKSENDE DE BİREBİR AYNI. `0003` ile `9015` arasındaki tek fark MATRAHTIR
+ * (stopaj brüt üzerinden, KDV tevkifatı hesaplanan KDV üzerinden) — konvansiyon
+ * farkı DEĞİL. Eksen 2'de faturaya `801` (tam tevkifat, %100) seçilmesinin tek
+ * sebebi kesinti tutarını 2.000'e eşitleyip karşılaştırmayı BİREBİR yapmaktır;
+ * `withholdingTaxCode` listesi KDV tevkifat kodlarıdır (6xx/8xx) ve matrahı
+ * daima hesaplanan KDV'dir, dolayısıyla `0003`ü o düzlemde temsil edemez.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -41,15 +54,7 @@ import {
 import type { SimpleSelfEmployedVoucherInput } from '../../src/documents/self-employed-voucher';
 import { calculateDocument } from '../../src/calculator/document-calculator';
 
-/* ── Ortak girdi: kullanıcının üretim şablonundaki sayılar ─────────────────
- * 2.000 TL hizmet · KDV %20 (= 400) · KDV tevkifatı %40 (= 160).
- * Tevkifat oranı `601` koduyla geliyor çünkü fatura tarafında %40 sabit oranlı
- * TEK kod odur; e-SMM tarafında oran doğrudan yazılır (`9015` matrahı KDV'dir). */
-const GROSS = 2_000;
-const KDV_PERCENT = 20;
-const WITHHOLDING_PERCENT = 40;
-
-/** Kullanıcının üretim şablonunun çıktısı — bu dosyadaki TEK dayanak. */
+/** Kullanıcının üretim şablonunun çıktısı — bu dosyadaki TEK dış dayanak. */
 const PRODUCTION_TEMPLATE = {
   lineExtensionAmount: 2_000, // Mal Hizmet Toplam Tutarı
   calculatedVat: 400, //        Hesaplanan KDV %20
@@ -68,8 +73,8 @@ const party = (taxNumber: string, name: string) => ({
   zipCode: '34746',
 });
 
-/** Fatura hattı — tevkifat `cac:WithholdingTaxTotal` düzleminde (kod `601`, %40). */
-const invoiceInput = (): SimpleInvoiceInput => ({
+/** Fatura hattı — kesinti OLAĞAN düzleminde (`cac:WithholdingTaxTotal`). */
+const invoiceInput = (price: number, withholdingTaxCode: string): SimpleInvoiceInput => ({
   id: 'PAR2026000000001',
   uuid: 'aaaaaaaa-1111-4222-8333-444444444444',
   datetime: '2026-09-16T14:30:00',
@@ -82,26 +87,30 @@ const invoiceInput = (): SimpleInvoiceInput => ({
     {
       name: 'Danismanlik hizmeti',
       quantity: 1,
-      price: GROSS,
+      price,
       unitCode: 'Adet',
-      kdvPercent: KDV_PERCENT,
-      withholdingTaxCode: '601', // Yapım İşleri / Mühendislik-Mimarlık — %40
+      kdvPercent: 20,
+      withholdingTaxCode,
     },
   ],
 });
 
-/** e-SMM hattı — tevkifat `cac:TaxTotal[9015]` düzleminde, oran doğrudan. */
-const voucherInput = (): SimpleSelfEmployedVoucherInput => ({
+/** e-SMM hattı — aynı semantik, `cac:TaxTotal` düzleminde. */
+const voucherInput = (
+  price: number,
+  withholding: Pick<
+    SimpleSelfEmployedVoucherInput,
+    'vatWithholdingPercent' | 'incomeTaxWithholdingPercent'
+  >,
+): SimpleSelfEmployedVoucherInput => ({
   documentNumber: 'SMM2026000000009',
   uuid: 'bbbbbbbb-1111-4222-8333-444444444444',
   datetime: '2026-09-16T14:30:00',
   supplier: { ...party('11111111110', 'Ayse Yilmaz'), phone: '+90 216 000 00 00' },
   customer: party('9876543210', 'Ornek Danismanlik A.S.'),
   sendMethod: 'ELEKTRONIK',
-  vatWithholdingPercent: WITHHOLDING_PERCENT,
-  lines: [
-    { name: 'Danismanlik hizmeti', quantity: 1, price: GROSS, kdvPercent: KDV_PERCENT },
-  ],
+  ...withholding,
+  lines: [{ name: 'Danismanlik hizmeti', quantity: 1, price, kdvPercent: 20 }],
 });
 
 /** `<cbc:X currencyID="TRY">N</cbc:X>` → N. Eşitlik XML düzeyinde okunur. */
@@ -113,80 +122,121 @@ const amountFromXml = (xml: string, element: string): number => {
   return Number(hit![1]);
 };
 
+const invoiceXmlOf = (input: SimpleInvoiceInput): string =>
+  new SimpleInvoiceBuilder({ prettyPrint: true, validationLevel: 'strict' }).build(input).xml;
+
+const voucherXmlOf = (input: SimpleSelfEmployedVoucherInput): string =>
+  new SimpleSelfEmployedVoucherBuilder({
+    prettyPrint: true,
+    validationLevel: 'strict',
+  }).build(input).xml;
+
+/** Dört parasal alanı iki belgede karşılaştırır — eşitliğin TANIMI budur. */
+const expectSameMonetaryShape = (invoiceXml: string, voucherXml: string): void => {
+  for (const element of [
+    'LineExtensionAmount',
+    'TaxExclusiveAmount',
+    'TaxInclusiveAmount',
+    'PayableAmount',
+  ]) {
+    expect(amountFromXml(invoiceXml, element), `${element} iki belgede AYRIŞTI`).toBe(
+      amountFromXml(voucherXml, element),
+    );
+  }
+};
+
 describe('e-SMM ↔ fatura: TaxInclusiveAmount / PayableAmount şekil eşitliği', () => {
   it('ÜRETİM ÇIKTISI: e-SMM 2.000/400/160 → TIA 2.400 · Ödenecek 2.240', () => {
     /* Kullanıcının üretim şablonunun bastığı sayıların BİREBİR karşılığı.
      * Bu vaka kırılırsa kütüphane artık kullanıcının kendi belgesini üretmiyor
      * demektir — başka hiçbir gerekçe onu meşrulaştırmaz. */
-    const { totals } = calculateSelfEmployedVoucher(voucherInput());
+    const { totals } = calculateSelfEmployedVoucher(
+      voucherInput(2_000, { vatWithholdingPercent: 40 }),
+    );
 
     expect(totals.lineExtensionAmount).toBe(PRODUCTION_TEMPLATE.lineExtensionAmount);
     expect(totals.taxInclusiveAmount).toBe(PRODUCTION_TEMPLATE.taxInclusiveAmount);
     expect(totals.payableAmount).toBe(PRODUCTION_TEMPLATE.payableAmount);
 
     // Tevkifat TIA'ya GİRMİYOR, Payable'dan DÜŞÜYOR — kararın iki yarısı.
-    expect(totals.taxInclusiveAmount).toBe(GROSS + PRODUCTION_TEMPLATE.calculatedVat);
+    expect(totals.taxInclusiveAmount).toBe(2_000 + PRODUCTION_TEMPLATE.calculatedVat);
     expect(totals.taxInclusiveAmount - totals.payableAmount).toBe(
       PRODUCTION_TEMPLATE.vatWithholding,
     );
   });
 
-  it('AYNI GİRDİ · fatura hattı da 2.400 / 2.240 verir — şekil BİREBİR aynı', () => {
-    const invoice = calculateDocument(invoiceInput()).monetary;
-    const voucher = calculateSelfEmployedVoucher(voucherInput()).totals;
+  it('EKSEN 1 · KDV tevkifatı: fatura `WithholdingTaxTotal` ile BİREBİR aynı', () => {
+    /* 2.000 brüt · %20 KDV · kesinti 160.
+     * fatura `601` (%40 · matrah hesaplanan KDV) ↔ e-SMM `vatWithholdingPercent: 40`. */
+    const invoiceXml = invoiceXmlOf(invoiceInput(2_000, '601'));
+    const voucherXml = voucherXmlOf(voucherInput(2_000, { vatWithholdingPercent: 40 }));
 
-    expect(invoice.taxInclusiveAmount).toBe(voucher.taxInclusiveAmount);
-    expect(invoice.payableAmount).toBe(voucher.payableAmount);
-    expect(invoice.lineExtensionAmount).toBe(voucher.lineExtensionAmount);
-    expect(invoice.taxExclusiveAmount).toBe(voucher.taxExclusiveAmount);
-
-    // Ve ikisi de üretim şablonunun sayılarına oturur.
-    expect(invoice.taxInclusiveAmount).toBe(PRODUCTION_TEMPLATE.taxInclusiveAmount);
-    expect(invoice.payableAmount).toBe(PRODUCTION_TEMPLATE.payableAmount);
-  });
-
-  it('eşitlik ÜRETİLEN XML düzeyinde de tutar — hesap değil, BELGE karşılaştırılır', () => {
-    /* Yardımcı fonksiyonların eşit çıkması yetmez: serileştirme yolları ayrı
-     * (`invoice/serializer.ts` ↔ `self-employed-voucher/shape.ts`). Eşitlik
-     * ancak iki belgenin BASILI tutarları aynıysa vardır. */
-    const { xml: invoiceXml } = new SimpleInvoiceBuilder({
-      prettyPrint: true,
-      validationLevel: 'strict',
-    }).build(invoiceInput());
-
-    const { xml: voucherXml } = new SimpleSelfEmployedVoucherBuilder({
-      prettyPrint: true,
-      validationLevel: 'strict',
-    }).build(voucherInput());
-
-    for (const element of ['TaxExclusiveAmount', 'TaxInclusiveAmount', 'PayableAmount']) {
-      expect(
-        amountFromXml(invoiceXml, element),
-        `${element} iki belgede AYRIŞTI`,
-      ).toBe(amountFromXml(voucherXml, element));
-    }
+    expectSameMonetaryShape(invoiceXml, voucherXml);
 
     expect(amountFromXml(voucherXml, 'TaxInclusiveAmount')).toBe(2_400);
     expect(amountFromXml(voucherXml, 'PayableAmount')).toBe(2_240);
+
+    // Düzlemler AYRI: fatura WithholdingTaxTotal taşır, e-SMM TAŞIYAMAZ.
+    expect(invoiceXml).toContain('WithholdingTaxTotal');
+    expect(voucherXml).not.toContain('WithholdingTaxTotal');
   });
 
-  it('⚠️ AÇIK EKSEN: tevkifat fatura tarafında `TaxTotal`a yazılırsa TIA AYRIŞIR', () => {
-    /* Fatura motoru `baseStat:false` kodlarını `TaxTotal` düzleminde NEGATİF
-     * yazar; orada tevkifat `TIA`yı da düşürür (2.240) ve `TIA ≡ Payable` olur.
-     * e-SMM yapısal olarak bu düzlemdedir ama üretim çıktısı 2.400 diyor —
-     * yani e-SMM bu kuralı İZLEMEZ. Fark BİLİNÇLİDİR; bu test onu görünür
-     * tutar ki biri "tutarsızlık" sanıp e-SMM'i sessizce 2.240'a çekmesin. */
+  it('EKSEN 2 · gelir stopajı: fatura `WithholdingTaxTotal` ile BİREBİR aynı', () => {
+    /* 10.000 brüt · %20 KDV · kesinti 2.000.
+     * fatura `801` (tam tevkifat %100 → 2.000 KDV'nin tamamı) ↔ e-SMM
+     * `incomeTaxWithholdingPercent: 20` (brütün %20'si = 2.000). Kesinti tutarı
+     * KASITLI olarak eşitlendi; amaç aynı kesintide ŞEKLİN aynı çıktığını
+     * göstermek. `0003` ile `9015` arasındaki fark MATRAHTIR, konvansiyon değil —
+     * `withholdingTaxCode` listesi KDV tevkifat kodlarıdır ve matrahı daima
+     * hesaplanan KDV'dir, `0003`ü o düzlemde temsil edemez. */
+    const invoiceXml = invoiceXmlOf(invoiceInput(10_000, '801'));
+    const voucherXml = voucherXmlOf(voucherInput(10_000, { incomeTaxWithholdingPercent: 20 }));
+
+    expectSameMonetaryShape(invoiceXml, voucherXml);
+
+    // Kesinti TIA'ya GİRMEZ (12.000), yalnız Payable'dan düşer (10.000).
+    expect(amountFromXml(voucherXml, 'TaxInclusiveAmount')).toBe(12_000);
+    expect(amountFromXml(voucherXml, 'PayableAmount')).toBe(10_000);
+    expect(amountFromXml(invoiceXml, 'TaxInclusiveAmount')).toBe(12_000);
+    expect(amountFromXml(invoiceXml, 'PayableAmount')).toBe(10_000);
+  });
+
+  it('kesinti TIA ile Payable ARASINDAKİ fark olarak görünür — iki eksende de', () => {
+    const vatAxis = calculateSelfEmployedVoucher(
+      voucherInput(2_000, { vatWithholdingPercent: 40 }),
+    ).totals;
+    const incomeAxis = calculateSelfEmployedVoucher(
+      voucherInput(10_000, { incomeTaxWithholdingPercent: 20 }),
+    ).totals;
+
+    expect(vatAxis.taxInclusiveAmount - vatAxis.payableAmount).toBe(160);
+    expect(incomeAxis.taxInclusiveAmount - incomeAxis.payableAmount).toBe(2_000);
+
+    // TIA her iki eksende de kesintiden BAĞIMSIZ: TaxExclusive + hesaplanan KDV.
+    expect(vatAxis.taxInclusiveAmount).toBe(vatAxis.taxExclusiveAmount + 400);
+    expect(incomeAxis.taxInclusiveAmount).toBe(incomeAxis.taxExclusiveAmount + 2_000);
+  });
+
+  it('⚠️ TUZAK: faturanın `TaxTotal` dalı BAŞKA sayı verir — ölçüt O DEĞİLDİR', () => {
+    /* Faturaya kesinti `taxes:[{code}]` ile verilirse `cac:TaxTotal` düzlemine
+     * düşer; motor oradaki `baseStat:false` kodlarını NEGATİF yazdığı için TIA
+     * da iner ve `TIA ≡ Payable` olur. Bu, faturanın kesintiyi taşıdığı OLAĞAN
+     * yol DEĞİLDİR ve e-SMM ile karşılaştırmanın ölçütü de değildir.
+     *
+     * Sayı burada, biri bu dala bakıp "e-SMM tutarsız" sanmasın ve e-SMM'i
+     * sessizce 2.240'a çekmesin diye ÖLÇÜM olarak sabitleniyor. Ödenecek tutar
+     * bu dalda da e-SMM ile AYNIDIR; ayrışan yalnız TIA'dır. */
     const asTaxTotal = calculateDocument({
-      ...invoiceInput(),
+      ...invoiceInput(2_000, '601'),
       type: 'SATIS',
       lines: [
         {
           name: 'Danismanlik hizmeti',
           quantity: 1,
-          price: GROSS,
+          price: 2_000,
           unitCode: 'Adet',
-          kdvPercent: KDV_PERCENT,
-          taxes: [{ code: '9015', percent: WITHHOLDING_PERCENT }],
+          kdvPercent: 20,
+          taxes: [{ code: '9015', percent: 40 }],
         },
       ],
     }).monetary;
@@ -194,52 +244,10 @@ describe('e-SMM ↔ fatura: TaxInclusiveAmount / PayableAmount şekil eşitliği
     expect(asTaxTotal.taxInclusiveAmount).toBe(2_240);
     expect(asTaxTotal.payableAmount).toBe(2_240);
 
-    // Ayrışan YALNIZ TIA; ödenecek tutar e-SMM ile yine AYNI.
-    const voucher = calculateSelfEmployedVoucher(voucherInput()).totals;
-    expect(asTaxTotal.payableAmount).toBe(voucher.payableAmount);
-    expect(asTaxTotal.taxInclusiveAmount).not.toBe(voucher.taxInclusiveAmount);
-  });
-
-  it('⚠️ AÇIK EKSEN: `0003` gelir stopajında da ayrışan TIA, ORTAK olan Ödenecek', () => {
-    /* 10.000 brüt · %20 KDV · %20 gelir stopajı.
-     *   fatura : TIA 10.000 ≡ Payable 10.000   (`0003` TaxTotal'a negatif girer)
-     *   e-SMM  : TIA 12.000 · Payable 10.000   (stopaj yalnız Payable'dan düşer)
-     * Üretim çıktısında STOPAJ SATIRI YOK — kapanan eksen `9015`ti. Bu yüzden
-     * `0003` ekseni hâlâ AÇIK ve burada ÖLÇÜM olarak duruyor, iddia olarak değil.
-     * Stopajlı bir üretim çıktısı geldiğinde kapanacak tek yer
-     * `self-employed-voucher/totals.ts` gövdesidir. */
-    const STOPAJ_GROSS = 10_000;
-
-    const invoice = calculateDocument({
-      ...invoiceInput(),
-      type: 'SATIS',
-      lines: [
-        {
-          name: 'Danismanlik hizmeti',
-          quantity: 1,
-          price: STOPAJ_GROSS,
-          unitCode: 'Adet',
-          kdvPercent: KDV_PERCENT,
-          taxes: [{ code: '0003', percent: 20 }],
-        },
-      ],
-    }).monetary;
-
-    const voucher = calculateSelfEmployedVoucher({
-      ...voucherInput(),
-      vatWithholdingPercent: undefined,
-      incomeTaxWithholdingPercent: 20,
-      lines: [
-        { name: 'Danismanlik hizmeti', quantity: 1, price: STOPAJ_GROSS, kdvPercent: KDV_PERCENT },
-      ],
-    }).totals;
-
-    expect(invoice.taxInclusiveAmount).toBe(10_000);
-    expect(voucher.taxInclusiveAmount).toBe(12_000);
-
-    // ORTAK OLAN: ödenecek tutar kesinti düşülerek bulunur — ikisinde de 10.000.
-    expect(invoice.payableAmount).toBe(10_000);
-    expect(voucher.payableAmount).toBe(10_000);
-    expect(invoice.payableAmount).toBe(voucher.payableAmount);
+    const voucher = calculateSelfEmployedVoucher(
+      voucherInput(2_000, { vatWithholdingPercent: 40 }),
+    ).totals;
+    expect(asTaxTotal.payableAmount).toBe(voucher.payableAmount); // ORTAK
+    expect(asTaxTotal.taxInclusiveAmount).not.toBe(voucher.taxInclusiveAmount); // AYRIŞAN
   });
 });

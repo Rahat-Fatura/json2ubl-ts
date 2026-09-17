@@ -215,9 +215,9 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 - ~~🔴 **`TaxInclusiveAmount` konvansiyonu KAYNAKSIZDIR.**~~ **→ S5c'de KAPANDI.**
   O gün kütüphane iki okuma arasında seçim yapamıyordu ve kararı bir sabitte
   (`SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION`) GÖRÜNÜR tutmakla yetinmişti.
-  Kullanıcının üretim çıktısı `9015` eksenini kapattı, sabit ve alternatif dal
-  kaldırıldı. Ayrıntı ve hâlâ açık kalan `0003` ekseni için aşağıdaki **S5c**
-  bloğuna bakın.
+  Kullanıcının üretim çıktısı soruyu kapattı, sabit ve alternatif dal kaldırıldı.
+  Eşitlik `9015` ve `0003` eksenlerinin İKİSİNDE de ölçüldü — ayrıntı için
+  aşağıdaki **S5c** bloğuna bakın.
 - **Doğrulayıcıya `type=earchive` + `profile=unsigned-esmm` ile gidilir.**
   `EARSIVBELGE` ve `SERBESTMESLEKMAKBUZU` `UBL-TR_Codelist.xml`'de YOKTUR, bu
   yüzden Main şematron profilsiz çağrıda belgeyi DAİMA reddeder
@@ -348,39 +348,47 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 
 - **Fatura düzlemiyle eşitlik TESTE ÇİVİLENDİ** —
   `__tests__/self-employed-voucher/invoice-parity.test.ts` (5 test). Aynı
-  girdiden (2.000 brüt · %20 KDV · %40 tevkifat) fatura hattı ile e-SMM hattı
-  karşılaştırılır; karşılaştırma yardımcı fonksiyonda DEĞİL **üretilen XML'de**
-  yapılır, çünkü iki serileştirme yolu ayrıdır. Kullanıcının üretim çıktısındaki
+  girdiden fatura hattı ile e-SMM hattı karşılaştırılır; karşılaştırma yardımcı
+  fonksiyonda DEĞİL **üretilen XML'de** yapılır, çünkü iki serileştirme yolu
+  ayrıdır. Ölçüt faturanın OLAĞAN kesinti düzlemidir (`cac:WithholdingTaxTotal`)
+  ve eşitlik `9015` ile `0003` eksenlerinin İKİSİNDE de dört parasal alanda
+  (`LineExtensionAmount` · `TaxExclusiveAmount` · `TaxInclusiveAmount` ·
+  `PayableAmount`) doğrulanır. Kullanıcının üretim çıktısındaki
   2.000/400/160/2.400/2.240 ayrı bir vaka olarak çivilidir. Çivinin ısırdığı
   mutasyonla kanıtlandı: TIA'yı UBL-TR formülüne çevirmek **11**, faturanın
   `TaxTotal` dalına çevirmek **12** test kırıyor (golden XML'ler dahil).
 
 #### 🔴 Ölçülenler (tahmin değil)
 
-- **Ayrışan tek şey `TaxInclusiveAmount`; `PayableAmount` HER okumada AYNI.**
-  Fatura motoru `cac:TaxTotal` altındaki `baseStat:false` kodlarını (`0003`,
-  `9015`) NEGATİF yazar ve o düzlemde `TIA`yı da düşürür; `cac:WithholdingTaxTotal`
-  düzleminde ise `TIA`ya dokunmaz. Ölçülen tablo (2.000 · %20 KDV · %40 tevkifat):
+- **e-SMM, faturanın `cac:WithholdingTaxTotal` semantiğinin BİREBİR aynısını
+  üretiyor — İKİ EKSENDE de.** Faturanın kesintiyi taşıdığı OLAĞAN düzlem odur
+  (`SimpleLineInput.withholdingTaxCode` onu üretir) ve orada kesinti `TIA`yı HİÇ
+  GÖRMEZ; düşüm yalnız `PayableAmount`ta olur. Ölçülen tablo:
 
-  | Hat | TIA | Ödenecek |
-  |---|---|---|
-  | fatura · tevkifat `WithholdingTaxTotal`da | 2.400 | 2.240 |
-  | e-SMM · tevkifat `TaxTotal[9015]`te | 2.400 | 2.240 |
-  | fatura · tevkifat `TaxTotal[9015]`te | 2.240 | 2.240 |
+  | Eksen | Girdi | Hat | TIA | Ödenecek |
+  |---|---|---|---|---|
+  | `9015` KDV tevkifatı | 2.000 · %20 KDV · kesinti 160 | fatura `withholdingTaxCode:'601'` | 2.400 | 2.240 |
+  | `9015` KDV tevkifatı | aynı | e-SMM `vatWithholdingPercent:40` | 2.400 | 2.240 |
+  | `0003` gelir stopajı | 10.000 · %20 KDV · kesinti 2.000 | fatura `withholdingTaxCode:'801'` | 12.000 | 10.000 |
+  | `0003` gelir stopajı | aynı | e-SMM `incomeTaxWithholdingPercent:20` | 12.000 | 10.000 |
 
-  e-SMM yapısal olarak `TaxTotal` düzlemindedir (`9015`in `WithholdingTaxTotal`da
-  yazılması YASAK) ama üretim çıktısı 2.400 diyor — yani e-SMM bu kuralı İZLEMEZ.
-  Fark BİLİNÇLİDİR ve teste çivilidir ki biri "tutarsızlık" sanıp e-SMM'i sessizce
-  2.240'a çekmesin.
-
-#### ⚠️ HÂLÂ AÇIK
-
-- **`0003` gelir vergisi stopajı ekseni.** Üretim çıktısında **stopaj satırı
-  YOKTUR**; kapanan eksen `9015`tir. 10.000 brüt / %20 KDV / %20 stopajda fatura
-  `TIA` **10.000** (stopaj `TaxTotal`a negatif girer), e-SMM `TIA` **12.000**
-  verir — `PayableAmount` ikisinde de 10.000. Fark ölçülüp teste kondu, İDDİA
-  olarak değil ÖLÇÜM olarak. Stopajlı bir üretim çıktısı geldiğinde kapanacak TEK
-  yer `selfEmployedVoucherTotals` gövdesidir.
+  Tek fark UBL DÜZLEMİDİR: e-SMM `cac:WithholdingTaxTotal` TAŞIYAMAZ — girdi
+  tipinde `withholdingTaxTotals` alanı yoktur (tip güvencesi, doğrulama kuralı
+  değil) ve GİB e-SMM'de `9015`i `cac:TaxTotal` altında ister. `0003` ile `9015`
+  arasındaki fark ise MATRAHTIR (biri brüt, öteki hesaplanan KDV), konvansiyon
+  farkı değil.
+- **⚠️ TUZAK — faturanın `cac:TaxTotal` dalı BAŞKA sayı verir.** Kesinti
+  `taxes:[{code}]` ile verilirse motor `baseStat:false` kodlarını NEGATİF yazar ve
+  `TIA` da iner (2.000 · %40 tevkifat → 2.240; 10.000 · %20 stopaj → 10.000).
+  O dal faturanın OLAĞAN yolu DEĞİLDİR ve eşitliğin ölçütü de değildir;
+  `PayableAmount` orada da AYNIDIR. Sayı teste çivilendi ki bu dala bakıp e-SMM'i
+  "tutarsız" sanan biri onu sessizce bozmasın.
+- **`withholdingTaxCode` `0003`/`9015` KABUL ETMEZ** (`Geçersiz tevkifat kodu`).
+  Liste KDV tevkifat kodlarıdır (6xx kısmi / 8xx tam) ve matrah DAİMA hesaplanan
+  KDV'dir. `withholdingTaxPercent` de şu an her kod için işlevsizdir: tek
+  `dynamicPercent` kodu olan `650` 4.2.0'da çıkarılmıştı. Eşitlik testinde
+  eksen 2 için `801` (tam tevkifat %100) seçilmesinin tek sebebi kesinti tutarını
+  2.000'e eşitleyip karşılaştırmayı BİREBİR yapmaktır.
 
 #### Notlar
 
