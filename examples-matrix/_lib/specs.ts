@@ -3222,12 +3222,21 @@ export const validSpecs: ValidSpec[] = [
     },
   },
 
-  // Plate = DORSE varyantı
+  /* ÇEKİCİ + DORSE — dorsenin KANONİK yeri.
+   *
+   * 🔴 Bu fixture dorseyi `licensePlates` dizisine İKİNCİ eleman olarak
+   * koyuyordu ve XSD-geçersiz XML dondurmuştu (`cvc-complex-type.2.4.d` —
+   * `RoadTransportType` bir plaka kabul eder). Dorse ÇEKİCİ DEĞİLDİR: GİB'in
+   * kendi örneği (Sevk İrsaliyesi Kılavuzu V1.2 §2.3.21, `Irsaliye-Ornek1.xml:
+   * 195-202`) onu `Shipment/TransportHandlingUnit/TransportEquipment/cbc:ID`
+   * altında `schemeID="DORSEPLAKA"` ile gösterir. Fixture o yola taşındı;
+   * çıktı canlı doğrulayıcıda XSD + şematron TEMİZ ölçüldü. */
   {
     kind: 'despatch', variantSlug: 'dorse-plate', profile: 'TEMELIRSALIYE', type: 'SEVK',
-    notes: 'TEMELIRSALIYE+SEVK DORSE plaka varyantı',
+    notes: 'TEMELIRSALIYE+SEVK — çekici plakası + DORSE (kanonik TransportHandlingUnit yolu)',
+    review: 'schematron-verified',
     dimensions: {
-      plates: ['PLAKA', 'DORSE'], driverCount: 1, lineCount: 1,
+      plates: ['PLAKA'], trailerPlates: ['DORSEPLAKA'], driverCount: 1, lineCount: 1,
       additionalDocuments: false, specialIdentifiers: [],
     },
     input: {
@@ -3254,10 +3263,8 @@ export const validSpecs: ValidSpec[] = [
           cityName: 'İstanbul', postalZone: '34710', country: 'Türkiye',
         },
         driverPersons: [{ firstName: 'Ali', familyName: 'Dorseci', nationalityId: '12345678901' }],
-        licensePlates: [
-          { plateNumber: '34ABC123', schemeId: 'PLAKA' },
-          { plateNumber: '34DRS456', schemeId: 'DORSE' },
-        ],
+        licensePlates: [{ plateNumber: '34ABC123', schemeId: 'PLAKA' }],
+        transportHandlingUnits: [{ transportEquipmentId: '34DRS456', schemeId: 'DORSEPLAKA' }],
       },
       lines: [{ id: '1', deliveredQuantity: 20, unitCode: 'C62', item: { name: 'Tır yükü' } }],
     },
@@ -3391,9 +3398,10 @@ export const validSpecs: ValidSpec[] = [
   // ─── Sprint 8f.10: Despatch genişletme (+2) ───
   {
     kind: 'despatch', variantSlug: 'coklu-surucu', profile: 'TEMELIRSALIYE', type: 'SEVK',
-    notes: 'TEMELIRSALIYE+SEVK 2 sürücü + 2 plaka (çekici + dorse)',
+    notes: 'TEMELIRSALIYE+SEVK 2 sürücü + 2 ÇEKİCİ (iki cac:ShipmentStage)',
+    review: 'schematron-verified',
     dimensions: {
-      plates: ['PLAKA', 'DORSE'], driverCount: 2, lineCount: 1,
+      plates: ['PLAKA', 'PLAKA'], driverCount: 2, lineCount: 1,
       additionalDocuments: false, specialIdentifiers: [],
     },
     input: {
@@ -3423,9 +3431,14 @@ export const validSpecs: ValidSpec[] = [
           { firstName: 'Ahmet', familyName: 'Yılmaz', nationalityId: '12345678901' },
           { firstName: 'Mehmet', familyName: 'Kaya', nationalityId: '98765432109' },
         ],
+        /* İKİ ÇEKİCİ = İKİ ARAÇ = İKİ `cac:ShipmentStage`.
+         * Eskiden ikinci kayıt bir DORSE'ydi (`schemeId: 'DORSE'`) ve aynı
+         * `cac:RoadTransport` içine basılıyordu — çıktı XSD-geçersizdi. Dorse
+         * senaryosu artık `dorse-plate` fixture'ında kanonik yoluyla duruyor;
+         * bu fixture'ın konusu ÇOKLU ARAÇ + ÇOKLU SÜRÜCÜ birlikteliğidir. */
         licensePlates: [
           { plateNumber: '34ABC991', schemeId: 'PLAKA' },
-          { plateNumber: '34XYZ991', schemeId: 'DORSE' },
+          { plateNumber: '06XYZ991', schemeId: 'PLAKA' },
         ],
       },
       lines: [{ id: '1', deliveredQuantity: 10, unitCode: 'C62', item: { name: 'Büyük sevkiyat' } }],

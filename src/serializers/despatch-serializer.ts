@@ -6,7 +6,7 @@ import {
   serializeCustomerPartyContainer,
   serializeSupplierPartyContainer,
 } from './party-serializer';
-import { serializeShipmentElement } from './delivery-serializer';
+import { serializeShipmentElement, buildVehicleStages } from './delivery-serializer';
 import { serializeDespatchLine } from './line-serializer';
 import { serializeAdditionalDocument, serializeOrderReference } from './reference-serializer';
 import { DESPATCH_SEQ, emitInOrder } from './xsd-sequence';
@@ -136,8 +136,12 @@ function serializeShipmentBlock(input: DespatchInput, indent: string): string {
       // B-73: opsiyonel ValueAmount. Tek GoodsItem KOŞULSUZ yazılır (yerleşik davranış).
       goodsItems: [{ valueAmount: s.goodsItem?.valueAmount }],
 
-      // Tek ShipmentStage KOŞULSUZ yazılır; plaka/sürücü yoksa içi boş kalır.
-      stages: [{ licensePlates: s.licensePlates, driverPersons: s.driverPersons }],
+      /* ÇOKLU ARAÇ: her plaka KENDİ `cac:ShipmentStage`ine gider — XSD bir
+       * aşamaya tek plaka bırakır. Tek plakalı hâlde (senaryoların ezici
+       * çoğunluğu) çıktı bire bir eskisi gibidir; plaka hiç yoksa yine tek
+       * (içi sürücüyle dolan ya da boş kalan) aşama yazılır. Kural ve
+       * sürücü-yerleşimi gerekçesi: `buildVehicleStages`. */
+      stages: buildVehicleStages(s.licensePlates, s.driverPersons),
 
       // B-14: `cac:Delivery` artık DELIVERY_SEQ'ten geçer (DeliveryAddress → CarrierParty → Despatch).
       delivery: {

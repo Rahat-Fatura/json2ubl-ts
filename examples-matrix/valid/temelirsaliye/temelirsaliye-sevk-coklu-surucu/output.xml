@@ -75,7 +75,6 @@
       <cac:TransportMeans>
         <cac:RoadTransport>
           <cbc:LicensePlateID schemeID="PLAKA">34ABC991</cbc:LicensePlateID>
-          <cbc:LicensePlateID schemeID="DORSE">34XYZ991</cbc:LicensePlateID>
         </cac:RoadTransport>
       </cac:TransportMeans>
       <cac:DriverPerson>
@@ -88,6 +87,13 @@
         <cbc:FamilyName>Kaya</cbc:FamilyName>
         <cbc:NationalityID>98765432109</cbc:NationalityID>
       </cac:DriverPerson>
+    </cac:ShipmentStage>
+    <cac:ShipmentStage>
+      <cac:TransportMeans>
+        <cac:RoadTransport>
+          <cbc:LicensePlateID schemeID="PLAKA">06XYZ991</cbc:LicensePlateID>
+        </cac:RoadTransport>
+      </cac:TransportMeans>
     </cac:ShipmentStage>
     <cac:Delivery>
       <cac:DeliveryAddress>

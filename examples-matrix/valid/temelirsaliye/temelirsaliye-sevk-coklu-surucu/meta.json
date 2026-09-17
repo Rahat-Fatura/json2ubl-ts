@@ -7,15 +7,15 @@
   "dimensions": {
     "plates": [
       "PLAKA",
-      "DORSE"
+      "PLAKA"
     ],
     "driverCount": 2,
     "lineCount": 1,
     "additionalDocuments": false,
     "specialIdentifiers": []
   },
-  "generatedAt": "2026-04-24T14:20:50.516Z",
+  "generatedAt": "2026-09-17T08:21:40.655Z",
   "generatedBy": "examples-matrix/scaffold.ts",
-  "review": "auto-ok",
-  "notes": "TEMELIRSALIYE+SEVK 2 sürücü + 2 plaka (çekici + dorse)"
+  "review": "schematron-verified",
+  "notes": "TEMELIRSALIYE+SEVK 2 sürücü + 2 ÇEKİCİ (iki cac:ShipmentStage)"
 }

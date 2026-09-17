@@ -159,9 +159,10 @@ describe('mapSimpleToDespatchInput — sevkiyat', () => {
   });
 
   /* ── Dorse plakası: B-49 kanonik yol ──────────────────────────────────────
-     `cac:RoadTransport` XSD'de TEK `cbc:LicensePlateID` kabul eder; dorse ikinci
-     satır olarak YAZILAMAZ. Simple katmanı ham katmanda zaten var olan
-     `transportHandlingUnits` yolunu açar. */
+     Dorse bir ARAÇ DEĞİL, bir EKİPMANDIR: `licensePlates`teki her kayıt ayrı bir
+     `cac:ShipmentStage` (ayrı bir ÇEKİCİ) üretir, dorseyi oraya koymak onu ikinci
+     bir araç olarak beyan ederdi. GİB'in kendi örneği de dorseyi aşamanın
+     DIŞINDA, `TransportHandlingUnit/TransportEquipment` altında gösterir. */
   it('trailerPlates → transportHandlingUnits; varsayılan şema DORSEPLAKA', () => {
     const input = baseInput();
     input.shipment.trailerPlates = [{ value: '34DEF456' }];

@@ -14,7 +14,6 @@ import { missingField, invalidFormat, invalidValue, profileRequirement } from '.
 import { isNonEmpty } from '../utils/formatters';
 import { runFieldBindings } from './rules/field-rule';
 import { despatchHeaderBindings } from './rules/header-bindings';
-import { licensePlateCardinalityRule } from './rules/xsd-cardinality-rules';
 
 /**
  * Doğrulamanın koştuğu AŞAMA.
@@ -163,11 +162,14 @@ export function validateDespatch(
       });
     }
 
-    /* S3 — XSD kardinalitesi: `cac:RoadTransport/cbc:LicensePlateID` 1..1.
-     * Şematronda karşılığı YOKTUR (bu yüzden `hasUsablePlate` kapısı ALT sınıra
-     * bakıyor, ÜST sınıra kimse bakmıyordu) — kaynak GİB XSD'sinin kendisidir.
-     * Ölçüldü: iki plaka canlı doğrulayıcıda `cvc-complex-type.2.4.d`. */
-    errors.push(...licensePlateCardinalityRule(s.licensePlates, 'shipment.licensePlates'));
+    /* NOT: Burada bir zamanlar "2+ plaka → hata" kapısı vardı (S3). Kaldırıldı:
+     * çoklu araç artık GERÇEKTEN destekleniyor — her plaka kendi
+     * `cac:ShipmentStage`ine yazılıyor (`buildVehicleStages`). XSD'nin 1..1
+     * kısıtı artık bir doğrulama kuralıyla değil, `ShipmentStageModel`in TEKİL
+     * `licensePlate` alanıyla korunuyor: geçersiz şekil ARTIK TEMSİL EDİLEMİYOR.
+     * Plakaların schemeID + format denetimi (yukarıda) her plaka için koşmaya
+     * devam eder — şematron da `LicensePlateIDSchemeIDCheck` ile aynısını
+     * aşama başına yapar (`UBL-TR_Main_Schematron.xml:515`). */
 
     // B-85: CarrierParty VKN/TCKN format + schemeID whitelist (CommonSchematron:505-509)
     if (s.carrierParty) {

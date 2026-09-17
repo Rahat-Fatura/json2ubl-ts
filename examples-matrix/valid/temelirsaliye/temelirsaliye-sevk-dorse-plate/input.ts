@@ -54,9 +54,11 @@ export const input: DespatchInput = {
         plateNumber: '34ABC123',
         schemeId: 'PLAKA',
       },
+    ],
+    transportHandlingUnits: [
       {
-        plateNumber: '34DRS456',
-        schemeId: 'DORSE',
+        transportEquipmentId: '34DRS456',
+        schemeId: 'DORSEPLAKA',
       },
     ],
   },

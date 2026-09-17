@@ -58,13 +58,15 @@ export type SimpleLicensePlateScheme =
   | 'YABANCIDORSEPLAKA';
 
 /**
- * Araç plakası — `ShipmentStage/TransportMeans/RoadTransport/LicensePlateID`.
+ * Araç (çekici) plakası — `ShipmentStage/TransportMeans/RoadTransport/LicensePlateID`.
  *
  * 🔴 `LicensePlateIDCheck` (Common:786-788): geçerli şemalı, BOŞ OLMAYAN en az bir
  * plaka HER İRSALİYEDE zorunludur — taşıyıcı firma verilse BİLE. Ekran "kargoya
  * verdim" dese de plaka istemek zorundadır.
  * TR şemalarında biçim `^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$`; `YABANCI*`
- * şemalarında `^[A-Z0-9_-]+$`.
+ * şemalarında `^[A-Z0-9_-]+$`. Şematron her plakayı AYRI AYRI denetler
+ * (`LicensePlateIDSchemeIDCheck` bağlamı plakanın kendisidir), yani ikinci aracın
+ * hatalı plakası da yakalanır.
  */
 export interface SimpleLicensePlateInput {
   /** Plaka metni */
@@ -76,12 +78,16 @@ export interface SimpleLicensePlateInput {
 /**
  * Dorse/römork plakası — `Shipment/TransportHandlingUnit/TransportEquipment/ID`.
  *
- * 🔴 NEDEN AYRI ALAN: UBL-TR XSD'si `cac:RoadTransport` içinde TEK
- * `cbc:LicensePlateID` kabul eder (canlı GİB kapısında ölçüldü: 2 plaka →
- * "Invalid content … 'cbc:LicensePlateID'"). Çekici + dorse birlikte
- * bildirilecekse ikinci plaka `licensePlates` dizisine EKLENMEZ; GİB'in kanonik
- * yeri `TransportHandlingUnit/TransportEquipment`tir (B-49). Ham katman bu yolu
- * baştan beri destekliyordu, açılmamış olan Simple katmanının yüzeyiydi.
+ * 🔴 NEDEN AYRI ALAN: dorse bir ARAÇ DEĞİL, bir EKİPMANDIR. GİB'in kendi örneği
+ * (UBL-TR Sevk İrsaliyesi Kılavuzu V1.2 §2.3.21; `Irsaliye-Ornek1.xml:195-202`)
+ * dorseyi `cac:ShipmentStage`in DIŞINDA, `Shipment/TransportHandlingUnit/
+ * TransportEquipment/cbc:ID` altında ve `schemeID="DORSEPLAKA"` ile gösterir —
+ * iki dorse orada iki `TransportEquipment` olur. `licensePlates` ise ÇEKİCİ
+ * listesidir ve her kaydı ayrı bir `cac:ShipmentStage` üretir.
+ *
+ * Yani ayrım artık "XSD ikinci plakaya izin vermiyor" diye değil, BEYAN DOĞRU
+ * OLSUN diye vardır: dorseyi `licensePlates`e koymak onu ikinci bir çekici
+ * olarak beyan eder.
  */
 export interface SimpleTrailerPlateInput {
   /** Plaka metni — `licensePlates` ile AYNI biçim kurallarına tabidir. */
@@ -105,15 +111,21 @@ export interface SimpleShipmentInput {
   /**
    * Şoförler. 🔴 Şoför VEYA taşıyıcıdan en az biri ZORUNLU
    * (`DespatchCarrierDriverCheck`).
+   *
+   * Çoklu araçta şoförler araçlara DAĞITILMAZ; tamamı ilk `cac:ShipmentStage`e
+   * yazılır. Gerekçe (kılavuzda eşleşme kuralı YOK + GİB örneği iki şoförü tek
+   * aşamada gösteriyor): `serializers/delivery-serializer.ts`
+   * → `buildVehicleStages`.
    */
   drivers?: SimpleDriverInput[];
   /** Taşıyıcı firma — `Delivery/CarrierParty`. Şoför yoksa zorunlu. */
   carrier?: SimplePartyInput;
   /**
-   * Araç (çekici) plakası — en az biri ZORUNLU (yukarıdaki nota bkz.).
+   * Araç (ÇEKİCİ) plakaları — en az biri ZORUNLU (yukarıdaki nota bkz.).
+   * Her kayıt BİR ARAÇTIR ve ayrı bir `cac:ShipmentStage` üretir; çoklu araç
+   * böyle bildirilir.
    *
-   * ⚠️ XSD burada TEK plakaya izin verir; dizinin ilk elemanı dışındakiler
-   * belgeyi GİB kapısında geçersiz kılar. Dorse için `trailerPlates` kullanın.
+   * ⚠️ Dorse buraya YAZILMAZ — `trailerPlates` kullanın.
    */
   licensePlates?: SimpleLicensePlateInput[];
   /** Dorse/römork plakaları (0..n) — gerekçe `SimpleTrailerPlateInput`ta. */

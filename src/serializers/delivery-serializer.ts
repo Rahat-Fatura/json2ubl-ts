@@ -129,19 +129,109 @@ export interface GoodsItemModel {
   requiredCustomsId?: string;
 }
 
-/** `cac:ShipmentStage` modeli — taşıma modu (fatura) + plaka/sürücü (irsaliye). */
+/** Bir `cac:ShipmentStage` içindeki tek plaka — `cbc:LicensePlateID`. */
+export interface LicensePlateModel {
+  plateNumber: string;
+  schemeId?: string;
+}
+
+/** `cac:DriverPerson` — `PersonType` gövdesinin irsaliyede kullanılan alanları. */
+export interface DriverPersonModel {
+  firstName?: string;
+  familyName?: string;
+  title?: string;
+  nationalityId?: string;
+}
+
+/**
+ * `cac:ShipmentStage` modeli — taşıma modu (fatura) + plaka/sürücü (irsaliye).
+ *
+ * 🔴 `licensePlate` TEKİLDİR, dizi DEĞİL — ve bu, yorum değil TİP düzeyinde bir
+ * güvencedir. GİB XSD'si bir aşamaya birden fazla plaka yazılmasına izin vermez:
+ *
+ * ```xml
+ * <!-- UBL-CommonAggregateComponents-2.1.xsd:2653 -->
+ * <xsd:element ref="cac:TransportMeans" minOccurs="0"/>      <!-- 0..1 -->
+ * <!-- …:3140 --> <xsd:element ref="cac:RoadTransport" minOccurs="0"/>  <!-- 0..1 -->
+ * <!-- …:2578 --> <xsd:element ref="cbc:LicensePlateID"/>    <!-- maxOccurs YOK → 1..1 -->
+ * ```
+ *
+ * Model eskiden `licensePlates: []` taşıyordu ve serileştirici N plakayı TEK
+ * `cac:RoadTransport` içine basıyordu; çıktı SESSİZCE XSD-geçersizdi (canlı
+ * ölçüm 2026-08-05: «cvc-complex-type.2.4.d: Invalid content was found starting
+ * with element 'cbc:LicensePlateID'»). Kusur bir süre doğrulayıcı kuralıyla
+ * kapatıldı; gerçek çözüm, geçersiz şeklin TİPTE TEMSİL EDİLEMEMESİDİR.
+ * N plaka artık N `ShipmentStage` demektir — bkz. `buildVehicleStages`.
+ */
 export interface ShipmentStageModel {
+  /** `cbc:ID` — aşama numarası (XSD 0..1). */
+  id?: string;
   /** `cbc:TransportModeCode` — IHRACAT taşıma modu. */
   transportModeCode?: string;
-  /** `cac:TransportMeans/cac:RoadTransport/cbc:LicensePlateID` — irsaliye plakaları. */
-  licensePlates?: ReadonlyArray<{ plateNumber: string; schemeId?: string }>;
+  /** `cac:TransportMeans/cac:RoadTransport/cbc:LicensePlateID` — bu aşamanın TEK plakası. */
+  licensePlate?: LicensePlateModel;
   /** `cac:DriverPerson` — irsaliye sürücüleri (XSD maxOccurs=unbounded). */
-  driverPersons?: ReadonlyArray<{
-    firstName?: string;
-    familyName?: string;
-    title?: string;
-    nationalityId?: string;
-  }>;
+  driverPersons?: ReadonlyArray<DriverPersonModel>;
+}
+
+/**
+ * N plaka → N `cac:ShipmentStage`. Çoklu araç desteğinin TEK kaynağı.
+ *
+ * ── NEDEN N AŞAMA ─────────────────────────────────────────────────────────
+ * Bir aşama en fazla bir plaka taşıyabilir (yukarıdaki XSD zinciri), ama
+ * `ShipmentType` aşamayı 0..n kabul eder:
+ * `UBL-CommonAggregateComponents-2.1.xsd:2637` →
+ * `<xsd:element ref="cac:ShipmentStage" minOccurs="0" maxOccurs="unbounded"/>`.
+ * Dolayısıyla ikinci çekicinin XSD'ye uyan tek yeri ikinci bir aşamadır.
+ *
+ * CANLI ÖLÇÜLDÜ (xslt-service, şematron paketi 2026-08-04, XSD 2026-08-05):
+ * iki ve üç aşamalı irsaliye `validSchema: true` + `validSchematron: true`
+ * döner; aynı iki plaka tek `cac:RoadTransport`ta ise `cvc-complex-type.2.4.d`
+ * ile reddedilir. Yani "N aşama" bir tahmin değil, ölçülmüş davranıştır.
+ *
+ * ── SÜRÜCÜLER NİYE İLK AŞAMADA TOPLANIYOR ─────────────────────────────────
+ * 🔴 Plaka↔sürücü eşleşmesi için GİB kaynaklarında KANIT YOKTUR: ne UBL-TR
+ * Sevk İrsaliyesi Kılavuzu V1.2 ne e-İrsaliye Uygulama Kılavuzu V1.2 çoklu
+ * araç senaryosunu hiç tarif etmez ("birden fazla araç/plaka" ifadesi hiçbir
+ * kılavuzda geçmez), GİB'in yayımladığı beş irsaliye örneğinin (Irsaliye-Ornek1/
+ * 2/3, Irsaliye-Matbudan, IDIS_Irsaliye) hepsinde `cac:ShipmentStage` TEK
+ * KEZ geçer.
+ *
+ * Elimizdeki TEK normatif desen şudur — Sevk İrsaliyesi Kılavuzu §2.3.21 ve
+ * `Irsaliye-Ornek1.xml:155-173`: **iki sürücü, tek plaka, TEK aşama**. Yani
+ * GİB'in kendi örneği sürücüleri aşamalara BÖLMEZ; hepsini bir arada tutar.
+ * Bu yüzden en muhafazakâr davranış, o deseni korumaktır: sürücüler bölünmez,
+ * ilk aşamada toplanır.
+ *
+ * Girdide plaka↔sürücü bağı ZATEN YOKTUR (`licensePlates[]` ve
+ * `driverPersons[]` iki bağımsız dizidir); indeks eşlemesi uydurmak,
+ * kullanıcının hiç beyan etmediği bir "bu şoför bu aracı kullanıyor" iddiasını
+ * belgeye yazmak olurdu. Değer uydurmama ilkesi burada da geçerlidir.
+ *
+ * Şematron da bu seçimi cezalandırmaz: `DespatchCarrierDriverCheck`
+ * (`UBL-TR_Common_Schematron.xml:765-770`) belge KÖKÜNDE bir kez koşar ve
+ * 766. assert `count(cac:Shipment/cac:ShipmentStage/cac:DriverPerson)` ile TÜM
+ * aşamaları toplar — sürücünün hangi aşamada olduğuna bakmaz (ölçüldü: sürücüsü
+ * yalnız ikinci aşamada olan belge de temiz geçiyor). 767-769. assert'ler ise
+ * `string(node-set)` kullanır, yani XPath 1.0 semantiğiyle YALNIZ doküman
+ * sırasındaki İLK `DriverPerson`ı denetler; sürücüleri ilk aşamada tutmak
+ * denetlenen sürücüyü denetlenen konumda tutar.
+ *
+ * ⚠️ AÇIK KALAN: GİB çoklu araçta sürücüyü araca bağlamayı isterse bu eşleşme
+ * girdiye AÇIK bir alan olarak eklenmelidir (örn. sürücü başına araç indeksi).
+ * Bugün böyle bir kural ne kılavuzda ne şematronda vardır.
+ */
+export function buildVehicleStages(
+  plates: ReadonlyArray<LicensePlateModel> | undefined,
+  driverPersons: ReadonlyArray<DriverPersonModel> | undefined,
+): ShipmentStageModel[] {
+  /* Plakasız hâl (yalnız taşıyıcı firma, ya da doğrulama kapatılmış çağrı):
+   * tek aşama yazılır ve sürücüler oraya girer — yerleşik davranışın aynısı. */
+  if (!plates || plates.length === 0) return [{ driverPersons }];
+
+  return plates.map((plate, index) =>
+    index === 0 ? { licensePlate: plate, driverPersons } : { licensePlate: plate },
+  );
 }
 
 /** `cac:TransportHandlingUnit` modeli — paket (fatura), dorse (irsaliye), gümrük beyanı (702). */
@@ -237,13 +327,14 @@ function serializeGoodsItem(item: GoodsItemModel, indent: string): string {
 
 /**
  * `cac:ShipmentStage` → XML. Sıra: `SHIPMENT_STAGE_SEQ`
- * (`TransportModeCode` #2 → `TransportMeans` #7 → `DriverPerson` #8).
+ * (`ID` #1 → `TransportModeCode` #2 → `TransportMeans` #7 → `DriverPerson` #8).
  */
 function serializeShipmentStage(stage: ShipmentStageModel, indent: string): string {
   const i2 = indent + '  ';
   const inner = emitInOrder(SHIPMENT_STAGE_SEQ, {
+    ID: () => cbcOptionalTag('ID', stage.id),
     TransportModeCode: () => cbcOptionalTag('TransportModeCode', stage.transportModeCode),
-    TransportMeans: () => serializeTransportMeans(stage.licensePlates, i2),
+    TransportMeans: () => serializeTransportMeans(stage.licensePlate, i2),
     // B-20 + AR-2: her sürücü için ayrı `cac:DriverPerson` (XSD maxOccurs=unbounded).
     DriverPerson: () =>
       joinLines((stage.driverPersons ?? []).map(dp => serializeDriverPerson(dp, i2))),
@@ -255,23 +346,25 @@ function serializeShipmentStage(stage: ShipmentStageModel, indent: string): stri
   ]);
 }
 
-/** `cac:TransportMeans` → `cac:RoadTransport` → `cbc:LicensePlateID`. Sıra: TRANSPORT_MEANS/ROAD_TRANSPORT_SEQ. */
+/**
+ * `cac:TransportMeans` → `cac:RoadTransport` → `cbc:LicensePlateID`.
+ * Sıra: TRANSPORT_MEANS/ROAD_TRANSPORT_SEQ.
+ *
+ * TEK plaka alır: `RoadTransportType` XSD'de `cbc:LicensePlateID`i 1..1 kılar
+ * (`UBL-CommonAggregateComponents-2.1.xsd:2578`). İkinci araç ikinci
+ * `cac:ShipmentStage`e gider (`buildVehicleStages`), ikinci plaka BURAYA değil.
+ */
 function serializeTransportMeans(
-  plates: ShipmentStageModel['licensePlates'],
+  plate: LicensePlateModel | undefined,
   indent: string,
 ): string {
-  if (!plates || plates.length === 0) return '';
+  if (!plate) return '';
   const i2 = indent + '  ';
   const i3 = indent + '    ';
 
   const roadInner = emitInOrder(ROAD_TRANSPORT_SEQ, {
     LicensePlateID: () =>
-      joinLines(
-        plates.map(
-          lp =>
-            `${i3}${cbcOptionalTag('LicensePlateID', lp.plateNumber, lp.schemeId ? { schemeID: lp.schemeId } : undefined)}`,
-        ),
-      ),
+      `${i3}${cbcOptionalTag('LicensePlateID', plate.plateNumber, plate.schemeId ? { schemeID: plate.schemeId } : undefined)}`,
   });
   const meansInner = emitInOrder(TRANSPORT_MEANS_SEQ, {
     RoadTransport: () =>

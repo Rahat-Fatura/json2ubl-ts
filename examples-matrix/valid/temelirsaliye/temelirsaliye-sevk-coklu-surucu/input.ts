@@ -60,8 +60,8 @@ export const input: DespatchInput = {
         schemeId: 'PLAKA',
       },
       {
-        plateNumber: '34XYZ991',
-        schemeId: 'DORSE',
+        plateNumber: '06XYZ991',
+        schemeId: 'PLAKA',
       },
     ],
   },

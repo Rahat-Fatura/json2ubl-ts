@@ -49,10 +49,11 @@ export const input: DespatchInput = {
       postalZone: '34760',
       country: 'Türkiye',
     },
-    /* 🔴 ÇEKİCİ TEK SATIR. `cac:RoadTransport` içinde XSD TEK `cbc:LicensePlateID`
-       kabul eder; dorse buraya İKİNCİ satır olarak yazılamaz. Kanonik yeri
-       aşağıdaki `transportHandlingUnits`tir (B-49) — bu örnek dorseyi eskiden
-       İKİ YERDE birden taşıyordu ve belge bu yüzden geçersizdi. */
+    /* 🔴 BU SENARYODA ÇEKİCİ TEK: `licensePlates`teki HER KAYIT AYRI BİR ARAÇTIR
+       ve ayrı bir `cac:ShipmentStage` üretir (çoklu araç böyle bildirilir).
+       Dorse ise araç DEĞİL ekipmandır; kanonik yeri aşağıdaki
+       `transportHandlingUnits`tir (B-49) — bu örnek dorseyi eskiden İKİ YERDE
+       birden taşıyordu ve belge bu yüzden geçersizdi. */
     licensePlates: [
       { plateNumber: '34ABC123', schemeId: 'PLAKA' },
     ],

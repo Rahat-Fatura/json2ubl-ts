@@ -75,7 +75,6 @@
       <cac:TransportMeans>
         <cac:RoadTransport>
           <cbc:LicensePlateID schemeID="PLAKA">34ABC123</cbc:LicensePlateID>
-          <cbc:LicensePlateID schemeID="DORSE">34DRS456</cbc:LicensePlateID>
         </cac:RoadTransport>
       </cac:TransportMeans>
       <cac:DriverPerson>
@@ -100,6 +99,11 @@
         <cbc:ActualDespatchTime>14:00:00</cbc:ActualDespatchTime>
       </cac:Despatch>
     </cac:Delivery>
+    <cac:TransportHandlingUnit>
+      <cac:TransportEquipment>
+        <cbc:ID schemeID="DORSEPLAKA">34DRS456</cbc:ID>
+      </cac:TransportEquipment>
+    </cac:TransportHandlingUnit>
   </cac:Shipment>
   <cac:DespatchLine>
     <cbc:ID>1</cbc:ID>

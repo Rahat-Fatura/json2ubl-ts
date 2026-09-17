@@ -191,13 +191,15 @@ function buildShipment(shipment: SimpleShipmentInput): DespatchShipmentInput {
     result.carrierParty = mapSimpleParty(shipment.carrier);
   }
 
+  /* Çekiciler 1:1 taşınır; N kayıt serileştiricide N `cac:ShipmentStage` olur
+   * (`buildVehicleStages`). Eşleyici aşama kurmaz — XML şekli kararı orada. */
   if (shipment.licensePlates?.length) {
     result.licensePlates = shipment.licensePlates.map(buildLicensePlate);
   }
 
   /* B-49: dorse plakası AYRI düğüme gider (`TransportHandlingUnit/TransportEquipment`).
-   * `licensePlates`e ikinci eleman eklemek XSD'yi ihlal ederdi — gerekçe
-   * `SimpleTrailerPlateInput` JSDoc'unda. */
+   * Dorse bir çekici DEĞİLDİR: `licensePlates`e konsa ikinci bir araç olarak
+   * beyan edilirdi — gerekçe `SimpleTrailerPlateInput` JSDoc'unda. */
   if (shipment.trailerPlates?.length) {
     result.transportHandlingUnits = shipment.trailerPlates.map(plate => ({
       transportEquipmentId: plate.value,

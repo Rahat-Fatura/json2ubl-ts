@@ -63,11 +63,31 @@ export interface DespatchShipmentInput {
   actualDespatchTime: string;
   /** Teslimat adresi — zorunlu */
   deliveryAddress: AddressInput;
-  /** Sürücüler — sürücü (en az 1) veya taşıyıcı zorunlu (AR-2: çoklu destek) */
+  /**
+   * Sürücüler — sürücü (en az 1) veya taşıyıcı zorunlu (AR-2: çoklu destek).
+   *
+   * Çoklu araçta sürücülerin TAMAMI İLK `cac:ShipmentStage`e yazılır: girdide
+   * plaka↔sürücü bağı yoktur ve GİB kılavuzlarında böyle bir eşleşme kuralı da
+   * yoktur (kılavuzun tek örneği iki sürücüyü TEK aşamada gösterir). Gerekçenin
+   * tamamı `serializers/delivery-serializer.ts` → `buildVehicleStages`.
+   */
   driverPersons?: DriverPersonInput[];
   /** Taşıyıcı firma — sürücü veya taşıyıcı zorunlu */
   carrierParty?: CarrierPartyInput;
-  /** Plaka bilgileri (TransportMeans/RoadTransport/LicensePlateID path) */
+  /**
+   * ÇEKİCİ plakaları — her kayıt BİR ARAÇTIR
+   * (`ShipmentStage/TransportMeans/RoadTransport/LicensePlateID`).
+   *
+   * XSD bir aşamaya TEK plaka bırakır (`RoadTransportType` → 1..1), bu yüzden
+   * N plaka N `cac:ShipmentStage` olarak yazılır — çoklu araç desteği budur
+   * (canlı doğrulayıcıda XSD + şematron temiz ölçüldü).
+   *
+   * 🔴 DORSE/RÖMORK BURAYA YAZILMAZ. Kanonik yeri `transportHandlingUnits`tir
+   * (`cac:TransportHandlingUnit/cac:TransportEquipment/cbc:ID`, B-49); GİB'in
+   * kendi örneği de dorseyi aşamanın DIŞINDA gösterir. Dorseyi çekici gibi
+   * yazmak belgeyi artık geçersiz kılmaz ama YANLIŞ BEYAN eder — dorse ayrı bir
+   * araç değildir, bir ekipmandır.
+   */
   licensePlates?: LicensePlateInput[];
   /** B-72: Shipment/cbc:ID değeri (default: '1') */
   shipmentId?: string;

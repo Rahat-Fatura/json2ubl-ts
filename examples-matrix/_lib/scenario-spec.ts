@@ -47,8 +47,17 @@ export interface ScenarioDimensions {
 }
 
 export interface DespatchDimensions {
-  /** Plaka tipleri (ör. ['PLAKA'], ['PLAKA', 'DORSE']) */
+  /**
+   * ÇEKİCİ plaka tipleri — her eleman BİR ARAÇTIR ve ayrı bir
+   * `cac:ShipmentStage` üretir (ör. `['PLAKA']`, `['PLAKA', 'PLAKA']`).
+   *
+   * 🔴 DORSE buraya YAZILMAZ; ayrı `trailerPlates` alanı vardır. İkisi eskiden
+   * aynı dizide toplanıyordu ve fixture'lar dorseyi ikinci ÇEKİCİ gibi beyan
+   * eden — üstelik XSD-geçersiz — XML donduruyordu.
+   */
   plates: string[];
+  /** Dorse/römork şema tipleri — `TransportHandlingUnit/TransportEquipment` yolu. */
+  trailerPlates?: string[];
   /** Sürücü sayısı */
   driverCount: number;
   /** Satır sayısı */
@@ -59,8 +68,18 @@ export interface DespatchDimensions {
   specialIdentifiers: string[];
 }
 
-/** Review durumu — 'needs-manual-check' işaretli klasörleri scaffold atlar. */
-export type ReviewStatus = 'auto-ok' | 'needs-manual-check';
+/**
+ * Review durumu — üç değer, ÜÇ FARKLI güç seviyesi (`meta-integrity.test.ts`
+ * beyaz listesiyle aynı küme):
+ *
+ *   auto-ok             — iskele üretti, kimse bakmadı. En ZAYIF sinyal.
+ *   needs-manual-check  — bilinen bir şüphe var; scaffold bu klasörü ATLAR.
+ *   schematron-verified — çıktı CANLI GİB paketine sorulmuş, temiz dönmüştür.
+ *
+ * ⚠️ Üçüncüsü testin beyaz listesinde vardı ama bu tipte YOKTU; spec yazan
+ * kimse onu seçemiyordu. Tip testin gerisinde kalmıştı, eşitlendi.
+ */
+export type ReviewStatus = 'auto-ok' | 'needs-manual-check' | 'schematron-verified';
 
 /** Fatura (invoice) valid senaryo spec'i. */
 export interface ValidInvoiceSpec {
