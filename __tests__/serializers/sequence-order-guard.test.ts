@@ -13,6 +13,8 @@ import type { DeliveryInput } from '../../src/types/common';
 import { GOLDEN_SCENARIOS } from '../golden/scenarios';
 import { SimpleSelfEmployedVoucherBuilder } from '../../src/documents/self-employed-voucher';
 import { SELF_EMPLOYED_VOUCHER_SCENARIOS } from '../self-employed-voucher/scenarios';
+import { SimpleProducerReceiptBuilder } from '../../src/documents/producer-receipt';
+import { PRODUCER_RECEIPT_SCENARIOS } from '../producer-receipt/scenarios';
 
 /**
  * SEKANS BEKÇİSİ — "tablolar gerçekten taşıyıcı mı?" sorusunun tek kanıtı.
@@ -335,6 +337,23 @@ describe('sekans bekçisi — canlı üretilen XML sırası tabloların alt-dizi
     },
   );
 
+  /* 🔴 e-MM `CreditNote` KÖKLÜDÜR — kapsamın kendiliğinden gelmediği tek yer
+   * burasıdır ve bekçi bunu S5b'de KIRMIZIYLA söyledi: `CREDIT_NOTE_SEQ` ve
+   * `CREDIT_NOTE_LINE_SEQ` tabloları eklenir eklenmez "sınanmamış tablo" testi
+   * düştü. Sıra farkı da gerçek: `CreditNoteLineType`ta `cac:TaxTotal`
+   * `cac:AllowanceCharge`dan ÖNCE gelir (faturada TERSİ) — `e-dovizli-iskontolu`
+   * senaryosu o dalı DOLDURUR, yani fark burada gerçekten ölçülür. */
+  it.each(PRODUCER_RECEIPT_SCENARIOS.map(s => [s.slug, s.input] as const))(
+    'emm/%s',
+    (slug, input) => {
+      const xml = new SimpleProducerReceiptBuilder({
+        prettyPrint: true,
+        validationLevel: 'strict',
+      }).build(input).xml;
+      expect(violationsIn(xml, `emm/${slug}`)).toEqual([]);
+    },
+  );
+
   it('sentetik ActualPackage parçası (PACKAGE_SEQ + CUSTOMS_DECLARATION_SEQ)', () => {
     const xml = syntheticPackageXml();
     expect(xml).toContain('<cac:ActualPackage>');
@@ -407,7 +426,8 @@ describe('sekans bekçisi — kapsam', () => {
     // Bu test korpus testlerinden SONRA koşar (vitest dosya içi sırayı korur),
     // `exercisedTypes` o koşumlarda dolar.
     const all = Object.keys(SEQUENCE_BY_COMPLEX_TYPE).sort();
-    expect(all.length).toBe(47);
+    // 47 → 49: S5b'de `CreditNoteType` + `CreditNoteLineType` eklendi.
+    expect(all.length).toBe(49);
     expect(all.filter(t => !exercisedTypes.has(t))).toEqual([]);
   });
 });

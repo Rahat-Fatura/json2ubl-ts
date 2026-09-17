@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CreditNote xmlns="urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2"
+  xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+  xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+  xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
+  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+  xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2 UBL-CreditNote-2.1.xsd">
+  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+  <cbc:CustomizationID>TR1.2</cbc:CustomizationID>
+  <cbc:ProfileID>EARSIVBELGE</cbc:ProfileID>
+  <cbc:ID>MMB2026000000003</cbc:ID>
+  <cbc:CopyIndicator>false</cbc:CopyIndicator>
+  <cbc:UUID>33333333-2222-4333-8444-555555555555</cbc:UUID>
+  <cbc:IssueDate>2026-09-16</cbc:IssueDate>
+  <cbc:IssueTime>14:30:00</cbc:IssueTime>
+  <cbc:CreditNoteTypeCode>MUSTAHSILMAKBUZ</cbc:CreditNoteTypeCode>
+  <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
+  <cbc:LineCountNumeric>1</cbc:LineCountNumeric>
+  <cac:AdditionalDocumentReference>
+    <cbc:ID>ELEKTRONIK</cbc:ID>
+    <cbc:IssueDate>2026-09-16</cbc:IssueDate>
+    <cbc:DocumentTypeCode>EXT_SEND_METHOD</cbc:DocumentTypeCode>
+  </cac:AdditionalDocumentReference>
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">1234567890</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>Ornek Sebze Meyve Tic. A.S.</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Hal Cd. No:1</cbc:StreetName>
+        <cbc:CitySubdivisionName>Kocasinan</cbc:CitySubdivisionName>
+        <cbc:CityName>Kayseri</cbc:CityName>
+        <cbc:PostalZone>38100</cbc:PostalZone>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cac:TaxScheme>
+          <cbc:Name>Kocasinan</cbc:Name>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+      <cac:Contact>
+        <cbc:Telephone>+90 352 000 00 00</cbc:Telephone>
+        <cbc:ElectronicMail>ornek@ornek.test</cbc:ElectronicMail>
+      </cac:Contact>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="TCKN">11111111110</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PostalAddress>
+        <cbc:StreetName>Koy Mah. 3. Sk. No:5</cbc:StreetName>
+        <cbc:CitySubdivisionName>Melikgazi</cbc:CitySubdivisionName>
+        <cbc:CityName>Kayseri</cbc:CityName>
+        <cbc:PostalZone>38200</cbc:PostalZone>
+        <cac:Country>
+          <cbc:Name>Türkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:Person>
+        <cbc:FirstName>Ahmet</cbc:FirstName>
+        <cbc:FamilyName>Ciftci</cbc:FamilyName>
+      </cac:Person>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:Delivery>
+    <cbc:ActualDeliveryDate>2026-09-15</cbc:ActualDeliveryDate>
+  </cac:Delivery>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="TRY">576.00</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="TRY">18000.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="TRY">360.00</cbc:TaxAmount>
+      <cbc:Percent>2.00</cbc:Percent>
+            <cac:TaxCategory>
+                <cac:TaxScheme>
+          <cbc:Name>Gelir Vergisi Stopajı</cbc:Name>
+          <cbc:TaxTypeCode>0003</cbc:TaxTypeCode>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="TRY">18000.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="TRY">36.00</cbc:TaxAmount>
+      <cbc:Percent>0.20</cbc:Percent>
+            <cac:TaxCategory>
+                <cac:TaxScheme>
+          <cbc:Name>Borsa Tescil Ücreti</cbc:Name>
+          <cbc:TaxTypeCode>8001</cbc:TaxTypeCode>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="TRY">18000.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="TRY">180.00</cbc:TaxAmount>
+      <cbc:Percent>1.00</cbc:Percent>
+            <cac:TaxCategory>
+                <cac:TaxScheme>
+          <cbc:Name>SGK Prim Kesintisi</cbc:Name>
+          <cbc:TaxTypeCode>SGK_PRIM</cbc:TaxTypeCode>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="TRY">18000.00</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="TRY">18000.00</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="TRY">17424.00</cbc:TaxInclusiveAmount>
+    <cbc:AllowanceTotalAmount currencyID="TRY">0.00</cbc:AllowanceTotalAmount>
+    <cbc:PayableAmount currencyID="TRY">17424.00</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  <cac:CreditNoteLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:CreditedQuantity unitCode="KGM">400.00</cbc:CreditedQuantity>
+    <cbc:LineExtensionAmount currencyID="TRY">18000.00</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="TRY">576.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="TRY">18000.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="TRY">360.00</cbc:TaxAmount>
+        <cbc:Percent>2.00</cbc:Percent>
+                <cac:TaxCategory>
+                    <cac:TaxScheme>
+            <cbc:Name>Gelir Vergisi Stopajı</cbc:Name>
+            <cbc:TaxTypeCode>0003</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="TRY">18000.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="TRY">36.00</cbc:TaxAmount>
+        <cbc:Percent>0.20</cbc:Percent>
+                <cac:TaxCategory>
+                    <cac:TaxScheme>
+            <cbc:Name>Borsa Tescil Ücreti</cbc:Name>
+            <cbc:TaxTypeCode>8001</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="TRY">18000.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="TRY">180.00</cbc:TaxAmount>
+        <cbc:Percent>1.00</cbc:Percent>
+                <cac:TaxCategory>
+                    <cac:TaxScheme>
+            <cbc:Name>SGK Prim Kesintisi</cbc:Name>
+            <cbc:TaxTypeCode>SGK_PRIM</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Name>Cilek</cbc:Name>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="TRY">45.00</cbc:PriceAmount>
+    </cac:Price>
+  </cac:CreditNoteLine>
+</CreditNote>
