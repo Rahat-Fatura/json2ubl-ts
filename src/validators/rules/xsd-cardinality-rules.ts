@@ -171,23 +171,25 @@ export interface DocumentReferenceCardinalityFields {
  * <xsd:element ref="cbc:IssueDate"/>       <!-- minOccurs YOK → 1..1 -->
  * ```
  *
- * `cac:IdentityDocumentReference` (YOLCUBERABER pasaportu) da bu tiptendir:
- * `serializeIdentityDocumentReference` yalnız `cbc:ID` yazar, tarih YAZMAZ.
+ * `cac:IdentityDocumentReference` (YOLCUBERABER pasaportu) da bu tiptendir.
  * Canlı: «"IdentityDocumentReference" elementinin içeriği eksik. Zorunlu
  * element(ler): IssueDate.»
  *
- * 🔴 ÖLÇÜLMÜŞ ÇIKMAZ — `M6/B-32`den FARKI budur: `validateDocumentReference`
- * (sipariş/irsaliye/fatura referansları) aynı kuralı zaten uygular ÇÜNKÜ o
- * girdilerde `issueDate` ALANI VAR. Pasaportta ALAN YOK: ne `PartyInput`te
- * ne `SimpleBuyerCustomerInput`ta bir "pasaport düzenlenme tarihi" slotu
- * bulunuyor (ölçüldü: `grep -rn "passport" src/` → 10 isabet, hiçbiri tarih).
- * Bu yüzden kural bugün KAPATILAMAZ: pasaportlu her YOLCUBERABER faturası
- * hata verir. Bu kasıtlıdır — alternatifi, bilerek geçersiz XML üretip
- * kullanıcıyı GİB kapısında öğrenmeye bırakmaktı.
- * Kapatma yolu bir ÜRÜN kararıdır ve S3 kapsamı dışında bırakılmıştır:
- *   (a) `PartyInput`e `passportIssueDate` eklenip serileştiricide emit edilir, ya da
- *   (b) tarih üretilemeyeceği kabul edilip `cac:IdentityDocumentReference`
- *       düğümü hiç yazılmaz (pasaport numarası başka bir düğüme taşınır).
+ * ── S3'te ÇIKMAZDI — ARTIK DEĞİL: girdi YÜZEYİ genişletildi
+ * `M6/B-32`den farkı buydu: `validateDocumentReference` (sipariş/irsaliye/
+ * fatura referansları) aynı kuralı zaten uyguluyordu ÇÜNKÜ o girdilerde
+ * `issueDate` ALANI VARDI. Pasaportta ALAN YOKTU — ne `PartyInput`te ne
+ * `SimpleBuyerCustomerInput`ta bir "pasaport düzenlenme tarihi" slotu vardı,
+ * dolayısıyla kural doğru olduğu hâlde KAPATILAMIYORDU. S3 JSDoc'unda sayılan
+ * iki yoldan (a) uygulandı: `PartyInput.passportIssueDate` ←
+ * `SimpleBuyerCustomerInput.passportIssueDate` eklendi ve
+ * `serializeIdentityDocumentReference` artık `cbc:IssueDate` emit ediyor.
+ *
+ * ⚠️ Kural GEVŞEMEDİ: pasaport numarası verilip TARİH verilmeyen belge hâlâ
+ * durur. Normatif lafız tarihi ZORUNLU kılar ve yazılamadığı durumda
+ * `2005-01-01` sabitine izin verir (Gümrük İşlemleri Kılavuzu V1.8 §4.2.1;
+ * UBL-TR Common Schematron §170 `IssueDate >= 2005-01-01` ile uyumludur) — o
+ * sabiti KÜTÜPHANE KOYMAZ, veri uydurmak olurdu; çağıran bilerek verir.
  */
 export function documentReferenceCardinalityRule(
   ref: DocumentReferenceCardinalityFields | undefined,

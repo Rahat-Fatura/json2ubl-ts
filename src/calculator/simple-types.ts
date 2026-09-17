@@ -510,14 +510,50 @@ export interface SimpleBuyerCustomerInput {
      */
     identifications?: Array<{ schemeId: string; value: string; }>;
     /**
+     * Turistin ADI — `cac:BuyerCustomerParty/cac:Party/cac:Person/cbc:FirstName`.
+     *
+     * YOLCUBERABERFATURA'da ZORUNLUDUR: «Person/FirstName: Turistin adı
+     * zorunludur.» (Gümrük İşlemleri Kılavuzu V1.8 §4.2.1). XSD'de de
+     * `PersonType/cbc:FirstName` **1..1**'dir — `cac:Person` düğümü yazıldığı
+     * her yerde zorunludur.
+     *
+     * ⚠️ `name` alanından TÜRETİLMEZ: `name` unvan alanıdır
+     * (`cac:PartyName/cbc:Name` + `PartyLegalEntity/RegistrationName`) ve
+     * "Michael Schneider (Tourist)" gibi serbest değerler taşır; pasaporttaki
+     * ad/soyad ayrımını ondan çıkarmak veri UYDURMAK olurdu.
+     */
+    firstName?: string;
+    /**
+     * Turistin SOYADI — `cac:Person/cbc:FamilyName`.
+     * «Person/FamilyName: Turistin soyadı zorunludur.» (Kılavuz V1.8 §4.2.1);
+     * XSD `PersonType/cbc:FamilyName` **1..1**.
+     */
+    familyName?: string;
+    /**
      * Uyruk (ISO 3166-1 alpha-2 ülke kodu, ör. 'DE', 'US') —
      * YOLCUBERABERFATURA profili için zorunlu (B-NEW-13 / Sprint 8c.4).
+     *
+     * Normatif: «Person/NationalityID: Turistin uyruğu (Pasaportunda belirtilen
+     * ülke) zorunludur. ISO 3166-1-alpha-2 Ülke Kodları Listesinden Değer
+     * Girilmelidir.» (Kılavuz V1.8 §4.2.1)
      */
     nationalityId?: string;
     /**
      * Pasaport numarası — YOLCUBERABERFATURA profili için zorunlu (B-NEW-13).
+     * `cac:Person/cac:IdentityDocumentReference/cbc:ID`.
      */
     passportId?: string;
+    /**
+     * Pasaportun VERİLDİĞİ tarih (`YYYY-MM-DD`) —
+     * `cac:Person/cac:IdentityDocumentReference/cbc:IssueDate`.
+     *
+     * 🔴 İbraz/satış tarihi DEĞİLDİR. «IdentityDocumentReference/IssueDate:
+     * Pasaportun verildiği tarih zorunludur. Tarih yazılamıyorsa 2005-01-01
+     * sabit değeri yazılabilir.» (Kılavuz V1.8 §4.2.1). XSD
+     * `DocumentReferenceType/cbc:IssueDate` **1..1**; `passportId` verilip bu
+     * alan boş bırakılırsa üretim XSD kardinalite hatasıyla durur.
+     */
+    passportIssueDate?: string;
 }
 
 /**
@@ -529,10 +565,40 @@ export interface SimpleBuyerCustomerInput {
 export interface SimpleTaxRepresentativeInput {
     /** ARACIKURUMVKN — VKN (10 hane) veya TCKN (11 hane) */
     vknTckn: string;
-    /** ARACIKURUMETIKET — aracı kurum etiket adı */
+    /**
+     * ARACIKURUMETIKET — aracı kurum posta kutusu etiketi.
+     *
+     * Kılavuz V1.8 §4.2.1 tavsiyesi: gümrük onay mesajları ile gelen faturaları
+     * ayrıştırmak isteyen aracı kurumlar için
+     * `urn:mail:yolcuberaberpk@sirketkisaad.com.tr` biçimi uygundur.
+     */
     label: string;
-    /** Aracı kurum tüzel adı (opsiyonel) */
+    /** Aracı kurum tüzel adı (unvan) — `cac:PartyName/cbc:Name` (opsiyonel) */
     name?: string;
+
+    // ── Aracı kurum adresi — `cac:TaxRepresentativeParty/cac:PostalAddress` ──
+    //
+    // 🔴 XSD'de 1..1: `cac:TaxRepresentativeParty` bir UBL `PartyType`tır ve
+    // `cac:PostalAddress` onda ZORUNLUDUR. Alanlar tipte OPSİYONELDİR (aracı
+    // kurum yalnız YOLCUBERABERFATURA'da vardır), ama aracı kurum verildiğinde
+    // `district` + `city` fiilen zorunludur — eksikse S3 kardinalite kapısı
+    // («TaxRepresentativeParty içeriği eksik. Zorunlu element(ler):
+    // PostalAddress») üretimi durdurur. Kılavuz lafzı: "Postal Adres: Aracı
+    // kurumun adres bilgileri" (V1.8 §4.2.1).
+    //
+    // Adlandırma `SimplePartyInput` ile birebir aynıdır (address/district/
+    // city/country/zipCode) — aynı kavram için ikinci bir sözlük açılmaz.
+
+    /** Aracı kurumun açık adresi — `cbc:StreetName` */
+    address?: string;
+    /** Aracı kurumun ilçesi — `cbc:CitySubdivisionName` (adres yazılıyorsa zorunlu) */
+    district?: string;
+    /** Aracı kurumun ili — `cbc:CityName` (adres yazılıyorsa zorunlu) */
+    city?: string;
+    /** Aracı kurumun ülkesi — `cac:Country/cbc:Name` (varsayılan: "Türkiye") */
+    country?: string;
+    /** Aracı kurumun posta kodu — `cbc:PostalZone` */
+    zipCode?: string;
 }
 
 /** Fatura dönemi (SGK faturaları vb.) */

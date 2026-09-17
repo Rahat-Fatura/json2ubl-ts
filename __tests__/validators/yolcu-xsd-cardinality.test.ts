@@ -9,6 +9,10 @@
  *   Satır 94 : "NationalityID" elementi bu konumda geçersiz. Beklenen: FirstName.
  *   Satır 97 : "IdentityDocumentReference" içeriği eksik. Zorunlu: IssueDate.
  *   Satır 111: "TaxRepresentativeParty" içeriği eksik. Zorunlu: PostalAddress.
+ *
+ * S4 — GİRDİ YÜZEYİ genişletildi: üç kusurun İKİSİ "kural doğru ama
+ * kapatılamıyor" durumundaydı (kullanıcının verecek ALANI yoktu). Dosyanın
+ * sonundaki blok alanların HAM tipten XML'e kadar aktığını kanıtlar.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -20,6 +24,7 @@ import {
 import { validateCommon } from '../../src/validators/common-validators';
 import { InvoiceProfileId, InvoiceTypeCode } from '../../src/types/enums';
 import type { InvoiceInput } from '../../src/types/invoice-input';
+import { SimpleInvoiceBuilder } from '../../src';
 
 /** Kardinalite kuralları DIŞINDA hata üretmeyen en küçük fatura. */
 function baseInvoice(overrides: Partial<InvoiceInput> = {}): InvoiceInput {
@@ -90,7 +95,7 @@ describe('S3 · `cac:Person` — FirstName + FamilyName 1..1', () => {
 });
 
 describe('S3 · `cac:IdentityDocumentReference` — IssueDate 1..1', () => {
-  it('🔴 pasaportlu turist REDDEDİLİR — tarih alanı GİRDİDE YOK', () => {
+  it('🔴 pasaport verilip TARİH verilmeyen turist REDDEDİLİR', () => {
     const errors = cardinality(baseInvoice({
       buyerCustomer: {
         partyType: 'TAXFREE',
@@ -110,12 +115,28 @@ describe('S3 · `cac:IdentityDocumentReference` — IssueDate 1..1', () => {
       .toHaveLength(0);
   });
 
-  it('tarih verilebilseydi kural SUSARDI (yüklem doğru, girdi yüzeyi eksik)', () => {
+  it('tarih verilince yüklem SUSAR', () => {
     expect(documentReferenceCardinalityRule(
       { id: 'N12345678', issueDate: '2020-01-01' },
       'p',
       'IdentityDocumentReference',
     )).toHaveLength(0);
+  });
+
+  it('girdi yüzeyi artık VAR — `passportIssueDate` dolu belge temiz geçer', () => {
+    const errors = cardinality(baseInvoice({
+      buyerCustomer: {
+        partyType: 'TAXFREE',
+        party: {
+          vknTckn: '99999999999', taxIdType: 'TCKN',
+          firstName: 'Michael', familyName: 'Schneider',
+          cityName: 'Berlin', citySubdivisionName: 'Berlin',
+          nationalityId: 'DE', passportId: 'N12345678',
+          passportIssueDate: '2021-06-15',
+        },
+      },
+    }));
+    expect(errors.filter(e => e.path?.startsWith('buyerCustomer'))).toHaveLength(0);
   });
 });
 
@@ -162,5 +183,101 @@ describe('S3 · kardinalite kapısı `basic` seviyede de açıktır', () => {
       taxRepresentativeParty: { intermediaryVknTckn: '9876543210', intermediaryLabel: 'X' },
     }));
     expect(errors.length).toBeGreaterThan(0);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * S4 — GİRDİ YÜZEYİ: dört katman birden
+ *
+ * S3'te üç kural da DOĞRUYDU ama İKİSİ KAPATILAMIYORDU: kullanıcının verecek
+ * alanı yoktu (`passportIssueDate` hiç yok, aracı kurum adresi Simple katmanda
+ * yok, ad/soyad `SimpleBuyerCustomerInput`ta yok). Buradaki testler alanın
+ * HAM tipten XML'e kadar GERÇEKTEN aktığını kanıtlar — bir katmanda kalırsa
+ * alan yarı yolda kaybolur ve kusur sessizce geri döner.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+describe('S4 · girdi yüzeyi dört katmanda da AKIYOR', () => {
+  /** Simple katman → XML (tam boru hattı: mapper + serileştirici). */
+  function buildYolcuXml(overrides: Record<string, unknown> = {}): string {
+    const builder = new SimpleInvoiceBuilder({ prettyPrint: true, validationLevel: 'strict' });
+    return builder.build({
+      id: 'EXA2026000000020',
+      uuid: 'e1a2b3c4-0020-4000-8020-000000000020',
+      datetime: '2026-04-23T10:00:00',
+      profile: 'YOLCUBERABERFATURA',
+      type: 'ISTISNA',
+      currencyCode: 'TRY',
+      kdvExemptionCode: '322',
+      sender: {
+        taxNumber: '1460415308', name: 'Bavul Ticaret Butik A.Ş.', taxOffice: 'Beyoğlu',
+        address: 'İstiklal Caddesi No:321', district: 'Beyoğlu', city: 'İstanbul',
+      },
+      customer: {
+        taxNumber: '9876543210', name: 'Mimsoft Turizm Aracı A.Ş.', taxOffice: 'Fatih',
+        address: 'Cağaloğlu Yokuşu No:42', district: 'Fatih', city: 'İstanbul',
+      },
+      buyerCustomer: {
+        name: 'Michael Schneider (Tourist)', taxNumber: '99999999999',
+        address: 'Hauptstrasse 15', district: 'Berlin', city: 'Berlin', country: 'Germany',
+        firstName: 'Michael', familyName: 'Schneider',
+        nationalityId: 'DE', passportId: 'N12345678', passportIssueDate: '2021-06-15',
+      },
+      taxRepresentativeParty: {
+        vknTckn: '9876543210', label: 'MIMSOFT_TAXFREE_INTERMEDIARY',
+        name: 'Mimsoft Turizm KDV İade Aracı',
+        address: 'Cağaloğlu Yokuşu No:42', district: 'Fatih', city: 'İstanbul',
+      },
+      lines: [{ name: 'El Yapımı Seramik Vazo', quantity: 1, price: 800, unitCode: 'Adet', kdvPercent: 0 }],
+      ...overrides,
+    } as never).xml;
+  }
+
+  it('turistin ad/soyadı `cac:Person`a yazılır (kılavuz §4.2.1 — XSD 1..1)', () => {
+    const xml = buildYolcuXml();
+    expect(xml).toContain('<cbc:FirstName>Michael</cbc:FirstName>');
+    expect(xml).toContain('<cbc:FamilyName>Schneider</cbc:FamilyName>');
+  });
+
+  it('`cbc:FirstName` `NationalityID`den ÖNCE gelir (PERSON_SEQ)', () => {
+    const xml = buildYolcuXml();
+    expect(xml.indexOf('<cbc:FirstName>')).toBeLessThan(xml.indexOf('<cbc:NationalityID>'));
+  });
+
+  it('pasaport tarihi `IdentityDocumentReference/IssueDate`e yazılır', () => {
+    const xml = buildYolcuXml();
+    expect(xml).toContain('<cac:IdentityDocumentReference>');
+    expect(xml).toMatch(
+      /<cac:IdentityDocumentReference>\s*<cbc:ID>N12345678<\/cbc:ID>\s*<cbc:IssueDate>2021-06-15<\/cbc:IssueDate>/,
+    );
+  });
+
+  it('aracı kurumun adresi `TaxRepresentativeParty/PostalAddress`e yazılır (PartyType 1..1)', () => {
+    const xml = buildYolcuXml();
+    const block = /<cac:TaxRepresentativeParty>[\s\S]*?<\/cac:TaxRepresentativeParty>/.exec(xml)?.[0] ?? '';
+    expect(block).toContain('<cac:PostalAddress>');
+    expect(block).toContain('<cbc:CitySubdivisionName>Fatih</cbc:CitySubdivisionName>');
+    expect(block).toContain('<cbc:CityName>İstanbul</cbc:CityName>');
+    // `country` verilmediğinde `mapSimpleParty` ile AYNI varsayılan.
+    expect(block).toContain('<cbc:Name>Türkiye</cbc:Name>');
+  });
+
+  it('🔴 aracı kurumun İLİ eksikse adres HİÇ kurulmaz — yarım adres yazılmaz', () => {
+    expect(() => buildYolcuXml({
+      taxRepresentativeParty: {
+        vknTckn: '9876543210', label: 'MIMSOFT_TAXFREE_INTERMEDIARY',
+        name: 'Mimsoft Turizm KDV İade Aracı',
+        address: 'Cağaloğlu Yokuşu No:42', district: 'Fatih',   // `city` YOK
+      },
+    })).toThrow(/PostalAddress/);
+  });
+
+  it('🔴 ad/soyad `name`den TÜRETİLMEZ — verilmezse kapı AÇIK hata verir', () => {
+    expect(() => buildYolcuXml({
+      buyerCustomer: {
+        name: 'Michael Schneider (Tourist)', taxNumber: '99999999999',
+        address: 'Hauptstrasse 15', district: 'Berlin', city: 'Berlin', country: 'Germany',
+        nationalityId: 'DE', passportId: 'N12345678', passportIssueDate: '2021-06-15',
+      },
+    })).toThrow(/FirstName/);
   });
 });

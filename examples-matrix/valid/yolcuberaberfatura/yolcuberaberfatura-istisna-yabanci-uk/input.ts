@@ -31,13 +31,19 @@ export const input: SimpleInvoiceInput = {
     district: 'Marylebone',
     city: 'London',
     country: 'United Kingdom',
+    firstName: 'John',
+    familyName: 'Smith',
     nationalityId: 'GB',
     passportId: 'GB9876543',
+    passportIssueDate: '2019-03-04',
   },
   taxRepresentativeParty: {
     vknTckn: '9876543210',
     label: 'MATRIX_TAXFREE',
     name: 'Matrix KDV İade Aracı',
+    address: 'Bağdat Cad. No:100',
+    district: 'Kadıköy',
+    city: 'İstanbul',
   },
   lines: [
     {

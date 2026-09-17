@@ -56,8 +56,29 @@ export interface PartyInput {
 
   /** Uyruk — §3.4 YOLCUBERABERFATURA Person için */
   nationalityId?: string;
-  /** Pasaport numarası — §3.4 YOLCUBERABERFATURA için */
+  /**
+   * Pasaport numarası — §3.4 YOLCUBERABERFATURA.
+   * `cac:Person/cac:IdentityDocumentReference/cbc:ID`.
+   *
+   * Normatif: Gümrük İşlemleri Kılavuzu V1.8 §4.2.1 (BuyerCustomerParty) —
+   * «IdentityDocumentReference/ID: Pasaport numarası zorunludur.»
+   */
   passportId?: string;
+  /**
+   * Pasaportun VERİLDİĞİ (düzenlenme) tarihi — `YYYY-MM-DD`.
+   * `cac:Person/cac:IdentityDocumentReference/cbc:IssueDate`.
+   *
+   * 🔴 Bu ibraz/satış tarihi DEĞİLDİR. Normatif lafız (Gümrük İşlemleri
+   * Kılavuzu V1.8 §4.2.1): «IdentityDocumentReference/IssueDate: Pasaportun
+   * verildiği tarih zorunludur. Tarih yazılamıyorsa 2005-01-01 sabit değeri
+   * yazılabilir.» Alt sınır UBL-TR Common Schematron §170 ile uyumludur
+   * (`IssueDate >= 2005-01-01`), kılavuzun sabiti bu yüzden 2005-01-01'dir.
+   *
+   * XSD kanıtı: `DocumentReferenceType/cbc:IssueDate` **1..1** — pasaport
+   * numarası verilip tarih verilmezse GİB «"IdentityDocumentReference"
+   * elementinin içeriği eksik. Zorunlu element(ler): IssueDate» der.
+   */
+  passportIssueDate?: string;
 }
 
 /** BuyerCustomerParty — §3.3 IHRACAT / §3.4 YOLCUBERABERFATURA / §3.6 KAMU */
@@ -67,7 +88,13 @@ export interface BuyerCustomerInput {
   party: PartyInput;
 }
 
-/** TaxRepresentativeParty — §3.4 YOLCUBERABERFATURA */
+/**
+ * TaxRepresentativeParty — §3.4 YOLCUBERABERFATURA "Aracı Kurum Bilgileri".
+ *
+ * Normatif (Gümrük İşlemleri Kılavuzu V1.8 §4.2.1): ARACIKURUMVKN ve
+ * ARACIKURUMETIKET zorunlu, `PartyName/Name` aracı kurumun unvanı,
+ * "Postal Adres: Aracı kurumun adres bilgileri".
+ */
 export interface TaxRepresentativeInput {
   /** Aracı kurum VKN veya TCKN (10-11 hane) */
   intermediaryVknTckn: string;
@@ -77,7 +104,14 @@ export interface TaxRepresentativeInput {
   additionalIdentifiers?: PartyIdentifierInput[];
   /** Aracı kurum tüzel adı — B-37 cac:PartyName/cbc:Name */
   name?: string;
-  /** Aracı kurum posta adresi — B-37 cac:PostalAddress */
+  /**
+   * Aracı kurum posta adresi — B-37 `cac:PostalAddress`.
+   *
+   * ⚠️ TİPTE opsiyonel, XSD'de 1..1: `cac:TaxRepresentativeParty` bir UBL
+   * `PartyType`tır ve `cac:PostalAddress` onda ZORUNLUDUR. Düğüm yazılıp adres
+   * verilmezse `partyPostalAddressCardinalityRule` (S3) hata verir — tip
+   * opsiyonelliği yalnız "aracı kurum hiç yoksa" hâli içindir.
+   */
   postalAddress?: AddressInput;
 }
 

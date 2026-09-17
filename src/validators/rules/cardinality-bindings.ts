@@ -66,11 +66,12 @@ export const INVOICE_CARDINALITY_BINDINGS: readonly CardinalityBinding<InvoiceIn
     i => {
       const party = i.buyerCustomer?.party;
       if (!party) return undefined;
-      /* ⛔️ `issueDate` BİLEREK `undefined`: `PartyInput`te pasaport düzenlenme
-       * tarihi ALANI YOKTUR. Yüklem bu yüzden pasaportlu her belgede tetiklenir
-       * ve bu DOĞRU davranıştır — gerekçe ve kapatma seçenekleri
-       * `documentReferenceCardinalityRule` JSDoc'unda. */
-      return { id: party.passportId, issueDate: undefined };
+      /* S3'te bu alan `undefined` SABİTLENMİŞTİ: `PartyInput`te pasaport
+       * düzenlenme tarihi SLOTU YOKTU, yani kural doğruydu ama KAPATILAMIYORDU.
+       * Girdi yüzeyi genişletildi (`PartyInput.passportIssueDate` ←
+       * `SimpleBuyerCustomerInput.passportIssueDate`); yüklem artık GERÇEK
+       * değeri görür — tarihi veren belge temiz geçer, vermeyen hâlâ durur. */
+      return { id: party.passportId, issueDate: party.passportIssueDate };
     },
     (ref, path) => documentReferenceCardinalityRule(ref, path, 'IdentityDocumentReference'),
   ),

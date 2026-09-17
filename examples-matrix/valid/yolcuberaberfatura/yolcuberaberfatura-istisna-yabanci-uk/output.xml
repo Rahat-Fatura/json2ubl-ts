@@ -88,9 +88,12 @@
         <cbc:RegistrationName>John Smith</cbc:RegistrationName>
       </cac:PartyLegalEntity>
       <cac:Person>
+        <cbc:FirstName>John</cbc:FirstName>
+        <cbc:FamilyName>Smith</cbc:FamilyName>
         <cbc:NationalityID>GB</cbc:NationalityID>
         <cac:IdentityDocumentReference>
           <cbc:ID>GB9876543</cbc:ID>
+          <cbc:IssueDate>2019-03-04</cbc:IssueDate>
         </cac:IdentityDocumentReference>
       </cac:Person>
     </cac:Party>
@@ -105,6 +108,14 @@
     <cac:PartyName>
       <cbc:Name>Matrix KDV İade Aracı</cbc:Name>
     </cac:PartyName>
+    <cac:PostalAddress>
+      <cbc:StreetName>Bağdat Cad. No:100</cbc:StreetName>
+      <cbc:CitySubdivisionName>Kadıköy</cbc:CitySubdivisionName>
+      <cbc:CityName>İstanbul</cbc:CityName>
+      <cac:Country>
+        <cbc:Name>Türkiye</cbc:Name>
+      </cac:Country>
+    </cac:PostalAddress>
   </cac:TaxRepresentativeParty>
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="TRY">0.00</cbc:TaxAmount>

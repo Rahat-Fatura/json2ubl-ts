@@ -68,6 +68,8 @@ export interface PersonModel {
   middleName?: string;
   nationalityId?: string;
   passportId?: string;
+  /** Pasaportun verildiği tarih — `cac:IdentityDocumentReference/cbc:IssueDate` (1..1). */
+  passportIssueDate?: string;
 }
 
 /** `cac:Contact` alanları. */
@@ -149,7 +151,7 @@ function partyInputToModel(party: PartyInput): PartyBodyModel {
   };
 }
 
-/** `PartyInput`in kişi alanları — üç çağıran da aynı beşliyi okur. */
+/** `PartyInput`in kişi alanları — üç çağıran da aynı altılıyı okur. */
 function personFieldsOf(party: PartyInput): PersonModel {
   return {
     firstName: party.firstName,
@@ -157,6 +159,7 @@ function personFieldsOf(party: PartyInput): PersonModel {
     middleName: party.middleName,
     nationalityId: party.nationalityId,
     passportId: party.passportId,
+    passportIssueDate: party.passportIssueDate,
   };
 }
 
@@ -263,7 +266,8 @@ function serializePersonBlock(p: PersonModel, indent: string): string {
     FamilyName: () => cbcOptionalTag('FamilyName', p.familyName),
     MiddleName: () => cbcOptionalTag('MiddleName', p.middleName),
     NationalityID: () => cbcOptionalTag('NationalityID', p.nationalityId),
-    IdentityDocumentReference: () => serializeIdentityDocumentReference(p.passportId, i2),
+    IdentityDocumentReference: () =>
+      serializeIdentityDocumentReference(p.passportId, p.passportIssueDate, i2),
   });
   const body = joinLines(inner.map(s => (s.startsWith(i2) ? s : i2 + s)));
   if (body === '') return '';
@@ -275,11 +279,24 @@ function serializePersonBlock(p: PersonModel, indent: string): string {
  *
  * Belge referansının diğer üreticileriyle (`reference-serializer`) aynı tabloyu
  * kullanır; `cbc:IssueDate`in UBL-TR'de 1..1 olduğu oradan da bilinir.
+ *
+ * 🔴 `cbc:IssueDate` EMİT ANINDA ZORUNLUDUR (`cbcRequiredTag`) — adres
+ * gövdesindeki `CityName`/`CitySubdivisionName` ile AYNI doktrin: zorunluluk
+ * tipte değil emit anında uygulanır, böylece ham katmanı doğrudan çağıran da
+ * (doğrulayıcıyı atlayarak) sessizce geçersiz XML üretemez. Tarih pasaportun
+ * VERİLDİĞİ tarihtir; kılavuz yazılamadığı durumda `2005-01-01` sabitine izin
+ * verir (Gümrük İşlemleri Kılavuzu V1.8 §4.2.1) — o sabiti KÜTÜPHANE KOYMAZ,
+ * veri uydurmak olurdu; çağıran bilerek verir.
  */
-function serializeIdentityDocumentReference(passportId: string | undefined, indent: string): string {
+function serializeIdentityDocumentReference(
+  passportId: string | undefined,
+  passportIssueDate: string | undefined,
+  indent: string,
+): string {
   if (!isNonEmpty(passportId)) return '';
   const inner = emitInOrder(DOCUMENT_REFERENCE_SEQ, {
     ID: () => cbcRequiredTag('ID', passportId, 'IdentityDocumentReference'),
+    IssueDate: () => cbcRequiredTag('IssueDate', passportIssueDate, 'IdentityDocumentReference'),
   });
   return joinLines([
     `${indent}<cac:IdentityDocumentReference>`,

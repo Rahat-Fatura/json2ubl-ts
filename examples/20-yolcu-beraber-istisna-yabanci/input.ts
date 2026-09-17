@@ -46,14 +46,26 @@ export const input: SimpleInvoiceInput = {
     city: 'Berlin',
     country: 'Germany',
     zipCode: '10115',
+    // Kılavuz §4.2.1: turistin adı ve soyadı ZORUNLU (`cac:Person` XSD'de 1..1).
+    // `name` serbest unvandır, ondan BÖLÜNMEZ — pasaporttaki ayrım ayrı verilir.
+    firstName: 'Michael',
+    familyName: 'Schneider',
     nationalityId: 'DE', // ISO 3166-1 alpha-2 Almanya
     passportId: 'N12345678',
+    // Pasaportun VERİLDİĞİ tarih (ibraz değil). Yazılamıyorsa kılavuz
+    // `2005-01-01` sabitine izin verir; burada örnek bir tarih verilmiştir.
+    passportIssueDate: '2021-06-15',
   },
 
   taxRepresentativeParty: {
     vknTckn: '9876543210',
     label: 'MIMSOFT_TAXFREE_INTERMEDIARY',
     name: 'Mimsoft Turizm KDV İade Aracı',
+    // `cac:TaxRepresentativeParty` bir `PartyType`tır → `cac:PostalAddress` 1..1.
+    address: 'Cağaloğlu Yokuşu No:42',
+    district: 'Fatih',
+    city: 'İstanbul',
+    zipCode: '34110',
   },
 
   lines: [

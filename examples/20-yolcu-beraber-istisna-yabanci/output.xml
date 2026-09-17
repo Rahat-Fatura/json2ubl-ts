@@ -91,9 +91,12 @@
         <cbc:RegistrationName>Michael Schneider (Tourist)</cbc:RegistrationName>
       </cac:PartyLegalEntity>
       <cac:Person>
+        <cbc:FirstName>Michael</cbc:FirstName>
+        <cbc:FamilyName>Schneider</cbc:FamilyName>
         <cbc:NationalityID>DE</cbc:NationalityID>
         <cac:IdentityDocumentReference>
           <cbc:ID>N12345678</cbc:ID>
+          <cbc:IssueDate>2021-06-15</cbc:IssueDate>
         </cac:IdentityDocumentReference>
       </cac:Person>
     </cac:Party>
@@ -108,6 +111,15 @@
     <cac:PartyName>
       <cbc:Name>Mimsoft Turizm KDV İade Aracı</cbc:Name>
     </cac:PartyName>
+    <cac:PostalAddress>
+      <cbc:StreetName>Cağaloğlu Yokuşu No:42</cbc:StreetName>
+      <cbc:CitySubdivisionName>Fatih</cbc:CitySubdivisionName>
+      <cbc:CityName>İstanbul</cbc:CityName>
+      <cbc:PostalZone>34110</cbc:PostalZone>
+      <cac:Country>
+        <cbc:Name>Türkiye</cbc:Name>
+      </cac:Country>
+    </cac:PostalAddress>
   </cac:TaxRepresentativeParty>
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="TRY">0.00</cbc:TaxAmount>

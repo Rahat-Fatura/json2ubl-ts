@@ -658,16 +658,34 @@ export const SessionPaths = {
   buyerCustomerIdentificationValue: (i: number) => `buyerCustomer.identifications[${i}].value` as `buyerCustomer.identifications[${number}].value`,
 
   /**
-   * Uyruk (ISO 3166-1 alpha-2 ülke kodu, ör. 'DE', 'US') — YOLCUBERABERFATURA profili için zorunlu (B-NEW-13 / Sprint 8c.4).
+   * Turistin ADI — `cac:BuyerCustomerParty/cac:Party/cac:Person/cbc:FirstName`. YOLCUBERABERFATURA'da ZORUNLUDUR: «Person/FirstName: Turistin adı zorunludur.» (Gümrük İşlemleri Kılavuzu V1.8 §4.2.1). XSD'de de `PersonType/cbc:FirstName` **1..1**'dir — `cac:Person` düğümü yazıldığı her yerde zorunludur. ⚠️ `name` alanından TÜRETİLMEZ: `name` unvan alanıdır (`cac:PartyName/cbc:Name` + `PartyLegalEntity/RegistrationName`) ve "Michael Schneider (Tourist)" gibi serbest değerler taşır; pasaporttaki ad/soyad ayrımını ondan çıkarmak veri UYDURMAK olurdu.
+   * Expected type: string | undefined
+   */
+  buyerCustomerFirstName: 'buyerCustomer.firstName',
+
+  /**
+   * Turistin SOYADI — `cac:Person/cbc:FamilyName`. «Person/FamilyName: Turistin soyadı zorunludur.» (Kılavuz V1.8 §4.2.1); XSD `PersonType/cbc:FamilyName` **1..1**.
+   * Expected type: string | undefined
+   */
+  buyerCustomerFamilyName: 'buyerCustomer.familyName',
+
+  /**
+   * Uyruk (ISO 3166-1 alpha-2 ülke kodu, ör. 'DE', 'US') — YOLCUBERABERFATURA profili için zorunlu (B-NEW-13 / Sprint 8c.4). Normatif: «Person/NationalityID: Turistin uyruğu (Pasaportunda belirtilen ülke) zorunludur. ISO 3166-1-alpha-2 Ülke Kodları Listesinden Değer Girilmelidir.» (Kılavuz V1.8 §4.2.1)
    * Expected type: string | undefined
    */
   buyerCustomerNationalityId: 'buyerCustomer.nationalityId',
 
   /**
-   * Pasaport numarası — YOLCUBERABERFATURA profili için zorunlu (B-NEW-13).
+   * Pasaport numarası — YOLCUBERABERFATURA profili için zorunlu (B-NEW-13). `cac:Person/cac:IdentityDocumentReference/cbc:ID`.
    * Expected type: string | undefined
    */
   buyerCustomerPassportId: 'buyerCustomer.passportId',
+
+  /**
+   * Pasaportun VERİLDİĞİ tarih (`YYYY-MM-DD`) — `cac:Person/cac:IdentityDocumentReference/cbc:IssueDate`. 🔴 İbraz/satış tarihi DEĞİLDİR. «IdentityDocumentReference/IssueDate: Pasaportun verildiği tarih zorunludur. Tarih yazılamıyorsa 2005-01-01 sabit değeri yazılabilir.» (Kılavuz V1.8 §4.2.1). XSD `DocumentReferenceType/cbc:IssueDate` **1..1**; `passportId` verilip bu alan boş bırakılırsa üretim XSD kardinalite hatasıyla durur.
+   * Expected type: string | undefined
+   */
+  buyerCustomerPassportIssueDate: 'buyerCustomer.passportIssueDate',
 
   /**
    * ARACIKURUMVKN — VKN (10 hane) veya TCKN (11 hane)
@@ -676,16 +694,46 @@ export const SessionPaths = {
   taxRepresentativePartyVknTckn: 'taxRepresentativeParty.vknTckn',
 
   /**
-   * ARACIKURUMETIKET — aracı kurum etiket adı
+   * ARACIKURUMETIKET — aracı kurum posta kutusu etiketi. Kılavuz V1.8 §4.2.1 tavsiyesi: gümrük onay mesajları ile gelen faturaları ayrıştırmak isteyen aracı kurumlar için `urn:mail:yolcuberaberpk@sirketkisaad.com.tr` biçimi uygundur.
    * Expected type: string
    */
   taxRepresentativePartyLabel: 'taxRepresentativeParty.label',
 
   /**
-   * Aracı kurum tüzel adı (opsiyonel)
+   * Aracı kurum tüzel adı (unvan) — `cac:PartyName/cbc:Name` (opsiyonel)
    * Expected type: string | undefined
    */
   taxRepresentativePartyName: 'taxRepresentativeParty.name',
+
+  /**
+   * Aracı kurumun açık adresi — `cbc:StreetName`
+   * Expected type: string | undefined
+   */
+  taxRepresentativePartyAddress: 'taxRepresentativeParty.address',
+
+  /**
+   * Aracı kurumun ilçesi — `cbc:CitySubdivisionName` (adres yazılıyorsa zorunlu)
+   * Expected type: string | undefined
+   */
+  taxRepresentativePartyDistrict: 'taxRepresentativeParty.district',
+
+  /**
+   * Aracı kurumun ili — `cbc:CityName` (adres yazılıyorsa zorunlu)
+   * Expected type: string | undefined
+   */
+  taxRepresentativePartyCity: 'taxRepresentativeParty.city',
+
+  /**
+   * Aracı kurumun ülkesi — `cac:Country/cbc:Name` (varsayılan: "Türkiye")
+   * Expected type: string | undefined
+   */
+  taxRepresentativePartyCountry: 'taxRepresentativeParty.country',
+
+  /**
+   * Aracı kurumun posta kodu — `cbc:PostalZone`
+   * Expected type: string | undefined
+   */
+  taxRepresentativePartyZipCode: 'taxRepresentativeParty.zipCode',
 
   /**
    * SGK tipi — whitelist kontrolü runtime'da tetiklenir (B-NEW-09)
@@ -943,11 +991,19 @@ export interface SessionPathMap {
   'buyerCustomer.email': string | undefined;
   'buyerCustomer.identifications[${number}].schemeId': string;
   'buyerCustomer.identifications[${number}].value': string;
+  'buyerCustomer.firstName': string | undefined;
+  'buyerCustomer.familyName': string | undefined;
   'buyerCustomer.nationalityId': string | undefined;
   'buyerCustomer.passportId': string | undefined;
+  'buyerCustomer.passportIssueDate': string | undefined;
   'taxRepresentativeParty.vknTckn': string;
   'taxRepresentativeParty.label': string;
   'taxRepresentativeParty.name': string | undefined;
+  'taxRepresentativeParty.address': string | undefined;
+  'taxRepresentativeParty.district': string | undefined;
+  'taxRepresentativeParty.city': string | undefined;
+  'taxRepresentativeParty.country': string | undefined;
+  'taxRepresentativeParty.zipCode': string | undefined;
   'sgk.type': 'SAGLIK_ECZ' | 'SAGLIK_HAS' | 'SAGLIK_OPT' | 'SAGLIK_MED' | 'ABONELIK' | 'MAL_HIZMET' | 'DIGER';
   'sgk.documentNo': string;
   'sgk.companyName': string;
@@ -997,11 +1053,14 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'buyerCustomer.country',
   'buyerCustomer.district',
   'buyerCustomer.email',
+  'buyerCustomer.familyName',
+  'buyerCustomer.firstName',
   'buyerCustomer.identifications[*].schemeId',
   'buyerCustomer.identifications[*].value',
   'buyerCustomer.name',
   'buyerCustomer.nationalityId',
   'buyerCustomer.passportId',
+  'buyerCustomer.passportIssueDate',
   'buyerCustomer.phone',
   'buyerCustomer.taxNumber',
   'buyerCustomer.taxOffice',
@@ -1106,9 +1165,14 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'sgk.companyName',
   'sgk.documentNo',
   'sgk.type',
+  'taxRepresentativeParty.address',
+  'taxRepresentativeParty.city',
+  'taxRepresentativeParty.country',
+  'taxRepresentativeParty.district',
   'taxRepresentativeParty.label',
   'taxRepresentativeParty.name',
   'taxRepresentativeParty.vknTckn',
+  'taxRepresentativeParty.zipCode',
   'type',
   'uuid',
   'xsltTemplate',
@@ -1244,11 +1308,19 @@ export interface InvoiceSessionUpdateOverloads {
   update(path: 'buyerCustomer.email', value: string | undefined): void;
   update(path: `buyerCustomer.identifications[${number}].schemeId`, value: string): void;
   update(path: `buyerCustomer.identifications[${number}].value`, value: string): void;
+  update(path: 'buyerCustomer.firstName', value: string | undefined): void;
+  update(path: 'buyerCustomer.familyName', value: string | undefined): void;
   update(path: 'buyerCustomer.nationalityId', value: string | undefined): void;
   update(path: 'buyerCustomer.passportId', value: string | undefined): void;
+  update(path: 'buyerCustomer.passportIssueDate', value: string | undefined): void;
   update(path: 'taxRepresentativeParty.vknTckn', value: string): void;
   update(path: 'taxRepresentativeParty.label', value: string): void;
   update(path: 'taxRepresentativeParty.name', value: string | undefined): void;
+  update(path: 'taxRepresentativeParty.address', value: string | undefined): void;
+  update(path: 'taxRepresentativeParty.district', value: string | undefined): void;
+  update(path: 'taxRepresentativeParty.city', value: string | undefined): void;
+  update(path: 'taxRepresentativeParty.country', value: string | undefined): void;
+  update(path: 'taxRepresentativeParty.zipCode', value: string | undefined): void;
   update(path: 'sgk.type', value: 'SAGLIK_ECZ' | 'SAGLIK_HAS' | 'SAGLIK_OPT' | 'SAGLIK_MED' | 'ABONELIK' | 'MAL_HIZMET' | 'DIGER'): void;
   update(path: 'sgk.documentNo', value: string): void;
   update(path: 'sgk.companyName', value: string): void;

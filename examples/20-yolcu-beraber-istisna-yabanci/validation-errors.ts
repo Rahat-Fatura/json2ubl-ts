@@ -33,10 +33,23 @@ export const invalidCases: InvalidCase[] = [
     input: mutate((i) => { i.sender.taxNumber = ''; }),
     expectedErrors: [{ code: 'MISSING_FIELD' }],
   },
+  /* ── XSD kardinalite kapıları (S3 yüklemleri + genişletilmiş girdi yüzeyi) ──
+   * Üçü de ŞEMATRONDAN GEÇER; yalnız XSD reddeder. Girdi yüzeyi eklenmeden
+   * önce bu alanlar VERİLEMİYORDU, dolayısıyla kural kapatılamıyordu. */
   {
-    description: '(not-caught) nationalityId/passportId ayrı alan simple-input\'ta yok',
-    input: mutate((i) => { if (i.buyerCustomer) i.buyerCustomer.taxNumber = ''; }),
-    notCaughtYet: 'B-NEW-13: YOLCU profili nationalityId/passportId ayrı alanı eksik.',
+    description: '(XSD 1..1) turistin soyadı silinince `cac:Person` geçersiz kalır',
+    input: mutate((i) => { if (i.buyerCustomer) delete i.buyerCustomer.familyName; }),
+    expectedErrors: [{ code: 'XSD_CARDINALITY', path: 'buyerCustomer.party' }],
+  },
+  {
+    description: '(XSD 1..1) pasaport tarihi silinince `IdentityDocumentReference` geçersiz kalır',
+    input: mutate((i) => { if (i.buyerCustomer) delete i.buyerCustomer.passportIssueDate; }),
+    expectedErrors: [{ code: 'XSD_CARDINALITY', path: 'buyerCustomer.party.passportId' }],
+  },
+  {
+    description: '(XSD 1..1) aracı kurumun ili silinince `TaxRepresentativeParty` adressiz kalır',
+    input: mutate((i) => { if (i.taxRepresentativeParty) delete i.taxRepresentativeParty.city; }),
+    expectedErrors: [{ code: 'XSD_CARDINALITY', path: 'taxRepresentativeParty.postalAddress' }],
   },
 ];
 

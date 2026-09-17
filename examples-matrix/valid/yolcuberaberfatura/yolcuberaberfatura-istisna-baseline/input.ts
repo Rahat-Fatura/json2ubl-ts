@@ -31,13 +31,19 @@ export const input: SimpleInvoiceInput = {
     district: 'Berlin',
     city: 'Berlin',
     country: 'Germany',
+    firstName: 'Michael',
+    familyName: 'Schneider',
     nationalityId: 'DE',
     passportId: 'N12345678',
+    passportIssueDate: '2021-06-15',
   },
   taxRepresentativeParty: {
     vknTckn: '9876543210',
     label: 'MATRIX_TAXFREE',
     name: 'Matrix KDV İade Aracı',
+    address: 'Bağdat Cad. No:100',
+    district: 'Kadıköy',
+    city: 'İstanbul',
   },
   lines: [
     {

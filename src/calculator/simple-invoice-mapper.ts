@@ -894,12 +894,34 @@ function buildBuyerCustomer(simple: SimpleInvoiceInput, profile: string): BuyerC
       value: id.value,
     }));
   }
-  // B-NEW-13 (Sprint 8c.4): YOLCUBERABERFATURA — nationalityId + passportId
+  /* YOLCUBERABERFATURA turist kimliği — `cac:Person` yüzeyi.
+   *
+   * B-NEW-13 (Sprint 8c.4) yalnız uyruk + pasaport NUMARASINI taşıyordu; ad,
+   * soyad ve pasaport TARİHİ sonradan eklendi. Üçü de kılavuz lafzıyla
+   * zorunludur (Gümrük İşlemleri Kılavuzu V1.8 §4.2.1 — «Turistin adı
+   * zorunludur», «Turistin soyadı zorunludur», «Pasaportun verildiği tarih
+   * zorunludur») ve ad/soyad ayrıca XSD `PersonType`ta 1..1'dir.
+   *
+   * ⚠️ `firstName`/`familyName` `bc.name`den TÜRETİLMEZ. Yerleşik taraflarda
+   * (`mapSimpleParty`) TCKN dalı `splitPersonName` ile tam adı böler; burada o
+   * kasıtlı olarak YAPILMAZ: turistin `name` alanı serbest unvandır
+   * ("Michael Schneider (Tourist)") ve pasaporttaki ad/soyad ayrımını ondan
+   * çıkarmak GİB'e giden belgeye UYDURULMUŞ kimlik yazmak olurdu. Alan boşsa
+   * kardinalite kapısı AÇIKÇA söyler; sessizce bir şey uydurulmaz. */
+  if (bc.firstName) {
+    result.party.firstName = bc.firstName;
+  }
+  if (bc.familyName) {
+    result.party.familyName = bc.familyName;
+  }
   if (bc.nationalityId) {
     result.party.nationalityId = bc.nationalityId;
   }
   if (bc.passportId) {
     result.party.passportId = bc.passportId;
+  }
+  if (bc.passportIssueDate) {
+    result.party.passportIssueDate = bc.passportIssueDate;
   }
   if (partyType) {
     result.partyType = partyType;
@@ -909,14 +931,40 @@ function buildBuyerCustomer(simple: SimpleInvoiceInput, profile: string): BuyerC
 
 // ─── TaxRepresentativeParty (YOLCUBERABERFATURA) ────────────────────────────────
 
+/**
+ * Aracı kurum → `cac:TaxRepresentativeParty`.
+ *
+ * `cac:PostalAddress` UBL `PartyType`ta 1..1'dir; adres yalnız İL + İLÇE
+ * birlikte doluyken kurulur — `AddressInput` ikisini de zorunlu tutar ve
+ * `serializeAddress` emit anında `cbcRequiredTag` ile arar. İkisinden biri
+ * eksikse adres HİÇ kurulmaz ve S3 kardinalite kapısı
+ * (`partyPostalAddressCardinalityRule`) üretimi açık hatayla durdurur — yarım
+ * adresle geçersiz XML üretip kullanıcıyı GİB kapısında öğrenmeye bırakmaktansa
+ * eksik burada görünür kalır.
+ *
+ * `country` varsayılanı `mapSimpleParty` ile AYNIDIR ("Türkiye"); posta kodu
+ * UYDURULMAZ (aynı dosyadaki DERS 1).
+ */
 function buildTaxRepresentative(
   trp: NonNullable<SimpleInvoiceInput['taxRepresentativeParty']>,
 ): TaxRepresentativeInput {
-  return {
+  const result: TaxRepresentativeInput = {
     intermediaryVknTckn: trp.vknTckn,
     intermediaryLabel: trp.label,
     name: trp.name,
   };
+
+  if (trp.district && trp.city) {
+    result.postalAddress = {
+      streetName: trp.address,
+      citySubdivisionName: trp.district,
+      cityName: trp.city,
+      postalZone: trp.zipCode,
+      country: trp.country ?? 'Türkiye',
+    };
+  }
+
+  return result;
 }
 
 // ─── Sözleşme Referansı (YATIRIMTESVIK) ──────────────────────────────────────────

@@ -32,13 +32,20 @@
     "city": "Berlin",
     "country": "Germany",
     "zipCode": "10115",
+    "firstName": "Michael",
+    "familyName": "Schneider",
     "nationalityId": "DE",
-    "passportId": "N12345678"
+    "passportId": "N12345678",
+    "passportIssueDate": "2021-06-15"
   },
   "taxRepresentativeParty": {
     "vknTckn": "9876543210",
     "label": "MIMSOFT_TAXFREE_INTERMEDIARY",
-    "name": "Mimsoft Turizm KDV İade Aracı"
+    "name": "Mimsoft Turizm KDV İade Aracı",
+    "address": "Cağaloğlu Yokuşu No:42",
+    "district": "Fatih",
+    "city": "İstanbul",
+    "zipCode": "34110"
   },
   "lines": [
     {

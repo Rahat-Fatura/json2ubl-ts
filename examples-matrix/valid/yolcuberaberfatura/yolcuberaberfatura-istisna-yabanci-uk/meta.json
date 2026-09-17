@@ -24,7 +24,9 @@
     "phantomKdv": false,
     "specialIdentifiers": [
       "passport",
+      "passportIssueDate",
       "nationalityId",
+      "personName",
       "taxRepresentative"
     ]
   },
