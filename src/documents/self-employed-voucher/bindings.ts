@@ -22,6 +22,7 @@
 import type { SelfEmployedVoucherInput } from './input';
 import { SelfEmployedVoucherProfileId, SelfEmployedVoucherTypeCode } from '../../types/enums';
 import type { FieldBinding } from '../../ubltr/rules/field-rule';
+import type { ValidationStage } from '../../ubltr/rules/shared/validation-stage';
 import {
   documentIdRule,
   uuidRule,
@@ -32,13 +33,14 @@ import {
 } from '../../ubltr/rules/global/common-field-rules';
 
 /**
- * Doğrulamanın koştuğu AŞAMA — `DespatchValidationStage` ile aynı sözleşme.
+ * Doğrulamanın koştuğu AŞAMA — ortak `ValidationStage`in TAKMA ADI.
  *
- *  • `'document'` (VARSAYILAN) — bitmiş belge; numara ZORUNLU.
- *  • `'session'` — düzenlenmekte olan form; numaranın YOKLUĞU hata değildir,
- *    ama VARSA biçimi yine denetlenir (elle yazılmış yanlış numara sessiz kalmamalı).
+ * Gövde `ubltr/rules/shared/validation-stage.ts`tedir; üç belge türü de aynı
+ * iki-değerli birliği taşıyordu ve üçü de aynı gerekçeyi yazıyordu. Takma ad
+ * dışa açılan ad yüzeyini korur (tüketici `SelfEmployedVoucherValidationStage`
+ * yazmaya devam eder), tanımı TEKLEŞTİRİR.
  */
-export type SelfEmployedVoucherValidationStage = 'document' | 'session';
+export type SelfEmployedVoucherValidationStage = ValidationStage;
 
 /** e-SMM künye bağlamaları — aşamaya göre numara zorunluluğu değişir. */
 export function selfEmployedVoucherHeaderBindings(

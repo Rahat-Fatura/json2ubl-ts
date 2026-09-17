@@ -9,6 +9,13 @@
  * türleri onu alamaz — `issue-date-range`in irsaliyeyi yıllarca atlamasının
  * sebebi tam olarak buydu.
  *
+ * ── ORTAK KAPILAR BURADA GÖVDE TUTMAZ ──────────────────────────────────────
+ * Para birimi/kur (`validateDocumentCurrency`) ve kalem kimliği
+ * (`validateLineIdentity`) e-MM ile BİREBİR aynıydı; ikisi de
+ * `ubltr/rules/shared/` altına indi. Burada kalan tek belge-özgü kapı VERGİ
+ * DÜZLEMİDİR — kod kümesi (`{0003, 0015, 9015}`) e-SMM'e aittir ve ortak
+ * katmana çıksaydı diğer belgelere SIZARDI.
+ *
  * ── YANLIŞLIKLA REDDETMEME DİSİPLİNİ ───────────────────────────────────────
  * Aşağıdaki "kurallar" BİLEREK YOKTUR; üçü de ölçülüp dayanaksız bulundu:
  *  • `PaymentMeans` zorunluluğu — 12 gerçek prod belgenin **0**'ında var.
@@ -33,19 +40,10 @@ import type { SelfEmployedVoucherValidationStage } from './bindings';
 import { selfEmployedVoucherHeaderBindings } from './bindings';
 import { runFieldBindings } from '../../ubltr/rules/field-rule';
 import { validateParty } from '../../ubltr/rules/shared/common-validators';
-import {
-  missingField,
-  invalidFormat,
-  invalidValue,
-} from '../../ubltr/rules/validation-result';
-import { CURRENCY_CODES } from '../../ubltr/vocabulary/constants';
+import { validateDocumentCurrency } from '../../ubltr/rules/shared/currency-rules';
+import { validateLineIdentity } from '../../ubltr/rules/shared/line-rules';
+import { missingField, invalidValue } from '../../ubltr/rules/validation-result';
 import { isNonEmpty } from '../../utils/formatters';
-
-/** Kur bilgisinin ZORUNLU olmadığı tek para birimi. */
-const NATIONAL_CURRENCY_CODE = 'TRY';
-
-/** `CurrencyCodeCheck` — kur en fazla 6 ondalık taşıyabilir. */
-const EXCHANGE_RATE_MAX_DECIMALS = 6;
 
 export interface SelfEmployedVoucherValidateOptions {
   /** Varsayılan `'document'` — çağrı şekli değişmeyen her çağıran eski davranışı alır. */
@@ -67,8 +65,9 @@ export function validateSelfEmployedVoucher(
   errors.push(...validateParty(input.supplier, 'supplier'));
   errors.push(...validateParty(input.customer, 'customer'));
 
-  // §3 Para birimi + kur.
-  errors.push(...validateCurrency(input));
+  /* §3 Para birimi + kur — ORTAK kapı (`CurrencyCodeCheck`). Gövde
+   * `ubltr/rules/shared/currency-rules.ts`tedir; e-MM ile PAYLAŞILIR. */
+  errors.push(...validateDocumentCurrency(input));
 
   // §4 Vergi düzlemi (belge + satır).
   errors.push(...validateTaxTotal(input.taxTotal, 'taxTotal'));
@@ -79,78 +78,11 @@ export function validateSelfEmployedVoucher(
   } else {
     input.lines.forEach((line, i) => {
       const at = `lines[${i}]`;
-      if (!isNonEmpty(line.id)) {
-        errors.push(missingField(`${at}.id`, 'Satır ID zorunludur'));
-      } else if (!/^\d+$/.test(line.id)) {
-        errors.push(invalidFormat(`${at}.id`, 'Numerik (örn: 1, 2, 3)', line.id));
-      }
-      if (!isNonEmpty(line.unitCode)) {
-        errors.push(missingField(`${at}.unitCode`, 'Birim kodu zorunludur'));
-      }
-      if (!line.item || !isNonEmpty(line.item.name)) {
-        errors.push(missingField(`${at}.item.name`, 'Hizmet adı zorunludur'));
-      }
+      // Kimlik üçlüsü (numerik ID · birim kodu · ad) ORTAK — bkz. `line-rules.ts`.
+      errors.push(...validateLineIdentity(line, at, 'Hizmet adı'));
+      // Vergi düzlemi e-SMM'e ÖZGÜ — ortak katmana ÇIKMAZ (kod kümesi belgeye ait).
       errors.push(...validateTaxTotal(line.taxTotal, `${at}.taxTotal`));
     });
-  }
-
-  return errors;
-}
-
-/**
- * Para birimi + kur — şematron `CurrencyCodeCheck`.
- *
- * Dövizli e-SMM bir kenar durum DEĞİL, normatif olarak öngörülmüş bir hâldir:
- * e-Arşiv rapor şemasında `dovizKuru` V1.12'den beri ZORUNLU bir alandır.
- */
-function validateCurrency(input: SelfEmployedVoucherInput): ValidationError[] {
-  const errors: ValidationError[] = [];
-  const code = input.currencyCode;
-
-  if (!isNonEmpty(code)) {
-    errors.push(missingField('currencyCode', 'Para birimi (cbc:DocumentCurrencyCode) zorunludur'));
-    return errors;
-  }
-  if (!CURRENCY_CODES.has(code)) {
-    errors.push(invalidValue('currencyCode', 'CurrencyCodeList üyesi', code));
-  }
-
-  if (code === NATIONAL_CURRENCY_CODE) return errors;
-
-  // TRY dışı → kur ZORUNLU (`CurrencyCodeCheck`: "Para birimi TRY olmayan
-  // belgelerde kur bilgisi zorunludur").
-  const rate = input.exchangeRate;
-  if (!rate || typeof rate.calculationRate !== 'number' || !Number.isFinite(rate.calculationRate)) {
-    errors.push(
-      missingField(
-        'exchangeRate.calculationRate',
-        `Para birimi ${code} (TRY değil) — cac:PricingExchangeRate/cbc:CalculationRate zorunludur`,
-      ),
-    );
-    return errors;
-  }
-
-  if (rate.calculationRate <= 0) {
-    errors.push(invalidValue('exchangeRate.calculationRate', '> 0', String(rate.calculationRate)));
-  }
-  if (decimalPlaces(rate.calculationRate) > EXCHANGE_RATE_MAX_DECIMALS) {
-    errors.push(
-      invalidFormat(
-        'exchangeRate.calculationRate',
-        `en fazla ${EXCHANGE_RATE_MAX_DECIMALS} ondalık basamak`,
-        String(rate.calculationRate),
-      ),
-    );
-  }
-  if (isNonEmpty(rate.sourceCurrencyCode) && rate.sourceCurrencyCode !== code) {
-    errors.push(
-      invalidValue('exchangeRate.sourceCurrencyCode', code, rate.sourceCurrencyCode),
-    );
-  }
-  if (isNonEmpty(rate.targetCurrencyCode) && rate.targetCurrencyCode !== NATIONAL_CURRENCY_CODE) {
-    errors.push(
-      invalidValue('exchangeRate.targetCurrencyCode', NATIONAL_CURRENCY_CODE, rate.targetCurrencyCode),
-    );
   }
 
   return errors;
@@ -229,11 +161,4 @@ function validateTaxTotal(
   }
 
   return errors;
-}
-
-/** Ondalık basamak sayısı — float artefaktına karşı 12 basamakta sabitlenir. */
-function decimalPlaces(value: number): number {
-  const text = value.toFixed(12).replace(/0+$/, '');
-  const dot = text.indexOf('.');
-  return dot < 0 ? 0 : text.length - dot - 1;
 }

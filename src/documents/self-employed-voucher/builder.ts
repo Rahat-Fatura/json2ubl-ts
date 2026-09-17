@@ -1,51 +1,29 @@
 import type { BuilderOptions } from '../../types/builder-options';
 import type { ValidationError } from '../../errors/ubl-build-error';
-import { UblBuildError } from '../../errors/ubl-build-error';
 import type { SelfEmployedVoucherInput } from './input';
 import { validateSelfEmployedVoucher } from './rules';
 import { serializeSelfEmployedVoucher } from './shape';
-
-/**
- * Varsayılan builder seçenekleri.
- *
- * `allowReducedKdvRate` e-SMM'de ANLAMSIZDIR (o kapı `TaxExemptionReasonCode`
- * 555'e özgü bir FATURA kuralıdır) — `DespatchBuilder` ile aynı gerekçeyle
- * `false` sabitlenir; seçenek yüzeyi ortak `BuilderOptions` olduğu için alan
- * duruyor, davranışı yok.
- */
-const DEFAULT_OPTIONS: Required<BuilderOptions> = {
-  prettyPrint: true,
-  indentSize: 2,
-  validationLevel: 'basic',
-  xmlDeclaration: true,
-  allowReducedKdvRate: false,
-  includeUblExtensions: false,
-};
+import { UblDocumentBuilder } from '../shared/builder-base';
 
 /**
  * e-SMM (Serbest Meslek Makbuzu) XML oluşturucu — HAM girdi yolu.
+ *
+ * Gövde ORTAK (`UblDocumentBuilder`): seçenek birleştirme, `validationLevel`
+ * dalı, `UblBuildError` fırlatma ve `buildUnsafe` davranışının tamamı orada
+ * yaşar. Burada kalan iki satır belgeye ÖZGÜ olanlardır — hangi doğrulayıcı,
+ * hangi serileştirici.
  *
  * @example
  * ```ts
  * const xml = new SelfEmployedVoucherBuilder().build(voucherInput);
  * ```
  */
-export class SelfEmployedVoucherBuilder {
-  private readonly options: Required<BuilderOptions>;
-
+export class SelfEmployedVoucherBuilder extends UblDocumentBuilder<SelfEmployedVoucherInput> {
   constructor(options?: BuilderOptions) {
-    this.options = { ...DEFAULT_OPTIONS, ...options };
+    super(options);
   }
 
-  /**
-   * e-SMM verisinden UBL XML üretir.
-   * @throws {UblBuildError} Doğrulama hataları varsa.
-   */
-  build(input: SelfEmployedVoucherInput): string {
-    const errors = this.validate(input);
-    if (errors.length > 0) {
-      throw new UblBuildError(errors);
-    }
+  protected serialize(input: SelfEmployedVoucherInput): string {
     return serializeSelfEmployedVoucher(
       input,
       this.options.prettyPrint,
@@ -53,20 +31,7 @@ export class SelfEmployedVoucherBuilder {
     );
   }
 
-  /** Doğrulama hatalarını döner (boşsa geçerli). */
-  validate(input: SelfEmployedVoucherInput): ValidationError[] {
-    if (this.options.validationLevel === 'none') {
-      return [];
-    }
+  protected runValidation(input: SelfEmployedVoucherInput): ValidationError[] {
     return validateSelfEmployedVoucher(input);
-  }
-
-  /** Doğrulamadan XML üretir. */
-  buildUnsafe(input: SelfEmployedVoucherInput): string {
-    return serializeSelfEmployedVoucher(
-      input,
-      this.options.prettyPrint,
-      this.options.includeUblExtensions,
-    );
   }
 }

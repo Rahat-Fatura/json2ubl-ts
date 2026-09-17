@@ -29,9 +29,11 @@ const SRC = path.resolve(__dirname, '..', 'src');
 type Layer =
     | 'ubl'
     | 'ubltr'
+    | 'doc:shared'
     | 'doc:invoice'
     | 'doc:despatch'
     | 'doc:self-employed-voucher'
+    | 'doc:producer-receipt'
     | 'calculator'
     | 'session'
     | 'leaf';
@@ -39,20 +41,33 @@ type Layer =
 const LAYER_PREFIXES: ReadonlyArray<readonly [string, Layer]> = [
     ['ubl/', 'ubl'],
     ['ubltr/', 'ubltr'],
+    ['documents/shared/', 'doc:shared'],
     ['documents/invoice/', 'doc:invoice'],
     ['documents/despatch-advice/', 'doc:despatch'],
     ['documents/self-employed-voucher/', 'doc:self-employed-voucher'],
+    ['documents/producer-receipt/', 'doc:producer-receipt'],
     ['calculator/', 'calculator'],
     ['session/', 'session'],
 ];
 
-/** Katman sırası — büyük sayı "daha üstte" demek; üstten alta import SERBEST. */
+/**
+ * Katman sırası — büyük sayı "daha üstte" demek; üstten alta import SERBEST.
+ *
+ * 🔑 `documents/shared` 2.5'tedir, 3 DEĞİL. İki şeyi aynı anda söyler:
+ *   • belge türleri (3) ondan okuyabilir — YUKARI değildir,
+ *   • o hiçbir belge türünü göremez — `doc:shared → doc:invoice` YUKARI olur.
+ * 3 verilseydi kardeş sayılır ve belge türlerinden import edilemezdi; 2 verilip
+ * `ubltr/` altına konsaydı belge katmanı kavramları (builder seçenekleri,
+ * `UblBuildError`) UBL-TR sözlüğüne sızardı.
+ */
 const RANK: Partial<Record<Layer, number>> = {
     ubl: 1,
     ubltr: 2,
+    'doc:shared': 2.5,
     'doc:invoice': 3,
     'doc:despatch': 3,
     'doc:self-employed-voucher': 3,
+    'doc:producer-receipt': 3,
 };
 
 function layerOf(relative: string): Layer {
@@ -141,7 +156,9 @@ function collectViolations(): Edge[] {
  *    kadar `vocabulary` bir CEPHE.
  */
 const KNOWN_DEBT: ReadonlyArray<string> = [
-    'YUKARI ubltr/rules/shared/header-bindings.ts -> documents/despatch-advice/validators.ts',
+    /* `YUKARI ubltr/rules/shared/header-bindings.ts -> documents/despatch-advice/validators.ts`
+     * S5b'de KAPANDI: aşama tipi `ubltr/rules/shared/validation-stage.ts`e indi,
+     * irsaliye onu TAKMA AD olarak bağlıyor. Listedeki tek yukarı-import buydu. */
     'YATAY→calculator ubl/components/line.ts -> calculator/config-manager.ts',
     'YATAY→calculator ubltr/vocabulary/constants.ts -> calculator/config-manager.ts',
     'YATAY→calculator ubltr/vocabulary/constants.ts -> calculator/package-type-code-config.ts',
@@ -176,8 +193,9 @@ describe('katman bekçisi — documents/* → ubltr/ → ubl/', () => {
         const siblings = violations.filter((v) => v.startsWith('KARDEŞ'));
         expect(
             siblings,
-            'documents/invoice · documents/despatch-advice · documents/self-employed-voucher ' +
-                'birbirinden bağımsızdır. Ortak ihtiyaç ubltr/rules/shared altına iner.',
+            'documents/invoice · documents/despatch-advice · documents/self-employed-voucher · ' +
+                'documents/producer-receipt birbirinden bağımsızdır. Ortak ihtiyaç ' +
+                'ubltr/rules/shared ya da documents/shared altına İNER — yana geçmez.',
         ).toEqual([]);
     });
 
@@ -198,7 +216,7 @@ describe('katman bekçisi — documents/* → ubltr/ → ubl/', () => {
             uncovered,
             'Bu belge türü klasörleri katman bekçisinin LAYER_PREFIXES tablosunda YOK. ' +
                 'Kapsam dışı klasöre kardeş/yukarı kuralı UYGULANMAZ — tabloya ekleyin ' +
-                've RANK değerini 3 verin.',
+                've RANK değerini 3 verin (ortak alt katman ise 2.5).',
         ).toEqual([]);
     });
 

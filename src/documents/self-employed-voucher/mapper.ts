@@ -32,22 +32,29 @@ import { INCOME_TAX_WITHHOLDING_CODE, VAT_CODE, VAT_WITHHOLDING_CODE } from './i
 import { selfEmployedVoucherTotals } from './totals';
 import type { SelfEmployedVoucherTotals } from './totals';
 import { SelfEmployedVoucherProfileId, SelfEmployedVoucherTypeCode } from '../../types/enums';
-import type {
-  AdditionalDocumentInput,
-  AllowanceChargeInput,
-  ExchangeRateInput,
-  ItemInput,
-} from '../../types/common';
+import type { AllowanceChargeInput, ItemInput } from '../../types/common';
+import {
+  SEND_METHOD_DOCUMENT_TYPE_CODE,
+  buildPricingExchangeRate,
+  buildSendMethodReference,
+  splitIssueStamp,
+} from '../../ubltr/mapping/earsiv-mapping';
 import type { SimpleLineInput } from '../../calculator/simple-types';
 import type { CalculatedLine } from '../../calculator/line-calculator';
 import { calculateLine } from '../../calculator/line-calculator';
 import { configManager } from '../../calculator/config-manager';
 import { DEFAULT_CURRENCY_CODE } from '../../calculator/currency-config';
 import { mapSimpleParty } from '../../utils/party-mapper';
-import { isNonEmpty, normalizeTime } from '../../utils/formatters';
+import { isNonEmpty } from '../../utils/formatters';
 
-/** Gönderim şekli referansının `DocumentTypeCode`u — eski sistemle ORTAK anahtar. */
-export const SEND_METHOD_DOCUMENT_TYPE_CODE = 'EXT_SEND_METHOD';
+/**
+ * Gönderim şekli referansının `DocumentTypeCode`u.
+ *
+ * Gövde ORTAK katmandadır (`ubltr/mapping/earsiv-mapping.ts`) — anahtar e-SMM'e
+ * değil e-Arşiv ekosistemine aittir ve e-MM ile PAYLAŞILIR. Buradan yeniden
+ * dışa açılıyor ki paketin cephesindeki ad DÜŞMESİN.
+ */
+export { SEND_METHOD_DOCUMENT_TYPE_CODE };
 
 /** Eşlemenin ara ürünü — oturum/builder katmanı toplamları da görebilsin diye açık. */
 export interface CalculatedSelfEmployedVoucher {
@@ -102,15 +109,10 @@ export function mapSimpleToSelfEmployedVoucherInput(
   const calc = precomputed ?? calculateSelfEmployedVoucher(simple);
   const currencyCode = simple.currencyCode ?? DEFAULT_CURRENCY_CODE;
 
-  const now = new Date().toISOString();
-  const stamp = isNonEmpty(simple.datetime) ? simple.datetime : now;
-  const issueDate = stamp.substring(0, 10);
-  /* Saat e-SMM'de ZORUNLU (509 VUK GT IV.4.3-c). `datetime` yalnız tarih
-   * taşıyorsa "şimdi"nin saati alınır — makbuz tahsilat anında düzenlenir. */
-  const rawTime = stamp.length > 10 ? stamp.substring(11, 19) : now.substring(11, 19);
-  // `normalizeTime` yalnız null/undefined girdide `undefined` döner; kaynak
-  // burada daima dolu bir dizgidir, yine de sözleşme dışına çıkmamak için yedekli.
-  const issueTime = normalizeTime(rawTime) ?? rawTime;
+  /* Saat e-SMM'de ZORUNLU (509 VUK GT IV.4.3-c). Damga ayrıştırması ORTAK
+   * (`splitIssueStamp`): `datetime` yalnız tarih taşıyorsa "şimdi"nin saati
+   * alınır ve `HH:mm` gelirse saniye tamamlanır. */
+  const { issueDate, issueTime } = splitIssueStamp(simple.datetime);
 
   const result: SelfEmployedVoucherInput = {
     id: simple.documentNumber ?? '',
@@ -135,10 +137,10 @@ export function mapSimpleToSelfEmployedVoucherInput(
 
   if (simple.notes?.length) result.notes = [...simple.notes];
 
-  const exchangeRate = buildExchangeRate(simple, currencyCode);
+  const exchangeRate = buildPricingExchangeRate(currencyCode, simple.exchangeRate);
   if (exchangeRate) result.exchangeRate = exchangeRate;
 
-  const sendMethodRef = buildSendMethodReference(simple, issueDate);
+  const sendMethodRef = buildSendMethodReference(simple.sendMethod, issueDate);
   if (sendMethodRef) result.additionalDocuments = [sendMethodRef];
 
   return result;
@@ -290,37 +292,4 @@ function buildLine(
   }
 
   return result;
-}
-
-function buildExchangeRate(
-  simple: SimpleSelfEmployedVoucherInput,
-  currencyCode: string,
-): ExchangeRateInput | undefined {
-  if (currencyCode === DEFAULT_CURRENCY_CODE) return undefined;
-  if (typeof simple.exchangeRate !== 'number') return undefined;
-  return {
-    sourceCurrencyCode: currencyCode,
-    targetCurrencyCode: DEFAULT_CURRENCY_CODE,
-    calculationRate: simple.exchangeRate,
-  };
-}
-
-/**
- * Gönderim şekli referansı.
- *
- * `cbc:ID` olarak gönderim şeklinin kendisi yazılır (prod deseni); rapor
- * eşlemesi `DocumentTypeCode=EXT_SEND_METHOD` taşıyan referansı arayıp
- * `gonderimSekli` alanını doldurur. `cbc:IssueDate` XSD'de 1..1 olduğundan
- * belgenin tarihine düşülür.
- */
-function buildSendMethodReference(
-  simple: SimpleSelfEmployedVoucherInput,
-  issueDate: string,
-): AdditionalDocumentInput | undefined {
-  if (!isNonEmpty(simple.sendMethod)) return undefined;
-  return {
-    id: simple.sendMethod,
-    issueDate,
-    documentTypeCode: SEND_METHOD_DOCUMENT_TYPE_CODE,
-  };
 }

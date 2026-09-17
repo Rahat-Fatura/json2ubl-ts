@@ -21,7 +21,7 @@
 
 import type { InvoiceInput } from '../../../types/invoice-input';
 import type { DespatchInput } from '../../../types/despatch-input';
-import type { DespatchValidationStage } from '../../../documents/despatch-advice/validators';
+import type { ValidationStage } from './validation-stage';
 import { InvoiceProfileId, DespatchProfileId, DespatchTypeCode } from '../../../types/enums';
 import type { FieldBinding } from '../field-rule';
 import {
@@ -104,10 +104,12 @@ export const INVOICE_HEADER_BINDINGS: readonly FieldBinding<InvoiceInput>[] = [
  * ── Numara neden AŞAMAya bağlı
  * Belge numarası (`cbc:ID`) belgenin kendisinden gelmez; gönderim anında
  * seri/numara motoru verir. Form düzenlenirken numara BOŞ olmalıdır. Gerekçenin
- * tamamı `DespatchValidationStage` JSDoc'undadır.
+ * tamamı ortak `ValidationStage` JSDoc'undadır (`./validation-stage`) — tip
+ * ORTAK KATMANA indiği için bu dosya artık belge katmanına YUKARI import
+ * ETMİYOR; katman bekçisinin tek yukarı-import borcu böyle kapandı.
  */
 export function despatchHeaderBindings(
-  stage: DespatchValidationStage,
+  stage: ValidationStage,
 ): readonly FieldBinding<DespatchInput>[] {
   return [
     {

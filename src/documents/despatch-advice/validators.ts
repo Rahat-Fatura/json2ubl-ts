@@ -14,6 +14,7 @@ import { missingField, invalidFormat, invalidValue, profileRequirement } from '.
 import { isNonEmpty } from '../../utils/formatters';
 import { runFieldBindings } from '../../ubltr/rules/field-rule';
 import { despatchHeaderBindings } from '../../ubltr/rules/shared/header-bindings';
+import type { ValidationStage } from '../../ubltr/rules/shared/validation-stage';
 
 /**
  * Doğrulamanın koştuğu AŞAMA.
@@ -34,8 +35,17 @@ import { despatchHeaderBindings } from '../../ubltr/rules/shared/header-bindings
  *   • `'session'` — düzenlenmekte olan form. `DespatchSession` bunu kullanır;
  *     numaranın YOKLUĞU hata değildir, ama VARSA biçimi yine denetlenir
  *     (kullanıcı elle yanlış numara yazdıysa söylenmeli).
+ *
+ * ── 🔑 GÖVDE ORTAK KATMANDA ────────────────────────────────────────────────
+ * Tip artık burada TANIMLANMAZ, `ubltr/rules/shared/validation-stage`ten
+ * TAKMA AD olarak bağlanır. Üç belge türü de aynı iki-değerli birliği
+ * taşıyordu; kopyaların bir zararı daha vardı: `ubltr/rules/shared/
+ * header-bindings.ts` aşama tipini almak için BURAYA yukarı-import ediyordu ve
+ * bu katman bekçisinin `KNOWN_DEBT` listesindeki tek yukarı-import edilen
+ * kenardı (üstelik döngüseldi). Takma ad ile hem ad yüzeyi korundu hem borç
+ * kapandı.
  */
-export type DespatchValidationStage = 'document' | 'session';
+export type DespatchValidationStage = ValidationStage;
 
 export interface DespatchValidateOptions {
   /** Varsayılan `'document'` — çağrı şekli değişmeyen her çağıran eski davranışı alır. */
