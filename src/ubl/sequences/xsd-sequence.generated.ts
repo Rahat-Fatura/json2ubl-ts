@@ -6,6 +6,7 @@
 //   common/UBL-CommonAggregateComponents-2.1.xsd  sha256:186085d67e0daf5bbe78427259ee3df15b3043bd6676b50b0652d264e10bed91
 //   maindoc/UBL-Invoice-2.1.xsd  sha256:b68a25ae3d99435f4e4a39809939183dc8b5d687aeebf2d023f4d4c2a436749e
 //   maindoc/UBL-DespatchAdvice-2.1.xsd  sha256:5ed0dd52359da01ae8bd3d63b3134ad510a333b534f9df057aafdbb8c0f194bb
+//   maindoc/UBL-CreditNote-2.1.xsd  sha256:1e117b6c1ab713604b29b0d685442a81a0c78a82575445ee8c43e6050cda7454
 // =====================================================================
 //
 // UBL element yazım sırası tabloları — her tip için XSD `xsd:sequence` sırası.
@@ -105,6 +106,72 @@ export const DESPATCH_SEQ = [
 ] as const;
 
 /**
+ * `CreditNoteType` — maindoc/UBL-CreditNote-2.1.xsd
+ *
+ * 🔴 GİB BU ŞEMAYI DARALTMAMIŞTIR — `UBL-CreditNote-2.1.xsd` stok OASIS hâliyle
+ * pakette durur. `InvoiceType`'tan atılan slotlar (`AccountingCostCode`,
+ * `PayeeParty`, `DeliveryTerms`, `BuyerReference`, `DiscrepancyResponse`,
+ * `StatementDocumentReference`) burada DURUYOR. Tablo taşıyıcıdır: emit
+ * edilmeyen slot çıktıya düşmez, ama tablonun XSD ile birebir kalması
+ * sekans bekçisinin doğru çalışması için şarttır.
+ * 
+ * e-MM (Müstahsil Makbuzu) bu kökü kullanır — 27/27 prod belge ölçüldü.
+ */
+export const CREDIT_NOTE_SEQ = [
+  'UBLExtensions',
+  'UBLVersionID',
+  'CustomizationID',
+  'ProfileID',
+  'ProfileExecutionID',
+  'ID',
+  'CopyIndicator',
+  'UUID',
+  'IssueDate',
+  'IssueTime',
+  'TaxPointDate',
+  'CreditNoteTypeCode',
+  'Note',
+  'DocumentCurrencyCode',
+  'TaxCurrencyCode',
+  'PricingCurrencyCode',
+  'PaymentCurrencyCode',
+  'PaymentAlternativeCurrencyCode',
+  'AccountingCostCode',
+  'AccountingCost',
+  'LineCountNumeric',
+  'BuyerReference',
+  'InvoicePeriod',
+  'DiscrepancyResponse',
+  'OrderReference',
+  'BillingReference',
+  'DespatchDocumentReference',
+  'ReceiptDocumentReference',
+  'ContractDocumentReference',
+  'AdditionalDocumentReference',
+  'StatementDocumentReference',
+  'OriginatorDocumentReference',
+  'Signature',
+  'AccountingSupplierParty',
+  'AccountingCustomerParty',
+  'PayeeParty',
+  'BuyerCustomerParty',
+  'SellerSupplierParty',
+  'TaxRepresentativeParty',
+  'Delivery',
+  'DeliveryTerms',
+  'PaymentMeans',
+  'PaymentTerms',
+  'TaxExchangeRate',
+  'PricingExchangeRate',
+  'PaymentExchangeRate',
+  'PaymentAlternativeExchangeRate',
+  'AllowanceCharge',
+  'TaxTotal',
+  'LegalMonetaryTotal',
+  'CreditNoteLine',
+] as const;
+
+/**
  * `InvoiceLineType` — common/UBL-CommonAggregateComponents-2.1.xsd
  *
  * B-10: `Delivery`, `AllowanceCharge` ÖNCESİNDEDİR — GİB sırası da böyledir.
@@ -140,6 +207,49 @@ export const DESPATCH_LINE_SEQ = [
   'DocumentReference',
   'Item',
   'Shipment',
+] as const;
+
+/**
+ * `CreditNoteLineType` — common/UBL-CommonAggregateComponents-2.1.xsd
+ *
+ * 🔴 SIRA `InvoiceLineType` İLE AYNI DEĞİLDİR — iki gerçek sapma var ve ikisi
+ * de sessizce yanlış XML üretir:
+ *   • miktar elemanı `cbc:CreditedQuantity`'dir (`InvoicedQuantity` DEĞİL),
+ *   • `cac:TaxTotal` `cac:AllowanceCharge`'dan ÖNCE gelir (faturada TERSİ).
+ * `cac:WithholdingTaxTotal` slotu bu tipte HİÇ YOKTUR.
+ * 
+ * Tip GİB tarafından daraltılmamıştır (ortak XSD'de stok OASIS hâlinde durur),
+ * bu yüzden tablo 28 slot taşır; emit edilen yalnız bir avuçtur.
+ */
+export const CREDIT_NOTE_LINE_SEQ = [
+  'ID',
+  'UUID',
+  'Note',
+  'CreditedQuantity',
+  'LineExtensionAmount',
+  'TaxPointDate',
+  'AccountingCostCode',
+  'AccountingCost',
+  'PaymentPurposeCode',
+  'FreeOfChargeIndicator',
+  'InvoicePeriod',
+  'OrderLineReference',
+  'DiscrepancyResponse',
+  'DespatchLineReference',
+  'ReceiptLineReference',
+  'BillingReference',
+  'DocumentReference',
+  'PricingReference',
+  'OriginatorParty',
+  'Delivery',
+  'PaymentTerms',
+  'TaxTotal',
+  'AllowanceCharge',
+  'Item',
+  'Price',
+  'DeliveryTerms',
+  'SubCreditNoteLine',
+  'ItemPriceExtension',
 ] as const;
 
 /**
@@ -825,7 +935,9 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   ContractualDelivery: 'DeliveryType',
   ContractualDocumentReference: 'DocumentReferenceType',
   Country: 'CountryType',
+  CreditNote: 'CreditNoteType',
   CreditNoteDocumentReference: 'DocumentReferenceType',
+  CreditNoteLine: 'CreditNoteLineType',
   CrewMemberPerson: 'PersonType',
   CustomerParty: 'CustomerPartyType',
   CustomsAgentParty: 'PartyType',
@@ -1028,6 +1140,7 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
   StatementPeriod: 'PeriodType',
   StatusPeriod: 'PeriodType',
   SubcontractorParty: 'PartyType',
+  SubCreditNoteLine: 'CreditNoteLineType',
   SubInvoiceLine: 'InvoiceLineType',
   SubscriberParty: 'PartyType',
   SubstituteCarrierParty: 'PartyType',
@@ -1094,8 +1207,10 @@ export const ELEMENT_COMPLEX_TYPE: Readonly<Record<string, string>> = {
 export const SEQUENCE_BY_COMPLEX_TYPE: Readonly<Record<string, readonly string[]>> = {
   InvoiceType: INVOICE_SEQ,
   DespatchAdviceType: DESPATCH_SEQ,
+  CreditNoteType: CREDIT_NOTE_SEQ,
   InvoiceLineType: INVOICE_LINE_SEQ,
   DespatchLineType: DESPATCH_LINE_SEQ,
+  CreditNoteLineType: CREDIT_NOTE_LINE_SEQ,
   TaxTotalType: TAX_TOTAL_SEQ,
   TaxSubtotalType: TAX_SUBTOTAL_SEQ,
   TaxCategoryType: TAX_CATEGORY_SEQ,

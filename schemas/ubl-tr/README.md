@@ -15,17 +15,27 @@ koşumunda çalışır.
 
 ## Kapsam
 
-Yalnız üretecin ihtiyaç duyduğu üç dosya taşınmıştır:
+Yalnız üretecin ihtiyaç duyduğu dört dosya taşınmıştır:
 
 | Dosya | Sağladığı |
 | --- | --- |
-| `common/UBL-CommonAggregateComponents-2.1.xsd` | 27 ortak bileşen sekansı + genel eleman→tip bildirimleri |
+| `common/UBL-CommonAggregateComponents-2.1.xsd` | 28 ortak bileşen sekansı + genel eleman→tip bildirimleri |
 | `maindoc/UBL-Invoice-2.1.xsd` | `InvoiceType` kök sekansı |
 | `maindoc/UBL-DespatchAdvice-2.1.xsd` | `DespatchAdviceType` kök sekansı |
+| `maindoc/UBL-CreditNote-2.1.xsd` | `CreditNoteType` kök sekansı — e-MM (Müstahsil Makbuzu) |
 
-`CreditNote` / `ReceiptAdvice` / `ApplicationResponse` kütüphanede üretilmediği için
-taşınmadı; üretilmeye başlandığında ilgili maindoc dosyası buraya eklenir ve
+`ReceiptAdvice` / `ApplicationResponse` kütüphanede üretilmediği için taşınmadı;
+üretilmeye başlandığında ilgili maindoc dosyası buraya eklenir ve
 `scripts/generate-sequences.ts` içindeki `SOURCES` listesine yazılır.
+
+### ⚠️ CreditNote DARALTILMAMIŞTIR
+
+GİB paketi `UBL-CreditNote-2.1.xsd`'yi **stok OASIS hâliyle** dağıtır: `InvoiceType`'tan
+attığı slotların (`AccountingCostCode`, `PayeeParty`, `DeliveryTerms`, `BuyerReference`,
+`DiscrepancyResponse`, `StatementDocumentReference`) tamamı `CreditNoteType`'ta DURUR.
+Aynı şey ortak XSD'deki `CreditNoteLineType` için de geçerlidir (28 slot). Tablolar bu
+yüzden fatura muadillerinden geniştir; tablo taşıyıcı olduğundan emit edilmeyen slot
+çıktıya yansımaz.
 
 ## Tazeleme
 
@@ -35,6 +45,7 @@ GİB paketi güncellenirse dosyaları elle kopyalayıp üreteci yeniden koşturu
 cp <gib-paketi>/common/UBL-CommonAggregateComponents-2.1.xsd schemas/ubl-tr/common/
 cp <gib-paketi>/maindoc/UBL-Invoice-2.1.xsd                  schemas/ubl-tr/maindoc/
 cp <gib-paketi>/maindoc/UBL-DespatchAdvice-2.1.xsd           schemas/ubl-tr/maindoc/
+cp <gib-paketi>/maindoc/UBL-CreditNote-2.1.xsd               schemas/ubl-tr/maindoc/
 npm run generate:sequences
 npm test
 ```

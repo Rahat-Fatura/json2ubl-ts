@@ -62,6 +62,7 @@ const SOURCES = [
   'common/UBL-CommonAggregateComponents-2.1.xsd',
   'maindoc/UBL-Invoice-2.1.xsd',
   'maindoc/UBL-DespatchAdvice-2.1.xsd',
+  'maindoc/UBL-CreditNote-2.1.xsd',
 ] as const;
 
 interface TableSpec {
@@ -97,6 +98,20 @@ const TABLES: readonly TableSpec[] = [
     complexType: 'DespatchAdviceType',
     notes: ['GİB `DocumentStatusCode` slotunu atmıştır (eski elle kopyada vardı).'],
   },
+  {
+    constName: 'CREDIT_NOTE_SEQ',
+    complexType: 'CreditNoteType',
+    notes: [
+      '🔴 GİB BU ŞEMAYI DARALTMAMIŞTIR — `UBL-CreditNote-2.1.xsd` stok OASIS hâliyle',
+      'pakette durur. `InvoiceType`\'tan atılan slotlar (`AccountingCostCode`,',
+      '`PayeeParty`, `DeliveryTerms`, `BuyerReference`, `DiscrepancyResponse`,',
+      '`StatementDocumentReference`) burada DURUYOR. Tablo taşıyıcıdır: emit',
+      'edilmeyen slot çıktıya düşmez, ama tablonun XSD ile birebir kalması',
+      'sekans bekçisinin doğru çalışması için şarttır.',
+      '',
+      'e-MM (Müstahsil Makbuzu) bu kökü kullanır — 27/27 prod belge ölçüldü.',
+    ],
+  },
 
   // ─── Satırlar ────────────────────────────────────────────────────────────
   {
@@ -105,6 +120,20 @@ const TABLES: readonly TableSpec[] = [
     notes: ['B-10: `Delivery`, `AllowanceCharge` ÖNCESİNDEDİR — GİB sırası da böyledir.'],
   },
   { constName: 'DESPATCH_LINE_SEQ', complexType: 'DespatchLineType' },
+  {
+    constName: 'CREDIT_NOTE_LINE_SEQ',
+    complexType: 'CreditNoteLineType',
+    notes: [
+      '🔴 SIRA `InvoiceLineType` İLE AYNI DEĞİLDİR — iki gerçek sapma var ve ikisi',
+      'de sessizce yanlış XML üretir:',
+      '  • miktar elemanı `cbc:CreditedQuantity`\'dir (`InvoicedQuantity` DEĞİL),',
+      '  • `cac:TaxTotal` `cac:AllowanceCharge`\'dan ÖNCE gelir (faturada TERSİ).',
+      '`cac:WithholdingTaxTotal` slotu bu tipte HİÇ YOKTUR.',
+      '',
+      'Tip GİB tarafından daraltılmamıştır (ortak XSD\'de stok OASIS hâlinde durur),',
+      'bu yüzden tablo 28 slot taşır; emit edilen yalnız bir avuçtur.',
+    ],
+  },
 
   // ─── Vergi ───────────────────────────────────────────────────────────────
   { constName: 'TAX_TOTAL_SEQ', complexType: 'TaxTotalType' },

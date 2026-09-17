@@ -14,7 +14,7 @@
  */
 
 /** Kütüphanenin ürettiği UBL kök elemanları. */
-export type UblRootName = 'Invoice' | 'DespatchAdvice';
+export type UblRootName = 'Invoice' | 'DespatchAdvice' | 'CreditNote';
 
 /** Kökten BAĞIMSIZ ad alanı bildirimleri (her belge türünde birebir aynı). */
 const SHARED_NAMESPACES = {
@@ -46,6 +46,17 @@ export const INVOICE_NAMESPACES = namespacesFor('Invoice');
 
 /** UBL-TR DespatchAdvice namespace'leri */
 export const DESPATCH_NAMESPACES = namespacesFor('DespatchAdvice');
+
+/**
+ * UBL-TR CreditNote namespace'leri — e-MM (Müstahsil Makbuzu) kökü.
+ *
+ * Kök adı dışında fatura/irsaliye ile TEK fark yoktur; bildirimler `namespacesFor`
+ * tarafından kök adından mekanik olarak türer. 27/27 prod e-MM belgesinin kök
+ * etiketi bu haritayla birebir örtüşür (ölçüldü) — `ccts`, `qdt`, `ubltr`, `udt`
+ * bildirimleri prod'da FAZLADAN duruyor ama hiçbir eleman onları kullanmıyor,
+ * bu yüzden kopyalanmadı (fatura tarafında da kopyalanmamıştı).
+ */
+export const CREDIT_NOTE_NAMESPACES = namespacesFor('CreditNote');
 
 /** Sabit UBL-TR değerleri */
 export const UBL_CONSTANTS = {

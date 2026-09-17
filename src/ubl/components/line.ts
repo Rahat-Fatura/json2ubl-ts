@@ -1,6 +1,11 @@
 import type { InvoiceLineInput } from '../../types/invoice-input';
 import type { DespatchLineInput } from '../../types/despatch-input';
-import type { ItemInput } from '../../types/common';
+import type {
+  ItemInput,
+  PriceInput,
+  TaxTotalInput,
+  AllowanceChargeInput,
+} from '../../types/common';
 import {
   cbcOptionalTag,
   cbcOptionalAmountTag,
@@ -23,6 +28,7 @@ import {
   ORDER_LINE_REFERENCE_SEQ,
   PRICE_SEQ,
   DESPATCH_LINE_SEQ,
+  CREDIT_NOTE_LINE_SEQ,
   emitInOrder,
 } from '../sequences/xsd-sequence';
 import { configManager } from '../../calculator/config-manager';
@@ -175,6 +181,86 @@ function serializePrice(priceAmount: number, currencyCode: string, indent: strin
   });
   const body = joinLines(inner.map(s => indent + '  ' + s));
   return [`${indent}<cac:Price>`, body, `${indent}</cac:Price>`].join('\n');
+}
+
+/**
+ * `cac:CreditNoteLine` girdisi — `InvoiceLineInput`ın CreditNote ikizi.
+ *
+ * Alan adları BİLEREK UBL elemanının adını taşır (`creditedQuantity`): iki tip
+ * arasındaki tek gerçek veri farkı budur ve `invoicedQuantity` adını korumak,
+ * tele giden elemanın adını gizleyerek tam da `xslt type` tuzağındaki gibi bir
+ * "ad ≠ gerçek" sapması üretirdi.
+ *
+ * `withholdingTaxTotal` YOKTUR: `CreditNoteLineType` o slotu HİÇ taşımaz
+ * (`InvoiceLineType` taşır) — tip düzeyinde kurulamaz kılındı.
+ */
+export interface CreditNoteLineInput {
+  /** Satır numarası. */
+  id: string;
+  /** Satır notları — `cbc:Note`, `cbc:ID`den hemen SONRA. */
+  notes?: string[];
+  /** Miktar — `cbc:CreditedQuantity` (faturadaki `InvoicedQuantity` DEĞİL). */
+  creditedQuantity: number;
+  /** Birim kodu (UnitCodeList). */
+  unitCode: string;
+  /** Satır tutarı — `cbc:LineExtensionAmount`. */
+  lineExtensionAmount: number;
+  /** Satır vergi toplamı. */
+  taxTotal: TaxTotalInput;
+  /** Ürün bilgileri. */
+  item: ItemInput;
+  /** Fiyat bilgileri. */
+  price: PriceInput;
+  /** Satır indirimleri/ek yükleri. */
+  allowanceCharges?: AllowanceChargeInput[];
+}
+
+/**
+ * CreditNoteLine → XML fragment. Sequence: `CREDIT_NOTE_LINE_SEQ`.
+ *
+ * 🔴 FATURA SATIRINDAN İKİ SAPMA, İKİSİ DE XSD'DEN:
+ *   1. miktar elemanı `cbc:CreditedQuantity`,
+ *   2. `cac:TaxTotal` `cac:AllowanceCharge`\'dan ÖNCE gelir (faturada TERSİ).
+ * Sıra yine ELLE kurulmaz — `emitInOrder` tabloyu okur; bu üreticinin tek işi
+ * hangi slotun doldurulacağını söylemektir.
+ *
+ * Gövde bileşenleri (`serializeItem`, `serializePrice`, `serializeTaxTotal`,
+ * `serializeAllowanceCharge`) fatura ile AYNI üreticilerdir — bu deponun en
+ * pahalı dersi (elle kopyalanan ikinci bir taraf/kalem üreticisinin canlı GİB
+ * kapısında dört kusur doğurması) burada da uygulanıyor.
+ */
+export function serializeCreditNoteLine(
+  line: CreditNoteLineInput,
+  currencyCode: string,
+  indent: string = '',
+): string {
+  const inner = emitInOrder(CREDIT_NOTE_LINE_SEQ, {
+    ID: () => cbcRequiredTag('ID', line.id, 'CreditNoteLine'),
+    Note: () =>
+      line.notes?.length
+        ? joinLines(
+            line.notes
+              .filter(n => isNonEmpty(n))
+              .map(n => `${indent}  ${cbcOptionalTag('Note', n)}`),
+          )
+        : '',
+    CreditedQuantity: () =>
+      cbcOptionalQuantityTag('CreditedQuantity', line.creditedQuantity, line.unitCode),
+    LineExtensionAmount: () =>
+      cbcOptionalAmountTag('LineExtensionAmount', line.lineExtensionAmount, currencyCode),
+    TaxTotal: () => serializeTaxTotal(line.taxTotal, currencyCode, indent + '  '),
+    AllowanceCharge: () =>
+      line.allowanceCharges
+        ? joinLines(
+            line.allowanceCharges.map(ac => serializeAllowanceCharge(ac, currencyCode, indent + '  ')),
+          )
+        : '',
+    Item: () => serializeItem(line.item, indent + '  '),
+    Price: () => serializePrice(line.price.priceAmount, currencyCode, indent + '  '),
+  });
+
+  const body = joinLines(inner.map(s => (s.startsWith(indent) ? s : indent + '  ' + s)));
+  return [`${indent}<cac:CreditNoteLine>`, body, `${indent}</cac:CreditNoteLine>`].join('\n');
 }
 
 /** DespatchLine → XML fragment. Sequence: DESPATCH_LINE_SEQ. */
