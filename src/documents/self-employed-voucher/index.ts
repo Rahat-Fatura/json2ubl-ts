@@ -36,11 +36,10 @@ export type { SelfEmployedVoucherValidateOptions } from './rules';
 export { validateSelfEmployedVoucher } from './rules';
 
 export type {
-  SelfEmployedVoucherTaxInclusiveConvention,
   SelfEmployedVoucherAmountChain,
   SelfEmployedVoucherTotals,
 } from './totals';
-export { SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION, selfEmployedVoucherTotals } from './totals';
+export { selfEmployedVoucherTotals } from './totals';
 
 export type { CalculatedSelfEmployedVoucher } from './mapper';
 export {

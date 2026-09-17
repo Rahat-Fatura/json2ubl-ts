@@ -1,26 +1,27 @@
 /**
- * 🔴 `TaxInclusiveAmount` KONVANSİYONU — ÇİVİ.
+ * e-SMM `TaxInclusiveAmount` — KARAR ÇİVİSİ.
  *
  * Bu dosya bir davranışı doğrulamaktan çok bir KARARI görünür tutar.
  *
- * UBL-TR'nin parasal formülü `TIA = TaxExclusive + Σ(TaxTotal.TaxAmount)` der.
- * e-SMM'de `0003` (stopaj) ve `9015` (KDV tevkifatı) de `cac:TaxTotal`
- * düzlemindedir; formül harfiyen uygulansaydı 10.000 brüt / %20 stopaj / %20 KDV
- * belgesinde `TaxInclusiveAmount` **14.000** çıkardı. Bizim konvansiyonumuz
- * **12.000** diyor (brüt + hesaplanan KDV).
+ * Karar kullanıcıya aittir (2026-09-17): stopaj/tevkifat fatura düzlemindeki
+ * gibi uygulanır — `TIA = brüt + hesaplanan KDV`, kesinti yalnız
+ * `PayableAmount`tan düşer. Dayanağı kullanıcının üretim şablonunun kendi
+ * çıktısıdır (2.000 · KDV 400 · tevkifat 160 → TIA 2.400 · Ödenecek 2.240) ve
+ * o çıktı aşağıda ayrı bir vaka olarak çivilidir.
  *
- * ⚠️ KONVANSİYONUN GİB METNİ YOKTUR ve elimizdeki 12 prod belgenin HİÇBİRİ bu
- * dalı test etmiyor (hepsi stopajsız). **Stopajlı gerçek bir prod örneği bu
- * soruyu tek başına kapatır.** O örnek geldiğinde değişecek TEK yer
- * `src/documents/self-employed-voucher/totals.ts`tir; bu test o değişikliği
- * sessiz olmaktan çıkarır.
+ * Eskiden burada bir `SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION` anahtarı
+ * vardı; UBL-TR formülünün harfi harfine okunuşu (`TIA = TaxExclusive +
+ * Σ TaxTotal`) üretim çıktısıyla ÇELİŞTİĞİ için o dal koddan kaldırıldı.
+ * Formülün ne derdiği yine de ölçülüp kayda geçiriliyor (aşağıdaki
+ * `taxExclusiveAmount + taxTotalAmount` beklentileri) — geri dönülürse fark
+ * görünsün diye.
+ *
+ * Fatura düzlemiyle şekil eşitliği AYRI dosyada:
+ * `__tests__/self-employed-voucher/invoice-parity.test.ts`.
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION,
-  selfEmployedVoucherTotals,
-} from '../../src/documents/self-employed-voucher';
+import { selfEmployedVoucherTotals } from '../../src/documents/self-employed-voucher';
 import { SimpleSelfEmployedVoucherBuilder } from '../../src/documents/self-employed-voucher';
 import { SELF_EMPLOYED_VOUCHER_SCENARIOS } from './scenarios';
 
@@ -34,10 +35,6 @@ const CANONICAL = {
 };
 
 describe('e-SMM toplam zinciri', () => {
-  it('yürürlükteki konvansiyon `gross-plus-vat` — DEĞİŞİRSE BU TEST KIRILIR', () => {
-    expect(SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION).toBe('gross-plus-vat');
-  });
-
   it('zincir baştan sona çözülür (brüt → stopaj → net → KDV → tevkifat → tahsilat)', () => {
     const t = selfEmployedVoucherTotals(CANONICAL);
     expect(t.lineExtensionAmount).toBe(10_000); // Brüt ücret
@@ -45,8 +42,8 @@ describe('e-SMM toplam zinciri', () => {
     expect(t.payableAmount).toBe(9_000); //       Tahsil edilen
   });
 
-  it('🔴 SADECE STOPAJLI belgede TIA = 12.000 — UBL-TR formülü 14.000 derdi', () => {
-    /* Planın kanonik çelişki örneği: 10.000 brüt · %20 stopaj · %20 KDV.
+  it('SADECE STOPAJLI belgede TIA = 12.000 — UBL-TR formülü 14.000 derdi', () => {
+    /* Kanonik çelişki örneği: 10.000 brüt · %20 stopaj · %20 KDV.
      * Formül (`TIA = TaxExclusive + Σ TaxTotal.TaxAmount`) stopajı da "vergi
      * dahil tutara" ekler → 14.000. Bizim okumamız 12.000. */
     const t = selfEmployedVoucherTotals({ ...CANONICAL, vatWithholding: 0 });
@@ -55,7 +52,7 @@ describe('e-SMM toplam zinciri', () => {
     expect(t.payableAmount).toBe(10_000); // 10.000 − 2.000 + 2.000
   });
 
-  it('🔴 STOPAJ + KDV TEVKİFATLI belgede fark BÜYÜR — 12.000 ↔ 15.000', () => {
+  it('STOPAJ + KDV TEVKİFATLI belgede fark BÜYÜR — 12.000 ↔ 15.000', () => {
     // 9015 de TaxTotal düzleminde olduğu için formül onu da TIA'ya ekler.
     const t = selfEmployedVoucherTotals(CANONICAL);
     expect(t.taxInclusiveAmount).toBe(12_000);
@@ -67,10 +64,11 @@ describe('e-SMM toplam zinciri', () => {
     expect(selfEmployedVoucherTotals(CANONICAL).taxTotalAmount).toBe(5_000);
   });
 
-  it('stopajsız belgede iki okuma ÇAKIŞIR — prod belgelerin dalı bu', () => {
+  it('stopajsız belgede iki okuma ÇAKIŞIR — 12/12 prod belgenin dalı bu', () => {
     /* 12/12 prod belge stopajsız ve tevkifatsız; orada `brüt + KDV` ile
-     * `TaxExclusive + Σ TaxTotal` AYNI sayıdır. Konvansiyonun kanıtsız kalmasının
-     * sebebi tam olarak budur — ölçülen veri iki okumayı AYIRT ETMİYOR. */
+     * `TaxExclusive + Σ TaxTotal` AYNI sayıdır. Sorunun uzun süre kanıtsız
+     * kalmasının sebebi tam olarak budur — ölçülen veri iki okumayı AYIRT
+     * ETMİYORDU; ayırt eden kanıt kullanıcının üretim çıktısından geldi. */
     const t = selfEmployedVoucherTotals({
       grossFee: 10_000,
       incomeTaxWithholding: 0,
@@ -83,7 +81,7 @@ describe('e-SMM toplam zinciri', () => {
     expect(t.payableAmount).toBe(12_000);
   });
 
-  it('konvansiyon ÜRETİLEN BELGEYE kadar gider (golden senaryosu üzerinden)', () => {
+  it('karar ÜRETİLEN BELGEYE kadar gider (golden senaryosu üzerinden)', () => {
     const scenario = SELF_EMPLOYED_VOUCHER_SCENARIOS.find(
       s => s.slug === 'c-stopajli-kdv-tevkifatli',
     )!;
@@ -94,7 +92,7 @@ describe('e-SMM toplam zinciri', () => {
 
     expect(xml).toContain('<cbc:TaxInclusiveAmount currencyID="TRY">12000.00</cbc:TaxInclusiveAmount>');
     expect(xml).toContain('<cbc:PayableAmount currencyID="TRY">9000.00</cbc:PayableAmount>');
-    // 14.000 çıkarsa konvansiyon sessizce değişmiş demektir.
+    // 14.000 çıkarsa karar sessizce değişmiş demektir.
     expect(xml).not.toContain('14000.00');
   });
 });

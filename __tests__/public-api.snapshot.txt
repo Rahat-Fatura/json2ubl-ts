@@ -6,7 +6,7 @@
 # Bir satırın KAYBOLMASI = tüketici derlemesinin kırılması. Bu dosyadaki
 # bir satırı silen commit, o kırılmayı BİLEREK yaptığını beyan etmiş olur.
 #
-# Toplam: 348 ad
+# Toplam: 346 ad
 value	ADDITIONAL_ITEM_ID_SCHEME_IDS	VariableDeclaration
 value	AMOUNT_IN_WORDS_NOTE_PATTERN	VariableDeclaration
 value	AMOUNT_IN_WORDS_PREFIX	VariableDeclaration
@@ -178,7 +178,6 @@ type	ProducerReceiptValidationStage	TypeAliasDeclaration
 type	ResolvedProfileType	InterfaceDeclaration
 value	SELF_EMPLOYED_VOUCHER_KNOWN_PATH_TEMPLATES	VariableDeclaration
 value	SELF_EMPLOYED_VOUCHER_READ_ONLY_PATHS	VariableDeclaration
-value	SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION	VariableDeclaration
 value	SELF_EMPLOYED_VOUCHER_TAX_TYPE_CODES	VariableDeclaration
 value	SEND_METHOD_DOCUMENT_TYPE_CODE	VariableDeclaration
 type	SelfEmployedVoucherAmountChain	InterfaceDeclaration
@@ -199,7 +198,6 @@ type	SelfEmployedVoucherSessionOptions	InterfaceDeclaration
 type	SelfEmployedVoucherSessionPathMap	InterfaceDeclaration
 value	SelfEmployedVoucherSessionPaths	VariableDeclaration
 type	SelfEmployedVoucherSessionUpdateOverloads	InterfaceDeclaration
-type	SelfEmployedVoucherTaxInclusiveConvention	TypeAliasDeclaration
 type	SelfEmployedVoucherTaxSubtotalInput	InterfaceDeclaration
 type	SelfEmployedVoucherTaxTotalInput	InterfaceDeclaration
 type	SelfEmployedVoucherTaxTypeCode	TypeAliasDeclaration

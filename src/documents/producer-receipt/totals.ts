@@ -9,14 +9,17 @@
  * = Ödenecek Tutar      TaxInclusiveAmount  ≡  PayableAmount
  * ```
  *
- * ── 🔴 e-SMM'DEN EN BÜYÜK AYRILIK: `TaxInclusiveAmount` ÇIKARILIR ──────────
- * e-SMM'de `TaxInclusiveAmount` konvansiyonu KAYNAKSIZDIR ve kütüphane onu bir
- * SABİTLE görünür kılmak zorunda kalmıştı: orada vergi EKLENİR (brüt + KDV) ve
- * hangi okumanın doğru olduğunu ayırt eden prod örneği YOKTU.
+ * ── ⚠️ e-SMM'DEN AYRILIK: `TaxInclusiveAmount` ÇIKARILIR — ÇELİŞKİ DEĞİL ────
+ * e-SMM'de `TIA = brüt + hesaplanan KDV`, burada `TIA = brüt − kesinti`. İkisi
+ * BİRBİRİNİ YALANLAMAZ ve **biri diğerine bakılarak DÜZELTİLMEMELİDİR**: tek
+ * sebep e-MM'de ÇIKIŞ KDV'Sİ OLMAMASIDIR. Müstahsil KDV mükellefi değildir,
+ * dolayısıyla `0015` hiç geçmez (27/27 prod belgede yok) — "vergi dahil tutara"
+ * eklenecek bir vergi de yoktur. `TaxTotal` altındaki her alt toplam müstahsile
+ * ödenecek tutardan DÜŞER.
  *
- * e-MM'de durum TERSİ ve NET: burada vergi diye bir "ekleme" yoktur; `TaxTotal`
- * altındaki her alt toplam müstahsile ödenecek tutardan DÜŞER. Müstahsil KDV
- * mükellefi değildir, dolayısıyla `0015` hiç geçmez (27/27 prod belgede yok).
+ * 🔑 İKİSİNİN ORTAK YANI, ödenecek tutarın KESİNTİ DÜŞÜLEREK bulunmasıdır; e-SMM
+ * bunu `PayableAmount`ta yapar, e-MM'de `TIA` zaten `PayableAmount`a eşittir.
+ * Karşı not: `self-employed-voucher/totals.ts`.
  *
  * 🔑 KONVANSİYON SABİTİ BU DOSYADA YOKTUR VE OLMAMALIDIR — çünkü karar değil
  * ÖLÇÜM var. 27 gerçek prod belgenin 25'inde (kalan 2'si belge seviyesi

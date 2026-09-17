@@ -1,5 +1,5 @@
 /**
- * e-SMM TOPLAM ZİNCİRİ — konvansiyonun TEK YERİ.
+ * e-SMM TOPLAM ZİNCİRİ — TEK YOL, anahtar YOK.
  *
  * ```
  *   Brüt Ücret          LineExtensionAmount
@@ -10,50 +10,40 @@
  * = Tahsil Edilen       PayableAmount
  * ```
  *
- * ── 🔴 `TaxInclusiveAmount` KONVANSİYONU — KAYNAKSIZ, TEK YERDE ────────────
- * UBL-TR'nin parasal formülü şudur:
+ * ── `TaxInclusiveAmount` — KULLANICI KARARI (2026-09-17) ───────────────────
+ * Karar: *"stopajı aynı faturadaki gibi uygulayacaksın; tutar orada nasıl
+ * hesaplanıyorsa o şekilde hesaplanacak."* Dayanağı kullanıcının ÜRETİM
+ * şablonunun kendi çıktısıdır (2.000 TL hizmet · %20 KDV · %40 KDV tevkifatı):
  *
- *     TaxInclusive = TaxExclusive + Σ(TaxTotal.TaxAmount)
- *     Payable      = TaxInclusive − Σ(WithholdingTaxTotal.TaxAmount)
+ *     Mal Hizmet Toplam Tutarı      2.000,00
+ *     Hesaplanan KDV %20              400,00
+ *     Hesaplanan KDV Tevkifat (%40)   160,00
+ *     Vergiler Dahil Toplam Tutar   2.400,00   = 2.000 + 400   → tevkifat GİRMEZ
+ *     Ödenecek Tutar                2.240,00   = 2.400 − 160   → tevkifat DÜŞER
  *
- * e-SMM'de `0003` ve `9015` de `cac:TaxTotal` düzlemindedir (`9015`'in
- * `WithholdingTaxTotal`da yazılması YASAK). Formül harfiyen uygulanırsa
- * 10.000 brüt / %20 stopaj / %20 KDV'li bir belgede `TaxInclusiveAmount`
- * **14.000** çıkar — stopaj ve tevkifat da "vergi dahil tutara" eklenmiş olur.
- * Bizim konvansiyonumuz **12.000** der: vergi dahil tutar = brüt + hesaplanan
- * KDV; stopaj ve tevkifat yalnız `PayableAmount`ı etkiler.
+ * Yani `TIA = brüt + hesaplanan KDV`; kesintiler yalnız `PayableAmount`ı
+ * etkiler. Bu, fatura düzleminin tevkifatı `cac:WithholdingTaxTotal`da taşıyan
+ * dalıyla BİREBİR aynı şekildir ve ölçülmüştür (bkz. eşitlik testi).
+ * UBL-TR formülünün harfi harfine okunuşu (`TIA = TaxExclusive + Σ TaxTotal`)
+ * aynı belgede 2.560 derdi — üretim çıktısı onu DIŞLIYOR, bu yüzden o dal
+ * koddan tamamen kaldırıldı (eskiden `'ubltr-formula'` anahtarıydı).
  *
- * ⚠️ **BU KONVANSİYONUN GİB METNİ YOKTUR.** e-SMM gövdesi için yayınlanmış
- * kılavuz/XSD/şematron olmadığından çözüm normatif bir kaynaktan gelmiyor;
- * anlamsal okumadan geliyor ("vergi dahil tutar" = bedel + üzerine hesaplanan
- * KDV). Elimizdeki **12 prod belgenin HİÇBİRİ bu dalı test etmiyor** — hepsi
- * stopajsız (tek vergi `0015`), 12/12 alıcı TCKN'li, yani GVK 94 tevkifat
- * yükümlüsü değil.
+ * ── ⚠️ HÂLÂ AÇIK OLAN TEK EKSEN: `0003` GELİR VERGİSİ STOPAJI ──────────────
+ * Üretim çıktısında **stopaj satırı YOKTUR**; kapanan eksen `9015`tir. Fatura
+ * düzleminde `0003` `cac:TaxTotal`a NEGATİF girer, yani orada `TIA`yı da
+ * düşürür (ölçüldü: 10.000 brüt / %20 KDV / %20 stopaj → fatura `TIA` 10.000,
+ * e-SMM `TIA` 12.000). İki düzlemde de **`PayableAmount` AYNI** çıkar; ayrışan
+ * yalnız `TIA`dır. Bu fark teste çivilidir — birileri "tutarsızlık" sanıp
+ * sessizce düzeltmesin diye. Stopajlı bir üretim çıktısı geldiğinde kapanacak
+ * TEK yer `selfEmployedVoucherTotals` gövdesidir.
  *
- * 🔑 KARAR KULLANICIYA AİT; buradaki iş onu GÖRÜNÜR ve TEK NOKTADAN
- * DEĞİŞTİRİLEBİLİR kılmaktır. **STOPAJLI GERÇEK BİR PROD ÖRNEĞİ bu soruyu tek
- * başına kapatır.** Örnek geldiğinde değişecek tek şey
- * `SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION` ve `selfEmployedVoucherTotals` gövdesidir; başka
- * hiçbir dosya bu kararı bilmez. Konvansiyon ayrıca teste çivilidir
- * (`__tests__/self-employed-voucher/totals.test.ts`).
+ * ── e-MM İLE FARK: ÇELİŞKİ DEĞİL ──────────────────────────────────────────
+ * `producer-receipt/totals.ts`te `TIA = brüt − kesinti` ölçülmüştür (25/25 prod
+ * belge) ve DOĞRUDUR: e-MM'de müstahsil KDV mükellefi olmadığı için ÇIKIŞ KDV'Sİ
+ * YOKTUR, dolayısıyla "eklenecek" bir vergi de yoktur. İki belgenin ORTAK yanı
+ * `PayableAmount`ın kesinti düşülerek bulunmasıdır; ayrıştıkları yer yalnız
+ * KDV'nin var olup olmamasıdır. Biri diğerine bakıp DÜZELTİLMEMELİDİR.
  */
-
-/**
- * Yürürlükteki `TaxInclusiveAmount` konvansiyonunun ADI.
- *
- *  • `'gross-plus-vat'` (YÜRÜRLÜKTE) — `TIA = brüt + hesaplanan KDV`.
- *    Stopaj ve KDV tevkifatı `TaxInclusiveAmount`a GİRMEZ.
- *  • `'ubltr-formula'` — `TIA = TaxExclusive + Σ TaxTotal.TaxAmount`
- *    (UBL-TR formülünün harfi harfine uygulanması). Stopajlı prod örneği
- *    bunu doğrularsa geçiş TEK SATIRLIKTIR.
- */
-export type SelfEmployedVoucherTaxInclusiveConvention = 'gross-plus-vat' | 'ubltr-formula';
-
-/**
- * 🔴 KAYNAKSIZ KARAR — GİB metni YOK, stopajlı prod örneği BEKLENİYOR.
- * Gerekçenin tamamı dosya başlığındadır. Değiştirmeden önce oradaki notu okuyun.
- */
-export const SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION: SelfEmployedVoucherTaxInclusiveConvention = 'gross-plus-vat';
 
 /** Zincirin ham bileşenleri — hepsi POZİTİF tutar olarak verilir. */
 export interface SelfEmployedVoucherAmountChain {
@@ -73,7 +63,7 @@ export interface SelfEmployedVoucherAmountChain {
 export interface SelfEmployedVoucherTotals {
   lineExtensionAmount: number;
   taxExclusiveAmount: number;
-  /** 🔴 Konvansiyona göre hesaplanır — bkz. `SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION`. */
+  /** `brüt + hesaplanan KDV`. Kesintiler GİRMEZ — gerekçe dosya başlığındadır. */
   taxInclusiveAmount: number;
   allowanceTotalAmount: number;
   payableAmount: number;
@@ -99,18 +89,14 @@ export function selfEmployedVoucherTotals(
    * değil. Üç kod da pozitif yazılır (işaret `PayableAmount`ta çözülür). */
   const taxTotalAmount = incomeTaxWithholding + calculatedVat + vatWithholding;
 
-  const taxInclusiveAmount =
-    SELF_EMPLOYED_VOUCHER_TAX_INCLUSIVE_CONVENTION === 'gross-plus-vat'
-      ? grossFee + calculatedVat
-      : grossFee + taxTotalAmount;
-
   return {
     lineExtensionAmount: grossFee,
     // Belge seviyesi `AllowanceCharge` üretilmez → TaxExclusive ≡ LineExtension.
     taxExclusiveAmount: grossFee,
-    taxInclusiveAmount,
+    // Vergiler dahil tutar: brüt + hesaplanan KDV. Kesintiler BURAYA GİRMEZ.
+    taxInclusiveAmount: grossFee + calculatedVat,
     allowanceTotalAmount: allowanceTotal,
-    // Tahsil edilen: brüt − stopaj + KDV − KDV tevkifatı. Konvansiyondan BAĞIMSIZ.
+    // Tahsil edilen: brüt − stopaj + KDV − KDV tevkifatı.
     payableAmount: grossFee - incomeTaxWithholding + calculatedVat - vatWithholding,
     netFee: grossFee - incomeTaxWithholding,
     taxTotalAmount,
