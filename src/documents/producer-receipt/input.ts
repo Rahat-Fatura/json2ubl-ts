@@ -36,8 +36,17 @@
  * | Kod        | Anlam                    | Kaynak                          |
  * |------------|--------------------------|---------------------------------|
  * | `0003`     | Gelir vergisi stopajı    | GİB kod listesi · GVK 94/11     |
- * | `8001`     | Borsa tescil ücreti      | GİB kod listesi                 |
+ * | `9040`     | Mera Fonu                | GİB kod listesi · Karekod §2.5  |
+ * | `8001`     | Borsa tescil ücreti      | GİB kod listesi · Karekod §2.5  |
  * | `SGK_PRIM` | SGK prim kesintisi       | 🔴 KAYNAKSIZ — bkz. aşağıda     |
+ *
+ * 🔑 TABLONUN SIRASI GİB'İN KENDİ SAYIMIDIR — alfabetik ya da keyfi DEĞİL.
+ * Karekod Standardı Kılavuzu V1.2 §2.5 e-MM karekodunun alanlarını tam bu
+ * sırayla sayar: `gvstopaj` → `merafonu` → `borsatescilucreti` →
+ * `sgkprimkesintisi`, ve DÖRDÜNÜ DE `TaxTotal/TaxSubTotal/TaxAmount`a bağlar.
+ * Emit sırası (`mapper.ts::resolveRates`) o sayıma hizalıdır.
+ * ⚠️ Kaynak KASIM 2023 tarihlidir. GİB kesinti kümesini genişletirse bu tablo
+ * eskir; küme ve sıra o kılavuz yeniden okunarak tazelenmelidir.
  *
  * 🔴 `SGK_PRIM` GİB'in `UBL-TR_Codelist.xml`'inde YOKTUR. Kümede olmasının tek
  * dayanağı ÖLÇÜMDÜR: 25/27 prod belgede geçiyor ve CANLI şematron onu REDDETMİYOR
@@ -65,13 +74,22 @@ import type {
  * tutmadığı için tutacak olan biziz; kapalı küme burada bir kolaylık değil,
  * TEK kapıdır.
  */
-export const PRODUCER_RECEIPT_TAX_TYPE_CODES = ['0003', '8001', 'SGK_PRIM'] as const;
+export const PRODUCER_RECEIPT_TAX_TYPE_CODES = ['0003', '9040', '8001', 'SGK_PRIM'] as const;
 
 /** e-MM kesinti kodu — `PRODUCER_RECEIPT_TAX_TYPE_CODES` üyesi. */
 export type ProducerReceiptTaxTypeCode = (typeof PRODUCER_RECEIPT_TAX_TYPE_CODES)[number];
 
 /** Gelir vergisi stopajı (zirai kazanç, GVK 94/11) — belgenin VARLIK SEBEBİ. */
 export const INCOME_TAX_WITHHOLDING_CODE = '0003';
+/**
+ * Mera Fonu — 4342 sayılı Mera Kanunu kesintisi.
+ *
+ * GİB kod listesinde VARDIR (`UBL-TR_Codelist.xml`, "Mera Fonu") ve Karekod
+ * Standardı Kılavuzu V1.2 §2.5 onu e-MM karekodunun DÖRT kesintisinden biri
+ * olarak adıyla sayar (`merafonu`). Yani `SGK_PRIM`in aksine KAYNAKLIDIR —
+ * ölçüme değil, yayınlanmış listeye dayanır.
+ */
+export const PASTURE_FUND_CODE = '9040';
 /** Borsa tescil ücreti — ticaret borsasına tescil kesintisi. */
 export const EXCHANGE_REGISTRATION_FEE_CODE = '8001';
 /** SGK prim kesintisi — 🔴 GİB kod listesinde YOK, prod ölçümü (bkz. dosya başlığı). */

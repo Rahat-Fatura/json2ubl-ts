@@ -109,6 +109,7 @@ export type ProducerReceiptUnsetScope =
   | 'exchangeRate'
   | 'sendMethod'
   | 'incomeTaxWithholdingPercent'
+  | 'pastureFundPercent'
   | 'exchangeRegistrationFeePercent'
   | 'socialSecurityPremiumPercent';
 

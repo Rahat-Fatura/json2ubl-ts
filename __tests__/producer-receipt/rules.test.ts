@@ -119,8 +119,12 @@ describe('e-MM — ORTAK kurallar BEDAVA devralınıyor', () => {
 });
 
 describe('e-MM — ÖZGÜ kapılar (şematronun BIRAKTIĞI yer)', () => {
-  it('kod kümesi KAPALI — {0003, 8001, SGK_PRIM} dışı reddedilir', () => {
-    expect([...PRODUCER_RECEIPT_TAX_TYPE_CODES]).toEqual(['0003', '8001', 'SGK_PRIM']);
+  it('kod kümesi KAPALI — {0003, 9040, 8001, SGK_PRIM} dışı reddedilir', () => {
+    /* 🔑 SIRA DA ÇİVİLİ: Karekod Standardı Kılavuzu V1.2 §2.5 e-MM'in dört
+     * kesintisini bu sırayla sayar (gvstopaj → merafonu → borsatescilucreti →
+     * sgkprimkesintisi) ve `mapper.ts::resolveRates` alt toplamları o sırayla
+     * emit eder. Sıra kayarsa golden dosyaları da kayar. */
+    expect([...PRODUCER_RECEIPT_TAX_TYPE_CODES]).toEqual(['0003', '9040', '8001', 'SGK_PRIM']);
 
     const input = raw();
     const errors = validateProducerReceipt({

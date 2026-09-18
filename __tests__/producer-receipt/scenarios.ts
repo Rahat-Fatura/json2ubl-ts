@@ -135,4 +135,21 @@ export const PRODUCER_RECEIPT_SCENARIOS: readonly ProducerReceiptScenario[] = [
       ],
     }),
   },
+  {
+    slug: 'f-mera-fonu',
+    description: 'Stopaj (0003 %4) + Mera Fonu (9040 %1) — brüt 10.000 → ödenecek 9.500',
+    /* 🔴 BU SENARYO PROD ÖLÇÜMÜ DEĞİL. Korpusun 27 belgesinin HİÇBİRİNDE `9040`
+     * geçmiyor; dayanak Karekod Standardı Kılavuzu V1.2 §2.5'in `merafonu`
+     * satırı (Kasım 2023) ve GİB kod listesindeki "Mera Fonu" kaydıdır.
+     * Senaryonun işi, dördüncü eksenin matrahının da BRÜT BEDEL olduğunu ve
+     * toplam zincirinden (`TIA = TEA − Σ kesinti`) ayrı düşmediğini ÜRETİLEN
+     * XML üzerinden kilitlemektir. */
+    input: base({
+      documentNumber: 'MMB2026000000006',
+      uuid: '66666666-2222-4333-8444-555555555555',
+      incomeTaxWithholdingPercent: 4,
+      pastureFundPercent: 1,
+      lines: [{ name: 'Bugday', quantity: 1000, price: 10, unitCode: 'Kilogram' }],
+    }),
+  },
 ];

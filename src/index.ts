@@ -81,7 +81,7 @@ export type {
  * İkinci kez yazmak `export ... has already been declared` ile derlemeyi kırardı
  * — anahtar belgeye değil e-Arşiv ekosistemine ait.
  *
- * Dışa AÇILMAYAN: `INCOME_TAX_WITHHOLDING_CODE` /
+ * Dışa AÇILMAYAN: `INCOME_TAX_WITHHOLDING_CODE` / `PASTURE_FUND_CODE` /
  * `EXCHANGE_REGISTRATION_FEE_CODE` / `SOCIAL_SECURITY_PREMIUM_CODE` skalerleri.
  * Niteliksiz adlardır (ilki e-SMM'dekiyle ÇAKIŞIR) ve tüketicinin ihtiyacı olan
  * küme zaten `PRODUCER_RECEIPT_TAX_TYPE_CODES` ile açıktır. */

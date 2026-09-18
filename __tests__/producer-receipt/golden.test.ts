@@ -175,6 +175,7 @@ describe('e-MM kesinti düzlemi — hepsi KESİNTİ, KDV YOK', () => {
     const xml = readGolden('a-duz-stopaj');
     expect(xml).toContain('<cbc:TaxTypeCode>0003</cbc:TaxTypeCode>');
     expect(xml).not.toContain('<cbc:TaxTypeCode>8001</cbc:TaxTypeCode>');
+    expect(xml).not.toContain('<cbc:TaxTypeCode>9040</cbc:TaxTypeCode>');
     expect(xml).not.toContain('SGK_PRIM');
   });
 
@@ -183,6 +184,44 @@ describe('e-MM kesinti düzlemi — hepsi KESİNTİ, KDV YOK', () => {
     const codes = [...xml.matchAll(/<cbc:TaxTypeCode>([^<]+)<\/cbc:TaxTypeCode>/g)].map(m => m[1]);
     // Belge düzeyi + satır düzeyi: her ikisinde de aynı sıra.
     expect(codes).toEqual(['0003', '8001', 'SGK_PRIM', '0003', '8001', 'SGK_PRIM']);
+  });
+
+  /* ── 9040 Mera Fonu: DÖRDÜNCÜ EKSEN ──────────────────────────────────────
+   * 🔴 PROD ÖLÇÜMÜ DEĞİL. Dayanak Karekod Standardı Kılavuzu V1.2 §2.5
+   * (Kasım 2023): e-MM karekodu DÖRT kesintiyi adıyla sayıyor ve dördünü de
+   * `TaxTotal/TaxSubTotal/TaxAmount`a bağlıyor. Bu blok, dördüncünün mevcut
+   * üçlüden yapıca AYRILMADIĞINI üretilen XML'den kanıtlar. */
+  it('9040 kesinti alt toplamı olarak yazılır ve etiketi GİB sözlüğünden gelir', () => {
+    const xml = readGolden('f-mera-fonu');
+    expect(xml).toContain('<cbc:TaxTypeCode>9040</cbc:TaxTypeCode>');
+    // `SGK_PRIM`in aksine etiket UYDURULMADI: `tax-config.ts` → "Mera Fonu".
+    expect(xml).toContain('<cbc:Name>Mera Fonu</cbc:Name>');
+  });
+
+  it('9040 MATRAHI da brüt bedeldir — dördüncü eksen matrah AYIRMAZ', () => {
+    /* 🔴 ÖLÇÜM, VARSAYIM DEĞİL: `tax-config.ts`teki `9040` tanımı
+     * `baseStat:false / baseCalculate:false` taşıyor, ama o bayraklar KDV
+     * matrahını şekillendirir ve e-MM tam motoru HİÇ çağırmaz (`mapper.ts`
+     * başlığı). Zincirde ne ürettiği ancak XML'den okunur — iki alt toplamın
+     * matrahı da 10.000, yani ikisi de BRÜT matrahlı. */
+    const xml = readGolden('f-mera-fonu');
+    const bases = [...xml.matchAll(/<cbc:TaxableAmount currencyID="TRY">([\d.]+)<\/cbc:TaxableAmount>/g)]
+      .map(m => m[1]);
+    expect(new Set(bases)).toEqual(new Set(['10000.00']));
+  });
+
+  it('sıra 0003 → 9040 (GİB §2.5 sayımı), toplam zinciri dördüncüyü de DÜŞER', () => {
+    const xml = readGolden('f-mera-fonu');
+    const codes = [...xml.matchAll(/<cbc:TaxTypeCode>([^<]+)<\/cbc:TaxTypeCode>/g)].map(m => m[1]);
+    expect(codes).toEqual(['0003', '9040', '0003', '9040']);
+
+    // Kabul ölçütü: brüt 10.000 · %4 stopaj · %1 Mera Fonu → ödenecek 9.500.
+    expect(xml).toContain('<cbc:TaxAmount currencyID="TRY">400.00</cbc:TaxAmount>');
+    expect(xml).toContain('<cbc:TaxAmount currencyID="TRY">100.00</cbc:TaxAmount>');
+    expect(xml).toContain('<cbc:TaxAmount currencyID="TRY">500.00</cbc:TaxAmount>');
+    expect(xml).toContain('<cbc:TaxExclusiveAmount currencyID="TRY">10000.00</cbc:TaxExclusiveAmount>');
+    expect(xml).toContain('<cbc:TaxInclusiveAmount currencyID="TRY">9500.00</cbc:TaxInclusiveAmount>');
+    expect(xml).toContain('<cbc:PayableAmount currencyID="TRY">9500.00</cbc:PayableAmount>');
   });
 
   it('SGK_PRIM etiketi prod`da ölçülen hâliyle yazılır (GİB sözlüğünde YOK)', () => {

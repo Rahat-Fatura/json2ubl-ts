@@ -56,6 +56,15 @@ export interface SimpleProducerReceiptLineInput {
    * seviyesindeki değer, o da yoksa stopaj HİÇ yazılmaz.
    */
   incomeTaxWithholdingPercent?: number;
+  /**
+   * Mera Fonu oranı (%) — `TaxSubtotal[9040]`.
+   *
+   * 4342 sayılı Mera Kanunu kesintisi. Karekod Standardı Kılavuzu V1.2 §2.5
+   * bunu e-MM'in DÖRT kesintisinden biri olarak adıyla sayar (`merafonu`) ve
+   * kod GİB kod listesinde VARDIR — `SGK_PRIM`in aksine kaynaklıdır.
+   * Verilmezse belge seviyesindeki değer, o da yoksa alt toplam YAZILMAZ.
+   */
+  pastureFundPercent?: number;
   /** Borsa tescil ücreti oranı (%) — `TaxSubtotal[8001]`. */
   exchangeRegistrationFeePercent?: number;
   /**
@@ -105,6 +114,8 @@ export interface SimpleProducerReceiptInput {
   notes?: string[];
   /** Belge seviyesi gelir vergisi stopajı oranı (%) — kalem oranı önceliklidir. */
   incomeTaxWithholdingPercent?: number;
+  /** Belge seviyesi Mera Fonu oranı (%) — kalem oranı önceliklidir. */
+  pastureFundPercent?: number;
   /** Belge seviyesi borsa tescil ücreti oranı (%) — kalem oranı önceliklidir. */
   exchangeRegistrationFeePercent?: number;
   /** Belge seviyesi SGK prim kesintisi oranı (%) — kalem oranı önceliklidir. */

@@ -40,6 +40,7 @@ import type {
 } from './input';
 import {
   INCOME_TAX_WITHHOLDING_CODE,
+  PASTURE_FUND_CODE,
   EXCHANGE_REGISTRATION_FEE_CODE,
   SOCIAL_SECURITY_PREMIUM_CODE,
 } from './input';
@@ -173,8 +174,9 @@ export function mapSimpleToProducerReceiptInput(
 /**
  * Kesinti kodunun Türkçe etiketi.
  *
- * `0003` ve `8001` GİB'in kendi kod listesinden gelir (`TAX_DEFINITIONS`) —
- * etiket UYDURULMAZ, sözlükten okunur. `SGK_PRIM` o sözlükte YOKTUR ve
+ * `0003`, `9040` ve `8001` GİB'in kendi kod listesinden gelir (`TAX_DEFINITIONS`)
+ * — etiket UYDURULMAZ, sözlükten okunur (`9040` → "Mera Fonu",
+ * `tax-config.ts`). `SGK_PRIM` o sözlükte YOKTUR ve
  * bilerek EKLENMEDİ: `TAX_DEFINITIONS` GİB'in kod listesinin karşılığıdır ve
  * oraya kaynaksız bir kod koymak sözlüğün otoritesini bozardı. Etiket bu yüzden
  * burada, PROD'DA ÖLÇÜLEN hâliyle duruyor.
@@ -189,10 +191,16 @@ function deductionName(code: ProducerReceiptTaxTypeCode): string {
 /**
  * Bir kalemin kesinti oranlarını çözer — kalem oranı belge oranını EZER.
  *
- * Sıra SABİTTİR (`0003` → `8001` → `SGK_PRIM`) ve prod'daki alt toplam
- * sırasıyla aynıdır. Sıra bir tercih değil: `cac:TaxSubtotal` tekrarlı bir
- * elemandır ve sekans bekçisi tekrarı serbest bıraksa da, deterministik sıra
- * golden dosyalarının kararlılığı için şarttır.
+ * Sıra SABİTTİR: `0003` → `9040` → `8001` → `SGK_PRIM`. Sıra bir tercih değil:
+ * `cac:TaxSubtotal` tekrarlı bir elemandır ve sekans bekçisi tekrarı serbest
+ * bıraksa da, deterministik sıra golden dosyalarının kararlılığı için şarttır.
+ *
+ * 🔑 `9040` NİYE İKİNCİ SIRAYA GİRDİ: Karekod Standardı Kılavuzu V1.2 §2.5
+ * e-MM'in dört kesintisini tam bu sırayla sayıyor (`gvstopaj` → `merafonu` →
+ * `borsatescilucreti` → `sgkprimkesintisi`). Prod korpusunda `9040` HİÇ
+ * geçmiyor — yani sıra prod ölçümünden değil, GİB'in kendi sayımından geldi.
+ * ⚠️ Mevcut korpusun çıktısı DEĞİŞMEZ: alan verilmeyince (`undefined`) aşağıdaki
+ * filtre çifti düşürür, kalan üçlünün göreli sırası aynı kalır.
  */
 function resolveRates(
   line: SimpleProducerReceiptLineInput,
@@ -200,6 +208,7 @@ function resolveRates(
 ): Array<{ code: ProducerReceiptTaxTypeCode; percent: number }> {
   const pairs: Array<[ProducerReceiptTaxTypeCode, number | undefined]> = [
     [INCOME_TAX_WITHHOLDING_CODE, line.incomeTaxWithholdingPercent ?? simple.incomeTaxWithholdingPercent],
+    [PASTURE_FUND_CODE, line.pastureFundPercent ?? simple.pastureFundPercent],
     [EXCHANGE_REGISTRATION_FEE_CODE, line.exchangeRegistrationFeePercent ?? simple.exchangeRegistrationFeePercent],
     [SOCIAL_SECURITY_PREMIUM_CODE, line.socialSecurityPremiumPercent ?? simple.socialSecurityPremiumPercent],
   ];
@@ -228,7 +237,14 @@ function calculateReceiptLine(
     code,
     name: deductionName(code),
     percent,
-    // ÖLÇÜLDÜ: matrah DAİMA satır tutarı (her kod için, 25/25 prod belge).
+    /* ÖLÇÜLDÜ: matrah DAİMA satır tutarı (her kod için, 25/25 prod belge).
+     * 🔴 `9040` BU ÖLÇÜMÜN İÇİNDE DEĞİL — prod korpusunda hiç geçmiyor. Yine de
+     * aynı matrahı alır ve bu bilinçli: e-MM'de `cac:TaxTotal` altındaki her
+     * alt toplam brüt bedelden düşen bir KESİNTİDİR (`totals.ts`) ve matrahı
+     * ayrıştıracak bir eksen yoktur. `tax-config.ts`teki `9040` tanımının
+     * `baseStat:false / baseCalculate:false` bayrakları BU YOLA HİÇ BAKMAZ:
+     * e-MM `calculateLine` tam motorunu çağırmaz (dosya başlığı), bayraklar
+     * yalnız KDV matrahını şekillendirir ve e-MM'de KDV yoktur. */
     taxable: lineExtensionAmount,
     amount: lineExtensionAmount * (percent / 100),
   }));

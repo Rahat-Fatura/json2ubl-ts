@@ -253,6 +253,12 @@ export const ProducerReceiptSessionPaths = {
   lineIncomeTaxWithholdingPercent: (i: number) => `lines[${i}].incomeTaxWithholdingPercent` as `lines[${number}].incomeTaxWithholdingPercent`,
 
   /**
+   * Mera Fonu oranı (%) — `TaxSubtotal[9040]`. 4342 sayılı Mera Kanunu kesintisi. Karekod Standardı Kılavuzu V1.2 §2.5 bunu e-MM'in DÖRT kesintisinden biri olarak adıyla sayar (`merafonu`) ve kod GİB kod listesinde VARDIR — `SGK_PRIM`in aksine kaynaklıdır. Verilmezse belge seviyesindeki değer, o da yoksa alt toplam YAZILMAZ.
+   * Expected type: number | undefined
+   */
+  linePastureFundPercent: (i: number) => `lines[${i}].pastureFundPercent` as `lines[${number}].pastureFundPercent`,
+
+  /**
    * Borsa tescil ücreti oranı (%) — `TaxSubtotal[8001]`.
    * Expected type: number | undefined
    */
@@ -293,6 +299,12 @@ export const ProducerReceiptSessionPaths = {
    * Expected type: number | undefined
    */
   incomeTaxWithholdingPercent: 'incomeTaxWithholdingPercent',
+
+  /**
+   * Belge seviyesi Mera Fonu oranı (%) — kalem oranı önceliklidir.
+   * Expected type: number | undefined
+   */
+  pastureFundPercent: 'pastureFundPercent',
 
   /**
    * Belge seviyesi borsa tescil ücreti oranı (%) — kalem oranı önceliklidir.
@@ -353,6 +365,7 @@ export interface ProducerReceiptSessionPathMap {
   'lines[${number}].price': number;
   'lines[${number}].unitCode': string | undefined;
   'lines[${number}].incomeTaxWithholdingPercent': number | undefined;
+  'lines[${number}].pastureFundPercent': number | undefined;
   'lines[${number}].exchangeRegistrationFeePercent': number | undefined;
   'lines[${number}].socialSecurityPremiumPercent': number | undefined;
   'lines[${number}].allowancePercent': number | undefined;
@@ -360,6 +373,7 @@ export interface ProducerReceiptSessionPathMap {
   'lines[${number}].note': string | undefined;
   'notes': string[] | undefined;
   'incomeTaxWithholdingPercent': number | undefined;
+  'pastureFundPercent': number | undefined;
   'exchangeRegistrationFeePercent': number | undefined;
   'socialSecurityPremiumPercent': number | undefined;
   'sendMethod': 'ELEKTRONIK' | 'KAGIT' | undefined;
@@ -393,11 +407,13 @@ export const PRODUCER_RECEIPT_KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Se
   'lines[*].incomeTaxWithholdingPercent',
   'lines[*].name',
   'lines[*].note',
+  'lines[*].pastureFundPercent',
   'lines[*].price',
   'lines[*].quantity',
   'lines[*].socialSecurityPremiumPercent',
   'lines[*].unitCode',
   'notes',
+  'pastureFundPercent',
   'producer.address',
   'producer.alias',
   'producer.city',
@@ -472,6 +488,7 @@ export interface ProducerReceiptSessionUpdateOverloads {
   update(path: `lines[${number}].price`, value: number): void;
   update(path: `lines[${number}].unitCode`, value: string | undefined): void;
   update(path: `lines[${number}].incomeTaxWithholdingPercent`, value: number | undefined): void;
+  update(path: `lines[${number}].pastureFundPercent`, value: number | undefined): void;
   update(path: `lines[${number}].exchangeRegistrationFeePercent`, value: number | undefined): void;
   update(path: `lines[${number}].socialSecurityPremiumPercent`, value: number | undefined): void;
   update(path: `lines[${number}].allowancePercent`, value: number | undefined): void;
@@ -479,6 +496,7 @@ export interface ProducerReceiptSessionUpdateOverloads {
   update(path: `lines[${number}].note`, value: string | undefined): void;
   update(path: 'notes', value: string[] | undefined): void;
   update(path: 'incomeTaxWithholdingPercent', value: number | undefined): void;
+  update(path: 'pastureFundPercent', value: number | undefined): void;
   update(path: 'exchangeRegistrationFeePercent', value: number | undefined): void;
   update(path: 'socialSecurityPremiumPercent', value: number | undefined): void;
   update(path: 'sendMethod', value: 'ELEKTRONIK' | 'KAGIT' | undefined): void;
