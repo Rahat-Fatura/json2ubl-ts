@@ -29,7 +29,12 @@
  */
 
 import { EventEmitter } from 'events';
-import type { SimpleInvoiceInput, SimpleLineInput, SimplePartyIdentification } from './simple-types';
+import type {
+  SimpleInvoiceInput,
+  SimpleLineInput,
+  SimplePartyIdentification,
+  SimpleDocumentAllowanceChargeInput,
+} from './simple-types';
 import { resolveBillingReferences } from './simple-types';
 import type { CalculatedDocument } from './document-calculator';
 import { calculateDocument } from './document-calculator';
@@ -41,7 +46,7 @@ import { SimpleInvoiceBuilder } from './simple-invoice-builder';
 import type { InvoiceSessionUpdateOverloads } from './session-paths.generated';
 import { KNOWN_PATH_TEMPLATES, READ_ONLY_PATHS } from './session-paths.generated';
 import { applyPathUpdate, readPath, deepEqual } from './session-path-utils';
-import { runPathGates, diffVisibility, type PathTokens } from '../session';
+import { runPathGates, diffVisibility, createArrayField, type PathTokens, type ArrayFieldOps } from '../session';
 import { deriveLineFieldVisibility } from './line-field-visibility';
 import { isYatirimTesvikKdvScope } from '../ubltr/vocabulary/schematron-scopes';
 import type { ValidationError } from '../errors/ubl-build-error';
@@ -137,6 +142,18 @@ export interface SessionEvents {
   'line-updated': { index: number; line: SimpleLineInput };
   /** Satır silindiğinde */
   'line-removed': { index: number };
+  /**
+   * Belge düzeyi masraf/iskonto kalemi eklendiğinde.
+   *
+   * Üçlü `line-*` desenini BİREBİR izler: ad = tekil alanın kebab hâli,
+   * yük anahtarı = tekil alanın camel hâli. Uydurma bir kısaltma (`charge`)
+   * kullanılmadı — evin kuralı alan adının tekilidir.
+   */
+  'document-allowance-charge-added': { index: number; documentAllowanceCharge: SimpleDocumentAllowanceChargeInput };
+  /** Belge düzeyi masraf/iskonto kalemi güncellendiğinde */
+  'document-allowance-charge-updated': { index: number; documentAllowanceCharge: SimpleDocumentAllowanceChargeInput };
+  /** Belge düzeyi masraf/iskonto kalemi silindiğinde */
+  'document-allowance-charge-removed': { index: number };
   /** Validasyon uyarıları değiştiğinde */
   'warnings': ValidationWarning[];
   /** Herhangi bir veri değişikliğinde (debounce için) */
@@ -295,6 +312,24 @@ export class InvoiceSession extends EventEmitter {
   private _invoiceInputCache?: { input: SimpleInvoiceInput; result: InvoiceInput };
   /** Sprint 8i.1 / T-2: Önceki tick'in suggestion listesi (diff için). */
   private _lastSuggestions: Suggestion[] = [];
+  /**
+   * `lines` dizisinin ortak makinesi (`session/array-field.ts`).
+   *
+   * Faturada dörtlünün `afterWrite` kancası DOLUDUR: `uiState.lineFields`
+   * türetilmiş bir alandır ve olay YAYILMADAN ÖNCE senkronlanmalıdır — yoksa
+   * `line-added` dinleyicisi eksik görünürlük haritası görür.
+   */
+  private readonly linesField: ArrayFieldOps<SimpleLineInput>;
+  /**
+   * Belge düzeyi masraf/iskonto dizisinin makinesi.
+   *
+   * 🔴 Bu dörtlü FATURADA durur, ortak tabanda DEĞİL: belge düzeyi masraf
+   * yalnız faturaya (gerçekte yalnız HKS komisyoncu düzlemine) aittir.
+   * e-İrsaliye/e-SMM/e-MM oturumlarına taşımadıkları bir kavram için metot
+   * vermek, "ortak gövdeye belge tipi sızmaz" kuralının başka kılıkta
+   * ihlalidir. Paylaşılan şey MAKİNEDİR.
+   */
+  private readonly documentAllowanceChargesField: ArrayFieldOps<SimpleDocumentAllowanceChargeInput>;
 
   constructor(options?: InvoiceSessionOptions) {
     super();
@@ -357,6 +392,83 @@ export class InvoiceSession extends EventEmitter {
      * yapıcıda henüz dinleyici yok, `_lastSuggestions`'ı erkenden doldurmak ise
      * ilk `suggestion` diff'ini sessizce yutardı (T-4 kontratı). */
     this._uiState = { ...this._uiState, warnings: this._computeValidation().warnings };
+
+    /* ── Dizi makineleri ────────────────────────────────────────────────────
+     *
+     * Kurulum SAF'tır: `createArrayField` yalnız kapanış üretir, hiçbir alan
+     * OKUMAZ. Kapanışlar ilk `addLine()`/`addDocumentAllowanceCharge()`
+     * çağrısında koşar — o an oturum tümüyle kurulmuştur. */
+    this.linesField = createArrayField<SimpleLineInput>({
+      read: () => this._input.lines,
+      write: lines => {
+        this._input = { ...this._input, lines };
+      },
+      events: { added: 'line-added', updated: 'line-updated', removed: 'line-removed' },
+      itemKey: 'line',
+      emit: (event, payload) => {
+        this.emit(event, payload);
+      },
+      /* Sprint 8h.5 senkronu — OLAY YAYILMADAN ÖNCE. `lineFields` türetilmiş
+       * bir alandır; dinleyici olayı aldığında güncel olmak zorundadır. */
+      afterWrite: change => {
+        switch (change.kind) {
+          case 'add': {
+            this._uiState.lineFields = [
+              ...this._uiState.lineFields,
+              deriveLineFieldVisibility(change.item, this._input, change.index),
+            ];
+            break;
+          }
+          case 'update': {
+            const newLineFields = [...this._uiState.lineFields];
+            newLineFields[change.index] = deriveLineFieldVisibility(
+              change.item,
+              this._input,
+              change.index,
+            );
+            this._uiState.lineFields = newLineFields;
+            break;
+          }
+          case 'remove': {
+            this._uiState.lineFields = this._uiState.lineFields.filter(
+              (_, i) => i !== change.index,
+            );
+            break;
+          }
+          case 'replace': {
+            this._uiState.lineFields = change.items.map((line, idx) =>
+              deriveLineFieldVisibility(line, this._input, idx),
+            );
+            break;
+          }
+        }
+      },
+      afterChange: () => {
+        this.onChanged();
+      },
+    });
+
+    this.documentAllowanceChargesField = createArrayField<SimpleDocumentAllowanceChargeInput>({
+      read: () => this._input.documentAllowanceCharges,
+      write: documentAllowanceCharges => {
+        this._input = { ...this._input, documentAllowanceCharges };
+      },
+      events: {
+        added: 'document-allowance-charge-added',
+        updated: 'document-allowance-charge-updated',
+        removed: 'document-allowance-charge-removed',
+      },
+      itemKey: 'documentAllowanceCharge',
+      emit: (event, payload) => {
+        this.emit(event, payload);
+      },
+      /* `afterWrite` YOK: masraf kaleminin türetilmiş bir görünürlük haritası
+       * yoktur. Uyarılar `onChanged() → validate()` üzerinden gelir ve HKS
+       * kapıları orada koşar (`validateHksCharges`). */
+      afterChange: () => {
+        this.onChanged();
+      },
+    });
   }
 
   // ─── Getter'lar ─────────────────────────────────────────────────────────
@@ -709,53 +821,57 @@ export class InvoiceSession extends EventEmitter {
 
   /** Yeni satır ekler */
   addLine(line: SimpleLineInput): void {
-    const lines = [...this._input.lines, line];
-    this._input = { ...this._input, lines };
-    // Sprint 8h.5: lineFields senkron — yeni satır için derive
-    const newIdx = lines.length - 1;
-    this._uiState.lineFields = [
-      ...this._uiState.lineFields,
-      deriveLineFieldVisibility(line, this._input, newIdx),
-    ];
-    this.emit('line-added', { index: newIdx, line });
-    this.onChanged();
+    this.linesField.add(line);
   }
 
-  /** Mevcut satırı günceller */
+  /** Mevcut satırı günceller — sınır dışı indeks SESSİZCE yok sayılır */
   updateLine(index: number, updates: Partial<SimpleLineInput>): void {
-    if (index < 0 || index >= this._input.lines.length) return;
-
-    const lines = [...this._input.lines];
-    lines[index] = { ...lines[index], ...updates };
-    this._input = { ...this._input, lines };
-    // Sprint 8h.5: lineFields[i] re-derive
-    const newLineFields = [...this._uiState.lineFields];
-    newLineFields[index] = deriveLineFieldVisibility(lines[index], this._input, index);
-    this._uiState.lineFields = newLineFields;
-    this.emit('line-updated', { index, line: lines[index] });
-    this.onChanged();
+    this.linesField.update(index, updates);
   }
 
   /** Satır siler */
   removeLine(index: number): void {
-    if (index < 0 || index >= this._input.lines.length) return;
-
-    const lines = this._input.lines.filter((_, i) => i !== index);
-    this._input = { ...this._input, lines };
-    // Sprint 8h.5: lineFields aynı index'te splice
-    this._uiState.lineFields = this._uiState.lineFields.filter((_, i) => i !== index);
-    this.emit('line-removed', { index });
-    this.onChanged();
+    this.linesField.remove(index);
   }
 
   /** Tüm satırları değiştirir */
   setLines(lines: SimpleLineInput[]): void {
-    this._input = { ...this._input, lines };
-    // Sprint 8h.5: lineFields tamamen yeniden derive
-    this._uiState.lineFields = lines.map((line, idx) =>
-      deriveLineFieldVisibility(line, this._input, idx)
-    );
-    this.onChanged();
+    this.linesField.replaceAll(lines);
+  }
+
+  // ─── Belge Düzeyi Masraf/İskonto Yönetimi ───────────────────────────────
+  //
+  // 🔴 SIRA ANLAMLIDIR. GİB'in `general.xslt`i masraf bloklarını `for-each`
+  // ile BELGE SIRASINDA çizer ve "Masraflar:" başlığı listedeki ilk kalemin
+  // (`HKSKOMISYON`) dalına gömülüdür. Dörtlünün hiçbir işlemi göreli sırayı
+  // bozmaz: silme kaydırır, yeniden sıralamaz.
+  //
+  // Kapılar ATLANMAZ: dördü de `onChanged() → validate()` zincirini çalıştırır,
+  // `validateHksCharges` orada koşar (kapalı küme, `chargeIndicator=false`,
+  // düzlem dışı kaçak kod, 9944/8001 çift sayımı). `buildXml('basic'|'strict')`
+  // yolunda da aynı doğrulayıcı vardır — ikisi de aynı kapıya bağlıdır.
+
+  /** Belge düzeyi masraf/iskonto kalemi ekler */
+  addDocumentAllowanceCharge(item: SimpleDocumentAllowanceChargeInput): void {
+    this.documentAllowanceChargesField.add(item);
+  }
+
+  /** Mevcut masraf/iskonto kalemini günceller — sınır dışı indeks SESSİZCE yok sayılır */
+  updateDocumentAllowanceCharge(
+    index: number,
+    updates: Partial<SimpleDocumentAllowanceChargeInput>,
+  ): void {
+    this.documentAllowanceChargesField.update(index, updates);
+  }
+
+  /** Masraf/iskonto kalemini siler — kalanların SIRASI korunur */
+  removeDocumentAllowanceCharge(index: number): void {
+    this.documentAllowanceChargesField.remove(index);
+  }
+
+  /** Masraf/iskonto dizisini tümüyle değiştirir (olay yaymaz — `setLines` deseni) */
+  setDocumentAllowanceCharges(items: SimpleDocumentAllowanceChargeInput[]): void {
+    this.documentAllowanceChargesField.replaceAll(items);
   }
 
   // ─── Composite scope reset (Sprint 8j.3 / v2.2.1) ───────────────────────

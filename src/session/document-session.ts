@@ -37,6 +37,7 @@ import type { ValidationError } from '../errors/ubl-build-error';
 import type { SimplePartyIdentification, SimplePartyInput } from '../calculator/simple-types';
 import { applyPathUpdate, readPath, deepEqual } from '../calculator/session-path-utils';
 import { runPathGates } from './path-gates';
+import { createArrayField, type ArrayFieldOps } from './array-field';
 import type { ValidationWarning } from './validation-warning';
 
 /**
@@ -128,6 +129,14 @@ export abstract class DocumentSession<
   private readonly adapter: DocumentSessionAdapter<TInput, TCalc, TRaw, TParty>;
   private _input: TInput;
   private _warnings: ValidationWarning[];
+  /**
+   * `lines` dizisinin ortak makinesi.
+   *
+   * 🔴 Yapıcıda KURULMASI güvenlidir: `createArrayField` yalnız kapanış
+   * üretir, hiçbir alan OKUMAZ. Kapanışlar ilk `addLine()` çağrısında koşar,
+   * o an türev sınıfın alanları çoktan kurulmuştur.
+   */
+  private readonly linesField: ArrayFieldOps<TLine>;
 
   protected constructor(
     adapter: DocumentSessionAdapter<TInput, TCalc, TRaw, TParty>,
@@ -149,6 +158,21 @@ export abstract class DocumentSession<
       if (merged[key] === undefined) merged[key] = value;
     }
     this._input = merged as TInput;
+
+    this.linesField = createArrayField<TLine>({
+      read: () => this._input.lines,
+      write: lines => {
+        this._input = { ...this._input, lines };
+      },
+      events: { added: 'line-added', updated: 'line-updated', removed: 'line-removed' },
+      itemKey: 'line',
+      emit: (event, payload) => {
+        this.emit(event, payload);
+      },
+      afterChange: () => {
+        this.onChanged();
+      },
+    });
 
     this._warnings = computeValidation(adapter, this._input).warnings;
   }
@@ -225,34 +249,25 @@ export abstract class DocumentSession<
   }
 
   // ─── Satır yönetimi ──────────────────────────────────────────────────────
+  //
+  // Dörtlünün GÖVDESİ `session/array-field.ts`teki ortak makinededir; burada
+  // yalnız ADLAR ve olay adları durur. Olay adları (`line-added` …) ve yük
+  // şekilleri DEĞİŞMEZ SÖZLEŞMEDİR — portal store köprüsü bunları dinler.
 
   addLine(line: TLine): void {
-    const lines = [...this._input.lines, line];
-    this._input = { ...this._input, lines };
-    this.emit('line-added', { index: lines.length - 1, line });
-    this.onChanged();
+    this.linesField.add(line);
   }
 
   updateLine(index: number, updates: Partial<TLine>): void {
-    if (index < 0 || index >= this._input.lines.length) return;
-    const lines = [...this._input.lines];
-    lines[index] = { ...lines[index], ...updates };
-    this._input = { ...this._input, lines };
-    this.emit('line-updated', { index, line: lines[index] });
-    this.onChanged();
+    this.linesField.update(index, updates);
   }
 
   removeLine(index: number): void {
-    if (index < 0 || index >= this._input.lines.length) return;
-    const lines = this._input.lines.filter((_, i) => i !== index);
-    this._input = { ...this._input, lines };
-    this.emit('line-removed', { index });
-    this.onChanged();
+    this.linesField.remove(index);
   }
 
   setLines(lines: TLine[]): void {
-    this._input = { ...this._input, lines };
-    this.onChanged();
+    this.linesField.replaceAll(lines);
   }
 
   // ─── Taraf kimlikleri ────────────────────────────────────────────────────

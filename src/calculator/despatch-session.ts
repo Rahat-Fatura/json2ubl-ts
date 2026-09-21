@@ -56,7 +56,7 @@ import {
   DESPATCH_READ_ONLY_PATHS,
 } from './despatch-session-paths.generated';
 import { applyPathUpdate, readPath, deepEqual } from './session-path-utils';
-import { runPathGates, diffVisibility } from '../session';
+import { runPathGates, diffVisibility, createArrayField, type ArrayFieldOps } from '../session';
 import type { SessionPathErrorCode, SessionPathErrorPayload } from '../session';
 import type { ValidationError } from '../errors/ubl-build-error';
 import { validateDespatch } from '../documents/despatch-advice/validators';
@@ -185,6 +185,13 @@ export interface DespatchSession extends DespatchSessionUpdateOverloads {}
 export class DespatchSession extends EventEmitter {
   private _input: SimpleDespatchInput;
   private _uiState: DespatchUIState;
+  /**
+   * `lines` dizisinin ortak makinesi (`session/array-field.ts`).
+   *
+   * Dörtlünün gövdesi oradadır; burada yalnız ADLAR durur. Olay adları ve yük
+   * şekilleri DEĞİŞMEZ sözleşmedir.
+   */
+  private readonly linesField: ArrayFieldOps<SimpleDespatchLineInput>;
 
   constructor(options?: DespatchSessionOptions) {
     super();
@@ -221,6 +228,23 @@ export class DespatchSession extends EventEmitter {
       this._input.profile ?? DEFAULT_DESPATCH_PROFILE,
     );
     this._uiState = { ...derived, warnings: computeValidation(this._input).warnings };
+
+    /* Makine kurulumu SAF: kapanış üretir, alan okumaz — yukarıdaki
+     * "yapıcıdan sanal metot çağrılmaz" kuralını çiğnemez. */
+    this.linesField = createArrayField<SimpleDespatchLineInput>({
+      read: () => this._input.lines,
+      write: lines => {
+        this._input = { ...this._input, lines };
+      },
+      events: { added: 'line-added', updated: 'line-updated', removed: 'line-removed' },
+      itemKey: 'line',
+      emit: (event, payload) => {
+        this.emit(event, payload);
+      },
+      afterChange: () => {
+        this.onChanged();
+      },
+    });
   }
 
   // ─── Getter'lar ─────────────────────────────────────────────────────────
@@ -354,37 +378,22 @@ export class DespatchSession extends EventEmitter {
 
   /** Yeni satır ekler */
   addLine(line: SimpleDespatchLineInput): void {
-    const lines = [...this._input.lines, line];
-    this._input = { ...this._input, lines };
-    this.emit('line-added', { index: lines.length - 1, line });
-    this.onChanged();
+    this.linesField.add(line);
   }
 
   /** Mevcut satırı günceller */
   updateLine(index: number, updates: Partial<SimpleDespatchLineInput>): void {
-    if (index < 0 || index >= this._input.lines.length) return;
-
-    const lines = [...this._input.lines];
-    lines[index] = { ...lines[index], ...updates };
-    this._input = { ...this._input, lines };
-    this.emit('line-updated', { index, line: lines[index] });
-    this.onChanged();
+    this.linesField.update(index, updates);
   }
 
   /** Satır siler */
   removeLine(index: number): void {
-    if (index < 0 || index >= this._input.lines.length) return;
-
-    const lines = this._input.lines.filter((_, i) => i !== index);
-    this._input = { ...this._input, lines };
-    this.emit('line-removed', { index });
-    this.onChanged();
+    this.linesField.remove(index);
   }
 
   /** Tüm satırları değiştirir */
   setLines(lines: SimpleDespatchLineInput[]): void {
-    this._input = { ...this._input, lines };
-    this.onChanged();
+    this.linesField.replaceAll(lines);
   }
 
   // ─── Taraf kimlikleri (dizi splice/replace) ─────────────────────────────

@@ -15,3 +15,10 @@ export { runPathGates, checkIndexBounds } from './path-gates';
 export type { VisibilityTransition } from './visibility-diff';
 export { diffVisibility } from './visibility-diff';
 export type { ValidationWarning } from './validation-warning';
+export type {
+  ArrayFieldEventNames,
+  ArrayFieldChange,
+  ArrayFieldConfig,
+  ArrayFieldOps,
+} from './array-field';
+export { createArrayField } from './array-field';
