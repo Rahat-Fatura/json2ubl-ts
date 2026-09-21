@@ -29,6 +29,7 @@ import { validateProfileRequirements } from '../documents/invoice/validators/pro
 import { validateSimpleFormats } from '../documents/invoice/validators/simple-format-validator';
 import { validatePhantomKdv } from '../documents/invoice/validators/phantom-kdv-validator';
 import { validateOnlineSaleShipment } from '../documents/invoice/validators/online-sale-validator';
+import { validateHksCharges } from '../documents/invoice/validators/hks-charge-validator';
 import { UblBuildError } from '../errors/ubl-build-error';
 
 export interface SimpleBuilderOptions extends BuilderOptions {
@@ -81,6 +82,12 @@ export class SimpleInvoiceBuilder {
         ...validateProfileRequirements(input),
         ...validateSimpleFormats(input),
         ...validatePhantomKdv(input),
+        /* HKS masraf bloğu — `basic`te de koşar.
+         * Gerekçe: `documentAllowanceCharges` YENİ bir alandır, hiçbir mevcut
+         * tüketici onu göndermiyor; dolayısıyla kapıyı burada açmak kimsenin
+         * bugünkü belgesini kırmaz. Buna karşılık kuralın atlanabildiği tek bir
+         * yol bile ÇİFT SAYIM kapısını (K6/K7) delik bırakırdı. */
+        ...validateHksCharges(input),
       ];
 
       // B-101: internet satışı gönderi bilgisi bütünlüğü — YALNIZ strict.

@@ -197,6 +197,28 @@ export {
     isYatirimTesvikIstisnaScope,
 } from "./ubltr/vocabulary/schematron-scopes";
 
+/* 🔑 HKS komisyoncu MASRAF SÖZLÜĞÜ — 4.5.1 ölçütünü karşılar.
+ *
+ * (a) Tüketici (portal/şablon) 18 kalemi KULLANICIYA LİSTELEMEK zorundadır ve
+ *     sıra ile etiketler GİB'in kendi XSLT'sinden gelir; (b) `configManager`
+ *     üzerinden başka genel erişimci YOKTUR. Açılmasaydı portal listeyi elle
+ *     aynalar, ayna eskidiğinde kütüphaneyle sessizce ayrışırdı — bu paketi ÜÇ
+ *     KEZ vuran kusur sınıfının ta kendisi.
+ *
+ * `isHksChargePlane` düzlem kapısıdır: masraf bölümünün HANGİ belgede
+ * görüneceğini ve ters işaret zincirinin nerede açıldığını o belirler.
+ * `HKS_CHARGE_PLANE_FORBIDDEN_TAX_CODES` çift sayım kapısıdır — portal aynı
+ * kümeyi vergi seçicisinden düşürebilsin diye açıktır. */
+export {
+    HKS_CHARGE_CODES,
+    HKS_CHARGE_CODE_SET,
+    HKS_CHARGE_LABELS,
+    HKS_CHARGE_VAT_TWIN,
+    HKS_CHARGE_PLANE_FORBIDDEN_TAX_CODES,
+    isHksChargePlane,
+} from "./ubltr/vocabulary/hks-charge-codes";
+export type { HksChargeCode } from "./ubltr/vocabulary/hks-charge-codes";
+
 /**
  * 4.1.0 — türev whitelist'leri (`TAX_TYPE_CODES` vb.) `configManager`'ın GÜNCEL
  * durumundan elle yeniden hesaplar. Normalde GEREKMEZ: `configManager` her

@@ -52,6 +52,7 @@ import { validateManualExemption } from '../documents/invoice/validators/manual-
 import { validatePhantomKdv } from '../documents/invoice/validators/phantom-kdv-validator';
 import { validateSgkInput } from '../documents/invoice/validators/sgk-input-validator';
 import { validateHksKunyeNo } from '../documents/invoice/validators/hks-kunyeno-validator';
+import { validateHksCharges } from '../documents/invoice/validators/hks-charge-validator';
 import { validateIlacTibbiCihazItemId } from '../documents/invoice/validators/ilac-tibbicihaz-validator';
 import { validateHksOwnerFields } from '../documents/invoice/validators/hks-owner-validator';
 import { validateCrossMatrix } from '../documents/invoice/validators/cross-validators';
@@ -1089,6 +1090,11 @@ export class InvoiceSession extends EventEmitter {
     // AYNI gerekçeyle SimpleInvoiceBuilder'a eklenmedi: InvoiceInput katmanı
     // (validateByProfile → validateIlacTibbiCihaz) kuralı strict'te zaten uyguluyor.
     errors.push(...validateIlacTibbiCihazItemId(this._input));
+    /* HKS komisyoncu masraf bloğu — kapalı küme, sabit işaret ve ÇİFT SAYIM
+     * kapısı. KUNYENO'nun aksine `SimpleInvoiceBuilder`a DA bağlıdır: alan
+     * yenidir, kimsenin bugünkü belgesini kırmaz ve kuralın atlanabildiği tek
+     * bir yol bile çift sayımı yeniden mümkün kılardı. */
+    errors.push(...validateHksCharges(this._input));
 
     // validateCrossMatrix InvoiceInput ister; cache'li mapper (D-3).
     // Mapper içinde calculator throw edebilir (örn. 650 percent eksik) — bunu

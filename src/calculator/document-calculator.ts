@@ -7,7 +7,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import type { SimpleInvoiceInput } from './simple-types';
+import type { SimpleDocumentAllowanceChargeInput, SimpleInvoiceInput } from './simple-types';
 import type { CalculatedLine, CalculatedTaxSubtotal, CalculatedWithholdingSubtotal } from './line-calculator';
 import { calculateAllLines } from './line-calculator';
 import { configManager } from './config-manager';
@@ -17,20 +17,57 @@ import {
   isPhantomKdvCombination,
   PHANTOM_KDV_CALCULATION_SEQUENCE_NUMERIC,
 } from './phantom-kdv-rules';
+import { isHksChargePlane } from '../ubltr/vocabulary/hks-charge-codes';
+import { isNonEmpty } from '../utils/formatters';
 
 // ─── Hesaplama Sonuç Tipleri ────────────────────────────────────────────────────
 
 export interface DocumentMonetary {
   /** Σ line.lineExtensionAmount (indirim SONRASI; UBL-TR LegalMonetaryTotal.LineExtensionAmount kaynağı) */
   lineExtensionAmount: number;
-  /** = lineExtensionAmount (belge-seviyesi AllowanceCharge yok → identity) */
+  /**
+   * Genel düzlem: `lineExtensionAmount − belge iskontoları + belge artırımları`.
+   * Belge düzeyi kalem yoksa `lineExtensionAmount` ile ÖZDEŞTİR.
+   *
+   * 🔴 HKS masraf düzleminde HER ZAMAN `lineExtensionAmount`a EŞİTTİR: GİB'in
+   * kendi örneğinde masraflar KDV matrahına girmez
+   * (`TaxExclusive 1000000.00 = LineExtension`, masraf toplamı 220,00 buna
+   * dokunmaz).
+   */
   taxExclusiveAmount: number;
-  /** Σ line.taxInclusiveForMonetary */
+  /** Σ line.taxInclusiveForMonetary (genel düzlemde belge kalemi deltasıyla) */
   taxInclusiveAmount: number;
-  /** Σ line.allowanceObject.amount */
+  /**
+   * Σ line.allowanceObject.amount + genel düzlemdeki belge İSKONTOLARI.
+   *
+   * 🔴 HKS masraf düzleminde 18 masraf kalemi buraya GİRMEZ — `ChargeIndicator`
+   * `false` olmasına rağmen tamamı `chargeTotalAmount`a yazılır (bkz.
+   * `calculateDocument` 3c). GİB örneğinde bu alan `0.00`dır.
+   */
   allowanceTotalAmount: number;
-  /** Σ line.payableAmountForMonetary */
+  /**
+   * Belge düzeyi artırım/masraf toplamı → `cbc:ChargeTotalAmount`.
+   *
+   * `undefined` ise eleman XML'e HİÇ yazılmaz — belge düzeyi kalemi olmayan
+   * belgelerin çıktısı bit-bire aynı kalsın diye.
+   */
+  chargeTotalAmount?: number;
+  /** Σ line.payableAmountForMonetary (düzleme göre belge kalemleriyle düzeltilmiş) */
   payableAmount: number;
+}
+
+/**
+ * Belge düzeyi `cac:AllowanceCharge` — tutarı ve çarpanı ÇÖZÜLMÜŞ hâli.
+ *
+ * Girdideki `percent` burada XML'e yazılacak `MultiplierFactorNumeric` değerine
+ * çevrilmiştir (düzleme göre yüzde ya da oran) ve `amount` her durumda doludur.
+ */
+export interface CalculatedDocumentAllowanceCharge {
+  chargeIndicator: boolean;
+  reason?: string;
+  multiplierFactorNumeric?: number;
+  amount: number;
+  baseAmount?: number;
 }
 
 export interface DocumentTaxes {
@@ -61,6 +98,13 @@ export interface CalculatedDocument {
   profile: string;
   monetary: DocumentMonetary;
   allowance: DocumentAllowance | null;
+  /**
+   * Belge düzeyi iskonto/masraf kalemleri — girdi sırasında, çözülmüş tutarlarla.
+   *
+   * ⚠️ SIRA KORUNUR: GİB'in `general.xslt`'si `for-each` ile BELGE SIRASINI
+   * izler, yani XML'deki sıra ekrandaki sıradır.
+   */
+  documentAllowanceCharges: CalculatedDocumentAllowanceCharge[];
   taxes: DocumentTaxes;
   withholding: DocumentWithholding | null;
   taxExemptionReason: TaxExemptionReason;
@@ -240,6 +284,80 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
     }
   }
 
+  /* 3c. BELGE DÜZEYİ iskonto/masraf — iki düzlem, TEK yerde ayrılır.
+   *
+   * Satır iskontosu (`allowanceTotalAmount`) kalemin kendi tutarını küçültür ve
+   * `lineExtensionAmount`a zaten yansımıştır. Buradaki kalemler ise BELGE
+   * TOPLAMINA dokunur; yönü düzlem belirler.
+   *
+   * ── Genel UBL düzlemi (kılavuz okuması)
+   *   AllowanceTotal += Σ iskonto ·  ChargeTotal = Σ artırım
+   *   delta = Σ artırım − Σ iskonto
+   *   TaxExclusive/TaxInclusive/Payable hepsi `delta` kadar kayar → aradaki
+   *   farklar (KDV, tevkifat) KORUNUR, belge kendi içinde tutarlı kalır.
+   *
+   * ── 🔴 HKS masraf düzlemi (`HKS`+`KOMISYONCU` / `EARSIVFATURA`+`HKSKOMISYONCU`)
+   * Düz UBL okumasının TERSİ. GİB'in kendi `HKS-Ornek2.xml`'i ölçüldü:
+   *   19 blok `ChargeIndicator=false` (iskonto) · Σ Amount = 220,00
+   *   AllowanceTotalAmount = 0.00   ← iskonto toplamı BOŞ
+   *   ChargeTotalAmount    = 220.00 ← "artırım" alanına yazılmış
+   *   Payable = TaxInclusive − ChargeTotal = 1.080.000 − 220 = 1.079.780 ✔
+   *             TaxInclusive + ChargeTotal = 1.080.220             ✘
+   *   TaxExclusive = LineExtension → masraflar KDV matrahına GİRMEZ
+   * Dayanak kılavuz DEĞİL, GİB'in resmî örneği + resmî görüntüleme XSLT'sidir
+   * (`general.xslt:2138-2155` bu tutarı "Toplam Masraflar" diye ödenecekten
+   * ÖNCE basar). Şematron bu ekseni ne zorlar ne engeller — ÜÇ paket sürümünde
+   * `AllowanceCharge`/`ChargeTotalAmount` için SIFIR kural ölçüldü. Yani
+   * "yeşil şematron" bu zincirin doğruluk kanıtı DEĞİLDİR.
+   *
+   * ⚠️ Ters okuma YALNIZ bu düzlemde açılır; başka profillerde `ChargeTotalAmount`
+   * kılavuzdaki gibi ARTIRIMDIR ve eklenir.
+   *
+   * 🔑 Satır iskontosu HKS'te de `allowanceTotalAmount`ı besler: masraf kalemleri
+   * oraya girmez, ama kullanıcının gerçekten verdiği satır iskontosunu silmek
+   * veri kaybı olurdu. GİB'in örneğinde satır iskontosu yoktur, dolayısıyla o
+   * belgede alan `0.00` çıkar — ölçülen değerle birebir. */
+  /* Mapper'ın ÖZETLEYİCİ belge-düzeyi iskonto bloğu YALNIZ satır iskontolarını
+   * anlatır. Belge düzeyi kalemler kendi blokları olarak ayrıca yazıldığı için
+   * bu özete katılamazlar — katılsalardı aynı tutar XML'de İKİ KEZ görünürdü. */
+  const lineAllowanceTotal = allowanceTotalAmount;
+
+  const isChargePlane = isHksChargePlane(calculatedProfile, calculatedType);
+  const documentAllowanceCharges = resolveDocumentAllowanceCharges(
+    input.documentAllowanceCharges ?? [],
+    lineExtensionAmount,
+    isChargePlane,
+  );
+
+  let chargeTotalAmount: number | undefined;
+
+  if (documentAllowanceCharges.length > 0) {
+    if (isChargePlane) {
+      const chargeSum = documentAllowanceCharges.reduce((sum, ac) => sum + ac.amount, 0);
+      chargeTotalAmount = chargeSum;
+      payableAmount -= chargeSum;
+      // taxExclusiveAmount ve taxInclusiveAmount BİLEREK dokunulmadı (yukarı bkz.)
+    } else {
+      let documentAllowanceSum = 0;
+      let documentChargeSum = 0;
+      let hasCharge = false;
+      for (const ac of documentAllowanceCharges) {
+        if (ac.chargeIndicator) {
+          documentChargeSum += ac.amount;
+          hasCharge = true;
+        } else {
+          documentAllowanceSum += ac.amount;
+        }
+      }
+      const delta = documentChargeSum - documentAllowanceSum;
+      allowanceTotalAmount += documentAllowanceSum;
+      taxExclusiveAmount += delta;
+      taxInclusiveAmount += delta;
+      payableAmount += delta;
+      if (hasCharge) chargeTotalAmount = documentChargeSum;
+    }
+  }
+
   const monetary: DocumentMonetary = {
     lineExtensionAmount,
     taxExclusiveAmount,
@@ -247,6 +365,10 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
     allowanceTotalAmount,
     payableAmount,
   };
+
+  // `undefined` ise alan NESNEDE HİÇ BULUNMAZ → serileştirici elemanı yazmaz →
+  // belge düzeyi kalemi olmayan belgelerin çıktısı bit-bire aynı kalır.
+  if (chargeTotalAmount !== undefined) monetary.chargeTotalAmount = chargeTotalAmount;
 
   // Özel matrah ek subtotal
   if (input.type === 'OZELMATRAH' && input.ozelMatrah) {
@@ -276,7 +398,8 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
     type: calculatedType,
     profile: calculatedProfile,
     monetary,
-    allowance: allowanceTotalAmount > 0 ? { amount: allowanceTotalAmount } : null,
+    allowance: lineAllowanceTotal > 0 ? { amount: lineAllowanceTotal } : null,
+    documentAllowanceCharges,
     taxes: { taxTotal: taxTotalAmount, taxSubtotals },
     withholding: withholdingSubtotals.length > 0
       ? { taxTotal: withholdingTotalAmount, taxSubtotals: withholdingSubtotals }
@@ -287,6 +410,65 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
 }
 
 // ─── Yardımcı Fonksiyonlar ──────────────────────────────────────────────────────
+
+/**
+ * Parasal tutarın yazıldığı basamağa (2 hane) yuvarlar.
+ *
+ * Orandan türetilen masraf tutarları için ŞART: `ChargeTotalAmount` toplamı
+ * kalemlerin GÖSTERİLEN tutarlarının toplamına eşit olmalıdır. Yuvarlamadan
+ * toplarsak GİB'in görüntüsünde "Toplam Masraflar" satırı kalemlerin toplamını
+ * tutmaz ve bunu hiçbir kapı söylemez (§ şematronda sıfır kural).
+ */
+function roundToAmountPrecision(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+/**
+ * Belge düzeyi iskonto/masraf girdilerini çözer: tutarı türetir, çarpanı
+ * düzleme göre yüzde ya da orana çevirir.
+ *
+ * ── Tutar (K3): OTORİTE `amount`tır
+ * `amount` verildiyse aynen kullanılır. Verilmediyse `percent` ve
+ * `baseAmount ?? lineExtensionAmount` üzerinden türetilir. İkisi de yoksa 0.
+ *
+ * ── Çarpan (K2): düzleme göre AYRIŞIR
+ * Kılavuz (Ortak §2.2.3, Fatura §2.3.36) `MultiplierFactorNumeric`i ORAN
+ * tanımlar ve örnekleri tutarlıdır (`0.1 × 200 = 20`). Ama HKS'e ÖZGÜ tek kanıt
+ * GİB'in kendi görüntüleme XSLT'sidir ve değeri YÜZDE sanıp yanına `%` basar
+ * (`general.xslt:1342`, `:1353-1356`). Oran yazılsaydı belge GİB'in kendi
+ * ekranında "%0,05" görünürdü. Bu yüzden masraf düzleminde yüzde, geri kalan
+ * her yerde kılavuzun oranı yazılır — satır iskontosuyla da tutarlı
+ * (`simple-invoice-mapper`: `percent / 100`).
+ *
+ * ── `BaseAmount`
+ * Yalnız kullanıcı AÇIKÇA verdiyse XML'e yazılır. GİB'in HKS örneğinde masraf
+ * kalemlerinin hiçbiri taban taşımaz.
+ */
+function resolveDocumentAllowanceCharges(
+  items: SimpleDocumentAllowanceChargeInput[],
+  lineExtensionAmount: number,
+  isChargePlane: boolean,
+): CalculatedDocumentAllowanceCharge[] {
+  return items.map(item => {
+    const base = item.baseAmount ?? lineExtensionAmount;
+    const amount = item.amount !== undefined
+      ? item.amount
+      : item.percent !== undefined
+        ? roundToAmountPrecision(base * (item.percent / 100))
+        : 0;
+
+    const resolved: CalculatedDocumentAllowanceCharge = {
+      chargeIndicator: item.chargeIndicator,
+      amount,
+    };
+    if (isNonEmpty(item.reason)) resolved.reason = item.reason;
+    if (item.percent !== undefined) {
+      resolved.multiplierFactorNumeric = isChargePlane ? item.percent : item.percent / 100;
+    }
+    if (item.baseAmount !== undefined) resolved.baseAmount = item.baseAmount;
+    return resolved;
+  });
+}
 
 /**
  * Fatura tipini tespit eder.

@@ -556,6 +556,36 @@ export const SessionPaths = {
   additionalDocumentAttachmentCharacterSetCode: (i: number) => `additionalDocuments[${i}].attachment.characterSetCode` as `additionalDocuments[${number}].attachment.characterSetCode`,
 
   /**
+   * `cbc:ChargeIndicator` — UBL-TR Ortak §2.2.3: *"Iskonto ise 'false', artırım ise 'true' girilir."* ⚠️ HKS masraf düzleminde GİB'in kendi örneğinde blokların tamamı `false` olmasına rağmen toplam `ChargeTotalAmount`a yazılır ve ödenecekten düşülür. O düzlemde bu bayrak toplam YÖNÜNÜ BELİRLEMEZ (bkz. `document-calculator`).
+   * Expected type: boolean
+   */
+  documentAllowanceChargeChargeIndicator: (i: number) => `documentAllowanceCharges[${i}].chargeIndicator` as `documentAllowanceCharges[${number}].chargeIndicator`,
+
+  /**
+   * `cbc:AllowanceChargeReason` — sebep. HKS masraf düzleminde `HKS_CHARGE_CODES` kapalı kümesinden biri olmak ZORUNDADIR; başka bir dizge GİB'in resmî görüntüsünde hiç çıkmaz. Diğer profillerde serbest metindir.
+   * Expected type: string | undefined
+   */
+  documentAllowanceChargeReason: (i: number) => `documentAllowanceCharges[${i}].reason` as `documentAllowanceCharges[${number}].reason`,
+
+  /**
+   * Oran (%) — ekranda "%5" yazılan değer `5` olarak verilir.
+   * Expected type: number | undefined
+   */
+  documentAllowanceChargePercent: (i: number) => `documentAllowanceCharges[${i}].percent` as `documentAllowanceCharges[${number}].percent`,
+
+  /**
+   * Tutar — OTORİTE. Verilmezse `percent` ve tabandan türetilir.
+   * Expected type: number | undefined
+   */
+  documentAllowanceChargeAmount: (i: number) => `documentAllowanceCharges[${i}].amount` as `documentAllowanceCharges[${number}].amount`,
+
+  /**
+   * `cbc:BaseAmount` — oranın uygulandığı taban. Verilmezse tutar türetiminde belge `LineExtensionAmount`ı kullanılır ama XML'e `BaseAmount` YAZILMAZ: GİB'in HKS örneğinde masraf kalemlerinin hiçbiri taban taşımaz, gereksiz eleman üretmeyiz.
+   * Expected type: number | undefined
+   */
+  documentAllowanceChargeBaseAmount: (i: number) => `documentAllowanceCharges[${i}].baseAmount` as `documentAllowanceCharges[${number}].baseAmount`,
+
+  /**
    * Ödeme yöntemi kodu (ör: "1" Nakit, "42" Banka, "48" Kredi Kartı, "ZZZ" Diğer)
    * Expected type: string
    */
@@ -973,6 +1003,11 @@ export interface SessionPathMap {
   'additionalDocuments[${number}].attachment.data': string;
   'additionalDocuments[${number}].attachment.encodingCode': string | undefined;
   'additionalDocuments[${number}].attachment.characterSetCode': string | undefined;
+  'documentAllowanceCharges[${number}].chargeIndicator': boolean;
+  'documentAllowanceCharges[${number}].reason': string | undefined;
+  'documentAllowanceCharges[${number}].percent': number | undefined;
+  'documentAllowanceCharges[${number}].amount': number | undefined;
+  'documentAllowanceCharges[${number}].baseAmount': number | undefined;
   'paymentMeans.meansCode': string;
   'paymentMeans.dueDate': string | undefined;
   'paymentMeans.channelCode': string | undefined;
@@ -1083,6 +1118,11 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'datetime',
   'despatchReferences[*].id',
   'despatchReferences[*].issueDate',
+  'documentAllowanceCharges[*].amount',
+  'documentAllowanceCharges[*].baseAmount',
+  'documentAllowanceCharges[*].chargeIndicator',
+  'documentAllowanceCharges[*].percent',
+  'documentAllowanceCharges[*].reason',
   'eArchiveInfo.sendType',
   'exchangeRate',
   'id',
@@ -1290,6 +1330,11 @@ export interface InvoiceSessionUpdateOverloads {
   update(path: `additionalDocuments[${number}].attachment.data`, value: string): void;
   update(path: `additionalDocuments[${number}].attachment.encodingCode`, value: string | undefined): void;
   update(path: `additionalDocuments[${number}].attachment.characterSetCode`, value: string | undefined): void;
+  update(path: `documentAllowanceCharges[${number}].chargeIndicator`, value: boolean): void;
+  update(path: `documentAllowanceCharges[${number}].reason`, value: string | undefined): void;
+  update(path: `documentAllowanceCharges[${number}].percent`, value: number | undefined): void;
+  update(path: `documentAllowanceCharges[${number}].amount`, value: number | undefined): void;
+  update(path: `documentAllowanceCharges[${number}].baseAmount`, value: number | undefined): void;
   update(path: 'paymentMeans.meansCode', value: string): void;
   update(path: 'paymentMeans.dueDate', value: string | undefined): void;
   update(path: 'paymentMeans.channelCode', value: string | undefined): void;

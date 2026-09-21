@@ -6,7 +6,7 @@
 # Bir satırın KAYBOLMASI = tüketici derlemesinin kırılması. Bu dosyadaki
 # bir satırı silen commit, o kırılmayı BİLEREK yaptığını beyan etmiş olur.
 #
-# Toplam: 346 ad
+# Toplam: 355 ad
 value	ADDITIONAL_ITEM_ID_SCHEME_IDS	VariableDeclaration
 value	AMOUNT_IN_WORDS_NOTE_PATTERN	VariableDeclaration
 value	AMOUNT_IN_WORDS_PREFIX	VariableDeclaration
@@ -33,6 +33,7 @@ value	CURRENCY_MAP	VariableDeclaration
 type	CalculatedAllowance	InterfaceDeclaration
 type	CalculatedDeduction	InterfaceDeclaration
 type	CalculatedDocument	InterfaceDeclaration
+type	CalculatedDocumentAllowanceCharge	InterfaceDeclaration
 type	CalculatedLine	InterfaceDeclaration
 type	CalculatedLineTaxes	InterfaceDeclaration
 type	CalculatedLineWithholding	InterfaceDeclaration
@@ -105,6 +106,12 @@ type	FieldVisibility	InterfaceDeclaration
 type	FinancialAccountInput	InterfaceDeclaration
 value	GTIP_DIGIT_COUNT	VariableDeclaration
 type	GoodsItemInput	InterfaceDeclaration
+value	HKS_CHARGE_CODES	VariableDeclaration
+value	HKS_CHARGE_CODE_SET	VariableDeclaration
+value	HKS_CHARGE_LABELS	VariableDeclaration
+value	HKS_CHARGE_PLANE_FORBIDDEN_TAX_CODES	VariableDeclaration
+value	HKS_CHARGE_VAT_TWIN	VariableDeclaration
+type	HksChargeCode	TypeAliasDeclaration
 value	IADE_GROUP_TYPES	VariableDeclaration
 value	INVOICE_ID_REGEX	VariableDeclaration
 value	INVOICE_NAMESPACES	VariableDeclaration
@@ -225,6 +232,7 @@ type	SimpleDespatchInput	InterfaceDeclaration
 type	SimpleDespatchLineInput	InterfaceDeclaration
 type	SimpleDespatchOrderReferenceInput	InterfaceDeclaration
 type	SimpleDespatchReferenceInput	InterfaceDeclaration
+type	SimpleDocumentAllowanceChargeInput	InterfaceDeclaration
 type	SimpleDriverInput	InterfaceDeclaration
 type	SimpleEArchiveInput	InterfaceDeclaration
 value+type	SimpleInvoiceBuilder	ClassDeclaration
@@ -320,6 +328,7 @@ value	getPaymentMeansDefinition	FunctionDeclaration
 value	getTaxDefinition	FunctionDeclaration
 value	getWithholdingTaxDefinition	FunctionDeclaration
 value	isAmountInWordsNote	FunctionDeclaration
+value	isHksChargePlane	FunctionDeclaration
 value	isValidCurrencyCode	FunctionDeclaration
 value	isValidExemptionCode	FunctionDeclaration
 value	isValidGtip	FunctionDeclaration

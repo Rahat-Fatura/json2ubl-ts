@@ -109,12 +109,39 @@ function buildInvoiceInput(
     result.withholdingTaxTotals = buildWithholdingTaxTotals(calc);
   }
 
-  // İndirim
+  /* Belge kökündeki `cac:AllowanceCharge` blokları — İKİ KAYNAK, TEK DİZİ.
+   *
+   * 1) Satır iskontolarının ÖZETİ (eskiden beri): tek blok, sebepsiz.
+   * 2) Belge düzeyi kalemler (`documentAllowanceCharges`): kullanıcının girdiği
+   *    sırada, HKS'te 18 masraf kalemi.
+   *
+   * 🔴 SIRA ANLAMLIDIR ve özet ÖNDE kalır: GİB'in `general.xslt`'si `for-each`
+   * ile BELGE SIRASINI izler. GİB'in kendi HKS örneğinde de aynı şekil vardır —
+   * önce sebepsiz bir yer tutucu blok, sonra 18 adlandırılmış kalem. */
+  const documentAllowanceChargeBlocks: AllowanceChargeInput[] = [];
+
   if (calc.allowance) {
-    result.allowanceCharges = [{
+    documentAllowanceChargeBlocks.push({
       chargeIndicator: false,
       amount: calc.allowance.amount,
-    }];
+    });
+  }
+
+  for (const ac of calc.documentAllowanceCharges) {
+    const block: AllowanceChargeInput = {
+      chargeIndicator: ac.chargeIndicator,
+      amount: ac.amount,
+    };
+    if (ac.reason !== undefined) block.reason = ac.reason;
+    if (ac.multiplierFactorNumeric !== undefined) {
+      block.multiplierFactorNumeric = ac.multiplierFactorNumeric;
+    }
+    if (ac.baseAmount !== undefined) block.baseAmount = ac.baseAmount;
+    documentAllowanceChargeBlocks.push(block);
+  }
+
+  if (documentAllowanceChargeBlocks.length > 0) {
+    result.allowanceCharges = documentAllowanceChargeBlocks;
   }
 
   // Fatura referansları (tekil kısayol + çoğul alan tek yerde yorumlanır)
@@ -403,13 +430,19 @@ function buildWithholdingTaxTotals(calc: CalculatedDocument): WithholdingTaxTota
 // ─── Monetary ───────────────────────────────────────────────────────────────────
 
 function buildMonetaryTotal(calc: CalculatedDocument): MonetaryTotalInput {
-  return {
+  const total: MonetaryTotalInput = {
     lineExtensionAmount: calc.monetary.lineExtensionAmount,
     taxExclusiveAmount: calc.monetary.taxExclusiveAmount,
     taxInclusiveAmount: calc.monetary.taxInclusiveAmount,
     allowanceTotalAmount: calc.monetary.allowanceTotalAmount,
     payableAmount: calc.monetary.payableAmount,
   };
+  /* `ChargeTotalAmount` KOŞULLU yazılır: hesap motoru belge düzeyi kalem yoksa
+   * alanı hiç doldurmaz, o yüzden mevcut belgelerin çıktısı değişmez. */
+  if (calc.monetary.chargeTotalAmount !== undefined) {
+    total.chargeTotalAmount = calc.monetary.chargeTotalAmount;
+  }
+  return total;
 }
 
 // ─── Döviz Kuru ─────────────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ export type {
 export { calculateDocument } from "./document-calculator";
 export type {
     CalculatedDocument,
+    CalculatedDocumentAllowanceCharge,
     DocumentMonetary,
     DocumentTaxes,
     DocumentWithholding,
@@ -38,6 +39,7 @@ export type {
     SimplePartyIdentification,
     SimpleLineInput,
     SimpleLineTaxInput,
+    SimpleDocumentAllowanceChargeInput,
     SimpleLineDeliveryInput,
     SimpleAddressInput,
     SimpleItemIdentification,
