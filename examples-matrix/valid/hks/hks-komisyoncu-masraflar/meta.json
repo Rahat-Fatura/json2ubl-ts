@@ -1,0 +1,32 @@
+{
+  "id": "hks-komisyoncu-masraflar",
+  "kind": "invoice",
+  "profile": "HKS",
+  "type": "KOMISYONCU",
+  "variantSlug": "masraflar",
+  "dimensions": {
+    "kdvBreakdown": [
+      10
+    ],
+    "currency": "TRY",
+    "exchangeRate": false,
+    "exemptionCodes": [],
+    "withholdingCodes": [],
+    "allowanceCharge": {
+      "line": false,
+      "document": true
+    },
+    "lineCount": 1,
+    "paymentMeans": false,
+    "reducedKdvGate": false,
+    "phantomKdv": false,
+    "specialIdentifiers": [
+      "kunyeno",
+      "hksCharges"
+    ]
+  },
+  "generatedAt": "2026-09-21T14:18:57.395Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok",
+  "notes": "HKS+KOMISYONCU — 18 masraf kalemi, ChargeTotalAmount ödenecekten DÜŞÜLÜR"
+}

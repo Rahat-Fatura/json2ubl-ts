@@ -7,12 +7,11 @@ export const input: SimpleInvoiceInput = {
   profile: 'TEMELFATURA',
   type: 'SATIS',
   currencyCode: 'TRY',
-  documentAllowances: [
+  documentAllowanceCharges: [
     {
       reason: 'Toptan indirim',
       chargeIndicator: false,
       amount: 100,
-      kdvPercent: 20,
     },
   ],
   sender: {

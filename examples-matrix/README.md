@@ -7,10 +7,10 @@ Sprint 8e (Publish Öncesi Kapsam Doğrulama) + Sprint 8f (Bug hotfix + kapsam g
 ## 📊 Özet (Dashboard)
 
 - **15 profil** × **17 tip** — PROFILE_TYPE_MATRIX'te **65 kombinasyon** tanımlı
-- **120 valid senaryo** (113 invoice + 7 despatch)
+- **121 valid senaryo** (114 invoice + 7 despatch)
 - **47 invalid senaryo** — 19 farklı error code kapsıyor
 - **Coverage:** 62/65 kombinasyon (%95.4)
-- **Toplam:** 167 senaryo
+- **Toplam:** 168 senaryo
 
 ## Kullanım
 
@@ -33,7 +33,7 @@ npx tsx examples-matrix/find.ts --has-withholding --currency=USD
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | EARSIVFATURA | 1 | 3 | 1 | 2 | 1 | 1 | 1 | — | — | 3 | 1 | 1 | 1 | 3 | 2 | 2 | 1 | **24** |
 | ENERJI | — | — | — | — | — | — | — | 2 | 1 | — | — | — | — | — | — | — | — | **3** |
-| HKS | — | — | — | — | 1 | — | — | — | — | 3 | — | — | — | — | — | — | — | **4** |
+| HKS | — | — | — | — | 2 | — | — | — | — | 3 | — | — | — | — | — | — | — | **5** |
 | IDIS | — | 2 | 2 | 1 | — | — | — | — | — | 2 | — | — | 1 | — | — | — | — | **8** |
 | IHRACAT | — | — | — | 3 | — | — | — | — | — | — | — | — | — | — | — | — | — | **3** |
 | ILAC_TIBBICIHAZ | — | 2 | 1 | 1 | — | — | — | — | — | 3 | — | — | 1 | — | — | — | — | **8** |
@@ -133,11 +133,12 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 | [enerji-sarj-coklu-sarj](valid/enerji/enerji-sarj-coklu-sarj/) | SARJ | coklu-sarj | 20 | TRY | — | ENERJI+SARJ 3 şarj noktası tek faturada |
 | [enerji-sarjanlik-baseline](valid/enerji/enerji-sarjanlik-baseline/) | SARJANLIK | baseline | 20 | TRY | — | Baseline — ENERJI+SARJANLIK, operatörden anlık satış |
 
-### HKS (4)
+### HKS (5)
 
 | ID | Tip | Slug | KDV | Döviz | Özellikler | Notlar |
 |---|---|---|---|---|---|---|
 | [hks-komisyoncu-baseline](valid/hks/hks-komisyoncu-baseline/) | KOMISYONCU | baseline | 10 | TRY | kunyeno | Baseline — HKS+KOMISYONCU (e-Fatura düzlemi), komisyoncu satış |
+| [hks-komisyoncu-masraflar](valid/hks/hks-komisyoncu-masraflar/) | KOMISYONCU | masraflar | 10 | TRY | kunyeno, hksCharges | HKS+KOMISYONCU — 18 masraf kalemi, ChargeTotalAmount ödenecekten DÜŞÜLÜR |
 | [hks-satis-baseline](valid/hks/hks-satis-baseline/) | SATIS | baseline | 10 | TRY | kunyeno | Baseline — HKS+SATIS (e-Fatura düzlemi), KUNYENO 19-char per line |
 | [hks-satis-coklu-kunye](valid/hks/hks-satis-coklu-kunye/) | SATIS | coklu-kunye | 20 | TRY | kunyeNo | HKS+SATIS — 2 satır farklı KUNYENO (satır başına TAM BİR künye) |
 | [hks-satis-malsahibi](valid/hks/hks-satis-malsahibi/) | SATIS | malsahibi | 10 | TRY | kunyeno, malsahibi | HKS+SATIS — KUNYENO + MALSAHIBIADSOYADUNVAN + MALSAHIBIVKNTCKN üçlüsü |
@@ -172,9 +173,9 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 
 | ID | Tip | Slug | KDV | Döviz | Özellikler | Notlar |
 |---|---|---|---|---|---|---|
-| [ihracat-istisna-baseline](valid/ihracat/ihracat-istisna-baseline/) | ISTISNA | baseline | 0 | USD | buyerCustomer, gtip, incoterms | Baseline — IHRACAT+ISTISNA, USD döviz + buyerCustomer + delivery(FOB+GTİP) |
-| [ihracat-istisna-coklu-satir](valid/ihracat/ihracat-istisna-coklu-satir/) | ISTISNA | coklu-satir | 0 | USD | buyerCustomer, gtip, incoterms | IHRACAT+ISTISNA 2 satır (farklı GTİP, USD) |
-| [ihracat-istisna-eur-doviz](valid/ihracat/ihracat-istisna-eur-doviz/) | ISTISNA | eur-doviz | 0 | EUR | buyerCustomer, gtip, incoterms | IHRACAT+ISTISNA EUR döviz + Avrupa alıcısı |
+| [ihracat-istisna-baseline](valid/ihracat/ihracat-istisna-baseline/) | ISTISNA | baseline | 0 | USD | buyerCustomer, gtip, incoterms | Baseline — IHRACAT+ISTISNA, USD döviz + buyerCustomer + delivery(FOB+GTİP) | 4.5.4: transportModeCode eklendi (şematron LineDeliveryCheck zorunlusu) ve çıktı CANLI GİB paketine soruldu — validSchematron=true, XSD'de yalnız imzasız/UBLExtensions-siz ara-üründen gelen bilinen hata kaldı. |
+| [ihracat-istisna-coklu-satir](valid/ihracat/ihracat-istisna-coklu-satir/) | ISTISNA | coklu-satir | 0 | USD | buyerCustomer, gtip, incoterms | IHRACAT+ISTISNA 2 satır (farklı GTİP, USD) | 4.5.4: transportModeCode eklendi (şematron LineDeliveryCheck zorunlusu) ve çıktı CANLI GİB paketine soruldu — validSchematron=true, XSD'de yalnız imzasız/UBLExtensions-siz ara-üründen gelen bilinen hata kaldı. |
+| [ihracat-istisna-eur-doviz](valid/ihracat/ihracat-istisna-eur-doviz/) | ISTISNA | eur-doviz | 0 | EUR | buyerCustomer, gtip, incoterms | IHRACAT+ISTISNA EUR döviz + Avrupa alıcısı | 4.5.4: transportModeCode eklendi (şematron LineDeliveryCheck zorunlusu) ve çıktı CANLI GİB paketine soruldu — validSchematron=true, XSD'de yalnız imzasız/UBLExtensions-siz ara-üründen gelen bilinen hata kaldı. |
 
 ### ILAC_TIBBICIHAZ (8)
 
@@ -249,8 +250,8 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 |---|---|---|---|---|---|---|
 | [temelirsaliye-matbudan-baseline](valid/temelirsaliye/temelirsaliye-matbudan-baseline/) | MATBUDAN | baseline | — | — | — | Baseline — TEMELIRSALIYE+MATBUDAN (kağıt belge referansı zorunlu) |
 | [temelirsaliye-sevk-baseline](valid/temelirsaliye/temelirsaliye-sevk-baseline/) | SEVK | baseline | — | — | — | Baseline — TEMELIRSALIYE+SEVK, tek sürücü + PLAKA |
-| [temelirsaliye-sevk-coklu-surucu](valid/temelirsaliye/temelirsaliye-sevk-coklu-surucu/) | SEVK | coklu-surucu | — | — | — | TEMELIRSALIYE+SEVK 2 sürücü + 2 plaka (çekici + dorse) |
-| [temelirsaliye-sevk-dorse-plate](valid/temelirsaliye/temelirsaliye-sevk-dorse-plate/) | SEVK | dorse-plate | — | — | — | TEMELIRSALIYE+SEVK DORSE plaka varyantı |
+| [temelirsaliye-sevk-coklu-surucu](valid/temelirsaliye/temelirsaliye-sevk-coklu-surucu/) | SEVK | coklu-surucu | — | — | — | TEMELIRSALIYE+SEVK 2 sürücü + 2 ÇEKİCİ (iki cac:ShipmentStage) |
+| [temelirsaliye-sevk-dorse-plate](valid/temelirsaliye/temelirsaliye-sevk-dorse-plate/) | SEVK | dorse-plate | — | — | — | TEMELIRSALIYE+SEVK — çekici plakası + DORSE (kanonik TransportHandlingUnit yolu) |
 
 ### TICARIFATURA (13)
 
@@ -288,8 +289,8 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 
 | ID | Tip | Slug | KDV | Döviz | Özellikler | Notlar |
 |---|---|---|---|---|---|---|
-| [yolcuberaberfatura-istisna-baseline](valid/yolcuberaberfatura/yolcuberaberfatura-istisna-baseline/) | ISTISNA | baseline | 0 | TRY | passport, nationalityId, taxRepresentative | Baseline — YOLCUBERABERFATURA+ISTISNA, passport + nationalityId + taxRepresentativeParty |
-| [yolcuberaberfatura-istisna-yabanci-uk](valid/yolcuberaberfatura/yolcuberaberfatura-istisna-yabanci-uk/) | ISTISNA | yabanci-uk | 0 | TRY | passport, nationalityId, taxRepresentative | YOLCU — İngiliz turist (UK), farklı hediyelik ürün |
+| [yolcuberaberfatura-istisna-baseline](valid/yolcuberaberfatura/yolcuberaberfatura-istisna-baseline/) | ISTISNA | baseline | 0 | TRY | passport, passportIssueDate, nationalityId, personName, taxRepresentative | Baseline — YOLCUBERABERFATURA+ISTISNA, passport + nationalityId + taxRepresentativeParty |
+| [yolcuberaberfatura-istisna-yabanci-uk](valid/yolcuberaberfatura/yolcuberaberfatura-istisna-yabanci-uk/) | ISTISNA | yabanci-uk | 0 | TRY | passport, passportIssueDate, nationalityId, personName, taxRepresentative | YOLCU — İngiliz turist (UK), farklı hediyelik ürün |
 
 ## Invalid Senaryolar (error code bazında)
 

@@ -1,0 +1,139 @@
+{
+  "id": "MTX2026000000986",
+  "uuid": "a1000986-0001-4000-8001-000000000986",
+  "datetime": "2026-04-24T10:00:00",
+  "profile": "HKS",
+  "type": "KOMISYONCU",
+  "currencyCode": "TRY",
+  "sender": {
+    "taxNumber": "1234567890",
+    "name": "Matrix Komisyoncu Hal",
+    "taxOffice": "Beşiktaş",
+    "address": "Levent Mah. No:42",
+    "district": "Beşiktaş",
+    "city": "İstanbul"
+  },
+  "customer": {
+    "taxNumber": "9876543210",
+    "name": "Matrix Test Alıcı Ltd.",
+    "taxOffice": "Kadıköy",
+    "address": "Bağdat Cad. No:100",
+    "district": "Kadıköy",
+    "city": "İstanbul"
+  },
+  "documentAllowanceCharges": [
+    {
+      "reason": "HKSKOMISYON",
+      "chargeIndicator": false,
+      "percent": 8
+    },
+    {
+      "reason": "HKSKOMISYONKDV",
+      "chargeIndicator": false,
+      "percent": 20,
+      "amount": 48
+    },
+    {
+      "reason": "HKSNAVLUN",
+      "chargeIndicator": false,
+      "amount": 150
+    },
+    {
+      "reason": "HKSNAVLUNKDV",
+      "chargeIndicator": false,
+      "percent": 20,
+      "amount": 30
+    },
+    {
+      "reason": "HKSHAMMALIYE",
+      "chargeIndicator": false,
+      "amount": 90
+    },
+    {
+      "reason": "HKSHAMMALIYEKDV",
+      "chargeIndicator": false,
+      "percent": 20,
+      "amount": 18
+    },
+    {
+      "reason": "HKSNAKLIYE",
+      "chargeIndicator": false,
+      "amount": 120
+    },
+    {
+      "reason": "HKSNAKLIYEKDV",
+      "chargeIndicator": false,
+      "percent": 20,
+      "amount": 24
+    },
+    {
+      "reason": "HKSGVTEVKIFAT",
+      "chargeIndicator": false,
+      "percent": 2
+    },
+    {
+      "reason": "HKSBAGKURTEVKIFAT",
+      "chargeIndicator": false,
+      "percent": 1
+    },
+    {
+      "reason": "HKSRUSUM",
+      "chargeIndicator": false,
+      "percent": 1
+    },
+    {
+      "reason": "HKSRUSUMKDV",
+      "chargeIndicator": false,
+      "percent": 20,
+      "amount": 6
+    },
+    {
+      "reason": "HKSTICBORSASI",
+      "chargeIndicator": false,
+      "percent": 0.15
+    },
+    {
+      "reason": "HKSTICBORSASIKDV",
+      "chargeIndicator": false,
+      "percent": 20,
+      "amount": 0.9
+    },
+    {
+      "reason": "HKSMILLISAVUNMAFON",
+      "chargeIndicator": false,
+      "percent": 0.5
+    },
+    {
+      "reason": "HKSMSFONKDV",
+      "chargeIndicator": false,
+      "percent": 20,
+      "amount": 3
+    },
+    {
+      "reason": "HKSDIGERMASRAFLAR",
+      "chargeIndicator": false,
+      "amount": 50
+    },
+    {
+      "reason": "HKSDIGERKDV",
+      "chargeIndicator": false,
+      "percent": 20,
+      "amount": 10
+    }
+  ],
+  "lines": [
+    {
+      "name": "Biber — Komisyon satış",
+      "quantity": 200,
+      "price": 15,
+      "unitCode": "KGM",
+      "kdvPercent": 10,
+      "additionalItemIdentifications": [
+        {
+          "schemeId": "KUNYENO",
+          "value": "KUN-2026-MTX86-BIB1"
+        }
+      ]
+    }
+  ]
+}

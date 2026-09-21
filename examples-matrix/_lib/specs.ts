@@ -1146,7 +1146,7 @@ export const validSpecs: ValidSpec[] = [
       uuid: 'a1000918-0001-4000-8001-000000000918',
       datetime: '2026-04-24T10:00:00',
       profile: 'TEMELFATURA', type: 'SATIS', currencyCode: 'TRY',
-      documentAllowances: [{ reason: 'Toptan indirim', chargeIndicator: false, amount: 100, kdvPercent: 20 }],
+      documentAllowanceCharges: [{ reason: 'Toptan indirim', chargeIndicator: false, amount: 100 }],
       sender: { ...STANDARD_SENDER },
       customer: { ...STANDARD_CUSTOMER },
       lines: [{ name: 'İndirimli ürün', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
@@ -2325,6 +2325,67 @@ export const validSpecs: ValidSpec[] = [
       lines: [{
         name: 'Biber — Komisyon satış', quantity: 200, price: 15, unitCode: 'KGM', kdvPercent: 10,
         additionalItemIdentifications: [{ schemeId: 'KUNYENO', value: 'KUN-2026-MTX64-BIB1' }],
+      }],
+    },
+  },
+  /* 🔴 HKS KOMİSYONCU — 18 MASRAF KALEMİ ve TERS İŞARETLİ TOPLAM.
+   *
+   * Komisyoncu faturasının TANIMLAYICI özelliği budur ve baseline'da hiç yoktu.
+   * Satırdaki tutar satış hasılatı, 18 kalem ise hasılattan kesilen
+   * masraf/komisyon/kesintilerdir; `PayableAmount` komisyoncunun mal sahibine
+   * fiilen ÖDEYECEĞİ net tutardır.
+   *
+   * Beklenen zincir (GİB `HKS-Ornek2.xml` aritmetiğinin aynısı):
+   *   LineExtension 3.000,00 = TaxExclusive  (masraflar KDV matrahına GİRMEZ)
+   *   TaxInclusive  3.300,00
+   *   AllowanceTotal    0,00  ← 18 kalem `ChargeIndicator=false` olmasına rağmen
+   *   ChargeTotal     929,40  ← tamamı BURAYA yazılır
+   *   Payable       2.370,60 = 3.300,00 − 929,40   (DÜŞÜLÜR, eklenmez)
+   *
+   * Senaryo iki giriş yolunu da sınar: oranı verilip TUTARI TÜRETİLEN kalemler
+   * (komisyon %8 → 240,00; borsa %0,15 → 4,50) ve tutarı AÇIKÇA verilen KDV
+   * ikizleri (otorite `amount`tır — K3). Sıra GİB `general.xslt`in dal
+   * sırasıdır; "Masraflar:" başlığı `HKSKOMISYON` dalına gömülü olduğu için
+   * komisyon kalemi LİSTENİN BAŞINDA durur. */
+  {
+    kind: 'invoice', variantSlug: 'masraflar', profile: 'HKS', type: 'KOMISYONCU',
+    notes: 'HKS+KOMISYONCU — 18 masraf kalemi, ChargeTotalAmount ödenecekten DÜŞÜLÜR',
+    dimensions: {
+      kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
+      withholdingCodes: [], allowanceCharge: { line: false, document: true },
+      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
+      specialIdentifiers: ['kunyeno', 'hksCharges'],
+    },
+    input: {
+      id: 'MTX2026000000986',
+      uuid: 'a1000986-0001-4000-8001-000000000986',
+      datetime: '2026-04-24T10:00:00',
+      profile: 'HKS', type: 'KOMISYONCU', currencyCode: 'TRY',
+      sender: { ...STANDARD_SENDER, name: 'Matrix Komisyoncu Hal' },
+      customer: { ...STANDARD_CUSTOMER },
+      documentAllowanceCharges: [
+        { reason: 'HKSKOMISYON', chargeIndicator: false, percent: 8 },
+        { reason: 'HKSKOMISYONKDV', chargeIndicator: false, percent: 20, amount: 48 },
+        { reason: 'HKSNAVLUN', chargeIndicator: false, amount: 150 },
+        { reason: 'HKSNAVLUNKDV', chargeIndicator: false, percent: 20, amount: 30 },
+        { reason: 'HKSHAMMALIYE', chargeIndicator: false, amount: 90 },
+        { reason: 'HKSHAMMALIYEKDV', chargeIndicator: false, percent: 20, amount: 18 },
+        { reason: 'HKSNAKLIYE', chargeIndicator: false, amount: 120 },
+        { reason: 'HKSNAKLIYEKDV', chargeIndicator: false, percent: 20, amount: 24 },
+        { reason: 'HKSGVTEVKIFAT', chargeIndicator: false, percent: 2 },
+        { reason: 'HKSBAGKURTEVKIFAT', chargeIndicator: false, percent: 1 },
+        { reason: 'HKSRUSUM', chargeIndicator: false, percent: 1 },
+        { reason: 'HKSRUSUMKDV', chargeIndicator: false, percent: 20, amount: 6 },
+        { reason: 'HKSTICBORSASI', chargeIndicator: false, percent: 0.15 },
+        { reason: 'HKSTICBORSASIKDV', chargeIndicator: false, percent: 20, amount: 0.9 },
+        { reason: 'HKSMILLISAVUNMAFON', chargeIndicator: false, percent: 0.5 },
+        { reason: 'HKSMSFONKDV', chargeIndicator: false, percent: 20, amount: 3 },
+        { reason: 'HKSDIGERMASRAFLAR', chargeIndicator: false, amount: 50 },
+        { reason: 'HKSDIGERKDV', chargeIndicator: false, percent: 20, amount: 10 },
+      ],
+      lines: [{
+        name: 'Biber — Komisyon satış', quantity: 200, price: 15, unitCode: 'KGM', kdvPercent: 10,
+        additionalItemIdentifications: [{ schemeId: 'KUNYENO', value: 'KUN-2026-MTX86-BIB1' }],
       }],
     },
   },

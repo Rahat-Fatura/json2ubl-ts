@@ -16,7 +16,7 @@
   <cbc:IssueDate>2026-04-24</cbc:IssueDate>
   <cbc:IssueTime>10:00:00</cbc:IssueTime>
   <cbc:InvoiceTypeCode>SATIS</cbc:InvoiceTypeCode>
-  <cbc:Note>YAZIYLA:#BİN İKİ YÜZ TÜRK LIRASI#</cbc:Note>
+  <cbc:Note>YAZIYLA:#BİN YÜZ TÜRK LIRASI#</cbc:Note>
   <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
   <cbc:LineCountNumeric>1</cbc:LineCountNumeric>
   <cac:AccountingSupplierParty>
@@ -65,6 +65,11 @@
       </cac:PartyTaxScheme>
     </cac:Party>
   </cac:AccountingCustomerParty>
+  <cac:AllowanceCharge>
+    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+    <cbc:AllowanceChargeReason>Toptan indirim</cbc:AllowanceChargeReason>
+    <cbc:Amount currencyID="TRY">100.00</cbc:Amount>
+  </cac:AllowanceCharge>
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="TRY">200.00</cbc:TaxAmount>
     <cac:TaxSubtotal>
@@ -81,10 +86,10 @@
   </cac:TaxTotal>
   <cac:LegalMonetaryTotal>
     <cbc:LineExtensionAmount currencyID="TRY">1000.00</cbc:LineExtensionAmount>
-    <cbc:TaxExclusiveAmount currencyID="TRY">1000.00</cbc:TaxExclusiveAmount>
-    <cbc:TaxInclusiveAmount currencyID="TRY">1200.00</cbc:TaxInclusiveAmount>
-    <cbc:AllowanceTotalAmount currencyID="TRY">0.00</cbc:AllowanceTotalAmount>
-    <cbc:PayableAmount currencyID="TRY">1200.00</cbc:PayableAmount>
+    <cbc:TaxExclusiveAmount currencyID="TRY">900.00</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="TRY">1100.00</cbc:TaxInclusiveAmount>
+    <cbc:AllowanceTotalAmount currencyID="TRY">100.00</cbc:AllowanceTotalAmount>
+    <cbc:PayableAmount currencyID="TRY">1100.00</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
   <cac:InvoiceLine>
     <cbc:ID>1</cbc:ID>
