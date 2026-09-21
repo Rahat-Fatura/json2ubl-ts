@@ -138,7 +138,7 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 | ID | Tip | Slug | KDV | Döviz | Özellikler | Notlar |
 |---|---|---|---|---|---|---|
 | [hks-komisyoncu-baseline](valid/hks/hks-komisyoncu-baseline/) | KOMISYONCU | baseline | 10 | TRY | kunyeno | Baseline — HKS+KOMISYONCU (e-Fatura düzlemi), komisyoncu satış |
-| [hks-komisyoncu-masraflar](valid/hks/hks-komisyoncu-masraflar/) | KOMISYONCU | masraflar | 10 | TRY | kunyeno, hksCharges | HKS+KOMISYONCU — 18 masraf kalemi, ChargeTotalAmount ödenecekten DÜŞÜLÜR |
+| [hks-komisyoncu-masraflar](valid/hks/hks-komisyoncu-masraflar/) | KOMISYONCU | masraflar | 10 | TRY | kunyeno, hksCharges | HKS+KOMISYONCU — 18 masraf kalemi, ChargeTotalAmount ödenecekten DÜŞÜLÜR. CANLI GİB paketi (xslt-service :8081, şematron 2026-08-04) 0 ihlalle yeşil — AMA bu toplam zincirinin kanıtı DEĞİLDİR: ödenecek tutarı 2.370,60 yerine 4.229,40 yazan (masrafı EKLEYEN) bozuk kopya da 0 hatayla yeşil döndü. Zincirin gerçek kanıtı GİB general.xslt çıktısıdır: "Toplam Masraflar 929,40 TL" + "Ödenecek Tutar 2.370,60 TL". |
 | [hks-satis-baseline](valid/hks/hks-satis-baseline/) | SATIS | baseline | 10 | TRY | kunyeno | Baseline — HKS+SATIS (e-Fatura düzlemi), KUNYENO 19-char per line |
 | [hks-satis-coklu-kunye](valid/hks/hks-satis-coklu-kunye/) | SATIS | coklu-kunye | 20 | TRY | kunyeNo | HKS+SATIS — 2 satır farklı KUNYENO (satır başına TAM BİR künye) |
 | [hks-satis-malsahibi](valid/hks/hks-satis-malsahibi/) | SATIS | malsahibi | 10 | TRY | kunyeno, malsahibi | HKS+SATIS — KUNYENO + MALSAHIBIADSOYADUNVAN + MALSAHIBIVKNTCKN üçlüsü |

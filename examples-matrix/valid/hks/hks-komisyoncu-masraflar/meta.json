@@ -25,8 +25,8 @@
       "hksCharges"
     ]
   },
-  "generatedAt": "2026-09-21T14:18:57.395Z",
+  "generatedAt": "2026-09-21T14:22:13.824Z",
   "generatedBy": "examples-matrix/scaffold.ts",
-  "review": "auto-ok",
-  "notes": "HKS+KOMISYONCU — 18 masraf kalemi, ChargeTotalAmount ödenecekten DÜŞÜLÜR"
+  "review": "schematron-verified",
+  "notes": "HKS+KOMISYONCU — 18 masraf kalemi, ChargeTotalAmount ödenecekten DÜŞÜLÜR. CANLI GİB paketi (xslt-service :8081, şematron 2026-08-04) 0 ihlalle yeşil — AMA bu toplam zincirinin kanıtı DEĞİLDİR: ödenecek tutarı 2.370,60 yerine 4.229,40 yazan (masrafı EKLEYEN) bozuk kopya da 0 hatayla yeşil döndü. Zincirin gerçek kanıtı GİB general.xslt çıktısıdır: \"Toplam Masraflar 929,40 TL\" + \"Ödenecek Tutar 2.370,60 TL\"."
 }

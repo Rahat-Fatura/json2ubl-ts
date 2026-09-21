@@ -2349,7 +2349,12 @@ export const validSpecs: ValidSpec[] = [
    * komisyon kalemi LİSTENİN BAŞINDA durur. */
   {
     kind: 'invoice', variantSlug: 'masraflar', profile: 'HKS', type: 'KOMISYONCU',
-    notes: 'HKS+KOMISYONCU — 18 masraf kalemi, ChargeTotalAmount ödenecekten DÜŞÜLÜR',
+    notes: 'HKS+KOMISYONCU — 18 masraf kalemi, ChargeTotalAmount ödenecekten DÜŞÜLÜR. '
+      + 'CANLI GİB paketi (xslt-service :8081, şematron 2026-08-04) 0 ihlalle yeşil — AMA bu '
+      + 'toplam zincirinin kanıtı DEĞİLDİR: ödenecek tutarı 2.370,60 yerine 4.229,40 yazan '
+      + '(masrafı EKLEYEN) bozuk kopya da 0 hatayla yeşil döndü. Zincirin gerçek kanıtı GİB '
+      + "general.xslt çıktısıdır: \"Toplam Masraflar 929,40 TL\" + \"Ödenecek Tutar 2.370,60 TL\".",
+    review: 'schematron-verified',
     dimensions: {
       kdvBreakdown: [10], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
       withholdingCodes: [], allowanceCharge: { line: false, document: true },
