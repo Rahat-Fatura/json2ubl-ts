@@ -8,6 +8,19 @@ hedefler (yürürlük 14.09.2026). İki katmanlı API sunar:
 1. **SimpleInvoiceBuilder** — Basit JSON gir, SDK tüm hesaplamaları otomatik yapsın
 2. **InvoiceBuilder** — Tam kontrol — tüm alanları kendin belirle
 
+### Üretilen belge tipleri
+
+| Belge | Giriş katmanı | UBL kökü |
+|---|---|---|
+| e-Fatura / e-Arşiv Faturası | `SimpleInvoiceBuilder` · `InvoiceBuilder` · `InvoiceSession` | `Invoice` |
+| e-İrsaliye | `DespatchBuilder` · `DespatchSession` | `DespatchAdvice` |
+| **e-SMM** — Serbest Meslek Makbuzu (v5.0.0) | `SimpleSelfEmployedVoucherBuilder` · `SelfEmployedVoucherSession` | `Invoice` |
+| **e-MM** — Müstahsil Makbuzu (v5.0.0) | `SimpleProducerReceiptBuilder` · `ProducerReceiptSession` | `CreditNote` |
+
+Her belge tipi aynı üç katmanı taşır: `Simple*` (girdi eşleme) → hesaplayıcı →
+seri hâle getirici; ve her biri kendi `*Session` sınıfıyla reaktif olarak da
+sürülebilir.
+
 ## Özellikler
 
 - **Otomatik Hesaplama**: KDV, ÖTV (matrah artırıcı), Damga V. (matrah azaltıcı), tevkifat, iskonto
@@ -17,6 +30,8 @@ hedefler (yürürlük 14.09.2026). İki katmanlı API sunar:
 - **12 Fatura Profili**: TEMELFATURA, TICARIFATURA, IHRACAT, YOLCUBERABERFATURA, OZELFATURA, KAMU, HKS, ENERJI, ILAC_TIBBICIHAZ, YATIRIMTESVIK, IDIS, EARSIVFATURA
 - **20+ Fatura Tipi**: SATIS, IADE, TEVKIFAT, ISTISNA, OZELMATRAH, IHRACKAYITLI, SGK, KOMISYONCU, KONAKLAMAVERGISI, TEKNOLOJIDESTEK, YTB* vb.
 - **3 İrsaliye Profili**: TEMELIRSALIYE, HKSIRSALIYE, IDISIRSALIYE
+- **e-SMM + e-MM (v5.0.0)**: Serbest meslek makbuzu ve müstahsil makbuzu, faturayla ORTAK gövde üzerinden → [§9](#9-e-smm--serbest-meslek-makbuzu-v500) · [§10](#10-e-mm--müstahsil-makbuzu-v500)
+- **HKS masraf düzlemi (v5.0.0)**: Komisyoncu faturasının belge düzeyi masraf kalemleri (`documentAllowanceCharges`, 18 kapalı kod) → [§5](#hks-masraf-düzlemi-v500)
 - **3 Katmanlı Validasyon**: Ortak + Tip-bazlı + Profil-bazlı + Çapraz matris
 - **53 Schematron Kuralı**: Tam uyumluluk (UBL-TR Common + Main Schematron)
 - **Yazıyla Tutar Notu (v3.0.0)**: Her faturaya `YAZIYLA:#ÜÇ BİN İKİ YÜZ KIRK ÜÇ TÜRK LIRASI ELLİ ALTI KURUŞ#` notu otomatik ve koşulsuz eklenir (biçim sahadan ölçüldü) → [§7.1](#71-yazıyla-tutar-notu-v300)
@@ -663,6 +678,46 @@ Hal faturası iki ayrı düzlemde kesilir ve **tip adı düzleme göre değişir
 kalemde 19 karakterli `KUNYENO`); ayrım GİB'in kapıyı açma biçimidir. Beş
 kombinasyon da canlı şematronla doğrulandı.
 
+### HKS masraf düzlemi (v5.0.0)
+
+Komisyoncu faturasının **tanımlayıcı** özelliği belge düzeyi masraf kalemleridir
+(komisyon, navlun, hammaliye, rüsum, borsa payı…). `documentAllowanceCharges`
+alanı her biri için bir `cac:AllowanceCharge` bloğu üretir:
+
+```typescript
+const { xml } = new SimpleInvoiceBuilder({ prettyPrint: true }).build({
+  id: 'HKS2026000000001',
+  uuid: 'aaaaaaaa-0001-4000-8001-000000000001',
+  datetime: '2026-04-23T13:00:00',
+  profile: 'HKS',
+  type: 'KOMISYONCU',
+  sender: { /* … */ },
+  customer: { /* … */ },
+  lines: [{
+    name: 'Domates', quantity: 500, price: 6, unitCode: 'KGM', kdvPercent: 10,
+    additionalItemIdentifications: [{ schemeId: 'KUNYENO', value: 'KUN-2026-042-DOM001' }],
+  }],
+  documentAllowanceCharges: [
+    { chargeIndicator: false, reason: 'HKSKOMISYON',   percent: 8 },   // tabandan türetilir → 240,00
+    { chargeIndicator: false, reason: 'HKSTICBORSASI', amount: 4.5 },  // tutar OTORİTE
+  ],
+});
+// LineExtension 3.000,00 · ChargeTotal 244,50 · Payable 3.055,50
+```
+
+- **`reason` HKS düzleminde kapalı kümedir** — `HKS_CHARGE_CODES` (18 kod:
+  `HKSKOMISYON`, `HKSKOMISYONKDV`, `HKSNAVLUN`, `HKSRUSUM`, `HKSTICBORSASI`,
+  `HKSGVTEVKIFAT`, `HKSBAGKURTEVKIFAT`, `HKSMILLISAVUNMAFON`, `HKSDIGERMASRAFLAR`
+  ve KDV ikizleri). Diğer profillerde serbest metindir.
+  Ekran etiketleri: `HKS_CHARGE_LABELS`.
+- **`amount` otoritedir**; verilmezse `percent` ile belge `LineExtensionAmount`ından
+  türetilir. `baseAmount` verilmedikçe XML'e `cbc:BaseAmount` **yazılmaz** (GİB'in
+  HKS örneğinde masraf kalemleri taban taşımaz).
+- **🔴 `chargeIndicator` bu düzlemde toplam YÖNÜNÜ BELİRLEMEZ.** GİB'in kendi
+  örneğinde blokların tamamı `false` olduğu hâlde toplam `ChargeTotalAmount`a
+  yazılır ve ödenecek tutardan **düşülür** — yukarıdaki örnekte
+  3.000 + 300 KDV − 244,50 = **3.055,50**.
+
 ### `TEVKIFATIADE` / `YTBTEVKIFATIADE` — üretimde sunulmaz, gelen belgede tanınır
 
 v4.4.0'da her iki tip de `PROFILE_TYPE_MATRIX`'ten çıkarıldı: şematronda ayırt
@@ -895,10 +950,88 @@ Kütüphane hangi karardan sorumlu, hangisinden değil. Tüketici kodunun bilmes
 - **Prod schematron simülasyonu** — `validationLevel: 'strict'` statik kurallar. GİB schematron + production quirks ayrı.
 - **e-Arşiv RAPORU** (`EArsiv.xsd`) — kütüphane yalnız EARSIVFATURA **UBL faturası** üretir; günlük/aylık rapor XML'i üretmez. `EArsiv.xsd` v1.1_8 değişiklikleri (`aliciType` → `xs:choice`, `esuRaporID` 1..n) bu yüzden kapsam dışıdır.
 - **Kullanıcı hesabı / HR-XML** — `erreceipt` alias'ı, `UserOptionCode` 171-174, `AuthorizedWorkScope` kuralları özel entegratör operasyonuna aittir.
-- **e-Müstahsil Makbuzu (e-MM)** — SMS doğrulama dahil, bu belge tipi kütüphanede yok.
+- **e-MM / e-SMM'in TAŞINMASI** — belge XML'i v5.0.0'dan beri üretilir ([§10](#10-e-mm--müstahsil-makbuzu-v500) · [§9](#9-e-smm--serbest-meslek-makbuzu-v500)), ancak SMS doğrulama, GİB'e gönderim ve e-Arşiv raporlaması kütüphane dışıdır.
 - **e-Arşiv zorunluluk eşiği** (509 GT §IV.2.4.3; 1/1/2026'dan itibaren tutara bakılmaksızın) — "hangi belgeyi keseyim" kararı tüketiciye aittir; kütüphane verilen profili üretir.
 
 Ayrıntı: [audit/FIX-PLANI-v3.md](./audit/FIX-PLANI-v3.md).
+
+---
+
+## 9. e-SMM — Serbest Meslek Makbuzu (v5.0.0)
+
+Serbest meslek erbabının düzenlediği makbuz. UBL kökü **`Invoice`**; künye tek
+değerlidir (`ProfileID = EARSIVBELGE`, `InvoiceTypeCode = SERBESTMESLEKMAKBUZU`)
+ve faturadaki profil × tip matrisinin karşılığı **yoktur**.
+
+```typescript
+import { SimpleSelfEmployedVoucherBuilder } from 'json2ubl-ts';
+
+const { xml } = new SimpleSelfEmployedVoucherBuilder({ prettyPrint: true }).build({
+  documentNumber: 'SMM2026000000001',
+  datetime: '2026-09-16T14:30:00',
+  sendMethod: 'ELEKTRONIK',                   // 'ELEKTRONIK' | 'KAGIT'
+  supplier: {                                  // serbest meslek erbabı — TCKN → cac:Person
+    taxNumber: '11111111110', name: 'Ayşe Yılmaz',
+    address: 'Barbaros Mah. 1. Sk. No:2', district: 'Ataşehir', city: 'İstanbul',
+    taxOffice: 'Kozyatağı',
+  },
+  customer: {                                  // hizmeti alan
+    taxNumber: '1234567890', name: 'Örnek Danışmanlık A.Ş.',
+    address: 'Cumhuriyet Mah. 5. Cd. No:8', district: 'Şişli', city: 'İstanbul',
+    taxOffice: 'Mecidiyeköy',
+  },
+  incomeTaxWithholdingPercent: 20,             // 0003 gelir vergisi stopajı
+  lines: [{ name: 'Danışmanlık hizmeti', quantity: 1, price: 10_000, kdvPercent: 20 }],
+});
+// Payable 10.000,00  (10.000 brüt + 2.000 KDV − 2.000 stopaj)
+```
+
+- **Toplam zinciri**: brüt → stopaj (`0003`) → KDV → KDV tevkifatı (`9015`).
+  Vergi kümesi tip düzeyinde `{0003, 0015, 9015}`e kapalıdır.
+- **`uuid` verilmezse üretilir**; determinizm gerekiyorsa açıkça geçin.
+- **Reaktif kullanım**: `SelfEmployedVoucherSession` — faturanın
+  `InvoiceSession`ıyla aynı sözleşme (`update()`, path tabanlı olaylar,
+  `SelfEmployedVoucherSessionPaths`).
+
+## 10. e-MM — Müstahsil Makbuzu (v5.0.0)
+
+Müstahsilden (çiftçi) mal alan tüccarın düzenlediği makbuz. UBL kökü
+**`CreditNote`**tır — faturadan en büyük yapısal fark budur. Künye yine tek
+değerlidir (`ProfileID = EARSIVBELGE`, `CreditNoteTypeCode = MUSTAHSILMAKBUZ`).
+
+```typescript
+import { SimpleProducerReceiptBuilder } from 'json2ubl-ts';
+
+const { xml } = new SimpleProducerReceiptBuilder({ prettyPrint: true }).build({
+  documentNumber: 'MMB2026000000001',
+  datetime: '2026-09-16T14:30:00',
+  sendMethod: 'ELEKTRONIK',
+  issuer: {                                    // belgeyi DÜZENLEYEN tüccar/alıcı
+    taxNumber: '1234567890', name: 'Örnek Sebze Meyve Tic. A.Ş.',
+    address: 'Hal Cd. No:1', district: 'Kocasinan', city: 'Kayseri',
+    taxOffice: 'Kocasinan',
+  },
+  producer: {                                  // MÜSTAHSİL — malı satan çiftçi
+    taxNumber: '11111111110', name: 'Ahmet Çiftçi',
+    address: 'Köy Mah. 3. Sk. No:5', district: 'Melikgazi', city: 'Kayseri',
+  },
+  incomeTaxWithholdingPercent: 2,              // 0003; kalem bazında ezilebilir
+  lines: [{ name: 'Domates', quantity: 1000, price: 10, unitCode: 'Kilogram' }],
+});
+// Payable 9.800,00  (10.000 brüt − 200 stopaj)
+```
+
+- **🔴 TARAF ROLLERİ TERSTİR.** Belgeyi düzenleyen `issuer`, UBL'de
+  `cac:AccountingSupplierParty` yuvasına gider; ekonomik sezgi tersini söyler
+  (malı SATAN müstahsildir). Prod belgelerde 27/27 böyle ölçülmüştür.
+- **ÇIKIŞ KDV'Sİ YOKTUR** — müstahsil KDV mükellefi değildir; ödenecek tutar
+  brütten kesinti düşülerek bulunur (`TaxInclusiveAmount = brüt − kesinti`).
+- **Dört kesinti ekseni**: gelir vergisi stopajı (`0003`), Bağ-Kur (`8001`),
+  SGK primi, **Mera Fonu (`9040`)**.
+- **Reaktif kullanım**: `ProducerReceiptSession` + `ProducerReceiptSessionPaths`.
+
+> **Kapsam sınırı** — kütüphane yalnız belge XML'ini üretir. SMS doğrulama,
+> GİB'e gönderim ve e-Arşiv raporlaması kütüphane dışıdır ([§8](#8-sorumluluk-matrisi)).
 
 ---
 
