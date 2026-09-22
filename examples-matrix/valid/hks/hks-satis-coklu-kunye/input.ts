@@ -35,6 +35,15 @@ export const input: SimpleInvoiceInput = {
           schemeId: 'KUNYENO',
           value: 'HKS2026A0001AAA0001',
         },
+        // Mal sahibi ikilisi HKS+SATIS'te ZORUNLU (K9).
+        {
+          schemeId: 'MALSAHIBIADSOYADUNVAN',
+          value: 'Ayşe Üretici',
+        },
+        {
+          schemeId: 'MALSAHIBIVKNTCKN',
+          value: '22334455667',
+        },
       ],
     },
     {
@@ -47,6 +56,14 @@ export const input: SimpleInvoiceInput = {
         {
           schemeId: 'KUNYENO',
           value: 'HKS2026B0002BBB0001',
+        },
+        {
+          schemeId: 'MALSAHIBIADSOYADUNVAN',
+          value: 'Bereket Tarım Ltd. Şti.',
+        },
+        {
+          schemeId: 'MALSAHIBIVKNTCKN',
+          value: '3344556677',
         },
       ],
     },

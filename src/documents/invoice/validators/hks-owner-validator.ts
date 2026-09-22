@@ -1,5 +1,5 @@
 /**
- * HKS mal sahibi (MALSAHIBI*) alan tutarlılığı — UYARI seviyesi.
+ * HKS mal sahibi (`MALSAHIBI*`) alanları — simple-input katmanı ADAPTÖRÜ.
  *
  * Hal faturasında kalem, künyenin yanında malın SAHİBİNİ de taşır:
  *   cac:Item/cac:AdditionalItemIdentification/cbc:ID[@schemeID='MALSAHIBIADSOYADUNVAN']
@@ -7,100 +7,97 @@
  * Komisyoncu, malı kendi adına değil mal sahibi adına satar; alıcının belgede
  * kimin malını aldığını görmesi hal kaydının çalışma biçiminin parçasıdır.
  *
- * ── 🔴 NEDEN UYARI, NEDEN HATA DEĞİL
- * Bu kural bir GÖZLEMDİR — yazılı bir GİB kuralı DEĞİL. Ölçüldü:
- *   • Şematronda MALSAHIBI* geçen TEK BİR assert yok (ne Common ne Main).
- *   • VKN/TCKN uzunluk kuralları (`PartyIdentification` blokları) yalnız TARAF
- *     kimliklerine bakar; `AdditionalItemIdentification`'a hiç uğramaz.
- *   • `UBL-TR_Codelist.xml` içindeki `$AdditionalItemIdentificationIDType`
- *     listesi (KUNYENO, ILAC, TIBBICIHAZ, TELEFON, TABLET_PC, DIGER) HİÇBİR
- *     assert tarafından KULLANILMIYOR — yani schemeID serbesttir. Canlı sonda
- *     (xslt-service :8081, paket 20260701) MALSAHIBIADSOYADUNVAN +
- *     MALSAHIBIVKNTCKN taşıyan HKS faturası 0 ihlalle yeşil döndü.
- * Kural hata yapılsaydı, GİB'in kabul ettiği geçerli belgeleri ÜRETİLEMEZ hâle
- * getirirdik. Uyarı, kullanıcıyı bilgilendirir ve belgeyi bloke etmez.
+ * ── 🔴 İKİ ŞİDDET, İKİ KAPSAM (K9 kararı, 2026-09-22)
  *
- * ── KAPSAM (iki düzlem, komisyoncu HARİÇ)
- *   • ProfileID=HKS          → SATIS / ISTISNA / TEVKIFAT  (e-Fatura düzlemi)
- *   • ProfileID=EARSIVFATURA → HKSSATIS                    (e-Arşiv düzlemi)
- * `KOMISYONCU`/`HKSKOMISYONCU` KAPSAM DIŞI: orada mal sahibi ilişkisi faturanın
- * kendi taraflarıyla kurulur, kalem kimliğiyle değil.
+ *   • ZORUNLULUK — HATA. Kapsam `isHksOwnerRequiredScope`:
+ *       (HKS + SATIS)  |  (EARSIVFATURA + HKSSATIS)
+ *     Kapsam GİB'in kendi görüntüleme XSLT'sinden ÖLÇÜLDÜ: mal sahibi kolonları
+ *     YALNIZ bu iki çiftte açılır (`general.xslt:968`, `:2912`, `:3098`) ve
+ *     GİB'in kendi örneği `HKS-Ornek1.xml` (HKS+SATIS) üç kimliği de taşır.
+ *     K9 ("SATIS tarafında mal sahibi kimlikleri zorunlu") tam olarak bu kümedir.
  *
- * Mekanizma NOTU: burası `ValidationError` değil `ValidationWarning` üretir ve
- * `InvoiceSession.validate()` içinde kural-tabanlı uyarı dizisine katılır —
- * `validateInvoiceState`'in `severity:'warning'` üretenleriyle aynı yol. Hata
- * boru hattına (validator → köprü → severity:'error') BİLEREK bağlanmadı:
- * o köprü her ValidationError'ı 'error' yapar ve belge kurulumunu kırar.
+ *   • TUTARLILIK — UYARI. Kapsam `isHksOwnerFieldScope` EKSİ zorunluluk kapsamı:
+ *     komisyoncu dışındaki diğer HKS tipleri (`ISTISNA`, `TEVKIFAT`, `IADE` …).
+ *     Orada alanlar zorunlu değildir ama yarım bırakılmaları anlamsızdır.
+ *
+ * ── Neden bir zamanlar SADECE uyarıydı ve neden artık hata
+ * Şematronda `MALSAHIBI*` geçen TEK BİR assert yoktur (üç şematron dosyasında 0
+ * isabet); `PartyIdentification` uzunluk kuralları `AdditionalItemIdentification`'a
+ * hiç uğramaz. Yani kural HATA yapıldığında **GİB'in kabul edeceği bir belgeyi
+ * biz reddederiz**. Bu bedel BİLEREK kabul edildi (K9):
+ *   1. MimForge canlıda DEĞİL — kıracağı geçmiş belge akışı yok.
+ *   2. Kural YALNIZ bizim KURDUĞUMUZ belgede koşar; alınan (INBOUND) belge bu
+ *      kütüphaneden hiç geçmez (ingest yolu `@mimforge/ubl-parse` kullanır ve
+ *      "alınan belge olduğu gibi kabul edilir" kuralı orada geçerlidir).
+ * Sonuç: şematronu geçen belgelerin ALT kümesini üretiriz — hal akışının iki
+ * belgeli doğasını (GİB forum 83514) belgede GÖRÜNÜR kılan alt kümesini.
+ *
+ * ── KOMISYONCU neden KAPSAM DIŞI (değişmedi)
+ * Orada mal sahibi ilişkisi faturanın KENDİ taraflarıyla kurulur, kalem
+ * kimliğiyle değil. İki bağımsız ölçüm: GİB'in `HKS-Ornek2.xml`i (HKS+KOMISYONCU)
+ * YALNIZ künye taşır, mal sahibi kimliği HİÇ yoktur; ve XSLT mal sahibi
+ * kolonlarını komisyoncuda açmaz.
+ *
+ * ── Mekanizma NOTU
+ * `validateHksOwnerFields` `ValidationWarning` üretir ve `InvoiceSession.validate()`
+ * içinde kural-tabanlı uyarı dizisine katılır. `validateHksOwnerRequired` ise
+ * `ValidationError` üretir ve hata boru hattına (validator → köprü →
+ * severity:'error') BAĞLIDIR — belge kurulumunu bilerek kırar.
  */
 
 import type { SimpleInvoiceInput } from '../../../calculator/simple-types';
 import type { ValidationWarning } from '../../../calculator/invoice-rules';
+import type { ValidationError } from '../../../errors/ubl-build-error';
+import { profileRequirement } from '../../../ubltr/rules/validation-result';
+import {
+  isHksOwnerFieldScope,
+  isHksOwnerRequiredScope,
+} from '../../../ubltr/vocabulary/schematron-scopes';
+import {
+  checkHksOwnerConsistency,
+  checkHksOwnerRequired,
+} from '../../../ubltr/rules/shared/hks-item-identification-rules';
+import {
+  hksScopeLabel,
+  simpleIdentityPath,
+  toSimpleIdentityViews,
+} from './hks-kunyeno-validator';
 
-/** `schemeID` — mal sahibi ad/soyad/unvan (kod listesinde YOK, şematron da bakmıyor) */
-const OWNER_NAME_SCHEME_ID = 'MALSAHIBIADSOYADUNVAN';
+/**
+ * Mal sahibi ikilisi ZORUNLU — HATA seviyesi (K9).
+ *
+ * Kapsam dışında BOŞ döner; tutarlılık uyarısı ayrı fonksiyondadır.
+ */
+export function validateHksOwnerRequired(input: SimpleInvoiceInput): ValidationError[] {
+  const profile = input.profile ?? '';
+  const type = input.type ?? '';
 
-/** `schemeID` — mal sahibi VKN (10) veya TCKN (11) */
-const OWNER_TAX_ID_SCHEME_ID = 'MALSAHIBIVKNTCKN';
+  if (!isHksOwnerRequiredScope(profile, type)) return [];
 
-/** VKN 10, TCKN 11 hane — ikisi de yalnız rakam */
-const OWNER_TAX_ID_PATTERN = /^(\d{10}|\d{11})$/;
+  const label = hksScopeLabel(profile, type);
 
-/** Mal sahibi alanlarının beklendiği profil×tip çiftleri (komisyoncu HARİÇ) */
-function isOwnerFieldScope(profile: string, type: string): boolean {
-  if (profile === 'HKS') {
-    // HKS'in komisyoncu tipi kapsam dışı; kalan HKS tipleri kapsamda.
-    return type !== 'KOMISYONCU';
-  }
-  if (profile === 'EARSIVFATURA') {
-    // e-Arşiv düzleminde yalnız HKSSATIS; HKSKOMISYONCU kapsam dışı.
-    return type === 'HKSSATIS';
-  }
-  return false;
+  return checkHksOwnerRequired(toSimpleIdentityViews(input)).map(f =>
+    profileRequirement(label, simpleIdentityPath(f.lineIndex, f.leaf), f.message),
+  );
 }
 
+/**
+ * Mal sahibi ikilisi TUTARLI — UYARI seviyesi.
+ *
+ * 🔑 Zorunluluk kapsamında SUSAR: orada aynı ihlal zaten HATA olarak
+ * raporlanıyor; ikinci kez uyarı basmak kullanıcıya aynı şeyi iki dille
+ * söylemek olurdu.
+ */
 export function validateHksOwnerFields(input: SimpleInvoiceInput): ValidationWarning[] {
-  const warnings: ValidationWarning[] = [];
+  const profile = input.profile ?? '';
+  const type = input.type ?? '';
 
-  if (!isOwnerFieldScope(input.profile ?? '', input.type ?? '')) {
-    return warnings;
-  }
+  if (!isHksOwnerFieldScope(profile, type)) return [];
+  if (isHksOwnerRequiredScope(profile, type)) return [];
 
-  input.lines.forEach((line, i) => {
-    const ids = line.additionalItemIdentifications ?? [];
-    const name = ids.find(a => a.schemeId === OWNER_NAME_SCHEME_ID)?.value?.trim() ?? '';
-    const taxId = ids.find(a => a.schemeId === OWNER_TAX_ID_SCHEME_ID)?.value?.trim() ?? '';
-
-    // İkisi de yoksa sessiz: alanlar zorunlu değil, yalnız BİRLİKTE anlamlılar.
-    if (name === '' && taxId === '') return;
-
-    if (name !== '' && taxId === '') {
-      warnings.push({
-        field: `lines[${i}].additionalItemIdentifications`,
-        message:
-          `Satır ${i + 1}: mal sahibi adı girilmiş ama ${OWNER_TAX_ID_SCHEME_ID} yok — `
-          + 'mal sahibi bilgisi ad ve VKN/TCKN ile birlikte verilmelidir.',
-        severity: 'warning',
-      });
-    } else if (name === '' && taxId !== '') {
-      warnings.push({
-        field: `lines[${i}].additionalItemIdentifications`,
-        message:
-          `Satır ${i + 1}: mal sahibi VKN/TCKN girilmiş ama ${OWNER_NAME_SCHEME_ID} yok — `
-          + 'mal sahibi bilgisi ad ve VKN/TCKN ile birlikte verilmelidir.',
-        severity: 'warning',
-      });
-    }
-
-    if (taxId !== '' && !OWNER_TAX_ID_PATTERN.test(taxId)) {
-      warnings.push({
-        field: `lines[${i}].additionalItemIdentifications.${OWNER_TAX_ID_SCHEME_ID}`,
-        message:
-          `Satır ${i + 1}: mal sahibi VKN/TCKN 10 (VKN) veya 11 (TCKN) haneli sayısal `
-          + `olmalıdır (gelen: "${taxId}").`,
-        severity: 'warning',
-      });
-    }
-  });
-
-  return warnings;
+  return checkHksOwnerConsistency(toSimpleIdentityViews(input)).map(f => ({
+    field: simpleIdentityPath(f.lineIndex, f.leaf),
+    message: f.message,
+    severity: 'warning' as const,
+  }));
 }

@@ -109,6 +109,12 @@
       <cac:AdditionalItemIdentification>
         <cbc:ID schemeID="KUNYENO">HKS2026A0001AAA0001</cbc:ID>
       </cac:AdditionalItemIdentification>
+      <cac:AdditionalItemIdentification>
+        <cbc:ID schemeID="MALSAHIBIADSOYADUNVAN">Ayşe Üretici</cbc:ID>
+      </cac:AdditionalItemIdentification>
+      <cac:AdditionalItemIdentification>
+        <cbc:ID schemeID="MALSAHIBIVKNTCKN">22334455667</cbc:ID>
+      </cac:AdditionalItemIdentification>
     </cac:Item>
     <cac:Price>
       <cbc:PriceAmount currencyID="TRY">500.00</cbc:PriceAmount>
@@ -136,6 +142,12 @@
       <cbc:Name>HKS ürün B</cbc:Name>
       <cac:AdditionalItemIdentification>
         <cbc:ID schemeID="KUNYENO">HKS2026B0002BBB0001</cbc:ID>
+      </cac:AdditionalItemIdentification>
+      <cac:AdditionalItemIdentification>
+        <cbc:ID schemeID="MALSAHIBIADSOYADUNVAN">Bereket Tarım Ltd. Şti.</cbc:ID>
+      </cac:AdditionalItemIdentification>
+      <cac:AdditionalItemIdentification>
+        <cbc:ID schemeID="MALSAHIBIVKNTCKN">3344556677</cbc:ID>
       </cac:AdditionalItemIdentification>
     </cac:Item>
     <cac:Price>

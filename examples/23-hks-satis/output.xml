@@ -111,6 +111,12 @@
       <cac:AdditionalItemIdentification>
         <cbc:ID schemeID="KUNYENO">KUN-2026-042-DOM001</cbc:ID>
       </cac:AdditionalItemIdentification>
+      <cac:AdditionalItemIdentification>
+        <cbc:ID schemeID="MALSAHIBIADSOYADUNVAN">Hasan Çiftçi</cbc:ID>
+      </cac:AdditionalItemIdentification>
+      <cac:AdditionalItemIdentification>
+        <cbc:ID schemeID="MALSAHIBIVKNTCKN">11223344556</cbc:ID>
+      </cac:AdditionalItemIdentification>
     </cac:Item>
     <cac:Price>
       <cbc:PriceAmount currencyID="TRY">20.00</cbc:PriceAmount>

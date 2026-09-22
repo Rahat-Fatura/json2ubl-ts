@@ -3,7 +3,17 @@
     {
       "code": "PROFILE_REQUIREMENT",
       "path": "lines[0].item.additionalItemIdentifications",
-      "message": "[HKS] HKS profilinde her satırda KUNYENO zorunludur"
+      "message": "[HKS] HKS belgelerinde her satırda KUNYENO zorunludur (satır 1: HKS ürün)"
+    },
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "lines[0].item.additionalItemIdentifications.MALSAHIBIADSOYADUNVAN",
+      "message": "[HKS] Satır 1: mal sahibi adı (MALSAHIBIADSOYADUNVAN) zorunludur — komisyoncu malı mal sahibi adına satar, alıcı kimin malını aldığını görmelidir."
+    },
+    {
+      "code": "PROFILE_REQUIREMENT",
+      "path": "lines[0].item.additionalItemIdentifications.MALSAHIBIVKNTCKN",
+      "message": "[HKS] Satır 1: mal sahibi VKN/TCKN (MALSAHIBIVKNTCKN) zorunludur — komisyoncu malı mal sahibi adına satar, alıcı kimin malını aldığını görmelidir."
     }
   ]
 }

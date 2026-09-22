@@ -21,11 +21,12 @@
     "reducedKdvGate": false,
     "phantomKdv": false,
     "specialIdentifiers": [
-      "kunyeno"
+      "kunyeno",
+      "malsahibi"
     ]
   },
   "generatedAt": "2026-09-05T08:40:07.409Z",
   "generatedBy": "examples-matrix/scaffold.ts",
   "review": "schematron-verified",
-  "notes": "Baseline — HKS+SATIS (e-Fatura düzlemi), KUNYENO 19-char per line"
+  "notes": "Baseline — HKS+SATIS (e-Fatura düzlemi), KUNYENO 19-char per line + mal sahibi ikilisi (K9: satış ikizinde ZORUNLU)"
 }

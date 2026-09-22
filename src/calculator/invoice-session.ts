@@ -59,7 +59,7 @@ import { validateSgkInput } from '../documents/invoice/validators/sgk-input-vali
 import { validateHksKunyeNo } from '../documents/invoice/validators/hks-kunyeno-validator';
 import { validateHksCharges } from '../documents/invoice/validators/hks-charge-validator';
 import { validateIlacTibbiCihazItemId } from '../documents/invoice/validators/ilac-tibbicihaz-validator';
-import { validateHksOwnerFields } from '../documents/invoice/validators/hks-owner-validator';
+import { validateHksOwnerFields, validateHksOwnerRequired } from '../documents/invoice/validators/hks-owner-validator';
 import { validateCrossMatrix } from '../documents/invoice/validators/cross-validators';
 import type { Suggestion } from './suggestion-types';
 import { runSuggestionEngine, diffSuggestions } from './suggestion-engine';
@@ -1180,10 +1180,10 @@ export class InvoiceSession extends EventEmitter {
       ...b78Params,
     });
 
-    /* HKS mal sahibi alanları — UYARI seviyesi, kural-tabanlı uyarı dizisine katılır.
-     * Aşağıdaki `errors` boru hattına BİLEREK girmiyor: oradaki köprü her
-     * ValidationError'ı `severity:'error'` yapar ve belgeyi bloke ederdi.
-     * Bu kural bir gözlemdir, yazılı GİB kuralı değil (bkz. hks-owner-validator). */
+    /* HKS mal sahibi alanları — TUTARLILIK dalı, UYARI seviyesi.
+     * Kapsam: komisyoncu dışındaki HKS tipleri EKSİ satış ikizi. Satış ikizinde
+     * aynı ihlal aşağıda HATA olarak raporlanır; bu dal orada susar
+     * (bkz. hks-owner-validator başlık notu). */
     warnings.push(...validateHksOwnerFields(this._input));
 
     // Sprint 8h.7: 6 validator pipeline (D-3 deterministic)
@@ -1196,11 +1196,19 @@ export class InvoiceSession extends EventEmitter {
     errors.push(...validateSgkInput(this._input));
     errors.push(...validateProfileRequirements(this._input));
     errors.push(...validateSimpleFormats(this._input));
-    // HKS profilinde her kalemde 19 karakterli KUNYENO (Schematron HKSInvioceCheck).
+    // HKS belgelerinde her kalemde 19 karakterli KUNYENO (Schematron HKSInvioceCheck
+    // + e-Arşiv ikizi; kapsam `isHksKunyeNoScope`).
     // SimpleInvoiceBuilder'a BİLEREK eklenmedi: orada InvoiceInput katmanı
-    // (validateByProfile → validateHks) aynı kuralı strict'te zaten uyguluyor;
-    // 'basic'e eklemek bugün hatasız XML alan tüketicileri throw'a düşürürdü.
+    // (validateByProfile → validateHks / validateEarsiv) aynı kuralı strict'te
+    // zaten uyguluyor; 'basic'e eklemek bugün hatasız XML alan tüketicileri
+    // throw'a düşürürdü.
     errors.push(...validateHksKunyeNo(this._input));
+    /* HKS satış ikizinde mal sahibi ikilisi ZORUNLU (K9) — HATA seviyesi.
+     * KUNYENO ile AYNI gerekçeyle `SimpleInvoiceBuilder`a ayrıca eklenmedi:
+     * InvoiceInput katmanı kuralı strict'te zaten uyguluyor. Burada olması
+     * ŞART, çünkü portalın gönderim kapısı `buildXml`i 'none' ile çağırır ve
+     * hazırlık ölçütünü bu hata dizisinden okur. */
+    errors.push(...validateHksOwnerRequired(this._input));
     // ILAC_TIBBICIHAZ profilinde her kalemde ILAC/TIBBICIHAZ/DIGER kimliği
     // (Schematron IlacTibbiCihazAdditionalItemIdentificationCheck). KUNYENO ile
     // AYNI gerekçeyle SimpleInvoiceBuilder'a eklenmedi: InvoiceInput katmanı

@@ -21,11 +21,12 @@
     "reducedKdvGate": false,
     "phantomKdv": false,
     "specialIdentifiers": [
-      "kunyeNo"
+      "kunyeNo",
+      "malsahibi"
     ]
   },
   "generatedAt": "2026-09-05T08:40:07.413Z",
   "generatedBy": "examples-matrix/scaffold.ts",
   "review": "schematron-verified",
-  "notes": "HKS+SATIS — 2 satır farklı KUNYENO (satır başına TAM BİR künye)"
+  "notes": "HKS+SATIS — 2 satır farklı KUNYENO (satır başına TAM BİR künye) + her satırda mal sahibi ikilisi (K9)"
 }

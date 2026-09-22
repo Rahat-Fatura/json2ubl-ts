@@ -35,6 +35,16 @@ export const input: SimpleInvoiceInput = {
           schemeId: 'KUNYENO',
           value: 'KUN-2026-MTX63-DOM1',
         },
+        // Mal sahibi ikilisi HKS+SATIS'te ZORUNLU (K9) — GİB'in kendi
+        // HKS-Ornek1.xml'i de üç kimliği birden taşır.
+        {
+          schemeId: 'MALSAHIBIADSOYADUNVAN',
+          value: 'Hasan Çiftçi',
+        },
+        {
+          schemeId: 'MALSAHIBIVKNTCKN',
+          value: '11223344556',
+        },
       ],
     },
   ],

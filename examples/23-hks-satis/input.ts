@@ -47,8 +47,14 @@ export const input: SimpleInvoiceInput = {
       price: 20,
       unitCode: 'KGM', // Kilogram
       kdvPercent: 10,
+      /* Üçlü GİB'in kendi HKS+SATIS örneğiyle (`HKS-Ornek1.xml`) birebir aynı
+       * şekildedir: künye + mal sahibi ad/unvan + mal sahibi VKN/TCKN. Mal
+       * sahibi ikilisi satış ikizinde ZORUNLUDUR (K9) — komisyoncu malı kendi
+       * adına değil mal sahibi adına satar. */
       additionalItemIdentifications: [
         { schemeId: 'KUNYENO', value: 'KUN-2026-042-DOM001' },
+        { schemeId: 'MALSAHIBIADSOYADUNVAN', value: 'Hasan Çiftçi' },
+        { schemeId: 'MALSAHIBIVKNTCKN', value: '11223344556' },
       ],
     },
   ],
