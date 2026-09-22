@@ -2,24 +2,62 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
-## [Yayınlanmamış]
+## [5.0.0] — 2026-09-22
 
-> **S0→S4: GÜVENLİK AĞI, UBL BİLEŞENLERİNİN TEKLEŞMESİ, KURAL KATMANI, KLASÖR
-> MİMARİSİ.** 4.6.0 (YAYINLANMADI) sonrasında biriken işin tamamı.
+> **S0→S5d: GÜVENLİK AĞI, UBL BİLEŞENLERİNİN TEKLEŞMESİ, KURAL KATMANI, KLASÖR
+> MİMARİSİ, İKİ YENİ BELGE TİPİ.** 4.6.0 sonrasında biriken işin tamamı
+> (52 commit).
 >
 > 🔴 **Bu blok bir kez yanlış yazılmıştı.** "Test-only; `src/` ve üretilen XML
 > DEĞİŞMEDİ" diyordu — o cümle yalnız S0 için doğruydu ve S1/S2/S3 onu geride
-> bıraktı. Gerçek: `src/` kapsamlı biçimde değişti, **üç kasıtlı sıkılaşma**
-> bugüne kadar sessizce geçen girdileri artık reddediyor ve **bir çıktı davranışı**
-> değişti (`cac:Country`). Aşağısı commit geçmişi okunarak yeniden yazılmıştır.
+> bıraktı. Aşağısı commit geçmişi okunarak yeniden yazılmıştır.
 >
-> Ölçüm: **134 test dosyası / 2965 test / 0 kırmızı / 0 skip** (`npm run test:strict`,
-> doğrulayıcı ayakta) · 37 örnek + 167 matris senaryosu · 168 byte-exact XML.
+> Ölçüm: **147 test dosyası / 3326 test / 0 kırmızı / 0 skip**
+> (`npm run test:strict`, doğrulayıcı ayakta).
+>
+> ### Niçin MAJOR — ölçüm
+>
+> Karar commit mesajlarına değil, **yayınlanmış `4.6.0` tarball'ının indirilip
+> yerelle karşılaştırılmasına** dayanıyor.
+>
+> **Kaldırılan ad / daralan tip YOK.** Cephe 257 → 358 ad; düşen 0, `value`/`type`
+> niteliği değişen 0. Dışa verilen 19 sabit nesnenin hiçbirinden anahtar düşmedi;
+> `SessionPaths`in 139 yol şablonunun **tamamı birebir aynı** (+13 yeni).
+> Yani `import` satırları ve yol tabanlı `update()` çağrıları olduğu gibi çalışır.
+>
+> **Kıran şey DAVRANIŞ.** 4.6.0'ın KENDİ fikstürleri iki sürümden de geçirildi
+> (37 örnek + 120 matris senaryosu × `strict`/`basic` = **314 koşum**):
+>
+> | Sonuç | Koşum | Ne |
+> |---|---|---|
+> | 🔴 Geriledi | 9 | 4.6.0 XML üretiyordu, 5.0.0 **reddediyor** — HKS mal sahibi (K9, yalnız `strict`) ve üç YOLCUBERABER XSD kapısı (`strict` **ve** `basic`) |
+> | 🟡 Çıktı değişti | 4 | DORSE plakası artık ayrı `cac:ShipmentStage` düğümünde |
+> | ⚪ Birebir aynı | 301 | Katmanlaştırma (UBL→UBL-TR→belge) **çıktı-nötrdür** |
+>
+> Korpusun görmediği bir eksen ayrıca doğrudan ölçüldü: `taxes: [{ code: '9015' }]`
+> taşıyan aynı girdide `PayableAmount` **700,00 → 1.100,00**.
 
-### ⚠️ Kırıcı olabilecek davranışlar
+### ⚠️ Kırıcı davranışlar
 
-- **`cac:Country` yalnız `countryCode` verildiğinde artık HİÇ YAZILMAZ.** Bu
-  sürümdeki TEK çıktı davranışı değişikliğidir. GİB `CountryType` sekansı
+- 🔴 **HKS satış ikizinde mal sahibi kimlikleri artık ZORUNLU (K9).**
+  `MALSAHIBIADSOYADUNVAN` + `MALSAHIBIVKNTCKN` ikilisi **UYARI → HATA** oldu.
+  Kapsam GİB `general.xslt`ten ölçüldü ve eski uyarı kapsamından **dardır**:
+  (`HKS` + `SATIS`) **veya** (`EARSIVFATURA` + `HKSSATIS`). `KOMISYONCU` kapsam
+  DIŞIDIR (GİB'in kendi `HKS-Ornek2.xml`i orada mal sahibi hiç taşımaz).
+  **Bedel bilerek kabul edildi**: şematronda `MALSAHIBI*` geçen tek bir assert
+  yoktur — yani GİB'in kabul edeceği bir belgeyi artık biz reddediyoruz.
+  Etkisi `validationLevel: 'strict'` ile sınırlıdır; `'basic'` etkilenmez.
+- 🔴 **`9015` (KDV Tevkifatı) matrahı: satır tutarı → HESAPLANAN KDV.**
+  `taxes: [{ code: '9015', percent: 50 }]` veren bir tüketicinin **tutarları
+  değişir**. KDV %20'li 1.000,00'lik bir satırda 4.6.0 tevkifatı 5 kat şişiriyordu:
+  ölçüm `PayableAmount` **700,00 → 1.100,00**. Kanıt GİB'in kendi örneği
+  (`YTB_Tevkıfat_Efatura.xml`): tevkifat `TaxableAmount`ı KDV'dir.
+- 🔴 **DORSE plakası ayrı `cac:ShipmentStage` düğümüne taşındı.** 4.6.0 dorseyi
+  çekicinin yanına ikinci bir `cbc:LicensePlateID` olarak yazıyordu; UBL
+  `RoadTransportType`ta bu alan **1..1**'dir, yani üretilen XML XSD'den kalıyordu.
+  Girdi aynı, **çıkan XML farklı**.
+- **`cac:Country` yalnız `countryCode` verildiğinde artık HİÇ YAZILMAZ.**
+  GİB `CountryType` sekansı
   `IdentificationCode` (0..1) → `Name` (**minOccurs=1**); yalnız kod yazan blok
   XSD'den düşüyordu. Canlı doğrulayıcıyla kanıtlandı («"Country" elementinin
   içeriği eksik. Zorunlu element(ler): Name.»). Korpusta bu girdiyi veren senaryo
@@ -328,6 +366,9 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
   **348 → 346**. İkisini de içe aktaran bir tüketici artık derlenmez; tutulacak
   bir davranış YOKTUR, çünkü sabit zaten tek değerdeydi (`'gross-plus-vat'`) ve
   alternatif dal hiç kullanılmamıştı. Yapılacak şey ithali SİLMEKTİR.
+  > ℹ️ Bu daralma **geliştirme İÇİDİR**: iki ad S5b'de eklendi, S5c'de kaldırıldı;
+  > ikisi de hiçbir zaman yayınlanmadı. 4.6.0 → 5.0.0 yolunda **hiçbir ad
+  > kaybolmaz** (bkz. sürüm başlığındaki ölçüm).
 
 #### Değişti
 
@@ -398,6 +439,72 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
   de yoktur. İki dosyaya karşılıklı birer açıklama notu kondu ki gelecekte biri
   bunu tutarsızlık sanıp birini bozmasın. İkisinin ORTAK yanı **ödenecek tutarın
   kesinti düşülerek** bulunmasıdır.
+
+### S5d — HKS masraf düzlemi, oturum dizi makinesi ve künye/mal sahibi kapıları
+
+#### Eklendi
+
+- **Belge düzeyi masraf yüzeyi — `documentAllowanceCharges`.** Komisyoncu
+  faturasının TANIMLAYICI özelliği kütüphanede hiç yoktu; korpusun tamamında
+  0 `AllowanceCharge` bloğu üretiliyordu. Yeni yüzey:
+  `SimpleDocumentAllowanceChargeInput` (`chargeIndicator` · `reason` · `percent`
+  · `amount` · `baseAmount`), hesaplanmış karşılığı
+  `CalculatedDocumentAllowanceCharge`, ve beş yeni `SessionPaths` girdisi.
+  `amount` OTORİTEDİR; verilmezse `percent` belge `LineExtensionAmount`ından
+  türetilir. `baseAmount` verilmedikçe `cbc:BaseAmount` **yazılmaz** (GİB'in HKS
+  örneğinde masraf kalemleri taban taşımaz).
+- **HKS masraf kod taksonomisi** — `HKS_CHARGE_CODES` (18 kapalı kod),
+  `HKS_CHARGE_CODE_SET`, `HKS_CHARGE_LABELS` (ekran etiketleri),
+  `HKS_CHARGE_VAT_TWIN` (masraf ↔ KDV ikizi eşlemesi),
+  `HKS_CHARGE_PLANE_FORBIDDEN_TAX_CODES`, `isHksChargePlane`.
+  `reason` HKS düzleminde bu kümeden biri olmak ZORUNDADIR; diğer profillerde
+  serbest metin kalır.
+- **TERS İŞARETLİ toplam zinciri.** HKS masraf düzleminde GİB'in kendi örneğinde
+  blokların tamamı `chargeIndicator: false` olduğu hâlde toplam
+  `ChargeTotalAmount`a yazılır ve ödenecekten **düşülür** — yani bu düzlemde
+  bayrak toplam yönünü BELİRLEMEZ. Ölçüm: 3.000,00 + 300,00 KDV − 244,50 =
+  **3.055,50**.
+- **Mera Fonu (`9040`) — e-MM'in dördüncü kesinti ekseni.**
+  `PRODUCER_RECEIPT_TAX_TYPE_CODES` artık `0003` · `9040` · `8001` · `SGK_PRIM`.
+- **Oturum dizi-alanı makinesi** (`src/session/array-field.ts`). `lines`
+  dörtlüsü üç ayrı oturum gövdesinde elle yazılıydı. Makine **ortak tabanda
+  değil** modül düzeyinde durumsuz bir fabrikadır — `InvoiceSession` ve
+  `DespatchSession` `DocumentSession`dan TÜREMEZ (o yalnız e-SMM/e-MM'in
+  tabanıdır), dördü de fabrikaya ulaşır. Sözleşme mevcut davranışın BİREBİR
+  kopyasıdır: `ekle/güncelle/sil` → yaz → `afterWrite` → olay → `afterChange`;
+  `setLines` olay YAYMAZ. Metot adları, olay adları (`line-added`/`-updated`/
+  `-removed`), yük şekilleri ve sınır dışı indeksin sessiz no-op'u korundu.
+  Ölçüm: korpusun 121/121 `output.xml`i byte-ÖZDEŞ.
+- **Faturada masraf dörtlüsü** — `addDocumentAllowanceCharge` ·
+  `updateDocumentAllowanceCharge` · `removeDocumentAllowanceCharge` ·
+  `setDocumentAllowanceCharges`; olaylar `document-allowance-charge-added`/
+  `-updated`/`-removed`. Ortak tabana KONMADI: belge düzeyi masraf yalnız
+  faturaya aittir, paylaşılan şey makinedir. Silme kaydırır, **yeniden
+  sıralamaz** (GİB `general.xslt` blokları belge sırasında çizer).
+- **`isHksKunyeNoScope` / `isHksOwnerFieldScope` / `isHksOwnerRequiredScope`** —
+  kapsam yüklemleri dışa açıldı; tüketici aynı kapıyı ekranında da kurabilir.
+
+#### Değişti
+
+- **Künye kapısı e-Arşiv ikizine de açıldı (K10-a).** 19 karakterli `KUNYENO`
+  zorunluluğu yalnız `HKS` profilinde koşuyordu; `EARSIVFATURA` + `HKSSATIS`
+  düzlemi kuralı HİÇ almıyordu. Kapsam `isHksKunyeNoScope`ta tek kaynağa bağlandı.
+- **Mal sahibi kuralı İKİ ŞİDDETE ayrıldı, kopya çıkarılmadı.**
+  `validateHksOwnerRequired` (**HATA**, satış ikizi) ve `validateHksOwnerFields`
+  (**UYARI**, kalan HKS tipleri). Uyarı dalı artık zorunluluk kapsamında SUSAR —
+  aynı ihlal iki dille söylenmez.
+
+#### Düzeltildi
+
+- **`documentAllowances` ÖLÜ alanı.** Ad üç fikstür dosyasında geçiyordu ama
+  `src/` içinde **sıfır isabeti** vardı: alan kütüphanede YOKTU ve sessizce
+  düşüyordu. Belge düzeyi iskontonun tek örneği hiçbir şey üretmiyordu.
+  Ad `documentAllowanceCharges`e çekildi (iki isim yan yana KALMADI) ve gerçekten
+  çalışıyor. **Yayınlanmış yüzeye etkisi yok**: `documentAllowances` 4.6.0'ın
+  `.d.ts`inde de hiç yoktu — ölü ad yalnız korpustaydı.
+- **Eksik alanın YAPRAĞI kuralın kendisinden çıkıyor** — mal sahibi hatası artık
+  hangi alanın (`ADSOYADUNVAN` mı `VKNTCKN` mi) eksik olduğunu satır numarasıyla
+  söylüyor; tek bir genel mesaj değil.
 
 ## [4.6.0] — 2026-09-15
 
