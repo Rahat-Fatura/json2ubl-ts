@@ -114,3 +114,92 @@ export function isYatirimTesvikIstisnaScope(profile: string, type: string): bool
   if (profile === 'EARSIVFATURA' && type === 'YTBISTISNA') return true;
   return false;
 }
+
+/* ══════════════════════ HKS — Hal Kayıt Sistemi ══════════════════════ */
+
+/**
+ * HKS'e ÖZGÜ e-Arşiv tipleri — `EARSIVFATURA` altında yaşayan iki tip.
+ *
+ * e-Fatura düzleminde ayrım PROFİLDEN (`ProfileID='HKS'`), e-Arşiv düzleminde
+ * TİPTEN gelir; bu modülün var oluş sebebi olan asimetrinin ta kendisi.
+ */
+const HKS_EARSIV_TYPES: ReadonlySet<string> = new Set(['HKSSATIS', 'HKSKOMISYONCU']);
+
+/**
+ * `KUNYENO` kapsamı — GİB `general.xslt` KÜNYE NUMARASI kolonunun kapısı.
+ *
+ * ```
+ * ProfileID = 'HKS'  VEYA
+ * (ProfileID = 'EARSIVFATURA' VE InvoiceTypeCode ∈ {HKSSATIS, HKSKOMISYONCU})
+ * ```
+ *
+ * Kapı ÜÇ yerde birebir aynıdır — başlık hücresi (`general.xslt:960`), satır
+ * hücresi (`:2901`) ve ikinci satır tablosu (`:3092`). Dokuz paket kopyasında
+ * (üç farklı XSLT özeti) aynen ölçüldü.
+ *
+ * 🔴 `isHksChargePlane` BU DEĞİLDİR — o YALNIZ komisyoncu ikizini açar
+ * (`HKS+KOMISYONCU`, `EARSIVFATURA+HKSKOMISYONCU`). Künye kümesi ondan
+ * GENİŞTİR: `HKS`in TÜM tiplerini ve e-Arşiv düzleminde satış ikizini de
+ * kapsar. Masraf yüklemini burada kullanmak, `HKS+SATIS` belgesinde künye
+ * zorunluluğunu SESSİZCE kaldırırdı.
+ *
+ * ── Şematron ile ilişki
+ * Şematron (`UBL-TR_Common_Schematron.xml:358`, 23 e-Fatura paketinin
+ * hepsinde birebir aynı) YALNIZ `ProfileID='HKS'` der; e-Arşiv düzlemi için
+ * TEK BİR assert yoktur. Yani bu yüklem şematrondan GENİŞTİR ve bu bilinçlidir:
+ * GİB'in kendi görüntüsü e-Arşiv ikizinde de künye kolonunu açar, künyesiz
+ * belge orada boş bir kolon üretir. Şematronu geçen belgelerin ALT kümesini
+ * üretmek GİB'e ters düşmez; tersi (gevşek olmak) GİB'in kolonunu boş bırakır.
+ */
+export function isHksKunyeNoScope(profile: string, type: string): boolean {
+  if (profile === 'HKS') return true;
+  if (!HKS_EARSIV_TYPES.has(type)) return false;
+  return profile === 'EARSIVFATURA' || profile === '';
+}
+
+/**
+ * Mal sahibi alanlarının ZORUNLU olduğu kapsam — GİB `general.xslt` MAL SAHİBİ
+ * kolonlarının kapısı ve K9 kararının birebir karşılığı.
+ *
+ * ```
+ * (ProfileID = 'HKS'          VE InvoiceTypeCode = 'SATIS')  VEYA
+ * (ProfileID = 'EARSIVFATURA' VE InvoiceTypeCode = 'HKSSATIS')
+ * ```
+ *
+ * Kapı İKİ yerde birebir aynıdır — başlık hücreleri (`general.xslt:968`) ve
+ * satır hücreleri (`:2912`, `:3098`).
+ *
+ * 🔴 `isHksKunyeNoScope`tan DAR: künye HKS'in her tipinde istenir, mal sahibi
+ * YALNIZ satış ikizinde. GİB'in kendi örnekleri bunu doğruluyor —
+ * `HKS-Ornek1.xml` (HKS+SATIS) üç kimliği de taşır, `HKS-Ornek2.xml`
+ * (HKS+KOMISYONCU) YALNIZ künyeyi taşır.
+ *
+ * ⚠️ Şematronda `MALSAHIBI*` geçen TEK BİR assert YOKTUR (üç şematron
+ * dosyasında 0 isabet). Kural GİB'in görüntüleme kapısından ve iki belgeli hal
+ * akışından (K9) gelir: komisyoncu malı KENDİ adına değil mal sahibi adına
+ * satar; satış faturasında alıcının kimin malını aldığını görmesi hal kaydının
+ * çalışma biçiminin parçasıdır.
+ */
+export function isHksOwnerRequiredScope(profile: string, type: string): boolean {
+  if (profile === 'HKS') return type === 'SATIS';
+  if (type !== 'HKSSATIS') return false;
+  return profile === 'EARSIVFATURA' || profile === '';
+}
+
+/**
+ * Mal sahibi alanlarının ANLAMLI olduğu geniş kapsam — tutarlılık UYARISI için.
+ *
+ * Zorunluluk kapsamının (`isHksOwnerRequiredScope`) üst kümesidir: komisyoncu
+ * ikizi HARİÇ tüm HKS tipleri. Komisyoncuda mal sahibi ilişkisi faturanın KENDİ
+ * taraflarıyla kurulur, kalem kimliğiyle değil (GİB `HKS-Ornek2.xml` ölçümü).
+ *
+ * 🔴 Zorunluluk kapsamı bu kümenin İÇİNDEDİR ve orada kural HATA seviyesinde
+ * koşar; uyarı katmanı o satırları TEKRAR raporlamaz (çift mesaj olurdu).
+ * Geriye kalan tipler (`HKS+ISTISNA`, `HKS+TEVKIFAT`, `HKS+IADE` …) alanları
+ * zorunlu KILMAZ ama girildiyse yarım/bozuk bırakılmasını uyarır.
+ */
+export function isHksOwnerFieldScope(profile: string, type: string): boolean {
+  if (profile === 'HKS') return type !== 'KOMISYONCU';
+  if (type !== 'HKSSATIS') return false;
+  return profile === 'EARSIVFATURA' || profile === '';
+}

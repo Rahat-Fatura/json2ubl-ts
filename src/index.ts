@@ -191,10 +191,21 @@ export type { PartyIdentificationSchemeId } from "./ubltr/vocabulary/constants";
  *
  * Ayna eskirse kütüphaneyle tüketici sessizce ayrışır — bu paketi ÜÇ KEZ vuran
  * kusur sınıfının ta kendisi. */
+/* HKS kapsam yüklemleri AYNI gerekçeyle açıktır ve karıştırılmamalıdır:
+ *   • `isHksKunyeNoScope`      — künye kolonunun kapısı (HKS'in TÜM tipleri +
+ *                                 e-Arşiv ikizinin İKİ tipi)
+ *   • `isHksOwnerRequiredScope`— mal sahibi kolonlarının kapısı (YALNIZ satış
+ *                                 ikizi); K9 zorunluluğunun kapsamı
+ *   • `isHksOwnerFieldScope`   — mal sahibi alanlarının anlamlı olduğu geniş
+ *                                 küme (komisyoncu hariç)
+ * Üçü de `isHksChargePlane`tan FARKLIDIR; o yalnız komisyoncu ikizini açar. */
 export {
     isYatirimTesvikScope,
     isYatirimTesvikKdvScope,
     isYatirimTesvikIstisnaScope,
+    isHksKunyeNoScope,
+    isHksOwnerRequiredScope,
+    isHksOwnerFieldScope,
 } from "./ubltr/vocabulary/schematron-scopes";
 
 /* 🔑 HKS komisyoncu MASRAF SÖZLÜĞÜ — 4.5.1 ölçütünü karşılar.

@@ -10,6 +10,10 @@
 import { describe, it, expect } from 'vitest';
 import { validateHksKunyeNo } from '../../src/documents/invoice/validators/hks-kunyeno-validator';
 import { InvoiceSession } from '../../src/calculator/invoice-session';
+import { SimpleInvoiceBuilder } from '../../src';
+import { isHksKunyeNoScope } from '../../src/ubltr/vocabulary/schematron-scopes';
+import { isHksChargePlane } from '../../src/ubltr/vocabulary/hks-charge-codes';
+import earsivHksSatis from '../../examples-matrix/valid/earsivfatura/earsivfatura-hkssatis-baseline/input';
 import type { SimpleInvoiceInput, SimpleLineInput } from '../../src/calculator/simple-types';
 
 /** 19 karakterlik geçerli künye numarası */
@@ -167,7 +171,17 @@ describe('hks-kunyeno-validator — HKSInvioceCheck', () => {
     });
   });
 
-  describe('Kapsam (yalnız HKS profili)', () => {
+  /**
+   * KAPSAM — `isHksKunyeNoScope`, yani GİB `general.xslt`'sindeki künye
+   * kolonunun kapısı (`:960`, `:2901`, `:3092`):
+   *
+   *   ProfileID='HKS'  VEYA  (EARSIVFATURA VE tip ∈ {HKSSATIS, HKSKOMISYONCU})
+   *
+   * 🔴 e-Arşiv dalı 2026-09-22'de EKLENDİ. Öncesinde kapı yalnız
+   * `profile === 'HKS'` idi ve e-Arşiv ikizinde künye boş/5 haneli geçiyordu;
+   * şematron da orada susuyor (`Common:358` yalnız `ProfileID='HKS'` der).
+   */
+  describe('Kapsam — iki düzlem', () => {
     it('TEMELFATURA + KUNYENO yok → hata yok', () => {
       const errs = validateHksKunyeNo(baseInput({ profile: 'TEMELFATURA', type: 'SATIS', lines: [line()] }));
       expect(errs).toHaveLength(0);
@@ -181,6 +195,44 @@ describe('hks-kunyeno-validator — HKSInvioceCheck', () => {
     it('HKSIRSALIYE (irsaliye profili) bu validator kapsamında değil', () => {
       const errs = validateHksKunyeNo(baseInput({ profile: 'HKSIRSALIYE', lines: [line()] }));
       expect(errs).toHaveLength(0);
+    });
+
+    it.each([
+      ['HKS + SATIS', 'HKS', 'SATIS'],
+      ['HKS + KOMISYONCU', 'HKS', 'KOMISYONCU'],
+      ['HKS + TEVKIFAT', 'HKS', 'TEVKIFAT'],
+      ['EARSIVFATURA + HKSSATIS', 'EARSIVFATURA', 'HKSSATIS'],
+      ['EARSIVFATURA + HKSKOMISYONCU', 'EARSIVFATURA', 'HKSKOMISYONCU'],
+    ])('%s → KAPSAMDA (künyesiz belge HATA verir)', (_label, profile, type) => {
+      const errs = validateHksKunyeNo(baseInput({ profile, type, lines: [line()] }));
+      expect(errs).toHaveLength(1);
+      expect(errs[0].message).toContain('KUNYENO');
+    });
+
+    it.each([
+      ['EARSIVFATURA + SATIS', 'EARSIVFATURA', 'SATIS'],
+      ['EARSIVFATURA + IADE', 'EARSIVFATURA', 'IADE'],
+      ['TICARIFATURA + KOMISYONCU', 'TICARIFATURA', 'KOMISYONCU'],
+    ])('%s → KAPSAM DIŞI', (_label, profile, type) => {
+      expect(validateHksKunyeNo(baseInput({ profile, type, lines: [line()] }))).toHaveLength(0);
+    });
+
+    it('profil BOŞ + HKSKOMISYONCU → kapsamda (emniyet ağı; tip yalnız e-Arşivde yaşar)', () => {
+      const errs = validateHksKunyeNo(baseInput({ profile: '', type: 'HKSKOMISYONCU', lines: [line()] }));
+      expect(errs).toHaveLength(1);
+    });
+
+    /* 🔴 Yüklem seçiminin KANITI: masraf düzlemi yüklemi burada kullanılsaydı
+     * `HKS+SATIS` ve `EARSIVFATURA+HKSSATIS` künye kapısını sessizce
+     * kaybederdi — masraf düzlemi YALNIZ komisyoncu ikizini açar. */
+    it('künye kümesi masraf düzleminden GENİŞ — isHksChargePlane yanlış yüklem olurdu', () => {
+      expect(isHksKunyeNoScope('HKS', 'SATIS')).toBe(true);
+      expect(isHksChargePlane('HKS', 'SATIS')).toBe(false);
+      expect(isHksKunyeNoScope('EARSIVFATURA', 'HKSSATIS')).toBe(true);
+      expect(isHksChargePlane('EARSIVFATURA', 'HKSSATIS')).toBe(false);
+      // Komisyoncu ikizinde iki yüklem de açıktır
+      expect(isHksKunyeNoScope('HKS', 'KOMISYONCU')).toBe(true);
+      expect(isHksChargePlane('HKS', 'KOMISYONCU')).toBe(true);
     });
   });
 
@@ -220,5 +272,77 @@ describe('InvoiceSession köprüsü — HKS KUNYENO validate() pipeline\'ında',
       line({ additionalItemIdentifications: [{ schemeId: 'KUNYENO', value: VALID_KUNYENO }] }),
     ]).validate();
     expect(warnings.filter(w => w.message.includes('KUNYENO'))).toHaveLength(0);
+  });
+});
+
+/* ════════════ e-Arşiv düzlemi — GERÇEK belge üzerinde MUTASYON ════════════
+ *
+ * Kapsam açığının (§3.3 / K10-a) kanıtı: sentetik girdi değil, matristeki
+ * GERÇEK `EARSIVFATURA+HKSSATIS` belgesi bozulur ve kapının kırmızıya döndüğü
+ * ölçülür. Mutasyon yardımcısı hedefini bulamazsa FIRLATIR — yanlış eksene
+ * çarpan bir mutasyon "sahte yeşil" verirdi. */
+describe('e-Arşiv ikizi — gerçek belge mutasyonu (K10-a açığı)', () => {
+  function mutateEarsiv(
+    change: (ids: Array<{ schemeId: string; value: string }>) => Array<{ schemeId: string; value: string }>,
+  ): SimpleInvoiceInput {
+    const clone = structuredClone(earsivHksSatis) as SimpleInvoiceInput;
+    const ids = clone.lines[0]?.additionalItemIdentifications as
+      | Array<{ schemeId: string; value: string }>
+      | undefined;
+    if (!ids) throw new Error('MUTASYON HEDEFİ YOK: lines[0].additionalItemIdentifications');
+    if (!ids.some(a => a.schemeId === 'KUNYENO')) {
+      throw new Error('MUTASYON HEDEFİ BULUNAMADI: KUNYENO (fixture değişmiş olabilir)');
+    }
+    clone.lines[0].additionalItemIdentifications = change(ids);
+    return clone;
+  }
+
+  it('sağlam fixture → hata yok (mutasyonun tabanı gerçekten temiz)', () => {
+    expect(earsivHksSatis.profile).toBe('EARSIVFATURA');
+    expect(earsivHksSatis.type).toBe('HKSSATIS');
+    expect(validateHksKunyeNo(earsivHksSatis as SimpleInvoiceInput)).toHaveLength(0);
+  });
+
+  it('KÜNYE SÖKÜLDÜ → HATA (eski kapı burada SESSİZDİ)', () => {
+    const errs = validateHksKunyeNo(mutateEarsiv(ids => ids.filter(a => a.schemeId !== 'KUNYENO')));
+    expect(errs).toHaveLength(1);
+    expect(errs[0].code).toBe('PROFILE_REQUIREMENT');
+    expect(errs[0].message).toContain('KUNYENO');
+    // Etiket e-Arşiv düzlemini söylemeli — `[HKS]` yanıltıcı olurdu
+    expect(errs[0].message).toContain('[EARSIV+HKSSATIS]');
+  });
+
+  it('KÜNYE 5 HANEYE kısaltıldı → HATA (görevin tarif ettiği tam senaryo)', () => {
+    const errs = validateHksKunyeNo(mutateEarsiv(ids =>
+      ids.map(a => (a.schemeId === 'KUNYENO' ? { ...a, value: 'KUN12' } : a)),
+    ));
+    expect(errs).toHaveLength(1);
+    expect(errs[0].path).toBe('lines[0].additionalItemIdentifications.KUNYENO');
+    expect(errs[0].message).toContain('19');
+  });
+
+  it('İKİNCİ künye eklendi → HATA (şematronun sayım deliği, e-Arşiv düzleminde de kapalı)', () => {
+    const errs = validateHksKunyeNo(mutateEarsiv(ids =>
+      [...ids, { schemeId: 'KUNYENO', value: 'KUN-2026-MTX66-KAB2' }],
+    ));
+    expect(errs).toHaveLength(1);
+    expect(errs[0].message).toContain('YALNIZ BİR');
+  });
+
+  it('🔴 strict kurulum FIRLATIR — InvoiceInput katmanı da e-Arşiv dalını görüyor', () => {
+    const broken = mutateEarsiv(ids => ids.filter(a => a.schemeId !== 'KUNYENO'));
+    expect(() => new SimpleInvoiceBuilder({ validationLevel: 'strict' }).build(broken))
+      .toThrow(/KUNYENO/);
+  });
+
+  it('sağlam fixture strict kurulumdan GEÇER', () => {
+    expect(() => new SimpleInvoiceBuilder({ validationLevel: 'strict' })
+      .build(structuredClone(earsivHksSatis) as SimpleInvoiceInput)).not.toThrow();
+  });
+
+  it('mutasyon yardımcısı hedefini bulamazsa FIRLATIR', () => {
+    expect(() => mutateEarsiv(() => {
+      throw new Error('MUTASYON HEDEFİ BULUNAMADI: sınama');
+    })).toThrow(/MUTASYON HEDEFİ BULUNAMADI/);
   });
 });

@@ -1,92 +1,77 @@
 /**
- * HKS profili KUNYENO kontrolü — simple-input katmanı.
+ * HKS KUNYENO kontrolü — simple-input katmanı ADAPTÖRÜ.
  *
- * GİB'in HKS (Hal Kayıt Sistemi) profili için TEK belge kısıtı şudur:
+ * Kuralın GÖVDESİ burada DEĞİL: `ubltr/rules/shared/hks-item-identification-rules`
+ * içindedir ve `InvoiceInput` katmanı (`profile-validators.ts`) AYNI gövdeyi
+ * çağırır. Bu dosyanın işi yalnız kapsamı sormak ve bulguyu bu katmanın alan
+ * yoluna çevirmektir.
  *
- *   `ProfileID='HKS'` iken HER `cac:InvoiceLine` elemanı, `schemeID='KUNYENO'`
- *   olan ve tam 19 karakter uzunluğunda bir `cac:Item/
- *   cac:AdditionalItemIdentification/cbc:ID` taşımalıdır.
+ * ── 🔴 KAPSAM ARTIK `ProfileID='HKS'` DEĞİL
+ * Eskiden kapı `input.profile !== HKS` idi; e-Arşiv ikizi (`EARSIVFATURA` +
+ * `HKSSATIS`/`HKSKOMISYONCU`) kuralı HİÇ görmüyordu — künye boş ya da 5 haneli
+ * geçebiliyordu. Şematron da orada susuyor (`Common:358` yalnız `ProfileID='HKS'`
+ * der; 23 e-Fatura paketinin hepsinde birebir aynı), yani belge iki kapıdan da
+ * sessizce geçiyordu.
  *
- * @see schematrons/UBL-TR_Common_Schematron.xml — HKSInvioceCheck
+ * Kapsam artık TEK KAYNAKTAN okunur: `isHksKunyeNoScope` — GİB'in kendi
+ * görüntüleme XSLT'sindeki künye kolonunun kapısı (`general.xslt:960`, `:2901`,
+ * `:3092`). Yüklem `isHksChargePlane` DEĞİLDİR; o yalnız komisyoncu ikizini
+ * açar ve burada kullanılsaydı `HKS+SATIS` belgesinde künye zorunluluğunu
+ * sessizce kaldırırdı.
  *
- * ── 🔴 ŞEMATRON SATIR-BAZLI DEĞİL, SAYIM-BAZLI (bilinçli olarak ONDAN KATIYIZ)
- * Kuralın asıl testi şudur:
- *   count(… cbc:ID[@schemeID='KUNYENO' and string-length(…)=19]) = count(cac:InvoiceLine)
- * Yani belge GENELİNDEKİ geçerli künye SAYISI ile SATIR SAYISI eşitse geçer.
- * Bu bir sayım deliğidir: 1. satırda İKİ künye + 2. satırda HİÇ künye olan belge
- * 2 = 2 verir ve şematrondan GEÇER — oysa 2. satır künyesizdir. Canlı sonda
- * doğrulandı (xslt-service :8081, paket 20260701): böyle bir belge 0 ihlalle
- * yeşil döndü.
- *
- * Bu doğrulayıcı şematronun deliğini KAPATIR: SATIR BAŞINA TAM BİR künye arar.
- *   0 künye  → hata (şematron da yakalar)
- *   2+ künye → hata (şematron YAKALAMAZ; hal kaydında bir kalem = bir künye)
- * Katı olmak GİB'e ters düşmez — şematronu geçen her belge kümesinin ALT
- * kümesini üretiriz; tersi (gevşek olmak) GİB'de reddedilecek belge üretirdi.
- *
- * Bu kuralın InvoiceInput katmanı eşleniği `profile-validators.ts`
- * (`validateHks`) içinde zaten var; ancak o YALNIZ `validationLevel='strict'`
- * altında çalışıyor. InvoiceSession/UI akışı kuralı 4.1.2'ye kadar hiç
- * görmüyordu — KUNYENO'suz HKS faturası sessizce üretilip GİB'de reddediliyordu.
- * Mesajlar bilinçli olarak `validateHks` ile aynı sözcüklerle kurulur; iki
- * katman aynı ihlali aynı dille anlatsın.
+ * ── Katman ayrımı
+ * Bu kuralın `InvoiceInput` katmanı eşleniği `profile-validators.ts`
+ * (`validateHksKunyeNoRules`) içindedir; o YALNIZ `validationLevel='strict'`
+ * altında çalışır. InvoiceSession/UI akışı kuralı 4.1.2'ye kadar hiç görmüyordu
+ * — KUNYENO'suz HKS faturası sessizce üretilip GİB'de reddediliyordu.
  */
 
 import type { SimpleInvoiceInput } from '../../../calculator/simple-types';
 import type { ValidationError } from '../../../errors/ubl-build-error';
-import { InvoiceProfileId } from '../../../types/enums';
 import { profileRequirement } from '../../../ubltr/rules/validation-result';
+import { isHksKunyeNoScope } from '../../../ubltr/vocabulary/schematron-scopes';
+import {
+  checkHksKunyeNo,
+  type HksLineIdentityView,
+} from '../../../ubltr/rules/shared/hks-item-identification-rules';
 
-/** Şematron `string-length(...) = 19` — uzunluk şartı kimliğin kendisi kadar bağlayıcı */
-const KUNYENO_LENGTH = 19;
+/**
+ * Hata etiketinde görünen kapsam adı.
+ *
+ * e-Fatura düzleminde profil zaten ayırıcıdır (`[HKS]`); e-Arşiv düzleminde
+ * profil tek başına anlamsızdır (`EARSIVFATURA` her e-Arşiv belgesidir) ve
+ * ayırıcı TİPTİR. Aynı gösterim yatırım teşvikte de kullanılıyor
+ * (`EARSIV+${type}`), kopya bir biçim icat edilmedi.
+ */
+export function hksScopeLabel(profile: string, type: string): string {
+  return profile === 'HKS' ? 'HKS' : `EARSIV+${type}`;
+}
 
-/** `schemeID` değeri — UBL-TR kod listesi `AdditionalItemIdentificationIDType` */
-const KUNYENO_SCHEME_ID = 'KUNYENO';
+/** Simple katmanının satırlarını çekirdeğin gördüğü şekle çevirir. */
+export function toSimpleIdentityViews(
+  input: SimpleInvoiceInput,
+): HksLineIdentityView[] {
+  return input.lines.map(line => ({
+    name: line.name ?? '',
+    identifications: line.additionalItemIdentifications ?? [],
+  }));
+}
+
+/** Simple katmanının kimlik düğümü yolu. */
+export function simpleIdentityPath(lineIndex: number, leaf: string | null): string {
+  const base = `lines[${lineIndex}].additionalItemIdentifications`;
+  return leaf === null ? base : `${base}.${leaf}`;
+}
 
 export function validateHksKunyeNo(input: SimpleInvoiceInput): ValidationError[] {
-  const errors: ValidationError[] = [];
+  const profile = input.profile ?? '';
+  const type = input.type ?? '';
 
-  if (input.profile !== InvoiceProfileId.HKS) {
-    return errors;
-  }
+  if (!isHksKunyeNoScope(profile, type)) return [];
 
-  input.lines.forEach((line, i) => {
-    /* `find` DEĞİL `filter`: şematronun sayım deliğini kapatmak için satırdaki
-     * TÜM künyeleri görmemiz gerekiyor (bkz. dosya başlığı). Boş/whitespace
-     * değerler künye SAYILMAZ — şematron da `normalize-space` uzunluğuna bakar,
-     * yani boş bir cbc:ID onun sayımına girmez. */
-    const kunyeNos = (line.additionalItemIdentifications ?? []).filter(
-      a => a.schemeId === KUNYENO_SCHEME_ID && (a.value?.trim() ?? '') !== '',
-    );
+  const label = hksScopeLabel(profile, type);
 
-    if (kunyeNos.length === 0) {
-      errors.push(profileRequirement(InvoiceProfileId.HKS,
-        `lines[${i}].additionalItemIdentifications`,
-        `HKS profilinde her satırda KUNYENO zorunludur (satır ${i + 1}: ${line.name})`));
-      return;
-    }
-
-    if (kunyeNos.length > 1) {
-      /* Hal kaydında bir kalem = bir künye. Birden fazlası şematronun SAYIM
-       * eşitliğini başka bir satırın eksiğiyle "dengeleyebilir" ve belge yeşil
-       * görünürken künyesiz satır taşır. */
-      errors.push(profileRequirement(InvoiceProfileId.HKS,
-        `lines[${i}].additionalItemIdentifications`,
-        `HKS profilinde her satırda YALNIZ BİR KUNYENO bulunmalıdır `
-        + `(satır ${i + 1}: ${line.name} — gelen: ${kunyeNos.length} adet)`));
-      return;
-    }
-
-    // Şematron `normalize-space` ile ölçüyor → baş/son boşluk uzunluğa sayılmaz
-    const value = kunyeNos[0].value.trim();
-
-    if (value.length !== KUNYENO_LENGTH) {
-      errors.push(profileRequirement(InvoiceProfileId.HKS,
-        `lines[${i}].additionalItemIdentifications.KUNYENO`,
-        `KUNYENO ${KUNYENO_LENGTH} karakter olmalıdır `
-        + `(satır ${i + 1}: ${line.name} — gelen: ${value.length})`));
-    }
-  });
-
-  return errors;
+  return checkHksKunyeNo(toSimpleIdentityViews(input)).map(f =>
+    profileRequirement(label, simpleIdentityPath(f.lineIndex, f.leaf), f.message),
+  );
 }

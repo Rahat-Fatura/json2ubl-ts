@@ -5,7 +5,16 @@ import {
   TR_IBAN_REGEX, SEVKIYAT_NO_REGEX, ETIKET_NO_REGEX,
   DELIVERY_TERM_CODES, TRANSPORT_MODE_CODES, YTB_ITEM_CLASSIFICATION_CODES,
 } from '../../../ubltr/vocabulary/constants';
-import { isYatirimTesvikScope } from '../../../ubltr/vocabulary/schematron-scopes';
+import {
+  isYatirimTesvikScope,
+  isHksKunyeNoScope,
+  isHksOwnerRequiredScope,
+} from '../../../ubltr/vocabulary/schematron-scopes';
+import {
+  checkHksKunyeNo,
+  checkHksOwnerRequired,
+  type HksLineIdentityView,
+} from '../../../ubltr/rules/shared/hks-item-identification-rules';
 import { profileRequirement, invalidFormat, yatirimTesvikRequiresYtbNo } from '../../../ubltr/rules/validation-result';
 import { isNonEmpty, isNumeric, hasLength } from '../../../utils/formatters';
 import { isValidGtip, describeGtipDefect } from '../../../utils/gtip';
@@ -265,23 +274,62 @@ function validateKamu(input: InvoiceInput): ValidationError[] {
   return errors;
 }
 
-/** §3.7 HKS profili */
+/**
+ * `InvoiceInput` katmanının satırlarını HKS kural çekirdeğinin gördüğü şekle
+ * çevirir. Simple katmanının eşleniği `hks-kunyeno-validator.ts`tedir; iki
+ * katmanın TEK farkı kimlik dizisinin durduğu yer ve alan yoludur.
+ */
+function toInvoiceIdentityViews(input: InvoiceInput): HksLineIdentityView[] {
+  return (input.lines ?? []).map(line => ({
+    name: line.item?.name ?? '',
+    identifications: line.item?.additionalItemIdentifications ?? [],
+  }));
+}
+
+/** `InvoiceInput` katmanının kimlik düğümü yolu. */
+function invoiceIdentityPath(lineIndex: number, leaf: string | null): string {
+  const base = `lines[${lineIndex}].item.additionalItemIdentifications`;
+  return leaf === null ? base : `${base}.${leaf}`;
+}
+
+/**
+ * HKS kalem kimlikleri — İKİ DÜZLEMİN ORTAK gövdesi.
+ *
+ * 🔴 Kapsam BURADA SORULMAZ: çağıran (`validateHks` ya da `validateEarsiv`)
+ * `isHksKunyeNoScope`/`isHksOwnerRequiredScope` ile zaten karar vermiştir.
+ * Kapsamı burada ikinci kez sormak, yüklemin tek kaynak olmasını bozardı.
+ *
+ * @param scopeLabel hata etiketi — e-Faturada `HKS`, e-Arşivde `EARSIV+<tip>`
+ */
+function validateHksItemIdentifications(
+  input: InvoiceInput,
+  scopeLabel: string,
+  ownerRequired: boolean,
+): ValidationError[] {
+  const views = toInvoiceIdentityViews(input);
+  const findings = [
+    ...checkHksKunyeNo(views),
+    ...(ownerRequired ? checkHksOwnerRequired(views) : []),
+  ];
+  return findings.map(f =>
+    profileRequirement(scopeLabel, invoiceIdentityPath(f.lineIndex, f.leaf), f.message),
+  );
+}
+
+/**
+ * §3.7 HKS profili.
+ *
+ * Kapsam yüklemi (`isHksKunyeNoScope`) burada `ProfileID='HKS'` dalına
+ * indirgenir ve DAİMA doğrudur; yine de yüklemden geçilir ki kapsam tanımı tek
+ * yerde kalsın. Mal sahibi zorunluluğu YALNIZ `SATIS` tipinde koşar (K9).
+ */
 function validateHks(input: InvoiceInput): ValidationError[] {
-  const errors: ValidationError[] = [];
   const p = InvoiceProfileId.HKS;
+  const type = input.invoiceTypeCode ?? '';
 
-  input.lines?.forEach((line, i) => {
-    const kunyeNo = line.item?.additionalItemIdentifications?.find(a => a.schemeId === 'KUNYENO');
-    if (!kunyeNo || !isNonEmpty(kunyeNo.value)) {
-      errors.push(profileRequirement(p, `lines[${i}].item.additionalItemIdentifications`,
-        'HKS profilinde her satırda KUNYENO zorunludur'));
-    } else if (kunyeNo.value.length !== 19) {
-      errors.push(profileRequirement(p, `lines[${i}].item.additionalItemIdentifications.KUNYENO`,
-        `KUNYENO 19 karakter olmalıdır (gelen: ${kunyeNo.value.length})`));
-    }
-  });
+  if (!isHksKunyeNoScope(p, type)) return [];
 
-  return errors;
+  return validateHksItemIdentifications(input, p, isHksOwnerRequiredScope(p, type));
 }
 
 /** §3.9 ILAC_TIBBICIHAZ profili */
@@ -439,9 +487,10 @@ function validateIdis(input: InvoiceInput): ValidationError[] {
   return errors;
 }
 
-/** §3.12 EARSIVFATURA profili — YTB tipleri için YATIRIMTESVIK kuralları */
+/** §3.12 EARSIVFATURA profili — YTB ve HKS tiplerinin e-Arşiv düzlemi */
 function validateEarsiv(input: InvoiceInput): ValidationError[] {
   const errors: ValidationError[] = [];
+  const type = input.invoiceTypeCode ?? '';
 
   /* YTB tipleri kullanılıyorsa YATIRIMTESVIK kuralları uygulanır.
    * Kapsam yüklemi TEK KAYNAK (`config/schematron-scopes`, 4.5.2): burada zaten
@@ -450,6 +499,21 @@ function validateEarsiv(input: InvoiceInput): ValidationError[] {
    * bu dalın sessizce eskimesini engeller. */
   if (isYatirimTesvikScope(input.profileId, input.invoiceTypeCode)) {
     errors.push(...validateYatirimTesvikRules(input, `EARSIV+${input.invoiceTypeCode}`));
+  }
+
+  /* 🔴 HKS'in e-Arşiv ikizi — bu dal EKSİKTİ ve açık ÖLÇÜLDÜ.
+   * `EARSIVFATURA`+`HKSSATIS`/`HKSKOMISYONCU` belgesinde künye zorunluluğu
+   * HİÇBİR kapıdan geçmiyordu: şematron yalnız `ProfileID='HKS'` der
+   * (`Common:358`, 23 paketin hepsinde aynı), kütüphane de yalnız o dalda
+   * koşuyordu. Sonuç: künye boş ya da 5 haneli bir e-Arşiv hal faturası sessizce
+   * üretilebiliyordu — GİB'in kendi görüntüsü ise o kolonu AÇIYOR
+   * (`general.xslt:2901`), yani belge boş kolonla basılırdı. */
+  if (isHksKunyeNoScope(input.profileId ?? '', type)) {
+    errors.push(...validateHksItemIdentifications(
+      input,
+      `EARSIV+${type}`,
+      isHksOwnerRequiredScope(input.profileId ?? '', type),
+    ));
   }
 
   return errors;
