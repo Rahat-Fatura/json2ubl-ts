@@ -213,7 +213,10 @@ describe('validateHksOwnerFields — tutarlılık UYARISI', () => {
     expect(warns).toHaveLength(1);
     expect(warns[0].severity).toBe('warning');
     expect(warns[0].message).toContain(OWNER_TAX);
-    expect(warns[0].field).toBe('lines[0].additionalItemIdentifications');
+    /* 🔑 Yaprak KÜTÜPHANEDEN gelir: eksik olan alan hangisiyse yol onu gösterir.
+     * Portal bunu künt yoldan kendi türetiyordu ve o köprü satırdaki KÜNYE
+     * uyarısını da yakalayıp mal sahibi alanına yönlendirebiliyordu. */
+    expect(warns[0].field).toBe(`lines[0].additionalItemIdentifications.${OWNER_TAX}`);
   });
 
   it('yalnız VKN/TCKN var → UYARI', () => {
@@ -223,6 +226,7 @@ describe('validateHksOwnerFields — tutarlılık UYARISI', () => {
     expect(warns).toHaveLength(1);
     expect(warns[0].severity).toBe('warning');
     expect(warns[0].message).toContain(OWNER_NAME);
+    expect(warns[0].field).toBe(`lines[0].additionalItemIdentifications.${OWNER_NAME}`);
   });
 
   it('bozuk hane → UYARI', () => {

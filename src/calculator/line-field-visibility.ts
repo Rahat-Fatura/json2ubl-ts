@@ -77,10 +77,14 @@ export interface TypeProfileFlags {
    *     19 karakterli KUNYENO'yu ŞART KOŞAR)
    *   • e-Arşiv  : tip `HKSSATIS`/`HKSKOMISYONCU` (`ProfileID=EARSIVFATURA`)
    *
-   * ⚠️ Bu bir ALAN GÖRÜNÜRLÜĞÜ bayrağıdır, künye ZORUNLULUĞU değil: zorunluluk
-   * yalnız `ProfileID=HKS`'te vardır ve `hks-kunyeno-validator` onu profile
-   * bakarak uygular. e-Arşiv düzleminde alanı GÖSTERMEK gerekir (kullanıcı
-   * künyeyi girebilsin), ZORUNLU KILMAK gerekmez.
+   * ⚠️ Bu bir ALAN GÖRÜNÜRLÜĞÜ bayrağıdır, ZORUNLULUK yüklemi DEĞİL. Zorunluluk
+   * kapsamları ayrı yaşar ve daha dardır — `vocabulary/schematron-scopes.ts`:
+   *   • `isHksKunyeNoScope`       künye zorunluluğu; bu bayrakla AYNI kümedir
+   *     (2026-09-22'de e-Arşiv ikizi de kapsama alındı — öncesinde alan
+   *     görünüyordu ama boş bırakılabiliyordu)
+   *   • `isHksOwnerRequiredScope` mal sahibi zorunluluğu; YALNIZ satış ikizi
+   * Görünürlüğü zorunluluktan geniş tutmak DOĞRUDUR: kullanıcı komisyoncu
+   * belgesinde de künyeyi girebilmelidir.
    */
   isHks: boolean;
 }

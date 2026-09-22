@@ -220,10 +220,15 @@ export function checkHksOwnerConsistency(
     // İkisi de yoksa sessiz: alanlar zorunlu değil, yalnız BİRLİKTE anlamlılar.
     if (name === '' && taxId === '') return;
 
+    /* 🔑 EKSİK OLAN ALANIN yaprağı BURADA yazılır, tüketicide DEĞİL.
+     * Portal bu bilgiyi kütüphanenin künt yolundan kendi türetiyordu
+     * (`library-field-path-bridge.ts`) ve o köprü satırdaki BAŞKA bir künt
+     * uyarıyı (künyesiz satır) da yakalayıp mal sahibi alanına yönlendiriyordu.
+     * Kuralın sahibi hangi alanın eksik olduğunu zaten bilir; söylemesi gerekir. */
     if (name !== '' && taxId === '') {
       findings.push({
         lineIndex: i,
-        leaf: null,
+        leaf: OWNER_TAX_ID_SCHEME_ID,
         message:
           `Satır ${i + 1}: mal sahibi adı girilmiş ama ${OWNER_TAX_ID_SCHEME_ID} yok — `
           + 'mal sahibi bilgisi ad ve VKN/TCKN ile birlikte verilmelidir.',
@@ -231,7 +236,7 @@ export function checkHksOwnerConsistency(
     } else if (name === '' && taxId !== '') {
       findings.push({
         lineIndex: i,
-        leaf: null,
+        leaf: OWNER_NAME_SCHEME_ID,
         message:
           `Satır ${i + 1}: mal sahibi VKN/TCKN girilmiş ama ${OWNER_NAME_SCHEME_ID} yok — `
           + 'mal sahibi bilgisi ad ve VKN/TCKN ile birlikte verilmelidir.',
