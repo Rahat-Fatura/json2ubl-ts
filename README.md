@@ -708,8 +708,12 @@ const { xml } = new SimpleInvoiceBuilder({ prettyPrint: true }).build({
 - **`reason` HKS düzleminde kapalı kümedir** — `HKS_CHARGE_CODES` (18 kod:
   `HKSKOMISYON`, `HKSKOMISYONKDV`, `HKSNAVLUN`, `HKSRUSUM`, `HKSTICBORSASI`,
   `HKSGVTEVKIFAT`, `HKSBAGKURTEVKIFAT`, `HKSMILLISAVUNMAFON`, `HKSDIGERMASRAFLAR`
-  ve KDV ikizleri). Diğer profillerde serbest metindir.
-  Ekran etiketleri: `HKS_CHARGE_LABELS`.
+  ve KDV ikizleri). Ekran etiketleri: `HKS_CHARGE_LABELS`.
+- **🔴 5.1.0: `documentAllowanceCharges` YALNIZ bu düzlemde geçerlidir.** Genel belge
+  düzeyi iskonto/artırım kaldırıldı (5.0.0'da KDV'yi yeniden hesaplamadan matrahı
+  kaydırıyordu). Başka profilde verilirse `DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED`
+  hatası alınır — `validationLevel: 'none'` dahil. İskontoyu kalemlere dağıtıp
+  `lines[i].allowancePercent` olarak verin; bkz. [Yuvarlama ve iskonto](#yuvarlama-ve-iskonto).
 - **`amount` otoritedir**; verilmezse `percent` ile belge `LineExtensionAmount`ından
   türetilir. `baseAmount` verilmedikçe XML'e `cbc:BaseAmount` **yazılmaz** (GİB'in
   HKS örneğinde masraf kalemleri taban taşımaz).
@@ -766,6 +770,37 @@ Tevkifatlı iadenin doğru yapısı: tip `IADE` + kalemde tevkifat kodu.
 6. Tevkifat = kdvTutarı × (tevkifatOranı / 100)
 7. Ödenecek = netTutar + taxForCalculate_toplam - tevkifat
 ```
+
+### Yuvarlama ve iskonto
+
+**Hesap tam hassasiyetle yapılır; tutarlar yalnız XML serileştirmesinde 2 haneye
+yuvarlanır** (`toFixed(2)`). Bu bilinçli bir karardır: GİB şematronu yalnız
+`LegalMonetaryTotal`'ın beş alanında ve belge `TaxTotal/TaxAmount`'ta en fazla 2
+ondalık şartı koyar, **toplam eşitliğini denetlemez**. Belge bu yüzden reddedilmez,
+ama her değer ayrı yuvarlandığı için XML kendi içinde kuruş düzeyinde tutmayabilir:
+
+```
+3 kalem × (3 × 1,115 TL), %20 KDV
+  satır tutarı  3,345 → XML 3.34  (JS'te 3 × 1,115 = 3,3449999…; toFixed aşağı yuvarlar)
+  Σ satır       10,035 → XML LineExtensionAmount 10.04   (Σ basılı satır = 10,02)
+  KDV           2,007  → XML TaxAmount 2.01
+  vergiler dahil 12,042 → XML TaxInclusiveAmount 12.04  (10,04 + 2,01 = 12,05)
+
+7 kalem × 1,03 TL, %20 KDV
+  satır KDV'si  0,206 → XML 0.21 (her satır; Σ basılı satır KDV = 1,47)
+  belge KDV'si  1,442 → XML TaxSubtotal/TaxAmount 1.44
+```
+
+`calculation` (hesap motoru ve `InvoiceSession.calculation`) yuvarlanmamış
+değerleri taşır (yukarıda `10.035`, `2.007`); ekranda gösterirken 2 haneye
+yuvarlayın. Muhasebe kaydını XML'in **belge düzeyi** toplamlarından kurun
+(`PayableAmount`, `TaxExclusiveAmount`, her `TaxSubtotal`) ve kuruş farkını ayrı
+bir satırla denkleştirin. Ayrıntı: [docs/surum-politikasi.md](docs/surum-politikasi.md#4-para-tutarları-ve-yuvarlama).
+
+**İskonto satırda verilir.** Satır iskontosu (`allowancePercent`) satır tutarını ve
+KDV matrahını birlikte küçültür (100 TL, %20 KDV, %10 iskonto → matrah 90,00, KDV
+18,00, ödenecek 108,00). Belge düzeyi iskonto/artırım 5.1.0'da kaldırıldı; belge
+geneline bir iskonto uygulanacaksa tutarı kalemlere siz dağıtın.
 
 ### Tip Otomatik Tespiti
 
@@ -1046,6 +1081,15 @@ yarn examples                         # 38 örnek senaryoyu çalıştır (Sprint
 npx tsx examples/run-all.ts yatirimtesvik  # Slug filtreli
 npx tsx examples/NN-slug/run.ts       # Tek senaryo
 ```
+
+## Sürüm politikası
+
+Semver kuralları (XML çıktısını değiştiren her sürüm en az MINOR ve CHANGELOG'da
+"Çıktı değişimi" başlığı taşır), her yayında `vX.Y.Z` etiketi + GitHub Release +
+CHANGELOG girdisi zorunluluğu ve yayın kontrol listesi:
+[docs/surum-politikasi.md](docs/surum-politikasi.md). `prepublishOnly` etiketi ve
+CHANGELOG girdisini denetler (`scripts/check-release.mjs`). Tüketiciye önerimiz
+tam sürüme sabitlemek (`"json2ubl-ts": "5.1.0"`).
 
 ## Lisans
 

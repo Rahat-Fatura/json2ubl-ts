@@ -2,6 +2,99 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [5.1.0] — 2026-09-28
+
+> **Genel belge düzeyi iskonto/artırım KALDIRILDI; sürüm politikası yazıldı,
+> eksik etiketler geriye dönük atıldı.** Belge düzeyi kalem içermeyen HER belgede
+> XML ve hesap çıktısı 5.0.0 ile **birebir aynı**. Yuvarlamada değişiklik YOK.
+
+### Kaldırılan — genel belge düzeyi iskonto/artırım
+
+5.0.0'da açılan genel düzlem belge iskontosu (`documentAllowanceCharges`, HKS dışı
+profiller) `TaxExclusive`/`TaxInclusive`/`Payable`'ı kaydırıyor ama **KDV'yi yeniden
+hesaplamıyordu**: 100 TL + %20 KDV + %10 belge iskontosu → matrah 90,00, KDV
+**20,00** (doğrusu 18,00; KDVK md.25/a). Aynı XML'de `TaxExclusiveAmount` 90,00 iken
+`TaxSubtotal/TaxableAmount` 100,00 yazıyordu. Artırımda da aynısı oluyordu.
+Ölçüm: rastgele 1.000 faturaya belge iskontosu/artırımı eklendiğinde 5.0.0,
+üretebildiği 994 XML'in 972'sinde matrahı KDV'yi yeniden hesaplamadan kaydırdı.
+
+- Masraf düzlemi dışında verilen her `documentAllowanceCharges` kalemi
+  **`DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED`** hatası verir: *"Belge düzeyi
+  iskonto/artırım desteklenmiyor; iskontoyu satırlara dağıtın"*. HKS masraf kodu
+  taşıyan kalem eskisi gibi "yanlış profil" (`INVALID_VALUE`) hatası alır.
+- Kapı iki yerdedir: girdi doğrulayıcısı (`validateHksCharges`,
+  `InvoiceSession.validate()`) ve XML üretimi (`mapSimpleToInvoiceInput`).
+  İkincisi doğrulama seviyesinden bağımsızdır: `validationLevel: 'none'` ve
+  `buildUnsafe` iskontoyu **sessizce düşürmez**, hata verir. Oturum hatayı tek
+  kez bildirir.
+- Hesap motoru bu kalemleri hesaba katmaz: `calculation.documentAllowanceCharges`
+  masraf düzlemi dışında boş dizidir, matrah ve KDV kaymaz.
+- **Geçiş:** iskontoyu kalemlere dağıtıp `lines[i].allowancePercent` olarak verin.
+  Satır iskontosu KDV matrahını doğru küçültür (100 TL, %10 → matrah 90,00, KDV
+  18,00). Kütüphane dağıtım yardımcısı **sunmaz**; hangi kaleme ne kadar
+  düşüleceği çağıranın kararıdır.
+- `examples-matrix/valid/temelfatura-satis-document-indirim` geçersiz senaryolara
+  taşındı (`invalid/document-allowance-charge-unsupported/…-belge-iskontosu`), belge
+  artırımı için ikinci bir geçersiz senaryo eklendi.
+
+### Değişmeyen — HKS komisyoncu masraf düzlemi
+
+`HKS`+`KOMISYONCU` ve `EARSIVFATURA`+`HKSKOMISYONCU` düzleminde
+`documentAllowanceCharges` aynen çalışır: 18 kodluk kapalı küme (`HKS_CHARGE_CODES`,
+KDV ikizleri `HKS_CHARGE_VAT_TWIN` — `reason + "KDV"` türetimi yok),
+`chargeIndicator: false`, toplam `ChargeTotalAmount`a yazılır ve **yalnız ödenecek
+tutardan düşülür**; satış matrahına ve KDV'ye dokunmaz. API adı, tipler
+(`SimpleDocumentAllowanceChargeInput`, `CalculatedDocumentAllowanceCharge`) ve oturum
+dörtlüsü (`add/update/remove/setDocumentAllowanceCharge(s)`) değişmedi. Ölçüm: 2.500
+rastgele HKS masraflı belgede (2.000 `HKS/KOMISYONCU` + 500
+`EARSIVFATURA/HKSKOMISYONCU`) XML ve hesap çıktısı 5.0.0 ile birebir aynı.
+
+### Çıktı değişimi
+
+Yalnız masraf düzlemi dışında `documentAllowanceCharges` veren girdiler: bunlar
+artık XML üretmez, hata verir. Başka hiçbir çıktı değişmedi. Ölçüm (5.0.0 npm
+tarball'ı ↔ 5.1.0, aynı girdiler):
+
+| Örneklem | Belge | XML birebir aynı |
+|---|---|---|
+| Rastgele fatura (146 fikstür şablonundan, 62 profil/tip, 1–39 satır, 2–4 ondalıklı fiyat, iskonto, tevkifat, ÖTV/ÖİV/damga zinciri, döviz) | 10.000 | 10.000 |
+| Kütüphanenin fatura fikstürleri (`examples/`, `examples-matrix/valid/`) | 146 | 145 (1'i iki sürümde de aynı doğrulama hatası) |
+| Rastgele e-SMM + e-MM | 4.000 | 4.000 |
+| Rastgele HKS masraflı belge | 2.500 | 2.500 |
+
+Hesap motoru çıktısı (`monetary`, vergi alt toplamları, satırlar) 10.000 faturanın
+10.000'inde birebir aynı.
+
+### Yuvarlama — değişiklik YOK
+
+Hesap tam hassasiyetle yapılır; tutarlar yalnız XML serileştirmesinde 2 haneye
+yuvarlanır. GİB şematronu toplam eşitliğini denetlemez. Bu bilinçli bir karardır;
+sonucu (XML'in kendi içinde kuruş düzeyinde tutmayabilmesi) README "Yuvarlama ve
+iskonto" bölümünde ve `docs/surum-politikasi.md` §4'te örnekleriyle yazıldı.
+
+### Sürüm politikası ve etiketler
+
+- **`docs/surum-politikasi.md`** — semver kuralları (XML çıktısını değiştiren her
+  sürüm en az MINOR ve "Çıktı değişimi" başlığı taşır; tip/API kaldırma MAJOR),
+  her yayında `vX.Y.Z` etiketi + GitHub Release + CHANGELOG girdisi zorunluluğu,
+  yayın kontrol listesi, yuvarlama davranışı.
+- **Bilinçli istisna:** önceden geçerli bir girdinin hata vermesi kurala göre MAJOR'dır.
+  5.1.0 MINOR yayımlandı: bilinen tek tüketici bu yüzeyi yalnız HKS masraf
+  düzleminde kullanıyor (o düzlem değişmedi) ve kaldırılan yüzey yanlış vergi
+  üretiyordu.
+- **`prepublishOnly` yayın kapısı** — `scripts/check-release.mjs`: çalışma ağacı
+  temiz, HEAD'de `v<version>` etiketi var, CHANGELOG'da girdi var. Sonra
+  `test:strict` ve `build`.
+- **Geriye dönük etiketler (15):** `v1.0.0`, `v1.1.1`, `v1.4.1`, `v2.2.2`, `v4.1.1`,
+  `v4.1.2`, `v4.1.5`, `v4.1.6`, `v4.4.2`, `v4.5.0`, `v4.5.1`, `v4.5.2`, `v4.5.3`,
+  `v4.6.0`, `v5.0.0`. Her biri, npm tarball'ındaki `dist/` dosyalarını **bayt bayt**
+  yeniden üreten commit'e atıldı. 8 sürüm (1.1.0, 1.2.0–1.2.3, 1.3.0, 1.4.0, 1.4.2)
+  için böyle bir commit depoda yok; bunlar etiketlenmedi. Tablo ve yöntem:
+  `docs/surum-politikasi.md` §6.
+- CHANGELOG'da npm'de hiç yayımlanmamış 9 girdi (2.0.0, 2.1.0, 4.1.3, 4.1.4, 4.2.0,
+  4.3.0, 4.4.0, 4.4.1, 4.5.5) silinmedi, başlıklarına **"yayımlanmadı"** ve
+  içeriklerinin npm'e ilk çıktığı sürüm yazıldı.
+
 ## [5.0.0] — 2026-09-22
 
 > **S0→S5d: GÜVENLİK AĞI, UBL BİLEŞENLERİNİN TEKLEŞMESİ, KURAL KATMANI, KLASÖR
@@ -554,7 +647,9 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 - String enum'lara DOKUNULMADI: üreteç `SimpleDespatchInput`'u hedeflediği için
   nominal-enum sorunu yapısal olarak düştü.
 
-## [4.5.5] — 2026-09-11
+## [4.5.5] — 2026-09-11 — yayımlanmadı
+
+> ⚠️ **npm'de yayımlanmadı.** Bu girdideki değişiklikler npm'e ilk kez **4.6.0** ile çıktı.
 
 > 4.5.4 YAYIMLANMADI; içeriği bu sürümde toplandı. İki iş var: **İHRACAT
 > kusurlarının onarımı** (`Fixed`) ve **çoklu iade referansı desteği** (`Added`).
@@ -1092,7 +1187,9 @@ Madde başına ayrı dosya (47 yeni test):
   liste dışı YTB* önekinin kapsam dışı olması ve **marka boşken hata
   VERİLMEDİĞİNİ** kanıtlayan regresyon testi.
 
-## [4.4.1] — 2026-09-05
+## [4.4.1] — 2026-09-05 — yayımlanmadı
+
+> ⚠️ **npm'de yayımlanmadı.** Bu girdideki değişiklikler npm'e ilk kez **4.4.2** ile çıktı.
 
 ### Fixed
 
@@ -1157,7 +1254,9 @@ Madde başına ayrı dosya (47 yeni test):
   SADIK OKUMA yoludur, beyan edileni korur ki doğrulayıcılar raporlayabilsin.
   `IHRACAT` yalnız `isExport: true` ile kurulur.
 
-## [4.4.0] — 2026-09-05
+## [4.4.0] — 2026-09-05 — yayımlanmadı
+
+> ⚠️ **npm'de yayımlanmadı.** Bu girdideki değişiklikler npm'e ilk kez **4.4.2** ile çıktı.
 
 ### Changed
 
@@ -1267,7 +1366,9 @@ Madde başına ayrı dosya (47 yeni test):
   ZORUNLULUĞU hâlâ yalnız `ProfileID=HKS`'tedir (şematron kuralı profile
   bağlıdır) ve `hks-kunyeno-validator` bunu değiştirmez.
 
-## [4.3.0] — 2026-09-05
+## [4.3.0] — 2026-09-05 — yayımlanmadı
+
+> ⚠️ **npm'de yayımlanmadı.** Bu girdideki değişiklikler npm'e ilk kez **4.4.2** ile çıktı.
 
 ### Added
 
@@ -1305,7 +1406,9 @@ Madde başına ayrı dosya (47 yeni test):
   Tüm kurallar "doluysa doğru olmalı" biçimindedir; boş taslak alanı hata
   üretmez (istisna: `uuid`, portal onu mount'ta yazar).
 
-## [4.2.0] — 2026-09-04
+## [4.2.0] — 2026-09-04 — yayımlanmadı
+
+> ⚠️ **npm'de yayımlanmadı.** Bu girdideki değişiklikler npm'e ilk kez **4.4.2** ile çıktı.
 
 MimForge kaplama seferinin (534 önizleme, 73/73 profil×tip çifti) kütüphane
 tarafındaki bulguları. İhracat profilleri (`IHRACAT`, `YOLCUBERABERFATURA`)
@@ -1482,7 +1585,9 @@ bilinçli olarak KAPSAM DIŞI — onlara ayrı bir ekran gelecek.
   `temelfatura-iade-tevkifatli-dinamik-650` fixture'ı `needs-manual-check`
   damgasıyla bu kusuru pinler.
 
-## [4.1.4] — 2026-09-04
+## [4.1.4] — 2026-09-04 — yayımlanmadı
+
+> ⚠️ **npm'de yayımlanmadı.** Bu girdideki değişiklikler npm'e ilk kez **4.1.5** ile çıktı.
 
 ### Fixed
 
@@ -1515,7 +1620,9 @@ bilinçli olarak KAPSAM DIŞI — onlara ayrı bir ekran gelecek.
 
 Test paketi: **102 dosya / 2207 test**, sıfır regresyon.
 
-## [4.1.3] — 2026-09-04
+## [4.1.3] — 2026-09-04 — yayımlanmadı
+
+> ⚠️ **npm'de yayımlanmadı.** Bu girdideki değişiklikler npm'e ilk kez **4.1.5** ile çıktı.
 
 > ### HKS faturası kesilemiyordu; iki doğrulama kuralı UI yüzeyine hiç ulaşmıyordu
 >
@@ -2551,7 +2658,9 @@ Detay: `README.md` §2.X, `audit/sprint-08i-tasarim.md`.
 
 ---
 
-## [2.1.0] — 2026-04-27
+## [2.1.0] — 2026-04-27 — yayımlanmadı
+
+> ⚠️ **npm'de yayımlanmadı.** Bu girdideki değişiklikler npm'e ilk kez **2.2.0** ile çıktı.
 
 **Reactive InvoiceSession (AR-10) — Faz 1 / Çekirdek.** Mimsoft Next.js entegrasyonu için path-based update API + field-level events + line-level FieldVisibility + validator pipeline + B-78 köprü. Sprint 8h (14 atomik commit).
 
@@ -2622,7 +2731,9 @@ Detay: `README.md` §2, `audit/sprint-08h-plan.md`.
 
 ---
 
-## [2.0.0] — 2026-04-23
+## [2.0.0] — 2026-04-23 — yayımlanmadı
+
+> ⚠️ **npm'de yayımlanmadı.** Bu girdideki değişiklikler npm'e ilk kez **2.2.0** ile çıktı.
 
 **İlk feature-complete public sürüm.** `1.4.2`'den `2.0.0`'a atlamanın sebebi: çok sayıda breaking change, validator suite revizyonu, mimari kararlar (M1-M10, AR-1..AR-8). Konsolidasyon: Sprint 1-8b implementation log'ları.
 
@@ -2989,6 +3100,6 @@ Detay: `audit/b-new-v2-audit.md` (7 senaryo + Berkay kararları + Sprint 8g sonu
 
 ---
 
-## [1.4.2] — 2026-02-XX
+## [1.4.2] — 2026-03-24 (npm yayın tarihi)
 
 Denetim öncesi son dev sürüm. Detay: git log + `audit/denetim-01..06.md`.
