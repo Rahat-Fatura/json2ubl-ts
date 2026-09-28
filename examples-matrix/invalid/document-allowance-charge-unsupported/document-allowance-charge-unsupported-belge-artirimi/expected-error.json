@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED",
+      "path": "documentAllowanceCharges[0]",
+      "messageIncludes": "Belge düzeyi iskonto/artırım desteklenmiyor"
+    }
+  ]
+}

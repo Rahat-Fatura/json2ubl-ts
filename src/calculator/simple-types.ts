@@ -620,43 +620,46 @@ export interface SimplePeriodInput {
 }
 
 /**
- * Belge düzeyi iskonto / masraf kalemi → belge kökündeki `cac:AllowanceCharge`.
+ * HKS komisyoncu MASRAF kalemi → belge kökündeki `cac:AllowanceCharge`.
  *
- * UBL-TR Fatura V1.0 §2.3.36: *"fatura bütünü üzerinden iskonto veya artırım
- * yapılması halinde kullanılacaktır"* — Seçimli (0…n).
+ * 🔴 5.1.0 — YALNIZ HKS masraf düzleminde (`HKS`+`KOMISYONCU` /
+ * `EARSIVFATURA`+`HKSKOMISYONCU`) kabul edilir. Genel belge düzeyi
+ * iskonto/artırım KALDIRILDI: 5.0.0'da KDV matrahını kaydırıp KDV'yi yeniden
+ * hesaplamıyordu (100 TL + %20 + %10 belge iskontosu → KDV 20,00; doğrusu
+ * 18,00). Başka profilde verilirse `DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED`
+ * hatası alınır; iskonto kalemlere dağıtılıp `lines[i].allowancePercent`
+ * olarak verilmelidir. Kütüphane dağıtım yardımcısı sunmaz — hangi kaleme ne
+ * kadar düşüleceği çağıranın kararıdır.
  *
- * İKİ DÜZLEMDE farklı okunur; ayrım `isHksChargePlane` yüklemiyle
- * YAPILANDIRMAYA çıkarılmıştır:
- *
- * | Eksen | Genel UBL düzlemi | HKS masraf düzlemi (`HKS`+`KOMISYONCU`) |
- * |---|---|---|
- * | `percent` → XML | `MultiplierFactorNumeric = percent / 100` (kılavuz: ORAN) | `= percent` (GİB XSLT'si YÜZDE basar) |
- * | toplam yönü | iskonto → `AllowanceTotalAmount`, artırım → `ChargeTotalAmount` | tamamı `ChargeTotalAmount`, ödenecekten DÜŞÜLÜR |
- * | `reason` | serbest metin | 18 kodluk KAPALI küme |
+ * Masraf düzleminde:
+ * - `percent` XML'e YÜZDE olarak yazılır (`MultiplierFactorNumeric = percent`;
+ *   GİB XSLT'si yanına `%` basar).
+ * - Toplam `ChargeTotalAmount`a yazılır ve yalnız ÖDENECEK tutardan düşülür;
+ *   satış matrahına ve KDV'ye DOKUNMAZ (müstahsile ödenecekten düşülen masraf).
+ * - `reason` 18 kodluk KAPALI kümedir (`HKS_CHARGE_CODES`).
  *
  * 🔑 **Otorite `amount`tır.** `percent` verilip `amount` verilmezse tutar
  * türetilir (`baseAmount ?? LineExtensionAmount` üzerinden, 2 haneye
- * yuvarlanarak); ikisi de verilirse `amount` kazanır ve oran yalnız gösterime
- * yazılır. GİB'in kendi örneğinde oran ile tutar zaten tutarsızdır (5 ↔ 10) —
- * yani oran denetlenebilir bir bağ taşımaz.
+ * yuvarlanarak); ikisi de verilirse `amount` kazanır ve oran yalnız
+ * gösterime yazılır. GİB'in kendi örneğinde oran ile tutar zaten tutarsızdır
+ * (5 ↔ 10) — yani oran denetlenebilir bir bağ taşımaz.
  */
 export interface SimpleDocumentAllowanceChargeInput {
     /**
      * `cbc:ChargeIndicator` — UBL-TR Ortak §2.2.3: *"Iskonto ise 'false',
      * artırım ise 'true' girilir."*
      *
-     * ⚠️ HKS masraf düzleminde GİB'in kendi örneğinde blokların tamamı `false`
-     * olmasına rağmen toplam `ChargeTotalAmount`a yazılır ve ödenecekten
-     * düşülür. O düzlemde bu bayrak toplam YÖNÜNÜ BELİRLEMEZ
+     * HKS masraf düzleminde ZORUNLU olarak `false`tır (doğrulayıcı `true`yu
+     * reddeder): GİB'in kendi örneğinde blokların tamamı `false`tır ve toplam
+     * yine de ödenecekten düşülür. Bayrak toplam YÖNÜNÜ BELİRLEMEZ
      * (bkz. `document-calculator`).
      */
     chargeIndicator: boolean;
     /**
      * `cbc:AllowanceChargeReason` — sebep.
      *
-     * HKS masraf düzleminde `HKS_CHARGE_CODES` kapalı kümesinden biri olmak
-     * ZORUNDADIR; başka bir dizge GİB'in resmî görüntüsünde hiç çıkmaz. Diğer
-     * profillerde serbest metindir.
+     * `HKS_CHARGE_CODES` kapalı kümesinden biri olmak ZORUNDADIR; başka bir
+     * dizge GİB'in resmî görüntüsünde hiç çıkmaz.
      */
     reason?: string;
     /** Oran (%) — ekranda "%5" yazılan değer `5` olarak verilir. */
@@ -754,13 +757,13 @@ export interface SimpleInvoiceInput {
 
     // ── Belge düzeyi iskonto / masraf ────────────────────────────────────────
     /**
-     * Belge bütünü üzerinden iskonto/artırım kalemleri → kök `cac:AllowanceCharge`.
+     * HKS komisyoncu masraf kalemleri → kök `cac:AllowanceCharge`.
      *
-     * Satır düzeyindeki `lines[i].allowancePercent`ten AYRI eksendir: o kalemin
-     * kendi tutarını küçültür, bu ise belge toplamına dokunur.
+     * 🔴 5.1.0: YALNIZ HKS masraf düzleminde geçerlidir; genel belge düzeyi
+     * iskonto/artırım kaldırıldı (bkz. `SimpleDocumentAllowanceChargeInput`).
+     * İskonto için `lines[i].allowancePercent` kullanılır.
      *
-     * HKS komisyoncu faturasının 18 masraf kalemi bu alandan girer; `reason`
-     * orada `HKS_CHARGE_CODES` kapalı kümesine bağlıdır ve SIRA ANLAMLIDIR
+     * `reason` `HKS_CHARGE_CODES` kapalı kümesine bağlıdır ve SIRA ANLAMLIDIR
      * (GİB'in XSLT'si belge sırasını izler).
      */
     documentAllowanceCharges?: SimpleDocumentAllowanceChargeInput[];

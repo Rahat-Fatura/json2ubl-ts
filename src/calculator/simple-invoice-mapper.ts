@@ -44,6 +44,9 @@ import type {
 } from '../types/common';
 import { isNonEmpty, normalizeTime } from '../utils/formatters';
 import { canBuildCarrierParty } from '../documents/invoice/validators/online-sale-validator';
+import { genericDocumentAllowanceChargeErrors } from '../documents/invoice/validators/hks-charge-validator';
+import { isHksChargePlane } from '../ubltr/vocabulary/hks-charge-codes';
+import { UblBuildError } from '../errors/ubl-build-error';
 
 
 // ─── Ana Dönüşüm Fonksiyonu ────────────────────────────────────────────────────
@@ -60,6 +63,16 @@ export function mapSimpleToInvoiceInput(
 ): InvoiceInput {
   // B-80: precomputed verilirse yeniden calculateDocument çağırma (UUID determinizmi + performans)
   const calculated = precomputed ?? calculateDocument(simple);
+
+  /* 🔴 5.1.0 — genel belge iskontosu/artırımı XML'e GİDEMEZ, doğrulama
+   * seviyesinden BAĞIMSIZ. Hesap motoru bu kalemleri masraf düzlemi dışında
+   * hesaba katmaz; burada da reddedilmeseler `validationLevel: 'none'` altında
+   * kullanıcının verdiği iskonto sessizce kaybolurdu. */
+  const items = simple.documentAllowanceCharges ?? [];
+  if (items.length > 0 && !isHksChargePlane(calculated.profile, calculated.type)) {
+    throw new UblBuildError(genericDocumentAllowanceChargeErrors(items));
+  }
+
   return buildInvoiceInput(simple, calculated);
 }
 
@@ -112,8 +125,8 @@ function buildInvoiceInput(
   /* Belge kökündeki `cac:AllowanceCharge` blokları — İKİ KAYNAK, TEK DİZİ.
    *
    * 1) Satır iskontolarının ÖZETİ (eskiden beri): tek blok, sebepsiz.
-   * 2) Belge düzeyi kalemler (`documentAllowanceCharges`): kullanıcının girdiği
-   *    sırada, HKS'te 18 masraf kalemi.
+   * 2) HKS masraf kalemleri (`documentAllowanceCharges`): kullanıcının girdiği
+   *    sırada, 18 kodluk kapalı kümeden (5.1.0: yalnız HKS masraf düzleminde).
    *
    * 🔴 SIRA ANLAMLIDIR ve özet ÖNDE kalır: GİB'in `general.xslt`'si `for-each`
    * ile BELGE SIRASINI izler. GİB'in kendi HKS örneğinde de aynı şekil vardır —

@@ -1131,27 +1131,10 @@ export const validSpecs: ValidSpec[] = [
       ],
     },
   },
-  // 8. TEMELFATURA+SATIS + belge seviyesi AllowanceCharge
-  {
-    kind: 'invoice', variantSlug: 'document-indirim', profile: 'TEMELFATURA', type: 'SATIS',
-    notes: 'Belge seviyesi AllowanceCharge — %10 global indirim',
-    dimensions: {
-      kdvBreakdown: [20], currency: 'TRY', exchangeRate: false, exemptionCodes: [],
-      withholdingCodes: [], allowanceCharge: { line: false, document: true },
-      lineCount: 1, paymentMeans: false, reducedKdvGate: false, phantomKdv: false,
-      specialIdentifiers: ['allowanceCharge'],
-    },
-    input: {
-      id: 'MTX2026000000918',
-      uuid: 'a1000918-0001-4000-8001-000000000918',
-      datetime: '2026-04-24T10:00:00',
-      profile: 'TEMELFATURA', type: 'SATIS', currencyCode: 'TRY',
-      documentAllowanceCharges: [{ reason: 'Toptan indirim', chargeIndicator: false, amount: 100 }],
-      sender: { ...STANDARD_SENDER },
-      customer: { ...STANDARD_CUSTOMER },
-      lines: [{ name: 'İndirimli ürün', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
-    },
-  },
+  // 8. (5.1.0) TEMELFATURA+SATIS + belge seviyesi AllowanceCharge senaryosu
+  //    GEÇERSİZ senaryolara taşındı: `document-allowance-charge-unsupported-belge-iskontosu`.
+  //    5.0.0'da bu girdi KDV'yi yeniden hesaplamadan matrahı 1000 → 900'e
+  //    kaydırıyordu (KDV 200,00; doğrusu 180,00).
 
   // ═════════════════════════════════════════════════════════════════════
   // TICARIFATURA — 8 baseline (SATIS/TEVKIFAT/~TEVKIFATIADE~/ISTISNA/
@@ -3576,6 +3559,37 @@ function baseInvoiceInput(id: string, uuid: string): SimpleInvoiceInput {
 }
 
 export const invalidSpecs: InvalidSpec[] = [
+  // ═════════════════════════════════════════════════════════════════════
+  // 5.1.0 — genel belge düzeyi iskonto/artırım KALDIRILDI
+  // ═════════════════════════════════════════════════════════════════════
+  {
+    kind: 'invalid-invoice', variantSlug: 'belge-iskontosu',
+    primaryCode: 'DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED',
+    description: 'Genel belge düzeyi iskonto (5.1.0\'da kaldırıldı; 5.0.0 KDV\'yi yeniden hesaplamıyordu)',
+    profileContext: 'TEMELFATURA', typeContext: 'SATIS',
+    expectedErrors: [{
+      code: 'DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED',
+      path: 'documentAllowanceCharges[0]',
+      messageIncludes: 'iskontoyu satırlara dağıtın',
+    }],
+    validationLevel: 'strict', isMultiError: false,
+    input: { ...baseInvoiceInput('MTX2026000000918', 'a1000918-0001-4000-8001-000000000918'),
+      documentAllowanceCharges: [{ reason: 'Toptan indirim', chargeIndicator: false, amount: 100 }] },
+  },
+  {
+    kind: 'invalid-invoice', variantSlug: 'belge-artirimi',
+    primaryCode: 'DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED',
+    description: 'Genel belge düzeyi artırım (5.1.0\'da kaldırıldı)',
+    profileContext: 'TEMELFATURA', typeContext: 'SATIS',
+    expectedErrors: [{
+      code: 'DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED',
+      path: 'documentAllowanceCharges[0]',
+      messageIncludes: 'Belge düzeyi iskonto/artırım desteklenmiyor',
+    }],
+    validationLevel: 'strict', isMultiError: false,
+    input: { ...baseInvoiceInput('MTX2026000000919', 'a1000919-0001-4000-8001-000000000919'),
+      documentAllowanceCharges: [{ reason: 'Nakliye', chargeIndicator: true, amount: 50 }] },
+  },
   // ═════════════════════════════════════════════════════════════════════
   // Sınıf A — Common errors (MISSING_FIELD / INVALID_FORMAT / INVALID_VALUE
   //                          / INVALID_PROFILE / PROFILE_REQUIREMENT / TYPE_REQUIREMENT)

@@ -1,0 +1,16 @@
+{
+  "id": "document-allowance-charge-unsupported-belge-artirimi",
+  "kind": "invalid-invoice",
+  "primaryCode": "DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED",
+  "errorCodes": [
+    "DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED"
+  ],
+  "description": "Genel belge düzeyi artırım (5.1.0'da kaldırıldı)",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-09-28T15:38:34.750Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

@@ -9,7 +9,16 @@
  * otomatik kapı uyarmaz — belge GİB'e gider, KABUL EDİLİR, hata ancak mal
  * sahibine yanlış tutar ödendiğinde görünür. O yüzden kapı BURADA kurulur.
  *
- * ## Dört kural (hepsi fail-closed)
+ * ## Beş kural (hepsi fail-closed)
+ *
+ * 0. **🔴 5.1.0 — genel belge iskontosu/artırımı YOK.** Masraf düzlemi DIŞINDA
+ *    `documentAllowanceCharges` kalemi verilemez
+ *    (`DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED`). 5.0.0 bu kalemleri matrahtan
+ *    düşüp KDV'yi yeniden hesaplamıyordu: 100 TL + %20 + %10 belge iskontosu →
+ *    matrah 90,00, KDV 20,00. İskonto kalemlere dağıtılıp satır iskontosu
+ *    olarak verilmelidir. Aynı kapı XML üretiminde de vardır
+ *    (`mapSimpleToInvoiceInput`), yani `validationLevel: 'none'` bile bu
+ *    kalemleri SESSİZCE düşürmez.
  *
  * 1. **Kapalı küme.** Masraf düzleminde her kalemin `reason` değeri
  *    `HKS_CHARGE_CODES` içinden olmalıdır. Liste dışı dizge şematrondan geçer
@@ -55,7 +64,11 @@ import {
   HKS_CHARGE_PLANE_FORBIDDEN_TAX_CODES,
   isHksChargePlane,
 } from '../../../ubltr/vocabulary/hks-charge-codes';
-import { invalidValue, missingField } from '../../../ubltr/rules/validation-result';
+import {
+  documentAllowanceChargeUnsupported,
+  invalidValue,
+  missingField,
+} from '../../../ubltr/rules/validation-result';
 
 /** Kullanıcı mesajlarında kümeyi tek satırda göstermek için. */
 const CODE_LIST_TEXT = HKS_CHARGE_CODES.join(', ');
@@ -68,18 +81,7 @@ export function validateHksCharges(input: SimpleInvoiceInput): ValidationError[]
   const chargePlane = isHksChargePlane(profile, type);
 
   if (!chargePlane) {
-    // Kural 2 — kaçak kod yasağı.
-    items.forEach((item, i) => {
-      const reason = item.reason?.trim() ?? '';
-      if (reason !== '' && HKS_CHARGE_CODE_SET.has(reason)) {
-        errors.push(invalidValue(
-          `documentAllowanceCharges[${i}].reason`,
-          'HKS masraf kodu YALNIZ ProfileID=HKS + InvoiceTypeCode=KOMISYONCU '
-          + '(veya EARSIVFATURA + HKSKOMISYONCU) belgesinde kullanılabilir',
-          reason,
-        ));
-      }
-    });
+    errors.push(...genericDocumentAllowanceChargeErrors(items));
     return errors;
   }
 
@@ -145,4 +147,34 @@ export function validateHksCharges(input: SimpleInvoiceInput): ValidationError[]
   });
 
   return errors;
+}
+
+/**
+ * Masraf düzlemi DIŞINDAKİ belge düzeyi kalemlerin hataları (kural 0 + 2).
+ *
+ * HKS masraf kodu taşıyan kalem "yanlış profil" hatasını alır (kural 2 —
+ * kullanıcı büyük olasılıkla profili yanlış seçmiştir); geri kalan her kalem
+ * genel belge iskontosu/artırımıdır ve 5.1.0'da desteklenmez (kural 0).
+ *
+ * `mapSimpleToInvoiceInput` da bu fonksiyonu çağırır: kapı doğrulama seviyesine
+ * bağlı DEĞİLDİR.
+ */
+export function genericDocumentAllowanceChargeErrors(
+  items: ReadonlyArray<{ reason?: string; chargeIndicator?: boolean }>,
+): ValidationError[] {
+  return items.map((item, i) => {
+    const reason = item.reason?.trim() ?? '';
+    if (reason !== '' && HKS_CHARGE_CODE_SET.has(reason)) {
+      return invalidValue(
+        `documentAllowanceCharges[${i}].reason`,
+        'HKS masraf kodu YALNIZ ProfileID=HKS + InvoiceTypeCode=KOMISYONCU '
+        + '(veya EARSIVFATURA + HKSKOMISYONCU) belgesinde kullanılabilir',
+        reason,
+      );
+    }
+    return documentAllowanceChargeUnsupported(
+      `documentAllowanceCharges[${i}]`,
+      item.chargeIndicator ? 'belge düzeyi artırım' : 'belge düzeyi iskonto',
+    );
+  });
 }

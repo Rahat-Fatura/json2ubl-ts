@@ -7,10 +7,10 @@ Sprint 8e (Publish Öncesi Kapsam Doğrulama) + Sprint 8f (Bug hotfix + kapsam g
 ## 📊 Özet (Dashboard)
 
 - **15 profil** × **17 tip** — PROFILE_TYPE_MATRIX'te **65 kombinasyon** tanımlı
-- **121 valid senaryo** (114 invoice + 7 despatch)
-- **47 invalid senaryo** — 19 farklı error code kapsıyor
+- **120 valid senaryo** (113 invoice + 7 despatch)
+- **49 invalid senaryo** — 20 farklı error code kapsıyor
 - **Coverage:** 62/65 kombinasyon (%95.4)
-- **Toplam:** 168 senaryo
+- **Toplam:** 169 senaryo
 
 ## Kullanım
 
@@ -39,7 +39,7 @@ npx tsx examples-matrix/find.ts --has-withholding --currency=USD
 | ILAC_TIBBICIHAZ | — | 2 | 1 | 1 | — | — | — | — | — | 3 | — | — | 1 | — | — | — | — | **8** |
 | KAMU | — | 1 | 1 | 2 | 1 | 1 | 1 | — | — | 3 | 1 | — | 2 | — | — | — | — | **13** |
 | OZELFATURA | — | — | — | 1 | — | — | — | — | — | — | — | — | — | — | — | — | — | **1** |
-| TEMELFATURA | — | 3 | 2 | 4 | 1 | 1 | 1 | — | — | 9 | 2 | — | 2 | — | — | — | — | **25** |
+| TEMELFATURA | — | 3 | 2 | 4 | 1 | 1 | 1 | — | — | 8 | 2 | — | 2 | — | — | — | — | **24** |
 | TICARIFATURA | — | — | 1 | 2 | 1 | 1 | 2 | — | — | 3 | 1 | — | 2 | — | — | — | — | **13** |
 | YATIRIMTESVIK | — | 3 | — | 2 | — | — | — | — | — | 3 | — | — | 1 | — | — | — | — | **9** |
 | YOLCUBERABERFATURA | — | — | — | 2 | — | — | — | — | — | — | — | — | — | — | — | — | — | **2** |
@@ -63,6 +63,7 @@ INVALID_FORMAT                            ████████████�
 INVALID_VALUE                             █████████████ 5
 TYPE_REQUIREMENT                          ███████████ 4
 YATIRIMTESVIK_REQUIRES_YTBNO              ████████ 3
+DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED     █████ 2
 ENERJI_INVOICE_PERIOD_REQUIRED            █████ 2
 CROSS_MATRIX                              ███ 1
 ENERJI_CUSTOMER_PLAKA_REQUIRED            ███ 1
@@ -139,8 +140,8 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 |---|---|---|---|---|---|---|
 | [hks-komisyoncu-baseline](valid/hks/hks-komisyoncu-baseline/) | KOMISYONCU | baseline | 10 | TRY | kunyeno | Baseline — HKS+KOMISYONCU (e-Fatura düzlemi), komisyoncu satış |
 | [hks-komisyoncu-masraflar](valid/hks/hks-komisyoncu-masraflar/) | KOMISYONCU | masraflar | 10 | TRY | kunyeno, hksCharges | HKS+KOMISYONCU — 18 masraf kalemi, ChargeTotalAmount ödenecekten DÜŞÜLÜR. CANLI GİB paketi (xslt-service :8081, şematron 2026-08-04) 0 ihlalle yeşil — AMA bu toplam zincirinin kanıtı DEĞİLDİR: ödenecek tutarı 2.370,60 yerine 4.229,40 yazan (masrafı EKLEYEN) bozuk kopya da 0 hatayla yeşil döndü. Zincirin gerçek kanıtı GİB general.xslt çıktısıdır: "Toplam Masraflar 929,40 TL" + "Ödenecek Tutar 2.370,60 TL". |
-| [hks-satis-baseline](valid/hks/hks-satis-baseline/) | SATIS | baseline | 10 | TRY | kunyeno | Baseline — HKS+SATIS (e-Fatura düzlemi), KUNYENO 19-char per line |
-| [hks-satis-coklu-kunye](valid/hks/hks-satis-coklu-kunye/) | SATIS | coklu-kunye | 20 | TRY | kunyeNo | HKS+SATIS — 2 satır farklı KUNYENO (satır başına TAM BİR künye) |
+| [hks-satis-baseline](valid/hks/hks-satis-baseline/) | SATIS | baseline | 10 | TRY | kunyeno, malsahibi | Baseline — HKS+SATIS (e-Fatura düzlemi), KUNYENO 19-char per line + mal sahibi ikilisi (K9: satış ikizinde ZORUNLU) |
+| [hks-satis-coklu-kunye](valid/hks/hks-satis-coklu-kunye/) | SATIS | coklu-kunye | 20 | TRY | kunyeNo, malsahibi | HKS+SATIS — 2 satır farklı KUNYENO (satır başına TAM BİR künye) + her satırda mal sahibi ikilisi (K9) |
 | [hks-satis-malsahibi](valid/hks/hks-satis-malsahibi/) | SATIS | malsahibi | 10 | TRY | kunyeno, malsahibi | HKS+SATIS — KUNYENO + MALSAHIBIADSOYADUNVAN + MALSAHIBIVKNTCKN üçlüsü |
 
 ### HKSIRSALIYE (1)
@@ -214,7 +215,7 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 |---|---|---|---|---|---|---|
 | [ozelfatura-istisna-baseline](valid/ozelfatura/ozelfatura-istisna-baseline/) | ISTISNA | baseline | 0 | TRY | — | Baseline — OZELFATURA+ISTISNA (genel istisna profili) |
 
-### TEMELFATURA (25)
+### TEMELFATURA (24)
 
 | ID | Tip | Slug | KDV | Döviz | Özellikler | Notlar |
 |---|---|---|---|---|---|---|
@@ -233,7 +234,6 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 | [temelfatura-satis-baseline](valid/temelfatura/temelfatura-satis-baseline/) | SATIS | baseline | 20 | TRY | — | Baseline — TEMELFATURA+SATIS, tek satır %20 KDV, TRY |
 | [temelfatura-satis-coklu-kdv](valid/temelfatura/temelfatura-satis-coklu-kdv/) | SATIS | coklu-kdv | 0,10,20 | TRY | — | Çoklu satır — karışık KDV oranları (%0 kodsuz 351, %10, %20) |
 | [temelfatura-satis-coklu-satir](valid/temelfatura/temelfatura-satis-coklu-satir/) | SATIS | coklu-satir | 20 | TRY | — | Çoklu satır — 3 satır aynı KDV %20 |
-| [temelfatura-satis-document-indirim](valid/temelfatura/temelfatura-satis-document-indirim/) | SATIS | document-indirim | 20 | TRY | allowanceCharge | Belge seviyesi AllowanceCharge — %10 global indirim |
 | [temelfatura-satis-eur-doviz](valid/temelfatura/temelfatura-satis-eur-doviz/) | SATIS | eur-doviz | 20 | EUR | — | Yabancı para birimi — EUR + ExchangeRate 35.5 |
 | [temelfatura-satis-kdv-1](valid/temelfatura/temelfatura-satis-kdv-1/) | SATIS | kdv-1 | 1 | TRY | — | TEMELFATURA+SATIS %1 KDV (ekmek, süt gibi düşük kategori) |
 | [temelfatura-satis-kdv-10](valid/temelfatura/temelfatura-satis-kdv-10/) | SATIS | kdv-10 | 10 | TRY | — | TEMELFATURA+SATIS %10 KDV (gıda / temel ihtiyaç kategorisi) |
@@ -299,6 +299,13 @@ YTB_ISTISNA_REQUIRES_NONZERO_KDV_PERCENT  ███ 1
 | ID | Profil bağlamı | Tip bağlamı | Multi-error | Açıklama |
 |---|---|---|---|---|
 | [cross-matrix-cross-matrix-ihracat-satis](invalid/cross-matrix/cross-matrix-cross-matrix-ihracat-satis/) | IHRACAT | SATIS | Yes | IHRACAT profili + SATIS tipi (sadece ISTISNA izinli) |
+
+### DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED (2)
+
+| ID | Profil bağlamı | Tip bağlamı | Multi-error | Açıklama |
+|---|---|---|---|---|
+| [document-allowance-charge-unsupported-belge-artirimi](invalid/document-allowance-charge-unsupported/document-allowance-charge-unsupported-belge-artirimi/) | TEMELFATURA | SATIS | No | Genel belge düzeyi artırım (5.1.0'da kaldırıldı) |
+| [document-allowance-charge-unsupported-belge-iskontosu](invalid/document-allowance-charge-unsupported/document-allowance-charge-unsupported-belge-iskontosu/) | TEMELFATURA | SATIS | No | Genel belge düzeyi iskonto (5.1.0'da kaldırıldı; 5.0.0 KDV'yi yeniden hesaplamıyordu) |
 
 ### ENERJI_CUSTOMER_PLAKA_REQUIRED (1)
 

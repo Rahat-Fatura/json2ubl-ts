@@ -1,17 +1,10 @@
 {
-  "id": "MTX2026000000918",
-  "uuid": "a1000918-0001-4000-8001-000000000918",
+  "id": "MTX2026000000919",
+  "uuid": "a1000919-0001-4000-8001-000000000919",
   "datetime": "2026-04-24T10:00:00",
   "profile": "TEMELFATURA",
   "type": "SATIS",
   "currencyCode": "TRY",
-  "documentAllowanceCharges": [
-    {
-      "reason": "Toptan indirim",
-      "chargeIndicator": false,
-      "amount": 100
-    }
-  ],
   "sender": {
     "taxNumber": "1234567890",
     "name": "Matrix Test Satıcı A.Ş.",
@@ -30,11 +23,18 @@
   },
   "lines": [
     {
-      "name": "İndirimli ürün",
+      "name": "Test satır",
       "quantity": 1,
       "price": 1000,
       "unitCode": "Adet",
       "kdvPercent": 20
+    }
+  ],
+  "documentAllowanceCharges": [
+    {
+      "reason": "Nakliye",
+      "chargeIndicator": true,
+      "amount": 50
     }
   ]
 }

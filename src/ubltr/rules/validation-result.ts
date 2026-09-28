@@ -64,3 +64,25 @@ export function yatirimTesvikRequiresYtbNo(path: string, message: string): Valid
     path,
   };
 }
+
+/**
+ * 5.1.0 — genel belge düzeyi iskonto/artırım KALDIRILDI.
+ *
+ * 5.0.0'da bu düzlem KDV'yi yeniden hesaplamadan matrahı kaydırıyor ve yanlış
+ * vergi üretiyordu (KDVK md.25/a). Kütüphane dağıtım yardımcısı KOYMAZ:
+ * iskontoyu kalemlere dağıtmak çağıranın kararıdır (hangi kaleme ne kadar).
+ * Tek istisna HKS komisyoncu masraflarıdır; onlar ödenecekten düşülen
+ * kesintidir, matraha dokunmaz.
+ */
+export function documentAllowanceChargeUnsupported(path: string, actual?: string): ValidationError {
+  return {
+    code: 'DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED',
+    message:
+      'Belge düzeyi iskonto/artırım desteklenmiyor; iskontoyu satırlara dağıtın '
+      + '(satır iskontosu: lines[].allowancePercent). Belge düzeyinde yalnız HKS komisyoncu '
+      + 'masrafları verilebilir (ProfileID=HKS + KOMISYONCU veya EARSIVFATURA + HKSKOMISYONCU).',
+    path,
+    expected: 'Kalemlere dağıtılmış satır iskontosu',
+    actual,
+  };
+}

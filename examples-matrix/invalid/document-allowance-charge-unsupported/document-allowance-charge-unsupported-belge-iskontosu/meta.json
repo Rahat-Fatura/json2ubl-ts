@@ -1,0 +1,16 @@
+{
+  "id": "document-allowance-charge-unsupported-belge-iskontosu",
+  "kind": "invalid-invoice",
+  "primaryCode": "DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED",
+  "errorCodes": [
+    "DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED"
+  ],
+  "description": "Genel belge düzeyi iskonto (5.1.0'da kaldırıldı; 5.0.0 KDV'yi yeniden hesaplamıyordu)",
+  "profileContext": "TEMELFATURA",
+  "typeContext": "SATIS",
+  "validationLevel": "strict",
+  "isMultiError": false,
+  "generatedAt": "2026-09-28T15:38:34.210Z",
+  "generatedBy": "examples-matrix/scaffold.ts",
+  "review": "auto-ok"
+}

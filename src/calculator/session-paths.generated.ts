@@ -556,13 +556,13 @@ export const SessionPaths = {
   additionalDocumentAttachmentCharacterSetCode: (i: number) => `additionalDocuments[${i}].attachment.characterSetCode` as `additionalDocuments[${number}].attachment.characterSetCode`,
 
   /**
-   * `cbc:ChargeIndicator` — UBL-TR Ortak §2.2.3: *"Iskonto ise 'false', artırım ise 'true' girilir."* ⚠️ HKS masraf düzleminde GİB'in kendi örneğinde blokların tamamı `false` olmasına rağmen toplam `ChargeTotalAmount`a yazılır ve ödenecekten düşülür. O düzlemde bu bayrak toplam YÖNÜNÜ BELİRLEMEZ (bkz. `document-calculator`).
+   * `cbc:ChargeIndicator` — UBL-TR Ortak §2.2.3: *"Iskonto ise 'false', artırım ise 'true' girilir."* HKS masraf düzleminde ZORUNLU olarak `false`tır (doğrulayıcı `true`yu reddeder): GİB'in kendi örneğinde blokların tamamı `false`tır ve toplam yine de ödenecekten düşülür. Bayrak toplam YÖNÜNÜ BELİRLEMEZ (bkz. `document-calculator`).
    * Expected type: boolean
    */
   documentAllowanceChargeChargeIndicator: (i: number) => `documentAllowanceCharges[${i}].chargeIndicator` as `documentAllowanceCharges[${number}].chargeIndicator`,
 
   /**
-   * `cbc:AllowanceChargeReason` — sebep. HKS masraf düzleminde `HKS_CHARGE_CODES` kapalı kümesinden biri olmak ZORUNDADIR; başka bir dizge GİB'in resmî görüntüsünde hiç çıkmaz. Diğer profillerde serbest metindir.
+   * `cbc:AllowanceChargeReason` — sebep. `HKS_CHARGE_CODES` kapalı kümesinden biri olmak ZORUNDADIR; başka bir dizge GİB'in resmî görüntüsünde hiç çıkmaz.
    * Expected type: string | undefined
    */
   documentAllowanceChargeReason: (i: number) => `documentAllowanceCharges[${i}].reason` as `documentAllowanceCharges[${number}].reason`,

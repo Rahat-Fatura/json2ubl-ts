@@ -392,12 +392,17 @@ describe('🔴 Ekleme yolu geçen turun KAPILARINI atlatmaz', () => {
     }
   });
 
-  it('düzlem dışında SERBEST metin sebep hâlâ serbesttir', () => {
+  it('🔴 5.1.0: düzlem dışında SERBEST metin sebepli kalem de reddedilir (genel belge iskontosu yok)', () => {
     const session = new InvoiceSession({
       initialInput: hksInput({ profile: 'TICARIFATURA', type: 'SATIS' }),
     });
     session.addDocumentAllowanceCharge(charge('Erken ödeme indirimi', { amount: 10 }));
     expect(errorAt(session, 'documentAllowanceCharges[0].reason')).toBeUndefined();
+    const hit = errorAt(session, 'documentAllowanceCharges[0]');
+    expect(hit).toBeDefined();
+    expect(hit?.code).toBe('DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED');
+    // `buildXml` doğrulamasız çağrılsa bile kalem SESSİZCE düşmez.
+    expect(() => session.buildXml({ validationLevel: 'none' })).toThrow(/iskontoyu satırlara dağıtın/);
   });
 
   it.each(['9944', '8001'])(

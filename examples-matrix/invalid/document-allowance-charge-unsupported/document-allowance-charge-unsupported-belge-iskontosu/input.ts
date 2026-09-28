@@ -7,13 +7,6 @@ export const input: SimpleInvoiceInput = {
   profile: 'TEMELFATURA',
   type: 'SATIS',
   currencyCode: 'TRY',
-  documentAllowanceCharges: [
-    {
-      reason: 'Toptan indirim',
-      chargeIndicator: false,
-      amount: 100,
-    },
-  ],
   sender: {
     taxNumber: '1234567890',
     name: 'Matrix Test Satıcı A.Ş.',
@@ -32,11 +25,18 @@ export const input: SimpleInvoiceInput = {
   },
   lines: [
     {
-      name: 'İndirimli ürün',
+      name: 'Test satır',
       quantity: 1,
       price: 1000,
       unitCode: 'Adet',
       kdvPercent: 20,
+    },
+  ],
+  documentAllowanceCharges: [
+    {
+      reason: 'Toptan indirim',
+      chargeIndicator: false,
+      amount: 100,
     },
   ],
 };

@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "code": "DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED",
+      "path": "documentAllowanceCharges[0]",
+      "message": "Belge düzeyi iskonto/artırım desteklenmiyor; iskontoyu satırlara dağıtın (satır iskontosu: lines[].allowancePercent). Belge düzeyinde yalnız HKS komisyoncu masrafları verilebilir (ProfileID=HKS + KOMISYONCU veya EARSIVFATURA + HKSKOMISYONCU)."
+    }
+  ]
+}

@@ -19,7 +19,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { SimpleInvoiceBuilder, InvoiceSession } from '../../src';
+import { SimpleInvoiceBuilder, InvoiceSession, UblBuildError } from '../../src';
 import { calculateDocument } from '../../src/calculator/document-calculator';
 import {
   HKS_CHARGE_CODES,
@@ -231,7 +231,7 @@ describe('🔴 TERS İŞARET — HKS masraf toplamı ÖDENECEKTEN DÜŞÜLÜR', 
   });
 });
 
-describe('Genel UBL düzlemi — ters işaret SIZMAZ', () => {
+describe('🔴 5.1.0 — genel belge düzeyi iskonto/artırım KALDIRILDI', () => {
   function temelFatura(overrides: Partial<SimpleInvoiceInput> = {}): SimpleInvoiceInput {
     return {
       id: 'MTX2026000000998',
@@ -242,37 +242,72 @@ describe('Genel UBL düzlemi — ters işaret SIZMAZ', () => {
       currencyCode: 'TRY',
       sender: { ...SENDER, name: 'Matrix Test Satıcı A.Ş.' },
       customer: { ...CUSTOMER },
-      lines: [{ name: 'Ürün', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20 }],
+      lines: [{ name: 'Ürün', quantity: 1, price: 100, unitCode: 'Adet', kdvPercent: 20 }],
       ...overrides,
     };
   }
 
-  it('belge iskontosu `AllowanceTotalAmount`a girer ve zinciri AŞAĞI kaydırır', () => {
-    const calc = calculateDocument(temelFatura({
-      documentAllowanceCharges: [{ reason: 'Toptan indirim', chargeIndicator: false, amount: 100 }],
-    }));
-    expect(calc.monetary.allowanceTotalAmount).toBeCloseTo(100, 2);
+  const DISCOUNT = [{ reason: 'Toptan indirim', chargeIndicator: false, percent: 10 }];
+  const SURCHARGE = [{ reason: 'Kurulum bedeli', chargeIndicator: true, amount: 10 }];
+
+  it('5.0.0 KDV hatası ÜRETİLEMEZ: 100 TL + %20 + %10 belge iskontosu XML\'e gitmez (her seviyede)', () => {
+    // 5.0.0 bu girdiden matrah 90,00 ama KDV 20,00 yazıyordu (doğrusu 18,00).
+    for (const validationLevel of ['strict', 'basic', 'none'] as const) {
+      const builder = new SimpleInvoiceBuilder({ validationLevel });
+      let caught: unknown;
+      try {
+        builder.build(temelFatura({ documentAllowanceCharges: DISCOUNT }));
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught, validationLevel).toBeInstanceOf(UblBuildError);
+      const errors = (caught as UblBuildError).errors;
+      expect(errors, validationLevel).toHaveLength(1);
+      expect(errors[0].code).toBe('DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED');
+      expect(errors[0].path).toBe('documentAllowanceCharges[0]');
+      expect(errors[0].message).toContain('Belge düzeyi iskonto/artırım desteklenmiyor; iskontoyu satırlara dağıtın');
+    }
+    // `buildUnsafe` da aynı kapıya takılır — kapı XML üretimindedir.
+    expect(() => new SimpleInvoiceBuilder().buildUnsafe(temelFatura({ documentAllowanceCharges: DISCOUNT })))
+      .toThrow(UblBuildError);
+  });
+
+  it('belge ARTIRIMI da reddedilir', () => {
+    expect(() => new SimpleInvoiceBuilder({ validationLevel: 'strict' })
+      .build(temelFatura({ documentAllowanceCharges: SURCHARGE })))
+      .toThrow(/Belge düzeyi iskonto\/artırım desteklenmiyor/);
+  });
+
+  it('hesap motoru genel düzlem kalemlerini HESABA KATMAZ (matrah ve KDV kaymaz)', () => {
+    const calc = calculateDocument(temelFatura({ documentAllowanceCharges: [...DISCOUNT, ...SURCHARGE] }));
+    expect(calc.documentAllowanceCharges).toEqual([]);
     expect(calc.monetary.chargeTotalAmount).toBeUndefined();
-    expect(calc.monetary.taxExclusiveAmount).toBeCloseTo(900, 2);
-    expect(calc.monetary.taxInclusiveAmount).toBeCloseTo(1100, 2);
-    expect(calc.monetary.payableAmount).toBeCloseTo(1100, 2);
+    expect(calc.monetary.lineExtensionAmount).toBeCloseTo(100, 2);
+    expect(calc.monetary.taxExclusiveAmount).toBeCloseTo(100, 2);
+    expect(calc.monetary.taxInclusiveAmount).toBeCloseTo(120, 2);
+    expect(calc.monetary.allowanceTotalAmount).toBeCloseTo(0, 2);
+    expect(calc.monetary.payableAmount).toBeCloseTo(120, 2);
+    expect(calc.taxes.taxTotal).toBeCloseTo(20, 2);
   });
 
-  it('belge artırımı `ChargeTotalAmount`a girer ve EKLENİR (kılavuz yönü)', () => {
-    const calc = calculateDocument(temelFatura({
-      documentAllowanceCharges: [{ reason: 'Kurulum bedeli', chargeIndicator: true, amount: 100 }],
-    }));
-    expect(calc.monetary.chargeTotalAmount).toBeCloseTo(100, 2);
-    expect(calc.monetary.taxExclusiveAmount).toBeCloseTo(1100, 2);
-    expect(calc.monetary.payableAmount).toBeCloseTo(1300, 2);
+  it('doğru yol SATIR iskontosudur: %10 satır iskontosu → matrah 90, KDV 18, ödenecek 108', () => {
+    const { xml, calculation } = new SimpleInvoiceBuilder({ validationLevel: 'strict', returnCalculation: true })
+      .build(temelFatura({
+        lines: [{ name: 'Ürün', quantity: 1, price: 100, unitCode: 'Adet', kdvPercent: 20, allowancePercent: 10 }],
+      }));
+    expect(calculation!.monetary.taxExclusiveAmount).toBeCloseTo(90, 2);
+    expect(calculation!.taxes.taxTotal).toBeCloseTo(18, 2);
+    expect(calculation!.monetary.payableAmount).toBeCloseTo(108, 2);
+    expect(xml).toContain('<cbc:TaxableAmount currencyID="TRY">90.00</cbc:TaxableAmount>');
+    expect(xml).toContain('<cbc:PayableAmount currencyID="TRY">108.00</cbc:PayableAmount>');
   });
 
-  it('`MultiplierFactorNumeric` genel düzlemde ORANdır (kılavuz)', () => {
-    const calc = calculateDocument(temelFatura({
-      documentAllowanceCharges: [{ reason: 'Toptan indirim', chargeIndicator: false, percent: 10 }],
-    }));
-    expect(calc.documentAllowanceCharges[0].multiplierFactorNumeric).toBeCloseTo(0.1, 6);
-    expect(calc.documentAllowanceCharges[0].amount).toBeCloseTo(100, 2);
+  it('`InvoiceSession.validate()` hatayı TEK KEZ bildirir (doğrulayıcı + XML kapısı çiftlenmez)', () => {
+    const session = new InvoiceSession({ initialInput: temelFatura({ documentAllowanceCharges: DISCOUNT }) });
+    const hits = session.validate().filter(w => w.code === 'DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED');
+    expect(hits).toHaveLength(1);
+    expect(hits[0].severity).toBe('error');
+    expect(hits[0].field).toBe('documentAllowanceCharges[0]');
   });
 
   it('belge düzeyi kalem YOKSA `ChargeTotalAmount` XML\'e HİÇ yazılmaz', () => {
@@ -280,17 +315,16 @@ describe('Genel UBL düzlemi — ters işaret SIZMAZ', () => {
     expect(xml).not.toContain('ChargeTotalAmount');
   });
 
-  it('satır iskontosunun ÖZETİ ile belge kalemleri BİRBİRİNE KARIŞMAZ', () => {
-    // Özet blok satır iskontosunu anlatır; belge kalemi kendi bloğunu alır.
-    // İkisi tek dizide toplanır ama özet ÖNDE kalır (GİB'in yer tutucu şekli).
-    const calc = calculateDocument(temelFatura({
-      lines: [{ name: 'Ürün', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, allowancePercent: 10 }],
-      documentAllowanceCharges: [{ reason: 'Toptan indirim', chargeIndicator: false, amount: 50 }],
-    }));
-    // Satır iskontosu 100 → özet blok; belge iskontosu 50 → kendi bloğu.
-    expect(calc.allowance?.amount).toBeCloseTo(100, 2);
-    expect(calc.monetary.allowanceTotalAmount).toBeCloseTo(150, 2);
-    expect(calc.documentAllowanceCharges).toHaveLength(1);
+  it('satır iskontolarının ÖZET bloğu korunur (bilgi amaçlı, vergiye dokunmaz)', () => {
+    const { xml, calculation } = new SimpleInvoiceBuilder({ validationLevel: 'strict', returnCalculation: true })
+      .build(temelFatura({
+        lines: [{ name: 'Ürün', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 20, allowancePercent: 10 }],
+      }));
+    expect(calculation!.allowance?.amount).toBeCloseTo(100, 2);
+    expect(calculation!.monetary.allowanceTotalAmount).toBeCloseTo(100, 2);
+    expect(calculation!.documentAllowanceCharges).toEqual([]);
+    const head = xml.slice(0, xml.indexOf('<cac:InvoiceLine>'));
+    expect(head.match(/<cac:AllowanceCharge>/g)).toHaveLength(1);
   });
 });
 
@@ -345,12 +379,13 @@ describe('Doğrulayıcı — kapalı küme, sabit işaret, kaçak kod', () => {
     }
   });
 
-  it('düzlem dışında SERBEST metin sebep serbesttir', () => {
+  it('🔴 5.1.0: düzlem dışında SERBEST metin sebepli kalem de reddedilir (genel belge iskontosu yok)', () => {
     const errors = validateHksCharges(hksKomisyoncu({
       profile: 'TEMELFATURA', type: 'SATIS',
       documentAllowanceCharges: [{ reason: 'Toptan indirim', chargeIndicator: false, amount: 10 }],
     }));
-    expect(errors).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].code).toBe('DOCUMENT_ALLOWANCE_CHARGE_UNSUPPORTED');
   });
 });
 

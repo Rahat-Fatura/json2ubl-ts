@@ -50,6 +50,7 @@ import { runPathGates, diffVisibility, createArrayField, type PathTokens, type A
 import { deriveLineFieldVisibility } from './line-field-visibility';
 import { isYatirimTesvikKdvScope } from '../ubltr/vocabulary/schematron-scopes';
 import type { ValidationError } from '../errors/ubl-build-error';
+import { UblBuildError } from '../errors/ubl-build-error';
 import { validateSimpleLineRanges } from '../documents/invoice/validators/simple-line-range-validator';
 import { validateProfileRequirements } from '../documents/invoice/validators/profile-requirement-validator';
 import { validateSimpleFormats } from '../documents/invoice/validators/simple-format-validator';
@@ -1226,11 +1227,19 @@ export class InvoiceSession extends EventEmitter {
     try {
       errors.push(...validateCrossMatrix(this._getCachedInvoiceInput()));
     } catch (err) {
-      errors.push({
-        code: 'CALCULATION_ERROR',
-        message: err instanceof Error ? err.message : String(err),
-        path: 'lines',
-      });
+      if (err instanceof UblBuildError) {
+        // Mapper'ın kendi kapıları (ör. 5.1.0 belge düzeyi iskonto yasağı)
+        // yukarıdaki doğrulayıcılarla AYNI hatayı üretir — ikinci kez eklenmez.
+        for (const e of err.errors) {
+          if (!errors.some(x => x.code === e.code && x.path === e.path)) errors.push(e);
+        }
+      } else {
+        errors.push({
+          code: 'CALCULATION_ERROR',
+          message: err instanceof Error ? err.message : String(err),
+          path: 'lines',
+        });
+      }
     }
 
     // Sprint 8h.7: ValidationError → ValidationWarning köprü
