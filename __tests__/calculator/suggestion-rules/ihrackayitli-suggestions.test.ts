@@ -52,7 +52,7 @@ describe('ihrackayitli/702-gtip-required', () => {
   const rule = findRule('ihrackayitli/702-gtip-required');
 
   it('IHRACKAYITLI + 702 + gtipNo boş → hatırlatma', () => {
-    const input = makeInput({ lines: [makeLine({ kdvExemptionCode: '702' })] });
+    const input = makeInput({ lines: [makeLine({ kdvPercent: 0, kdvExemptionCode: '702' })] });
     const ui = deriveUIState(input.type!, input.profile!);
     expect(rule.applies(input, ui)).toBe(true);
     const result = rule.produce(input, ui);
@@ -70,13 +70,47 @@ describe('ihrackayitli/702-gtip-required', () => {
     const ui = deriveUIState(input.type!, input.profile!);
     expect(rule.applies(input, ui)).toBe(false);
   });
+
+  /* 5.2.0 — tek kapsam (`isIhracKayitli702Invoice`). Hatırlatma 702 KAPSAMINDAKİ
+   * belgenin BÜTÜN satırlarına yapılır; GİB `TaxExemptionReasonCodeCheck` özette 702
+   * varsa her satırda GTİP ister. */
+  it('karışık 702 + 701 → İKİ satıra da hatırlatma (701 satırı da GTİP ister)', () => {
+    const input = makeInput({ lines: [
+      makeLine({ kdvPercent: 0, kdvExemptionCode: '702' }),
+      makeLine({ kdvPercent: 0, kdvExemptionCode: '701' }),
+    ] });
+    const ui = deriveUIState(input.type!, input.profile!);
+    expect(rule.applies(input, ui)).toBe(true);
+    expect(rule.produce(input, ui).map(s => s.path)).toEqual([
+      'lines[0].delivery.gtipNo',
+      'lines[1].delivery.gtipNo',
+    ]);
+  });
+
+  it('belge kodu 702, satırlar kodsuz → hatırlatma (eskiden susuyordu)', () => {
+    const input = makeInput({ kdvExemptionCode: '702', lines: [makeLine({ kdvPercent: 0 })] });
+    const ui = deriveUIState(input.type!, input.profile!);
+    expect(rule.applies(input, ui)).toBe(true);
+  });
+
+  it('belge kodu 702 ama bütün satırlar 701 → applies=false (702 XML\'e yazılmaz)', () => {
+    const input = makeInput({ kdvExemptionCode: '702', lines: [makeLine({ kdvPercent: 0, kdvExemptionCode: '701' })] });
+    const ui = deriveUIState(input.type!, input.profile!);
+    expect(rule.applies(input, ui)).toBe(false);
+  });
+
+  it('KDV\'li satırın kendi 702 kodu kapsamı AÇMAZ (kod XML\'e yazılmaz, portalda seçici gizli)', () => {
+    const input = makeInput({ lines: [makeLine({ kdvPercent: 18, kdvExemptionCode: '702' })] });
+    const ui = deriveUIState(input.type!, input.profile!);
+    expect(rule.applies(input, ui)).toBe(false);
+  });
 });
 
 describe('ihrackayitli/702-alicidib-required', () => {
   const rule = findRule('ihrackayitli/702-alicidib-required');
 
   it('IHRACKAYITLI + 702 + alicidibsatirkod boş → hatırlatma', () => {
-    const input = makeInput({ lines: [makeLine({ kdvExemptionCode: '702' })] });
+    const input = makeInput({ lines: [makeLine({ kdvPercent: 0, kdvExemptionCode: '702' })] });
     const ui = deriveUIState(input.type!, input.profile!);
     expect(rule.applies(input, ui)).toBe(true);
     const result = rule.produce(input, ui);

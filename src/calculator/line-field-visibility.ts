@@ -14,6 +14,7 @@ import type { SimpleLineInput, SimpleInvoiceInput } from './simple-types';
 import { WITHHOLDING_ALLOWED_TYPES } from '../ubltr/vocabulary/constants';
 import { isYatirimTesvikScope } from '../ubltr/vocabulary/schematron-scopes';
 import { configManager } from './config-manager';
+import { isIhracKayitli702Invoice } from './ihrackayitli-702-scope';
 import type { InvoiceTypeCode } from '../types/enums';
 
 // ─── Type/Profile Flags (extract from deriveFieldVisibility) ─────────────────
@@ -141,17 +142,24 @@ export interface LineFieldVisibility {
   showWithholdingPercentInput: boolean;
   /** Profil IHRACAT veya tip IHRACKAYITLI ise satır delivery dropdown (BR-OPT-DLY13/15). */
   showLineDelivery: boolean;
-  /** type=IHRACKAYITLI + line.kdvExemptionCode='702' (GTİP zorunlu, B-78.3). */
+  /**
+   * İHRAÇ KAYITLI 702 etkin kapsamı (`isIhracKayitli702Invoice`) açıksa BÜTÜN
+   * satırlarda true — GTİP (12 hane) zorunlu (`TaxExemptionReasonCodeCheck`).
+   *
+   * 5.2.0: eskiden yalnız satırın KENDİ kodu 702 iken açılıyordu. Karışık belgede
+   * (702 + 701) 701 satırının, belge kodu 702 olan belgede kodsuz satırların
+   * kutusu kapalı kalıyor; katı kurulum ise o satırlarda da GTİP istiyordu.
+   */
   showCommodityClassification: boolean;
-  /** type=IHRACKAYITLI + line.kdvExemptionCode='702' (ALICIDIBSATIRKOD zorunlu, B-78.3). */
+  /** `showCommodityClassification` ile aynı kapı — ALICIDIBSATIRKOD (11 hane) zorunlu. */
   showAlicidibsatirkod: boolean;
   /**
-   * type=IHRACKAYITLI + line.kdvExemptionCode='702' (SATICIDIBSATIRKOD **izinli**, 4.5.1).
+   * `showAlicidibsatirkod` ile aynı kapı (SATICIDIBSATIRKOD **izinli**, 4.5.1).
    *
-   * Koşul `showAlicidibsatirkod` ile BİLEREK AYNI — ikisi de tek bir şematron
-   * bağlamına aittir: `IhracKayitliPartyIdentificationIDTypeCheck` yalnız
-   * `InvoiceTypeCode='IHRACKAYITLI'` **ve** `TaxExemptionReasonCode='702'` iken
-   * tetiklenir, alanın yazıldığı `cac:CustomsDeclaration` ağacı da bu akış dışında
+   * Koşul BİLEREK AYNI — ikisi de tek bir şematron bağlamına aittir:
+   * `IhracKayitliPartyIdentificationIDTypeCheck` yalnız
+   * `InvoiceTypeCode='IHRACKAYITLI'` **ve** belge özetinde `TaxExemptionReasonCode='702'`
+   * iken tetiklenir, alanın yazıldığı `cac:CustomsDeclaration` ağacı da bu akış dışında
    * anlamsızdır. Görünürlük ≠ zorunluluk: alan görünür ama boş bırakılabilir;
    * zorunluluğu 702 kuralı yalnız ALICI koduna yükler.
    */
@@ -183,14 +191,25 @@ export interface LineFieldVisibility {
 /**
  * Bir satır için visibility map türetir. `idx` parametresi şu an sadece
  * dokümantasyon için (gelecekte satır-spesifik kuralda kullanılabilir).
+ *
+ * `doc.lines` + `doc.kdvExemptionCode` (5.2.0): İHRAÇ KAYITLI 702 kapsamı
+ * BELGE düzeyinde bir karardır — bir satırın kodu öbür satırların GTİP
+ * kutusunu açar. Bayrak bu yüzden bütün satırları ve belge kodunu okur.
+ * Verilmezlerse yalnız bu satır ve (varsa) belge kodu okunur.
  */
 export function deriveLineFieldVisibility(
   line: SimpleLineInput,
-  doc: Pick<SimpleInvoiceInput, 'type' | 'profile'>,
+  doc: Pick<SimpleInvoiceInput, 'type' | 'profile'>
+    & Partial<Pick<SimpleInvoiceInput, 'kdvExemptionCode' | 'lines'>>,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _idx: number,
 ): LineFieldVisibility {
   const flags = deriveTypeProfileFlags(doc.type ?? 'SATIS', doc.profile ?? 'TICARIFATURA');
+  const ihracKayitli702 = flags.isIhracKayitli && isIhracKayitli702Invoice({
+    type: doc.type,
+    kdvExemptionCode: doc.kdvExemptionCode,
+    lines: doc.lines ?? [line],
+  });
 
   return {
     showKdvExemptionCodeSelector:
@@ -221,17 +240,16 @@ export function deriveLineFieldVisibility(
 
     showLineDelivery: flags.isIhracat || flags.isIhracKayitli,
 
-    showCommodityClassification:
-      flags.isIhracKayitli && line.kdvExemptionCode === '702',
+    /* 5.2.0 — TEK KAPSAM. Katı kurulum, oturum doğrulaması ve GİB şematronu ile
+     * aynı yüklem (`isIhracKayitli702Invoice`): kapsam açıksa BÜTÜN satırlarda. */
+    showCommodityClassification: ihracKayitli702,
 
-    showAlicidibsatirkod:
-      flags.isIhracKayitli && line.kdvExemptionCode === '702',
+    showAlicidibsatirkod: ihracKayitli702,
 
     /* Satıcı DİB satır kodu ALICI koduyla AYNI kapıdan geçer (gerekçe arayüz
      * tanımında). Ayrı bir bayrak tutulur ki portal iki alanı ayrı etiketleyip
      * "zorunlu" rozetini yalnız ALICI'ya koyabilsin. */
-    showSaticidibsatirkod:
-      flags.isIhracKayitli && line.kdvExemptionCode === '702',
+    showSaticidibsatirkod: ihracKayitli702,
 
     /* 🔴 HKS EKLENDİ (A1). Şematron `HKSInvioceCheck` her kalemde 19 karakterli
      * KUNYENO şart koşar, ama bu bayrak HKS'i kapsamadığı için tüketici arayüzü

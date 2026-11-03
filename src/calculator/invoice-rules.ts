@@ -13,7 +13,7 @@ import type { WithholdingTaxDefinition } from './withholding-config';
 import type { ExemptionDefinition } from './exemption-config';
 import { BillingDocumentTypeCode } from './simple-types';
 import { PROFILE_TYPE_MATRIX, WITHHOLDING_ALLOWED_TYPES } from '../ubltr/vocabulary/constants';
-import { isYatirimTesvikScope, isYatirimTesvikKdvScope } from '../ubltr/vocabulary/schematron-scopes';
+import { isYatirimTesvikScope, isYatirimTesvikKdvScope, isIhracKayitli702Scope } from '../ubltr/vocabulary/schematron-scopes';
 import { TAX_EXEMPTION_MATRIX } from '../documents/invoice/validators/cross-check-matrix';
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 import type { ValidationWarning } from '../session/validation-warning';
@@ -516,6 +516,15 @@ export function validateInvoiceState(state: {
   hasGtip?: boolean;
   /** IHRACKAYITLI+702: satırda ALICIDIBSATIRKOD var mı */
   hasAliciDibKod?: boolean;
+  /**
+   * İHRAÇ KAYITLI 702 etkin kapsamı açık mı (5.2.0) — `isIhracKayitli702Invoice`
+   * ile hesaplanır; satır bayrakları ve katı kurulumla aynı yüklem.
+   *
+   * Verilmezse yalnız belge kodu okunur (`kdvExemptionCode === '702'`, eski
+   * davranış): satırları bilmeyen çağıran için en iyi tahmin, belge kodunun
+   * bütün satırlara uygulandığıdır. `InvoiceSession` bu alanı her zaman verir.
+   */
+  ihracKayitli702Scope?: boolean;
   /** TaxTypeCode 4171 herhangi bir subtotalda kullanılıyor mu */
   has4171Code?: boolean;
   /** IHRACAT: supplier RegistrationName ve TaxOffice dolu mu */
@@ -650,8 +659,10 @@ export function validateInvoiceState(state: {
       severity: 'error' });
   }
 
-  // B-78.3: IHRACKAYITLI + 702 kodu → GTİP + ALICIDIBSATIRKOD zorunlu
-  if (state.type === 'IHRACKAYITLI' && state.kdvExemptionCode === '702') {
+  // B-78.3: İHRAÇ KAYITLI 702 etkin kapsamı → GTİP + ALICIDIBSATIRKOD zorunlu
+  const ihracKayitli702 = state.ihracKayitli702Scope
+    ?? isIhracKayitli702Scope(state.type, [state.kdvExemptionCode]);
+  if (state.type === 'IHRACKAYITLI' && ihracKayitli702) {
     if (state.hasGtip === false) {
       warnings.push({ field: 'lines.delivery.goodsItems.requiredCustomsId',
         message: 'IHRACKAYITLI+702 için satırda GTİP (RequiredCustomsID) zorunludur (B-07).',

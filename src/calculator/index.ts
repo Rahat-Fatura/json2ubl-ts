@@ -126,6 +126,16 @@ export type { DespatchFieldVisibility, DespatchUIState } from "./despatch-rules"
 // Line-level UI visibility (Sprint 8l.1 / v2.2.4 — direkt re-export, modül zinciri kısaltma)
 export type { LineFieldVisibility } from "./line-field-visibility";
 
+/* İHRAÇ KAYITLI 702 etkin kapsamı (5.2.0) — satır bayrakları, oturum doğrulaması,
+ * öneri kuralları ve katı kurulumun okuduğu TEK yüklem. Dışa açılıyor ki portal
+ * aynı kararı kendi kopyasıyla vermek zorunda kalmasın (kusur tam olarak buydu:
+ * dört katman dört ayrı cevap veriyordu). */
+export {
+    isIhracKayitli702Invoice,
+    ihracKayitli702SummaryCodes,
+} from "./ihrackayitli-702-scope";
+export type { IhracKayitli702ScopeInput } from "./ihrackayitli-702-scope";
+
 // SuggestionEngine ve advisory öneriler (AR-10 Faz 2)
 export { runSuggestionEngine, diffSuggestions } from "./suggestion-engine";
 export type { Suggestion, SuggestionRule, SuggestionSeverity } from "./suggestion-types";

@@ -95,7 +95,7 @@ describe('deriveLineFieldVisibility kuralları', () => {
 
   it('showCommodityClassification + showAlicidibsatirkod: IHRACKAYITLI + 702', () => {
     const v = deriveLineFieldVisibility(
-      { ...baseLine, kdvExemptionCode: '702' },
+      { ...baseLine, kdvPercent: 0, kdvExemptionCode: '702' },
       { type: 'IHRACKAYITLI', profile: 'TICARIFATURA' },
       0,
     );
@@ -223,12 +223,15 @@ describe('InvoiceSession lineFields array senkron (Sprint 8h.5)', () => {
   it('setLines sonrası lineFields tamamen yeniden derive', () => {
     const session = new InvoiceSession({ initialInput: { type: 'IHRACKAYITLI' } });
     session.setLines([
-      { ...baseLine, kdvExemptionCode: '702' },
-      { ...baseLine, kdvExemptionCode: '701' },
+      { ...baseLine, kdvPercent: 0, kdvExemptionCode: '702' },
+      { ...baseLine, kdvPercent: 0, kdvExemptionCode: '701' },
     ]);
     expect(session.uiState.lineFields).toHaveLength(2);
     expect(session.uiState.lineFields[0].showCommodityClassification).toBe(true);
-    expect(session.uiState.lineFields[1].showCommodityClassification).toBe(false);
+    /* 5.2.0: 702 kapsamı BELGE düzeyindedir — 701 satırı da GTİP ister
+     * (`TaxExemptionReasonCodeCheck` özette 702 varsa her satırda). Eskiden false'tu:
+     * katı kurulum o satırda GTİP isterken kutu kapalıydı. */
+    expect(session.uiState.lineFields[1].showCommodityClassification).toBe(true);
   });
 
   it('update(SessionPaths.lineKdvPercent(0), 0) → lineFields[0] re-derive (kdvExemptionCode dropdown aktif)', () => {
@@ -241,7 +244,7 @@ describe('InvoiceSession lineFields array senkron (Sprint 8h.5)', () => {
 
   it('update(SessionPaths.lineKdvExemptionCode(0), 702) IHRACKAYITLI → showCommodityClassification true', () => {
     const session = new InvoiceSession({ initialInput: { type: 'IHRACKAYITLI' } });
-    session.addLine({ ...baseLine, kdvExemptionCode: '701' });
+    session.addLine({ ...baseLine, kdvPercent: 0, kdvExemptionCode: '701' });
     expect(session.uiState.lineFields[0].showCommodityClassification).toBe(false);
     session.update(SessionPaths.lineKdvExemptionCode(0), '702');
     expect(session.uiState.lineFields[0].showCommodityClassification).toBe(true);

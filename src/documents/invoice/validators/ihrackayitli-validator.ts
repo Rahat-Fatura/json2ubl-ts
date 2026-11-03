@@ -15,9 +15,23 @@
  * - UBL-TR Common Schematron rule satır 451: `IhracKayitliPartyIdentificationIDType`
  *   whitelist = `SATICIDIBSATIRKOD | ALICIDIBSATIRKOD`.
  *
- * ## Tetikleyici
- * `invoiceTypeCode === 'IHRACKAYITLI'` **AND** en az bir satır taxSubtotal'da
- * `taxExemptionReasonCode === '702'`.
+ * ## Tetikleyici — tek kapsam (5.2.0)
+ * `isIhracKayitli702Scope(invoiceTypeCode, özet kodları, istisna satır kodları)`:
+ * tip `IHRACKAYITLI` **ve** (belge düzeyi `taxTotals[].taxSubtotals[]` içinde
+ * `taxExemptionReasonCode === '702'` **veya** KDV'den istisna bir satır alt
+ * toplamında 702). Şematronun tetiği birinci ayaktır (kural bağlamı belge
+ * düzeyi `TaxTotal/TaxSubtotal/TaxCategory`); kütüphanenin kurduğu belgede
+ * ikinci ayak özetten bir şey eklemez.
+ *
+ * 5.1.0'a kadar SATIR alt toplamlarına bakılıyordu. Eşleyici belge özetini
+ * yalnız belge koduyla yazdığı için iki yönde de ayrışıyordu:
+ *   • belge kodu 702, iki 701 satırı → satırlarda 702 yok, doğrulayıcı susuyor;
+ *     özet 702 olduğu için GİB reddediyordu (GTİP'siz satır);
+ *   • karışık 702 + 701 → özet 701, GİB kuralı tetiklenmiyordu; doğrulayıcı her
+ *     satırda GTİP istiyordu (GİB'den katı).
+ * 5.2.0'da özet satırların istisna kodlarına göre gruplanır
+ * (`resolveSummaryExemptionCode`); satır bayrakları ve oturum aynı cevabı özet
+ * kurulmadan önce verir (`isIhracKayitli702Invoice`).
  *
  * ## Kontroller (her satır için)
  * 1. `line.delivery.shipment.goodsItems[].requiredCustomsId.length === 12` (GTİP)
@@ -35,6 +49,7 @@ import type { InvoiceInput } from '../../../types/invoice-input';
 import type { ValidationError } from '../../../errors/ubl-build-error';
 import { isNonEmpty } from '../../../utils/formatters';
 import { isValidGtip, describeGtipDefect, GTIP_DIGIT_COUNT } from '../../../utils/gtip';
+import { isIhracKayitli702Scope } from '../../../ubltr/vocabulary/schematron-scopes';
 
 /** IHRACKAYITLI CustomsDeclaration PartyIdentification schemeID whitelist (Schematron satır 451) */
 const IHRAC_KAYITLI_SCHEME_IDS: ReadonlySet<string> = new Set([
@@ -45,10 +60,18 @@ const IHRAC_KAYITLI_SCHEME_IDS: ReadonlySet<string> = new Set([
 export function validateIhrackayitli702(input: InvoiceInput): ValidationError[] {
   if (input.invoiceTypeCode !== InvoiceTypeCode.IHRACKAYITLI) return [];
 
-  const has702 = input.lines.some(line =>
-    line.taxTotal.taxSubtotals.some(ts => ts.taxExemptionReasonCode === '702'),
+  const summaryCodes = (input.taxTotals ?? []).flatMap(tt =>
+    tt.taxSubtotals.map(ts => ts.taxExemptionReasonCode),
   );
-  if (!has702) return [];
+  /* KDV'den istisna satır alt toplamları: oran 0 (ya da yazılmamış) veya
+   * vazgeçilen KDV (`CalculationSequenceNumeric=-1`). KDV'li satırın kodu
+   * kapsamı açmaz — o kod belge özetine de taşınmaz (`resolveSummaryExemptionCode`). */
+  const exemptLineCodes = input.lines.flatMap(line =>
+    line.taxTotal.taxSubtotals
+      .filter(ts => (ts.percent ?? 0) === 0 || ts.calculationSequenceNumeric === -1)
+      .map(ts => ts.taxExemptionReasonCode),
+  );
+  if (!isIhracKayitli702Scope(input.invoiceTypeCode, summaryCodes, exemptLineCodes)) return [];
 
   const errors: ValidationError[] = [];
 

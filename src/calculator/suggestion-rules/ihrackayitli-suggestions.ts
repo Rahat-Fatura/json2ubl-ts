@@ -1,11 +1,18 @@
 import type { SuggestionRule, Suggestion } from '../suggestion-types';
+import { isIhracKayitli702Invoice } from '../ihrackayitli-702-scope';
 
 /**
  * Sprint 8i.4 / AR-10 Faz 2 — IHRACKAYITLI grubu suggestion kuralları (3 kural).
  *
  *  1. ihrackayitli/702-default-suggestion — IHRACKAYITLI tipi + line.kdvExemptionCode boş → 702
- *  2. ihrackayitli/702-gtip-required — IHRACKAYITLI + 702 + gtipNo boş → hatırlatma
- *  3. ihrackayitli/702-alicidib-required — IHRACKAYITLI + 702 + alicidibsatirkod boş → hatırlatma
+ *  2. ihrackayitli/702-gtip-required — 702 etkin kapsamı + gtipNo boş → hatırlatma
+ *  3. ihrackayitli/702-alicidib-required — 702 etkin kapsamı + alicidibsatirkod boş → hatırlatma
+ *
+ * 2 ve 3 (5.2.0): kapsam satır bayrakları, oturum doğrulaması ve katı kurulumla
+ * AYNI yüklemden gelir (`isIhracKayitli702Invoice`) ve hatırlatma BÜTÜN
+ * satırlara yapılır. Eskiden yalnız KENDİ kodu 702 olan satır hatırlatılıyordu;
+ * karışık belgede 701 satırının, belge kodu 702 olan belgede kodsuz satırların
+ * eksik GTİP'i sessiz kalıyordu — oysa GİB onları da istiyor.
  */
 
 const IHRACKAYITLI_702_DEFAULT_SUGGESTION: SuggestionRule = {
@@ -35,17 +42,17 @@ const IHRACKAYITLI_702_DEFAULT_SUGGESTION: SuggestionRule = {
 const IHRACKAYITLI_702_GTIP_REQUIRED: SuggestionRule = {
   id: 'ihrackayitli/702-gtip-required',
   applies: (input) =>
-    input.type === 'IHRACKAYITLI' &&
-    input.lines.some(l => l.kdvExemptionCode === '702' && !l.delivery?.gtipNo),
+    isIhracKayitli702Invoice(input) &&
+    input.lines.some(l => !l.delivery?.gtipNo),
   produce: (input) => {
     const out: Suggestion[] = [];
     for (let i = 0; i < input.lines.length; i++) {
       const line = input.lines[i];
-      if (line.kdvExemptionCode === '702' && !line.delivery?.gtipNo) {
+      if (!line.delivery?.gtipNo) {
         out.push({
           path: `lines[${i}].delivery.gtipNo`,
           value: undefined,
-          reason: '702 kodu için 12 haneli GTİP No gereklidir.',
+          reason: 'Faturada 702 istisnası olduğu için her kalemde 12 haneli GTİP No gereklidir.',
           severity: 'recommended',
           ruleId: 'ihrackayitli/702-gtip-required',
         });
@@ -58,17 +65,17 @@ const IHRACKAYITLI_702_GTIP_REQUIRED: SuggestionRule = {
 const IHRACKAYITLI_702_ALICIDIB_REQUIRED: SuggestionRule = {
   id: 'ihrackayitli/702-alicidib-required',
   applies: (input) =>
-    input.type === 'IHRACKAYITLI' &&
-    input.lines.some(l => l.kdvExemptionCode === '702' && !l.delivery?.alicidibsatirkod),
+    isIhracKayitli702Invoice(input) &&
+    input.lines.some(l => !l.delivery?.alicidibsatirkod),
   produce: (input) => {
     const out: Suggestion[] = [];
     for (let i = 0; i < input.lines.length; i++) {
       const line = input.lines[i];
-      if (line.kdvExemptionCode === '702' && !line.delivery?.alicidibsatirkod) {
+      if (!line.delivery?.alicidibsatirkod) {
         out.push({
           path: `lines[${i}].delivery.alicidibsatirkod`,
           value: undefined,
-          reason: '702 kodu için Alıcı DİB satır kodu gereklidir.',
+          reason: 'Faturada 702 istisnası olduğu için her kalemde Alıcı DİB satır kodu gereklidir.',
           severity: 'recommended',
           ruleId: 'ihrackayitli/702-alicidib-required',
         });

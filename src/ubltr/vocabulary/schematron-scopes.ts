@@ -23,6 +23,10 @@
  * `configManager`'a veya girdiye bakmaz. Bu yüzden hem `InvoiceInput` (enum'lu)
  * hem `SimpleInvoiceInput` (dizgili) katmanı aynı fonksiyonu çağırabilir —
  * `InvoiceProfileId`/`InvoiceTypeCode` dizgi enum'ları olduğu için atanabilir.
+ *
+ * Tek ayrık: İHRAÇ KAYITLI 702 kapsamı (`isIhracKayitli702Scope`, 5.2.0).
+ * Şematronun o kuralı tipe ek olarak istisna KODUNA bakar; yüklem bu yüzden
+ * kodları da alır. Yine saftır: kodları çağıran verir, yüklem girdiye uzanmaz.
  */
 
 import {
@@ -205,7 +209,10 @@ export function isHksOwnerFieldScope(profile: string, type: string): boolean {
   return profile === 'EARSIVFATURA' || profile === '';
 }
 
-/* ═════════════════ İstisna kodu — belge vergi özeti ═════════════════ */
+/* ═════════════════ İHRAÇ KAYITLI 702 — DİİB / geçici kabul ═════════════════ */
+
+/** DİİB ve Geçici Kabul Rejimi Kapsamındaki Satışlar istisna kodu. */
+const IHRACKAYITLI_702_CODE = '702';
 
 /**
  * Kod çözümü: satırın kendi kodu, yoksa belge kodu.
@@ -247,4 +254,61 @@ export function resolveSummaryExemptionCode(
 ): string | undefined {
   const exemptLine = phantomKdv || line.kdvPercent === 0;
   return resolveEffectiveExemptionCode(exemptLine ? line.kdvExemptionCode : undefined, documentCode);
+}
+
+/**
+ * İHRAÇ KAYITLI 702 ETKİN KAPSAMI — **TEK TANIM** (5.2.0, karar K-10).
+ *
+ * ```
+ * InvoiceTypeCode = 'IHRACKAYITLI'  VE
+ * (belge vergi özetinde 702  VEYA  KDV'den istisna bir satırın kodu 702)
+ * ```
+ *
+ * Kapsam açıkken GİB `TaxExemptionReasonCodeCheck` (UBL-TR_Common_Schematron.xml:326)
+ * **her** satırda 12 haneli `RequiredCustomsID` (GTİP) ve 11 haneli
+ * `ALICIDIBSATIRKOD` ister. `IhracKayitliPartyIdentificationIDTypeCheck` (:462)
+ * aynı koşulda kimlik türlerini `SATICIDIBSATIRKOD | ALICIDIBSATIRKOD` ile
+ * sınırlar; satıcı kodu İZİNLİ, zorunlu DEĞİL.
+ *
+ * Girdiler:
+ *   • `summaryCodes` — belge vergi özetinin istisna kodları. `InvoiceInput`
+ *     katmanında (katı kurulum) `taxTotals[].taxSubtotals[]`; şematronun tetiği
+ *     budur. `SimpleInvoiceInput` katmanında (bayraklar, oturum) özet henüz
+ *     yoktur: `isIhracKayitli702Invoice` her kalemin özete taşıyacağı kodu
+ *     (`resolveSummaryExemptionCode`) hesaplayıp buraya verir.
+ *   • `exemptLineCodes` — KDV'den istisna satırların (oran 0 ya da vazgeçilen
+ *     KDV) kendi alt toplam kodları; yalnız `InvoiceInput` katmanı verir.
+ *     Kütüphanenin kurduğu belgede bu ayak özetten bir şey eklemez: istisna
+ *     satırının kodu özete de yazılır. Elle kurulmuş, özeti satırlarıyla çelişen
+ *     bir `InvoiceInput`ta (satır 702, özet 701) kapsamı yine açar — böyle bir
+ *     belge GİB'den geçse bile yanlıştır.
+ *
+ * ## Belge kodu tek başına kapsamı AÇMAZ
+ * Belge kodu, kendi kodu olmayan satırların ve KDV'li satırların kodudur;
+ * kapsama bu yoldan girer. Bütün satırlar kendi koduyla 702 dışını seçmişse
+ * belge kodu 702 hiçbir satıra uygulanmaz, vergi özetine de yazılmaz. O
+ * belgede GİB'in 702 kuralı çalışmaz; kapsamı açmak katı kurulumu GİB'den katı
+ * yapardı ve şematronun kabul ettiği belgeyi reddederdi.
+ *
+ * ## Çözülen kusur
+ * 5.1.0'a kadar aynı soruyu dört yer dört ayrı biçimde cevaplıyordu:
+ *   • satır bayrakları — satırın KENDİ kodu 702 mi; kutular yalnız o satırda;
+ *   • katı kurulum — bir satır alt toplamında 702 var mı; bütün satırlar;
+ *   • oturum doğrulaması — BELGE kodu 702 mi;
+ *   • GİB şematronu — belge vergi ÖZETİNDE 702 var mı.
+ * Karışık belgede (702 + 701) katı kurulum her satırda GTİP isterken bayraklar
+ * 701 satırının kutusunu kapalı tutuyordu: belge kesilemiyordu. Belge kodu 702
+ * ve iki 701 satırlı belgede katı kurulum, GİB'in reddettiği belgeyi
+ * geçiriyordu. Dördü artık aynı cevabı verir.
+ *
+ * Saf yüklem: `configManager`a bakmaz, girdiyi değiştirmez.
+ */
+export function isIhracKayitli702Scope(
+  type: string | null | undefined,
+  summaryCodes: ReadonlyArray<string | null | undefined>,
+  exemptLineCodes: ReadonlyArray<string | null | undefined> = [],
+): boolean {
+  if (type !== 'IHRACKAYITLI') return false;
+  return summaryCodes.some(code => code === IHRACKAYITLI_702_CODE)
+    || exemptLineCodes.some(code => code === IHRACKAYITLI_702_CODE);
 }

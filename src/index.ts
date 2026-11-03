@@ -199,6 +199,13 @@ export type { PartyIdentificationSchemeId } from "./ubltr/vocabulary/constants";
  *   • `isHksOwnerFieldScope`   — mal sahibi alanlarının anlamlı olduğu geniş
  *                                 küme (komisyoncu hariç)
  * Üçü de `isHksChargePlane`tan FARKLIDIR; o yalnız komisyoncu ikizini açar. */
+/* İHRAÇ KAYITLI 702 (5.2.0):
+ *   • `isIhracKayitli702Scope`      — tip + belge vergi özetinin kodları; XML ya da
+ *                                     `InvoiceInput` düzeyi (katı kurulumun yüklemi)
+ *   • `resolveSummaryExemptionCode` — kalemin belge özetine taşıdığı kod; özetin
+ *                                     gruplama anahtarı
+ *   • `isIhracKayitli702Invoice`    — aynı kapsam `SimpleInvoiceInput` düzeyinde
+ *                                     (calculator cephesinden) */
 export {
     isYatirimTesvikScope,
     isYatirimTesvikKdvScope,
@@ -206,6 +213,8 @@ export {
     isHksKunyeNoScope,
     isHksOwnerRequiredScope,
     isHksOwnerFieldScope,
+    isIhracKayitli702Scope,
+    resolveSummaryExemptionCode,
 } from "./ubltr/vocabulary/schematron-scopes";
 
 /* 🔑 HKS komisyoncu MASRAF SÖZLÜĞÜ — 4.5.1 ölçütünü karşılar.

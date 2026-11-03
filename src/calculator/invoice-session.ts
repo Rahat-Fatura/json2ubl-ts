@@ -48,6 +48,7 @@ import { KNOWN_PATH_TEMPLATES, READ_ONLY_PATHS } from './session-paths.generated
 import { applyPathUpdate, readPath, deepEqual } from './session-path-utils';
 import { runPathGates, diffVisibility, createArrayField, type PathTokens, type ArrayFieldOps } from '../session';
 import { deriveLineFieldVisibility } from './line-field-visibility';
+import { isIhracKayitli702Invoice } from './ihrackayitli-702-scope';
 import { isYatirimTesvikKdvScope } from '../ubltr/vocabulary/schematron-scopes';
 import type { ValidationError } from '../errors/ubl-build-error';
 import { UblBuildError } from '../errors/ubl-build-error';
@@ -410,39 +411,17 @@ export class InvoiceSession extends EventEmitter {
         this.emit(event, payload);
       },
       /* Sprint 8h.5 senkronu — OLAY YAYILMADAN ÖNCE. `lineFields` türetilmiş
-       * bir alandır; dinleyici olayı aldığında güncel olmak zorundadır. */
-      afterWrite: change => {
-        switch (change.kind) {
-          case 'add': {
-            this._uiState.lineFields = [
-              ...this._uiState.lineFields,
-              deriveLineFieldVisibility(change.item, this._input, change.index),
-            ];
-            break;
-          }
-          case 'update': {
-            const newLineFields = [...this._uiState.lineFields];
-            newLineFields[change.index] = deriveLineFieldVisibility(
-              change.item,
-              this._input,
-              change.index,
-            );
-            this._uiState.lineFields = newLineFields;
-            break;
-          }
-          case 'remove': {
-            this._uiState.lineFields = this._uiState.lineFields.filter(
-              (_, i) => i !== change.index,
-            );
-            break;
-          }
-          case 'replace': {
-            this._uiState.lineFields = change.items.map((line, idx) =>
-              deriveLineFieldVisibility(line, this._input, idx),
-            );
-            break;
-          }
-        }
+       * bir alandır; dinleyici olayı aldığında güncel olmak zorundadır.
+       *
+       * 5.2.0: değişikliğin türüne bakılmadan BÜTÜN satırlar yeniden türetilir.
+       * İHRAÇ KAYITLI 702 kapsamı belge düzeyindedir — bir satıra 702 yazılması
+       * ya da 702'li satırın silinmesi öbür satırların GTİP/DİB kutularını da
+       * açar/kapatır. Yalnız değişen satırı türetmek o satırları eski hâlinde
+       * bırakırdı. `write` önce koştuğu için `_input` burada günceldir. */
+      afterWrite: () => {
+        this._uiState.lineFields = this._input.lines.map((line, idx) =>
+          deriveLineFieldVisibility(line, this._input, idx),
+        );
       },
       afterChange: () => {
         this.onChanged();
@@ -633,14 +612,11 @@ export class InvoiceSession extends EventEmitter {
           value,
           previousValue,
         });
-        // 8h.5: re-derive lineFields[lineIndex]
-        const newLineFields = [...this._uiState.lineFields];
-        newLineFields[lineIndex] = deriveLineFieldVisibility(
-          this._input.lines[lineIndex],
-          this._input,
-          lineIndex,
+        // 8h.5: lineFields re-derive. 5.2.0: BÜTÜN satırlar — İHRAÇ KAYITLI 702
+        // kapsamı bir satırın kodundan öbür satırlara yayılır (bkz. dizi makinesi).
+        this._uiState.lineFields = this._input.lines.map((line, idx) =>
+          deriveLineFieldVisibility(line, this._input, idx),
         );
-        this._uiState.lineFields = newLineFields;
       }
     }
 
@@ -1280,6 +1256,8 @@ export class InvoiceSession extends EventEmitter {
    *  - allowReducedKdvRate: opt-in flag (constructor option, M4 / B-78.1)
    *  - ytbAllKdvPositive: YATIRIMTESVIK + tüm satırlarda KDV>0 (B-78.2)
    *  - hasGtip / hasAliciDibKod: tüm satırlarda delivery alanları (B-78.3)
+   *  - ihracKayitli702Scope: İHRAÇ KAYITLI 702 etkin kapsamı — satır bayraklarıyla
+   *    AYNI yüklem (`isIhracKayitli702Invoice`, 5.2.0)
    *  - has4171Code: en az bir satırda taxes[].code='4171' (B-78.4)
    *  - ihracatPartyComplete: sender.name + taxOffice (B-78.5)
    *  - yolcuBuyerComplete: turistin BEŞ alanı — firstName + familyName +
@@ -1291,6 +1269,7 @@ export class InvoiceSession extends EventEmitter {
     ytbAllKdvPositive: boolean;
     hasGtip: boolean;
     hasAliciDibKod: boolean;
+    ihracKayitli702Scope: boolean;
     has4171Code: boolean;
     ihracatPartyComplete: boolean;
     yolcuBuyerComplete: boolean;
@@ -1316,6 +1295,16 @@ export class InvoiceSession extends EventEmitter {
       hasGtip: linesPresent && lines.every(l => !!l.delivery?.gtipNo),
 
       hasAliciDibKod: linesPresent && lines.every(l => !!l.delivery?.alicidibsatirkod),
+
+      /* 5.2.0 — B-78.3 artık BELGE kodu yerine tek kapsamı okur. Eskiden
+       * `kdvExemptionCode === '702'`ye bakıyordu: karışık belgede (satırda 702,
+       * belgede yok) susuyor, belge kodu 702 ama bütün satırları 701 olan belgede
+       * GİB'in istemediği GTİP'i istiyordu. Tip, `validateInvoiceState`e verilen
+       * tiple aynı yoldan çözülür. */
+      ihracKayitli702Scope: isIhracKayitli702Invoice({
+        ...this._input,
+        type: this._input.type ?? this._calculation?.type ?? 'SATIS',
+      }),
 
       has4171Code: lines.some(l => l.taxes?.some(t => t.code === '4171') ?? false),
 
