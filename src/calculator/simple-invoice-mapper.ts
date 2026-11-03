@@ -46,6 +46,7 @@ import { isNonEmpty, normalizeTime } from '../utils/formatters';
 import { canBuildCarrierParty } from '../documents/invoice/validators/online-sale-validator';
 import { genericDocumentAllowanceChargeErrors } from '../documents/invoice/validators/hks-charge-validator';
 import { isHksChargePlane } from '../ubltr/vocabulary/hks-charge-codes';
+import { resolveSummaryExemptionCode } from '../ubltr/vocabulary/schematron-scopes';
 import { UblBuildError } from '../errors/ubl-build-error';
 
 
@@ -314,7 +315,9 @@ function buildTaxTotals(
   calc: CalculatedDocument,
   simple: SimpleInvoiceInput,
 ): TaxTotalInput[] {
-  const taxSubtotals: TaxSubtotalInput[] = calc.taxes.taxSubtotals.map(ts => {
+  const taxSubtotals: TaxSubtotalInput[] = [];
+
+  calc.taxes.taxSubtotals.forEach((ts, index) => {
     const subtotal: TaxSubtotalInput = {
       taxableAmount: ts.taxable,
       taxAmount: ts.amount,
@@ -330,28 +333,54 @@ function buildTaxTotals(
 
     // İstisna kodu ekle — phantom subtotal'da (CalcSeqNum=-1) her zaman yazılır (§2.1.4)
     const isPhantomSub = ts.calculationSequenceNumeric === -1;
-    if (shouldAddExemption(ts, calc, simple) || isPhantomSub) {
-      // 🔴 KALEM GERİ-DÖNÜŞÜ. Eskiden burada YALNIZ `calc.taxExemptionReason.kdv`
-      // okunuyordu — yani BELGE seviyesindeki `kdvExemptionCode`. İstisna kodu
-      // yalnız KALEM üzerinde verildiğinde (formların normal yolu) bu değer null
-      // kalıyor, `shouldAddExemption` true dönmesine rağmen yazılacak bir şey
-      // olmuyor ve belge seviyesi TaxSubtotal istisnasız çıkıyordu.
-      //
-      // Kalem seviyesi zaten `line.kdvExemptionCode ?? belge` önceliğini
-      // uyguluyor (aşağıda, buildLine); belge seviyesi bu geri-dönüşten yoksundu.
-      // Sonuç GİB kapısında red:
-      //   TaxExemptionReasonCheck — "TaxAmount=0 ve TaxTypeCode=0015 iken
-      //   TaxExemptionReason zorunludur"
-      // Kalem XML'i doğru, belge toplamı eksik olduğu için fatura reddediliyordu.
-      //
-      // Belge kodu varsa DAVRANIŞ AYNEN KORUNUR; geri-dönüş yalnız o yokken devreye
-      // girer → değişiklik toplayıcıdır.
-      const fallback = resolveSubtotalExemptionFromLines(ts, simple);
-      subtotal.taxExemptionReasonCode = calc.taxExemptionReason.kdv ?? fallback?.code;
-      subtotal.taxExemptionReason = calc.taxExemptionReason.kdvName ?? fallback?.name;
+    if (!(shouldAddExemption(ts, calc, simple) || isPhantomSub)) {
+      taxSubtotals.push(subtotal);
+      return;
     }
 
-    return subtotal;
+    // 🔴 KALEM GERİ-DÖNÜŞÜ. Eskiden burada YALNIZ `calc.taxExemptionReason.kdv`
+    // okunuyordu — yani BELGE seviyesindeki `kdvExemptionCode`. İstisna kodu
+    // yalnız KALEM üzerinde verildiğinde (formların normal yolu) bu değer null
+    // kalıyor, `shouldAddExemption` true dönmesine rağmen yazılacak bir şey
+    // olmuyor ve belge seviyesi TaxSubtotal istisnasız çıkıyordu.
+    // Sonuç GİB kapısında red:
+    //   TaxExemptionReasonCheck — "TaxAmount=0 ve TaxTypeCode=0015 iken
+    //   TaxExemptionReason zorunludur"
+    // Geri-dönüş yalnız belge kodu yokken devreye girer.
+    const fallback = resolveSubtotalExemptionFromLines(ts, simple);
+    const legacyCode = calc.taxExemptionReason.kdv ?? fallback?.code;
+    const legacyName = calc.taxExemptionReason.kdvName ?? fallback?.name;
+
+    /* Özel matrah EK alt toplamı (`document-calculator`, `unshift`) satırlardan
+     * gelmez; bölünecek kalemi yoktur, belge koduyla yazılır. */
+    const isOzelMatrahExtra = index === 0 && simple.type === 'OZELMATRAH' && !!simple.ozelMatrah;
+    const parts = isOzelMatrahExtra
+      ? []
+      : splitSubtotalByExemption(ts, calc, simple, legacyCode);
+
+    /* Tek etkin kod: alt toplam hesap motorunun tuttuğu tutarlarla AYNEN yazılır
+     * (bit bit aynı çıktı). Kod belge kodundan farklıysa (bütün kalemler kendi
+     * koduyla aynı başka kodu seçmiş) kalemlerin kodu yazılır. */
+    if (parts.length <= 1) {
+      const code = parts[0]?.code ?? legacyCode;
+      subtotal.taxExemptionReasonCode = code;
+      subtotal.taxExemptionReason = code === legacyCode
+        ? legacyName
+        : exemptionNameOf(code);
+      taxSubtotals.push(subtotal);
+      return;
+    }
+
+    for (const part of parts) {
+      const piece: TaxSubtotalInput = {
+        ...subtotal,
+        taxableAmount: part.taxable,
+        taxAmount: part.amount,
+        taxExemptionReasonCode: part.code,
+        taxExemptionReason: part.code === legacyCode ? legacyName : exemptionNameOf(part.code),
+      };
+      taxSubtotals.push(piece);
+    }
   });
 
   // calc.taxes.taxTotal phantom satırların KDV'si hariç (document-calculator 8d.2
@@ -362,6 +391,65 @@ function buildTaxTotals(
   }];
 }
 
+/** İstisna kodunun adı; kod tanımsızsa `undefined` (satır düzeyiyle aynı davranış). */
+function exemptionNameOf(code: string | undefined): string | undefined {
+  return code ? configManager.getExemption(code)?.name : undefined;
+}
+
+/**
+ * Belge düzeyi bir istisnalı alt toplamı kalemlerin özete taşıdığı istisna
+ * koduna göre böler (5.2.0).
+ *
+ * Hesap motoru alt toplamları (vergi kodu, oran) ikilisiyle gruplar. İstisna
+ * kodu taşıyan bir alt toplamda bu yetmez: aynı orandaki kalemler farklı kod
+ * taşıyabilir (İHRAÇ KAYITLI'da 702 + 701). Eskiden tek alt toplam ve belge
+ * kodu yazılıyordu; karışık belgenin özeti "701" diyor, satırlar "702"
+ * diyordu. GİB'in 702 kuralı (`TaxExemptionReasonCodeCheck`) özetten
+ * tetiklendiği için atlanıyordu. Artık anahtar (vergi kodu, oran, kalemin
+ * özete taşıdığı istisna kodu) üçlüsüdür.
+ *
+ * Kalemin kodu `resolveSummaryExemptionCode` ile çözülür — 702 kapsamının da
+ * okuduğu fonksiyon. KDV'den istisna kalem (oran 0, vazgeçilen KDV) kendi
+ * kodunu, KDV'li kalem belge kodunu taşır. Bir alt toplamın kalemlerinin hepsi
+ * aynı orandadır; KDV'li bir alt toplam bu yüzden hiç bölünmez ve çıktısı
+ * eskisiyle aynıdır. Belge kodu da yoksa kalem, eski geri-dönüşün seçtiği
+ * koda katılır (`legacyCode`).
+ *
+ * Tutarlar kalemlerin alt toplamlarından, hesap motorunun sırasıyla toplanır.
+ * Parçaların toplamı alt toplamın kendisine eşittir: matrah ve vergi
+ * toplamları değişmez, yalnız dağılım değişir. Belge `TaxTotal/TaxAmount` ve
+ * `LegalMonetaryTotal` hesap motorundan okunmaya devam eder.
+ *
+ * Dönüş, kodların kalemlerde ilk göründüğü sırayla parçalardır. Katkı veren
+ * kalem yoksa boş dizi döner.
+ */
+function splitSubtotalByExemption(
+  ts: { code: string; percent: number },
+  calc: CalculatedDocument,
+  simple: SimpleInvoiceInput,
+  legacyCode: string | undefined,
+): Array<{ code: string | undefined; taxable: number; amount: number }> {
+  const parts: Array<{ code: string | undefined; taxable: number; amount: number }> = [];
+  calc.calculatedLines.forEach((cl, i) => {
+    const contribution = cl.taxes.taxSubtotals.find(
+      t => t.code === ts.code && t.percent === ts.percent,
+    );
+    if (!contribution) return;
+    const line = simple.lines[i];
+    const code = (line
+      ? resolveSummaryExemptionCode(line, calc.taxExemptionReason.kdv, cl.phantomKdv === true)
+      : undefined) ?? legacyCode;
+    const part = parts.find(p => p.code === code);
+    if (part) {
+      part.taxable += contribution.taxable;
+      part.amount += contribution.amount;
+    } else {
+      parts.push({ code, taxable: contribution.taxable, amount: contribution.amount });
+    }
+  });
+  return parts;
+}
+
 /**
  * Belge seviyesi bir KDV subtotal'ı için istisna kodunu KALEMLERDEN türetir.
  *
@@ -369,10 +457,10 @@ function buildTaxTotals(
  * (document-calculator 3a). Dolayısıyla bir KDV subtotal'ına katkı veren kalemler
  * `kdvPercent === ts.percent` olanlardır; istisna sebebi de onlardan gelir.
  *
- * Birden çok farklı kod varsa: gruplama zaten tek bir subtotal ürettiği için XML'e
- * tek bir sebep yazılabilir — ilki seçilir. Bu, modelin kendi sınırı (ayrı sebepler
- * ayrı subtotal isterdi); burada sessizce yanlış bir şey üretilmiyor, var olan
- * gruplamaya uyuluyor.
+ * 5.2.0'dan beri yalnız GERİ-DÖNÜŞTÜR: belge kodu yokken kodsuz kalemin hangi
+ * alt toplama katılacağını söyler (ilk kodlu kalemin kodu — eski davranış).
+ * Farklı kodlu kalemler artık ayrı alt toplamlara bölünür
+ * (`splitSubtotalByExemption`); "tek alt toplam, ilk kod" sınırı kalktı.
  */
 function resolveSubtotalExemptionFromLines(
   ts: { code: string; percent: number },

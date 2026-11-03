@@ -30,6 +30,7 @@ import {
   YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES,
 } from './constants';
 import type { InvoiceTypeCode } from '../../types/enums';
+import { isNonEmpty } from '../../utils/formatters';
 
 /* Şematron `$YatirimTesvikEArsivInvoiceTypeCodeList` (UBL-TR_Codelist.xml:67) —
  * BEŞ tipin tamamı: YTBSATIS, YTBIADE, YTBISTISNA, YTBTEVKIFAT, YTBTEVKIFATIADE.
@@ -202,4 +203,48 @@ export function isHksOwnerFieldScope(profile: string, type: string): boolean {
   if (profile === 'HKS') return type !== 'KOMISYONCU';
   if (type !== 'HKSSATIS') return false;
   return profile === 'EARSIVFATURA' || profile === '';
+}
+
+/* ═════════════════ İstisna kodu — belge vergi özeti ═════════════════ */
+
+/**
+ * Kod çözümü: satırın kendi kodu, yoksa belge kodu.
+ *
+ * Boş ya da yalnız boşluk olan kod "yok" sayılır. Tip varsayılanını
+ * (İHRAÇ KAYITLI'da 701, İSTİSNA'da 350) BU fonksiyon eklemez: varsayılanı hesap
+ * motoru belge koduna zaten yazar (`calc.taxExemptionReason.kdv`).
+ */
+export function resolveEffectiveExemptionCode(
+  lineCode: string | null | undefined,
+  documentCode: string | null | undefined,
+): string | undefined {
+  if (isNonEmpty(lineCode)) return lineCode;
+  if (isNonEmpty(documentCode)) return documentCode;
+  return undefined;
+}
+
+/**
+ * Bir kalemin BELGE VERGİ ÖZETİNE taşıdığı KDV istisna kodu (5.2.0).
+ *
+ *   • KDV'den istisna kalem (oran 0 ya da vazgeçilen KDV, `phantomKdv`) kendi
+ *     kodunu taşır; kodu yoksa belge kodunu.
+ *   • KDV'li kalem belge kodunu taşır. Kalem düzeyinde de istisna kodu yazılmaz
+ *     (`buildSingleLine`); kalemin kendi kodu belge özetine sızmaz. 555 gibi
+ *     belge düzeyi kodlar böyle çalışır: kodu belge seçer, KDV'li kalemler onu
+ *     taşır.
+ *
+ * İki katman bu fonksiyonu çağırır ve ikisi de AYNI cevabı almak zorundadır:
+ *   • eşleyicinin vergi özeti gruplaması (`buildTaxTotals`) — alt toplamlar
+ *     (vergi kodu, oran, bu kod) üçlüsüyle gruplanır;
+ *   • 702 kapsamı (`isIhracKayitli702Invoice`) — özetin 702 taşıyıp
+ *     taşımayacağını XML kurulmadan önce bilir.
+ * İkisi ayrı yazılsaydı "özet 701, satır 702" ayrışması yeniden mümkün olurdu.
+ */
+export function resolveSummaryExemptionCode(
+  line: { kdvExemptionCode?: string | null; kdvPercent: number },
+  documentCode: string | null | undefined,
+  phantomKdv = false,
+): string | undefined {
+  const exemptLine = phantomKdv || line.kdvPercent === 0;
+  return resolveEffectiveExemptionCode(exemptLine ? line.kdvExemptionCode : undefined, documentCode);
 }
