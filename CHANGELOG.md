@@ -10,6 +10,8 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 > şematronuyla aynı cevabı veriyor. Karışık istisna kodlu belgede özet satır
 > kodlarıyla tutarlı. Kalemleri belge kodunu taşıyan (ya da kodsuz) belgelerin
 > XML'i 5.1.0 ile **birebir aynı**; kütüphanenin 627 fikstür koşumunda fark 0.
+> 5.1.0'da katı kurulumdan ve GİB'den geçen hiçbir girdi 5.2.0'da hata vermiyor
+> (12.000 rastgele belge + 3.080 tip × kod çifti, ölçüldü).
 
 ### Düzeltilen — belge vergi özeti istisna koduna göre gruplanmıyordu
 
@@ -25,16 +27,36 @@ belgede (satırlar 702 + 701) özet tek alt toplam ve "701" taşıyordu, satırl
   - KDV'den istisna kalem (oran 0 ya da vazgeçilen KDV) kendi kodunu taşır,
     kodu yoksa belge kodunu;
   - KDV'li kalem belge kodunu taşır. Kalem düzeyinde de kodu yazılmaz; 555 gibi
-    belge düzeyi kodlar eskisi gibi çalışır.
-- Parçaların matrah ve vergi toplamı eski alt toplama eşittir.
+    belge düzeyi kodlar eskisi gibi çalışır;
+  - **İHRAÇ KAYITLI'da kalemin kendi kodu yalnız 701–704 ise özete taşınır.**
+    GİB bu tipte kalemde istisna listesindeki kodlara (301, 350, 2xx …) izin
+    verir (Common:320); kütüphanenin özet kuralı 701–704 ister
+    (`validateIhracKayitli`). Böyle kalem 5.1.0'daki gibi belge koduna (yoksa
+    701) katılır, kalem XML'i kendi kodunu korur. Bu girdilerin XML'i 5.1.0 ile
+    aynıdır ve GİB'den geçer.
+- **Parçalar kuruşa en büyük kalan yöntemiyle dağıtılır.** XML'e yazılan
+  parçaların toplamı, bölünmeden yazılacak tek alt toplamın XML değerine
+  (vergi kodu, oran) başına **birebir** eşittir; matrah ve vergi ayrı ayrı.
   `TaxTotal/TaxAmount`, `LegalMonetaryTotal` ve hesap motoru çıktısı
   (`calculation`, `InvoiceSession.calculation`) **değişmedi**; hesap motoru
-  (vergi kodu, oran) ikilisinde kalır. Yalnız XML'deki dağılım değişti.
+  (vergi kodu, oran) ikilisinde kalır. Bölünen parçaların `InvoiceInput`
+  değerleri 2 ondalıklıdır.
 - KDV'li alt toplam hiç bölünmez. Özel matrah ek alt toplamı satırlardan
   gelmediği için bölünmez.
 - Kapsam 702 ile sınırlanmadı. 301/302/350/2xx (İSTİSNA, İHRACAT, KAMU),
   308/339 (vazgeçilen KDV, e-Fatura ve e-Arşiv), 701-704 ve 801/802 çok kodlu
-  belgeler bölünmüş özetle canlı şematrondan geçiyor.
+  belgeler bölünmüş özetle canlı şematrondan geçiyor. Bağımsız incelemede 15
+  bölünmüş belge, sahte imza eklenince tam UBL-TR XSD'den de geçti.
+
+### Düzeltilen — KDV'li ama KDV tutarı 0 olan kalem istisna sayılıyordu
+
+Kalem XML'i istisna kodunu "KDV tutarı 0" diye yazıyordu. Bedelsiz ya da %100
+iskontolu %20 kalemde kalem kendi kodunu (ör. 702), özet belge kodunu (701)
+yazıyordu. Böyle kalem istisna değildir; KDV'si matrah 0 olduğu için 0'dır.
+Artık üç yer aynı yüklemi okur (`isKdvExemptLine`: oran 0 ya da vazgeçilen KDV):
+kalem XML'i, belge özeti ve 702 kapsamı. Bu kalemin kalem düzeyi
+`TaxExemptionReasonCode`'u artık yazılmaz. GİB kalem düzeyinde istisna kodu
+denetlemez (Main şematronunda bu bağlam kapalı).
 
 ### Düzeltilen — İHRAÇ KAYITLI 702 kapsamının dört ayrı tanımı
 
@@ -60,7 +82,9 @@ gruplamada kullandığı fonksiyonla öngörür.
   verilmezse eski imzayla yalnız o satırı okur.
 - **Oturum:** satır eklenince, güncellenince, silinince ya da
   `update(lines[i]…)` çağrılınca bütün satırların bayrakları yeniden türetilir.
-  Bir satırın kodu öbür satırların kutusunu açar ya da kapatır.
+  Bir satırın kodu öbür satırların kutusunu açar ya da kapatır. Belge düzeyi
+  kararlar bir kez hesaplanır; maliyet satır sayısıyla doğrusal kalır
+  (aşağıda "Performans").
 - **`validateInvoiceState`:** yeni isteğe bağlı alan `ihracKayitli702Scope`.
   `InvoiceSession` bu alanı her zaman verir. Verilmezse eski davranış geçerlidir:
   yalnız belge kodu okunur.
@@ -69,7 +93,8 @@ gruplamada kullandığı fonksiyonla öngörür.
   kapsamdaki bütün satırlara hatırlatma yapılır.
 - **Belge kodu tek başına kapsamı açmaz.** Bütün satırlar kendi koduyla 702
   dışını seçmişse 702 XML'e yazılmaz ve GİB kuralı çalışmaz. Kapsamı açmak katı
-  kurulumu GİB'den katı yapardı.
+  kurulumu GİB'den katı yapardı. Belge kodu 701–704 dışı koda sahip ya da kodsuz
+  bir kaleme uygulanırsa kapsamı yine açar.
 - **KDV'li satırın kendi 702 kodu kapsamı açmaz.** Bu kod XML'e yazılmaz;
   portalda istisna seçicisi de bu satırda gizlidir (`showKdvExemptionCodeSelector`).
 
@@ -86,70 +111,114 @@ Kusur notundaki altı durumda dört yerin hükmü:
 
 Tablo testi canlı şematronla: `__tests__/validators/ihrackayitli-702-scope.test.ts`.
 
-### Eklenen (dışa açık)
+### Eklenen
 
-`isIhracKayitli702Scope`, `resolveSummaryExemptionCode`,
-`isIhracKayitli702Invoice`, `ihracKayitli702SummaryCodes`,
-`IhracKayitli702ScopeInput`. Cephe 358 → 363 ad. Düşen ya da daralan ad yok.
+- Dışa açık: `isIhracKayitli702Scope`, `resolveSummaryExemptionCode`,
+  `SummaryExemptionContext`, `isIhracKayitli702Invoice`,
+  `ihracKayitli702SummaryCodes`, `IhracKayitli702ScopeInput`. Cephe 358 → 364
+  ad. Düşen ya da daralan ad yok.
+- Oturum uyarısı `DOCUMENT_EXEMPTION_CODE_UNUSED` (`severity: 'warning'`,
+  **engellemez**). Bütün istisna kalemleri kendi kodunu taşıdığı için belge
+  istisna kodu hiçbir kaleme uygulanmıyorsa `validate()` bunu söyler: kod XML'e
+  yazılmaz. Örnek: belge 702, kalemler 701. Katı kurulum (`SimpleInvoiceBuilder`)
+  uyarı kanalı taşımaz; uyarı yalnız oturumdadır.
+
+### Performans
+
+Oturumda satır bayrakları her yazımda bütün satırlar için yeniden türetilir ve
+702 kapsamı bütün satırları okur. Kapsam yazım başına bir kez hesaplanır
+(`deriveAllLineFieldVisibility`); maliyet satır sayısıyla doğrusaldır. Ölçüm
+(İHRAÇ KAYITLI, 20 `update`, güncelleme başına):
+
+| Satır | Kapsamda (702 + 701, GTİP'siz): 5.1.0 | ilk 5.2.0 adayı | 5.2.0 | Kapsam dışı (hepsi 701): 5.1.0 | 5.2.0 |
+|---|---|---|---|---|---|
+| 100 | 0,5 ms | 0,9 ms | 0,6 ms | 0,4 ms | 0,5 ms |
+| 1.000 | 1,7–2,1 ms | 17,6 ms | 2,0–2,3 ms | 1,2–1,3 ms | 1,2–1,5 ms |
+| 3.000 | 3,6–4,4 ms | 140 ms | 5,9–6,1 ms | 2,2–2,3 ms | 2,4–2,6 ms |
+
+Kapsamdaki belgede kalan fark işin kendisinden gelir: GTİP hatırlatması ve
+hatası artık yarısı yerine bütün satırlar için üretilir.
 
 ### Çıktı değişimi
 
-Yalnız istisna kodu taşıyan belge vergi özeti (`TaxTotal/TaxSubtotal`) değişir.
-Bu da yalnız şu belgelerde olur: KDV'den istisna bir kalemin kendi kodu belge
-kodundan farklıdır, ya da belge kodu yokken kalemlerde birden çok kod vardır.
-O belgelerde özet bölünür ya da satırların kodunu yazar. Satır XML'i, toplamlar
-ve öbür her eleman aynı kalır. Ölçüm (5.1.0 npm tarball'ı ↔ 5.2.0, aynı girdiler):
+Yalnız istisna kodu taşıyan belge vergi özeti (`TaxTotal/TaxSubtotal`) değişir:
+
+- KDV'den istisna bir kalemin kendi kodu belge kodundan farklıysa, ya da belge
+  kodu yokken kalemlerde birden çok kod varsa özet bölünür ya da satırların
+  kodunu yazar. İHRAÇ KAYITLI'da 701–704 dışı kalem kodu bu kurala girmez.
+- Ek olarak: KDV oranı > 0 ama KDV tutarı 0 olan kalemin kalem düzeyi istisna
+  kodu yazılmaz.
+
+Toplamlar ve öbür her eleman aynı kalır. Ölçüm (5.1.0 npm tarball'ı ↔ 5.2.0,
+aynı girdiler; canlı xslt-service):
 
 | Örneklem | Koşum | XML birebir aynı |
 |---|---|---|
 | Kütüphane fikstürleri (`examples/`, `examples-matrix/` geçerli + geçersiz, golden) × `strict`/`basic`/`none` | 627 | 627 |
-| Rastgele istisna kodlu fatura (matris şablonlarından, 1–4 satır, rastgele satır/belge kodu ve oran), `none` | 5.000 | 3.968 (169'u iki sürümde de aynı hata) |
+| Rastgele fatura, tohum 20261103 (26 şablon, 8 tip ailesi, 1–5 kalem, ÖTV/tevkifat/döviz/iskonto, gürültü kodları), `none` | 6.000 | 2.199 (426'sı iki sürümde de kurulamadı) |
+| Aynı üretici, tohum 20261104, `none` | 6.000 | 2.130 (420'si iki sürümde de kurulamadı) |
 
-Rastgele örneklemde XML'i değişen 862 belgenin **hepsinde**: fark yalnız belge
-`TaxTotal` içinde; `TaxTotal/TaxAmount` ve istisnasız alt toplamlar aynı; her
-(vergi kodu, oran) için matrah ve vergi toplamı aynı; girdide bir kalemin kodu
-belge kodundan farklı. Canlı şematron bu 862 belgede 713 geçerli → geçerli,
-136 geçersiz → geçersiz, 13 geçerli → geçersiz verdi. 13'ünün hepsi iki
-sürümde de katı ve temel doğrulamada zaten hata veren girdilerdir:
+XML'i değişen 3.365 + 3.438 belgede:
 
-- 8 İSTİSNA: satırda yalnız yatırım teşvikte geçerli 308/339 kodu var
-  (`EXEMPTION_REQUIRES_YATIRIMTESVIK_SCOPE`). Kod özete taşındığı için
-  `validationLevel: 'none'` XML'i artık şematrondan da geçmiyor.
-- 5 İHRAÇ KAYITLI: 702 + 701, 701 satırında GTİP yok. GİB'in 702 kuralı artık
-  doğru tetikleniyor.
+| Kontrol | Sonuç |
+|---|---|
+| Kök `TaxTotal` dışında değişen bayt | 0 |
+| Belge `TaxTotal/TaxAmount` değişen | 0 |
+| (vergi kodu, oran) başına Σ `TaxableAmount` ve Σ `TaxAmount`, XML değerleriyle | **0 kuruş fark** |
+| İmza dışı yeni XSD hatası (belge başına) | 0 |
+
+Canlı şematronda "geçerli → geçersiz" olan 600 + 598 `none` XML'in hepsi iki
+sürümde de katı kurulumda hata veren girdilerdir. Kalemin yanlış ya da bu tipte
+GİB'in kabul etmediği kodu artık özete taşınıyor (ör. İSTİSNA'da 308/339), ya da
+GİB'in 702 kuralı artık doğru tetikleniyor.
 
 ### Katı kurulumun hükmü
 
+| Ölçü (12.000 rastgele belge) | 5.1.0 | 5.2.0 |
+|---|---|---|
+| Katı OK ama GİB şematronu red (GİB'in reddedeceği belge kesilebiliyor) | 59 | **0** |
+
+| Katı geçiş | Tohum 20261103 | Tohum 20261104 | Not |
+|---|---|---|---|
+| OK → OK | 2.844 | 2.870 | |
+| **OK → hata** | 12 | 19 | **Hepsinin** 5.1.0 XML'i GİB şematronundan reddediliyordu |
+| hata → OK | 59 | 61 | Hepsinin 5.2.0 XML'i GİB'den geçiyor |
+| hata → hata | 3.085 | 3.050 | |
+
 - **Yeni hata veren, 5.1.0'da GİB'den geçen girdi: yok.** Fikstürlerde 627
-  koşumda 0, rastgele 5.000 belgede katı kurulumda OK → hata geçişi 0.
-- **Yeni hata veren, 5.1.0'da GİB'in reddettiği girdi.** İki sınıf var, ikisi de
-  canlı şematronla doğrulandı:
-  - Belge kodu 702, kodu 702 olan istisna satırı yok, 702'yi yalnız KDV'li
-    kodsuz satır miras alıyor ve bir satırda GTİP/ALICI eksik. 5.1.0 özeti 702
-    yazıyordu, şematron reddediyordu, katı kurulum ise geçiriyordu.
-  - Elle kurulmuş `InvoiceInput`: özette 702 var, satırlarda yok, GTİP eksik.
-    Yeni katı kurulum özeti de okur.
-- **Hata vermeyi bırakan girdi:**
+  koşumda 0. 12.000 rastgele belgede 0. Tip × kod taramasında 0: 14 şablon ×
+  110 istisna kodu × 2 belge kodu kipi = 3.080 çift, iki %0 kalem. Bu taramada
+  5.2.0'ın ilk hâli 328 çifti (İHRAÇ KAYITLI + 2xx/3xx) düşürüyordu; bu
+  sürümde 0.
+- **Yeni hata veren, 5.1.0'da GİB'in reddettiği girdi.** İki sınıf:
+  - Belge kodu 702, kodu 702 olan istisna satırı yok, 702'yi yalnız KDV'li ya
+    da 701–704 dışı kodlu satır miras alıyor ve bir satırda GTİP/ALICI eksik.
+    5.1.0 özeti 702 yazıyordu, şematron reddediyordu, katı kurulum geçiriyordu.
+  - Elle kurulmuş `InvoiceInput`: özette 702 var, istisna satırlarında yok,
+    GTİP eksik. Yeni katı kurulum özeti de okur.
+- **Hata vermeyi bırakan girdi.** Rastgele örneklemde 120 belge; hepsinin 5.2.0
+  XML'i GİB'den geçiyor. Sınıflar:
+  - Bütün istisna kalemleri kendi kodunu taşıyor ve 5.1.0'ın özete yazdığı
+    yanlış belge kodu artık XML'e girmiyor. Örnekler: SATIŞ'ta belge 801;
+    İSTİSNA'da belge 555 (`REDUCED_KDV_RATE_NOT_ALLOWED`); İHRAÇ KAYITLI'da
+    belge 801/555 ve kalemler 70x.
   - Belge kodu 702, bütün satırlar kendi koduyla 701. 5.1.0'da oturum hata
-    veriyordu ve XML GİB'den geçmiyordu (özet 702). Artık özet 701, dördü de
-    "geçer".
-  - Rastgele örneklemde 1 belge: SATIŞ, belge kodu 555, tek satır %0 ve 151.
-    5.1.0 özete 555 yazıp 555 kapısında (`REDUCED_KDV_RATE_NOT_ALLOWED`)
-    duruyordu. Artık özet 151 ve XML şematrondan geçiyor.
+    veriyordu ve XML GİB'den geçmiyordu (özet 702). Artık özet 701.
+  - KDV'li, KDV tutarı 0 kalemin kendi 702 kodu artık kapsamı açmıyor.
 
 ### Sürüm: neden MINOR
 
 `docs/surum-politikasi.md` §1:
 
 - XML çıktısı değişiyor → en az MINOR, "Çıktı değişimi" başlığı yukarıda.
-- Kaldırılan ya da daralan ad yok (cephe 358 → 363). `validateInvoiceState`a
+- Kaldırılan ya da daralan ad yok (cephe 358 → 364). `validateInvoiceState`a
   isteğe bağlı bir alan eklendi; verilmezse eski davranış sürer.
 - "Önceden geçerli bir girdinin artık hata vermesi" MAJOR'dır. Bu sürümde yeni
-  hata veren girdilerin hepsi 5.1.0'da GİB şematronunun **reddettiği** XML'i
+  hata veren her girdi 5.1.0'da GİB şematronunun **reddettiği** XML'i
   üretiyordu (yukarıda, ölçüldü). Bu, §1'deki "GİB kuralına aykırı çıktının
-  düzeltilmesi" maddesidir: en az MINOR, ölçülerek duyurulur. GİB'in kabul
-  ettiği bir belgeyi reddetmeye başlayan değişiklik yok. 5.1.0'daki "bilinçli
-  istisna" emsal olarak **kullanılmadı**.
+  düzeltilmesi" maddesidir: en az MINOR, ölçülerek duyurulur. 5.1.0'da katı
+  kurulumdan ve GİB'den geçen girdilerden hata vermeye başlayan yok. 5.1.0'daki
+  "bilinçli istisna" emsal olarak **kullanılmadı**.
 
 ### Tüketici için
 
@@ -159,8 +228,13 @@ sürümde de katı ve temel doğrulamada zaten hata veren girdilerdir:
   uygular.
 - Satır bayrakları 702 kapsamında bütün satırlarda açıktır. Portalın kendi
   "etkin 702" hesabı `isIhracKayitli702Invoice` ile değiştirilebilir. İki fark
-  var: belge kodu 702 ama satırların hepsi 702 dışıysa kapsam kapalıdır; KDV'li
-  satırın kendi 702 kodu kapsamı açmaz.
+  var: belge kodu 702 ama satırların hepsi 701–704 içinden 702 dışıysa kapsam
+  kapalıdır; KDV'li satırın kendi 702 kodu kapsamı açmaz.
+- "Satır kodu özette de var" diye genel bir tutarlılık kapısı kurulursa iki
+  sınıf bilerek dışlanmalı: İHRAÇ KAYITLI'da 701–704 dışı kalem kodu (5.1.0
+  davranışı) ve İADE/SGK (özet istisna kodu taşımaz; 5.1.0 ile aynı).
+- `DOCUMENT_EXEMPTION_CODE_UNUSED` bir uyarıdır; gönderim kapısı yalnız
+  `severity: 'error'` okumalıdır.
 
 ## [5.1.0] — 2026-09-28
 

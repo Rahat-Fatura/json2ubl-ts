@@ -188,10 +188,21 @@ builder.build({
 // olduğu için GİB iki satırda da GTİP ve ALICIDIBSATIRKOD ister.
 ```
 
-KDV'den istisna kalem (oran 0, vazgeçilen KDV) kendi kodunu, KDV'li kalem belge
-kodunu özete taşır (`resolveSummaryExemptionCode`). Matrah ve vergi toplamları
-değişmez; hesap motoru çıktısı (`calculation`) (vergi kodu, oran) ikilisinde
-kalır.
+Kurallar (`resolveSummaryExemptionCode`):
+
+- KDV'den istisna kalem (oran 0, vazgeçilen KDV) kendi kodunu, KDV'li kalem belge
+  kodunu özete taşır. KDV oranı > 0 ama tutarı 0 olan kalem (bedelsiz, %100
+  iskonto) istisna sayılmaz; kalem düzeyinde de istisna kodu yazılmaz.
+- İHRAÇ KAYITLI'da kalemin 701–704 dışı kodu (301, 350 …) özete taşınmaz; kalem
+  belge koduna (yoksa 701) katılır ve kendi kodunu kalem XML'inde korur (5.1.0
+  davranışı, GİB'den geçer).
+- Bölünen parçalar kuruşa en büyük kalan yöntemiyle dağıtılır: (vergi kodu, oran)
+  başına XML'deki matrah ve vergi toplamı, bölünmemiş alt toplamın XML değerine
+  birebir eşittir. Hesap motoru çıktısı (`calculation`) (vergi kodu, oran)
+  ikilisinde kalır.
+- Belge kodu hiçbir kaleme uygulanmıyorsa (bütün istisna kalemleri kendi kodunu
+  taşıyor) XML'e yazılmaz; `InvoiceSession.validate()` engellemeyen
+  `DOCUMENT_EXEMPTION_CODE_UNUSED` uyarısı verir.
 
 ### Dövizli Fatura
 
@@ -448,8 +459,9 @@ session.uiState.lineFields[lineIndex].showCommodityClassification  // boolean
 `TaxExemptionReasonCodeCheck` özette 702 varsa **her** satırda GTİP (12 hane) ve
 ALICIDIBSATIRKOD (11 hane) ister. Satır bayrakları, `validate()`, öneriler ve
 katı kurulum aynı yüklemi okur. Belge kodu 702 ama bütün satırlar kendi koduyla
-702 dışını seçmişse 702 XML'e yazılmaz ve kapsam kapalıdır. KDV'li satırın kendi
-kodu kapsamı açmaz.
+701–704 içinden 702 dışını seçmişse 702 XML'e yazılmaz ve kapsam kapalıdır. KDV'li
+satırın kendi kodu kapsamı açmaz. Bayraklar yazım başına bir kez, bütün satırlar
+için türetilir (`deriveAllLineFieldVisibility`); maliyet satır sayısıyla doğrusal.
 
 ### Liability ve isExport Davranışı (M10 kontratı)
 
