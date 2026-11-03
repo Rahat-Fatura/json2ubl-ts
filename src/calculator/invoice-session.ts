@@ -1352,12 +1352,19 @@ export class InvoiceSession extends EventEmitter {
   // ─── Private ───────────────────────────────────────────────────────────
 
   /**
-   * Belge düzeyi istisna kodu hiçbir kalemin özet koduna dönüşmüyorsa o kod.
+   * Belge düzeyi istisna kodu XML'in HİÇBİR yerine yazılmıyorsa o kod.
    *
-   * Kalemin özete taşıdığı kod eşleyicinin kullandığı fonksiyonla çözülür
-   * (`resolveSummaryExemptionCode`); KDV'li kalem ve kodsuz kalem belge kodunu
-   * taşır, dolayısıyla uyarı yalnız BÜTÜN kalemler kendi koduyla istisnalıyken
-   * çıkar.
+   * İki koşul birlikte aranır:
+   *   1. Hiçbir kalem belge kodunu taşımıyor — kalemin özete taşıdığı kod
+   *      eşleyicinin fonksiyonuyla çözülür (`resolveSummaryExemptionCode`);
+   *      KDV'li ve kodsuz kalem belge kodunu taşır. Uyarının söylediği sebep
+   *      ("bütün istisna kalemleri kendi kodunu taşıyor") budur.
+   *   2. Eşleyicinin kurduğu belgede (`InvoiceInput`, XML'in birebir kaynağı)
+   *      kod ne belge özetinde ne kalem alt toplamlarında geçiyor. Kalemlerden
+   *      gelmeyen yazımlar burada yakalanır: ÖZEL MATRAH'ta belge kodu özel
+   *      matrah ek alt toplamına yazılır (S5 delta incelemesi, KÜÇÜK-D1).
+   * Belge kurulamıyorsa (hesap hatası) uyarı verilmez; hatayı doğrulama hattı
+   * zaten bildirir.
    */
   private _unusedDocumentExemptionCode(): string | undefined {
     const documentCode = this._input.kdvExemptionCode;
@@ -1365,10 +1372,20 @@ export class InvoiceSession extends EventEmitter {
     const type = this._input.type ?? this._calculation?.type ?? 'SATIS';
     const profile = this._input.profile ?? this._calculation?.profile ?? 'TICARIFATURA';
     const context = { invoiceType: type, phantomKdv: isPhantomKdvCombination(profile, type) };
-    const used = this._input.lines.some(
+    const carriedByLine = this._input.lines.some(
       line => resolveSummaryExemptionCode(line, documentCode, context) === documentCode,
     );
-    return used ? undefined : documentCode;
+    if (carriedByLine) return undefined;
+
+    let mapped: InvoiceInput;
+    try {
+      mapped = this._getCachedInvoiceInput();
+    } catch {
+      return undefined;
+    }
+    const written = [...mapped.taxTotals, ...mapped.lines.map(l => l.taxTotal)]
+      .some(tt => tt.taxSubtotals.some(ts => ts.taxExemptionReasonCode === documentCode));
+    return written ? undefined : documentCode;
   }
 
   private updateUIState(): void {

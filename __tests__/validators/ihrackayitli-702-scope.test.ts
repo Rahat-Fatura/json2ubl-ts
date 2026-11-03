@@ -477,6 +477,17 @@ describe('NOT-1 — belge kodu hiçbir kaleme uygulanmıyorsa uyarı (engellemez
     expect(unused(invoice(undefined, [line('A', '701', 'full')]))).toEqual([]);
   });
 
+  it('ÖZEL MATRAH: belge 801, kalem 802 → uyarı YOK (801 özel matrah ek alt toplamına yazılır)', () => {
+    const om: SimpleInvoiceInput = {
+      ...invoice('801', [{ name: 'A', quantity: 1, price: 1000, unitCode: 'Adet', kdvPercent: 0, kdvExemptionCode: '802' }]),
+      type: 'OZELMATRAH',
+      ozelMatrah: { percent: 18, taxable: 500, amount: 90 },
+    };
+    const mapped = mapSimpleToInvoiceInput(om);
+    expect(mapped.taxTotals[0].taxSubtotals.map(ts => ts.taxExemptionReasonCode)).toEqual(['801', '802']);
+    expect(unused(om)).toEqual([]);
+  });
+
   it('uyarı katı kurulumu durdurmaz', () => {
     expect(strictVerdict(invoice('702', [line('A', '701', 'full'), line('B', '701', 'full')])).ok).toBe(true);
   });
