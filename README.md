@@ -171,6 +171,28 @@ builder.build({
 });
 ```
 
+**Kalemlerde farklı istisna kodları (5.2.0).** Satırın kodu belge kodundan önce
+gelir. Belge vergi özeti (vergi kodu, oran, istisna kodu) üçlüsüyle gruplanır:
+
+```typescript
+// İhraç Kayıtlı: bir kalem 702 (DİİB), bir kalem 701
+builder.build({
+  /* ... */
+  type: 'IHRACKAYITLI',
+  lines: [
+    { name: 'A', quantity: 1, price: 1000, kdvPercent: 0, kdvExemptionCode: '702', delivery: { gtipNo: '620342000010', alicidibsatirkod: '12345678901' } },
+    { name: 'B', quantity: 1, price: 1000, kdvPercent: 0, kdvExemptionCode: '701', delivery: { gtipNo: '620342000011', alicidibsatirkod: '12345678902' } },
+  ],
+});
+// Özet: TaxSubtotal 702 (1.000,00) + TaxSubtotal 701 (1.000,00). 702 özette
+// olduğu için GİB iki satırda da GTİP ve ALICIDIBSATIRKOD ister.
+```
+
+KDV'den istisna kalem (oran 0, vazgeçilen KDV) kendi kodunu, KDV'li kalem belge
+kodunu özete taşır (`resolveSummaryExemptionCode`). Matrah ve vergi toplamları
+değişmez; hesap motoru çıktısı (`calculation`) (vergi kodu, oran) ikilisinde
+kalır.
+
 ### Dövizli Fatura
 
 ```typescript
@@ -406,8 +428,9 @@ interface LineFieldVisibility {
   showWithholdingTaxSelector: boolean;          // WITHHOLDING_ALLOWED_TYPES (TEVKIFAT/YTBTEVKIFAT/IADE/YTBIADE/SGK/SARJ/SARJANLIK)
   showWithholdingPercentInput: boolean;         // withholdingTaxCode === '650' (dinamik)
   showLineDelivery: boolean;                    // IHRACAT veya IHRACKAYITLI
-  showCommodityClassification: boolean;         // IHRACKAYITLI + line.kdvExemptionCode === '702'
-  showAlicidibsatirkod: boolean;                // IHRACKAYITLI + 702
+  showCommodityClassification: boolean;         // İHRAÇ KAYITLI 702 kapsamı — BÜTÜN satırlarda (5.2.0)
+  showAlicidibsatirkod: boolean;                // aynı kapsam — ALICIDIBSATIRKOD zorunlu
+  showSaticidibsatirkod: boolean;               // aynı kapsam — SATICIDIBSATIRKOD izinli, zorunlu değil
   showAdditionalItemIdentifications: boolean;   // TEKNOLOJIDESTEK / ILACTIBBI / IDIS
   showItemClassificationCode: boolean;          // YATIRIMTESVIK harcama tipi
   showProductTraceId: boolean;                  // YATIRIMTESVIK + itemClassificationCode === '01'
@@ -417,6 +440,16 @@ interface LineFieldVisibility {
 // Erişim:
 session.uiState.lineFields[lineIndex].showCommodityClassification  // boolean
 ```
+
+**İHRAÇ KAYITLI 702 kapsamı belge düzeyindedir (5.2.0).** Tek tanım
+`isIhracKayitli702Invoice(input)` (`SimpleInvoiceInput`) / `isIhracKayitli702Scope`
+(XML/`InvoiceInput`): tip İHRAÇ KAYITLI ve belgenin vergi özetinde 702. Bir satırın
+702 kodu öbür satırların GTİP ve DİB kutularını da açar; GİB
+`TaxExemptionReasonCodeCheck` özette 702 varsa **her** satırda GTİP (12 hane) ve
+ALICIDIBSATIRKOD (11 hane) ister. Satır bayrakları, `validate()`, öneriler ve
+katı kurulum aynı yüklemi okur. Belge kodu 702 ama bütün satırlar kendi koduyla
+702 dışını seçmişse 702 XML'e yazılmaz ve kapsam kapalıdır. KDV'li satırın kendi
+kodu kapsamı açmaz.
 
 ### Liability ve isExport Davranışı (M10 kontratı)
 
@@ -972,7 +1005,7 @@ Kütüphane hangi karardan sorumlu, hangisinden değil. Tüketici kodunun bilmes
 | **AR-8** | Outstanding/Oversupply input alanları kaldırıldı | `src/types/*.ts` |
 | **AR-9** (Sprint 8c, isim konuldu) | **Reactive InvoiceSession (vision)** — kullanıcı girişi akış tabanlı validator feedback. Mevcut `src/invoice-session.ts` snapshot validator rolü korunur; reaktif katman v2.1.0'da yeni modül olarak eklenecek | `audit/reactive-session-design-notes.md` |
 | **AR-10** (Sprint 8h, v2.1.0) | **Reactive InvoiceSession (concrete realization)** — AR-9 vision'ın somut implementation'ı: path-based `update(path, value)` API + `SessionPaths` map + field-level events (`fieldChanged`/`fieldActivated`/`fieldDeactivated`/`lineFieldChanged`) + line-level FieldVisibility + validator pipeline (5 validator) + B-78 parametre köprüsü + structured `pathError` event. 19 eski setter kaldırıldı (BREAKING). `liability` `update(SessionPaths.liability, x)` ile yönetilir; `isExport` constructor-locked readonly. M10 kontratı korunur. | `src/calculator/invoice-session.ts` · `src/calculator/session-paths.generated.ts` · `audit/sprint-08h-plan.md` · `audit/sprint-08h-implementation-log.md` |
-| **B-07** | IHRACKAYITLI + 702 için **GTİP (12 hane) + AlıcıDİBKod (11 hane)** zorunlu; simple-input'ta `SimpleLineDeliveryInput.alicidibsatirkod` alanı (B-NEW-12 / Sprint 8c). 4.5.1: **izinli** ikinci kod `saticidibsatirkod` (`SATICIDIBSATIRKOD` schemeID) — zorunlu DEĞİL, uzunluk şartı YOK | `src/documents/invoice/validators/profile-validators.ts` · [examples/07](./examples/07-temelfatura-ihrackayitli-702/) |
+| **B-07** | IHRACKAYITLI + 702 için **GTİP (12 hane) + AlıcıDİBKod (11 hane)** zorunlu; simple-input'ta `SimpleLineDeliveryInput.alicidibsatirkod` alanı (B-NEW-12 / Sprint 8c). 4.5.1: **izinli** ikinci kod `saticidibsatirkod` (`SATICIDIBSATIRKOD` schemeID) — zorunlu DEĞİL, uzunluk şartı YOK. 5.2.0: tek kapsam `isIhracKayitli702Scope` — bayraklar, oturum, öneriler ve katı kurulum şematronla aynı hükmü verir; özet istisna koduna göre gruplanır | `src/documents/invoice/validators/profile-validators.ts` · [examples/07](./examples/07-temelfatura-ihrackayitli-702/) |
 | **B-08** | YATIRIMTESVIK: `ytbNo` (6 hane) + Kod 01 Makine için `productTraceId+serialId+brand+model`; IADE grubunda muaf | `src/documents/invoice/validators/profile-validators.ts` · [examples/12](./examples/12-yatirimtesvik-satis-makina/) |
 | **B-83** | KAMU: `buyerCustomer` + `paymentMeans` + TR IBAN zorunlu; additionalIdentifiers (MUSTERINO) | [examples/15](./examples/15-kamu-satis/) |
 | **B-104** | Despatch `DriverPerson.nationalityId` 11-hane TCKN zorunlu (ISO kodu reddedilir) | `src/validators/despatch-validators.ts` |
@@ -1089,7 +1122,7 @@ Semver kuralları (XML çıktısını değiştiren her sürüm en az MINOR ve CH
 CHANGELOG girdisi zorunluluğu ve yayın kontrol listesi:
 [docs/surum-politikasi.md](docs/surum-politikasi.md). `prepublishOnly` etiketi ve
 CHANGELOG girdisini denetler (`scripts/check-release.mjs`). Tüketiciye önerimiz
-tam sürüme sabitlemek (`"json2ubl-ts": "5.1.0"`).
+tam sürüme sabitlemek (`"json2ubl-ts": "5.2.0"`).
 
 ## Lisans
 

@@ -105,7 +105,7 @@ README'de ("Yuvarlama").
 
 ## 5. Tüketiciye öneri
 
-Tam sürüme sabitleyin (`"json2ubl-ts": "5.1.0"`, `^` olmadan). Güncellemeyi, aynı
+Tam sürüme sabitleyin (`"json2ubl-ts": "5.2.0"`, `^` olmadan). Güncellemeyi, aynı
 girdi setini eski ve yeni sürümden geçirip XML farkına bakarak yapın. MINOR sürüm
 de çıktı değiştirebilir, bu da CHANGELOG'daki "Çıktı değişimi" başlığında yazar.
 
