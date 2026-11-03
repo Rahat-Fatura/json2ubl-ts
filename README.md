@@ -192,7 +192,8 @@ Kurallar (`resolveSummaryExemptionCode`):
 
 - KDV'den istisna kalem (oran 0, vazgeçilen KDV) kendi kodunu, KDV'li kalem belge
   kodunu özete taşır. KDV oranı > 0 ama tutarı 0 olan kalem (bedelsiz, %100
-  iskonto) istisna sayılmaz; kalem düzeyinde de istisna kodu yazılmaz.
+  iskonto) istisna sayılmaz; kalem düzeyinde istisna kodu yazılmaz, kalem kodsuz
+  olsa bile (5.1.0 oraya belge kodunu ya da tip varsayılanını yazıyordu).
 - İHRAÇ KAYITLI'da kalemin 701–704 dışı kodu (301, 350 …) özete taşınmaz; kalem
   belge koduna (yoksa 701) katılır ve kendi kodunu kalem XML'inde korur (5.1.0
   davranışı, GİB'den geçer).
@@ -202,7 +203,8 @@ Kurallar (`resolveSummaryExemptionCode`):
   ikilisinde kalır.
 - Belge kodu hiçbir kaleme uygulanmıyorsa (bütün istisna kalemleri kendi kodunu
   taşıyor) XML'e yazılmaz; `InvoiceSession.validate()` engellemeyen
-  `DOCUMENT_EXEMPTION_CODE_UNUSED` uyarısı verir.
+  `DOCUMENT_EXEMPTION_CODE_UNUSED` uyarısı verir. İstisna: ÖZEL MATRAH'ta belge
+  kodu özel matrah ek alt toplamına yine yazılır; orada uyarı çıkmaz.
 
 ### Dövizli Fatura
 
@@ -460,8 +462,8 @@ session.uiState.lineFields[lineIndex].showCommodityClassification  // boolean
 ALICIDIBSATIRKOD (11 hane) ister. Satır bayrakları, `validate()`, öneriler ve
 katı kurulum aynı yüklemi okur. Belge kodu 702 ama bütün satırlar kendi koduyla
 701–704 içinden 702 dışını seçmişse 702 XML'e yazılmaz ve kapsam kapalıdır. KDV'li
-satırın kendi kodu kapsamı açmaz. Bayraklar yazım başına bir kez, bütün satırlar
-için türetilir (`deriveAllLineFieldVisibility`); maliyet satır sayısıyla doğrusal.
+satırın kendi kodu kapsamı açmaz. Oturum bayrakları yazım başına bir kez, bütün
+satırlar için türetir; maliyet satır sayısıyla doğrusal.
 
 ### Liability ve isExport Davranışı (M10 kontratı)
 
