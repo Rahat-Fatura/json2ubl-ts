@@ -6,7 +6,7 @@
 # Bir satırın KAYBOLMASI = tüketici derlemesinin kırılması. Bu dosyadaki
 # bir satırı silen commit, o kırılmayı BİLEREK yaptığını beyan etmiş olur.
 #
-# Toplam: 363 ad
+# Toplam: 364 ad
 value	ADDITIONAL_ITEM_ID_SCHEME_IDS	VariableDeclaration
 value	AMOUNT_IN_WORDS_NOTE_PATTERN	VariableDeclaration
 value	AMOUNT_IN_WORDS_PREFIX	VariableDeclaration
@@ -268,6 +268,7 @@ type	SimpleShipmentInput	InterfaceDeclaration
 type	Suggestion	InterfaceDeclaration
 type	SuggestionRule	InterfaceDeclaration
 type	SuggestionSeverity	TypeAliasDeclaration
+type	SummaryExemptionContext	InterfaceDeclaration
 value	TAX_DEFINITIONS	VariableDeclaration
 value	TAX_MAP	VariableDeclaration
 value	TAX_TYPE_CODES	VariableDeclaration

@@ -220,7 +220,7 @@ describe('kalemin özete taşıdığı kod — `resolveSummaryExemptionCode`', (
   });
 
   it('vazgeçilen KDV (phantom) kalemi KDV oranı taşısa da kendi kodunu taşır', () => {
-    expect(resolveSummaryExemptionCode({ kdvPercent: 20, kdvExemptionCode: '339' }, '308', true)).toBe('339');
+    expect(resolveSummaryExemptionCode({ kdvPercent: 20, kdvExemptionCode: '339' }, '308', { phantomKdv: true })).toBe('339');
   });
 });
 
@@ -329,5 +329,141 @@ describe('`validateInvoiceState` B-78.3 — kapsam parametresi', () => {
   it('parametre verilmezse belge kodu okunur (satırları bilmeyen çağıran — eski davranış)', () => {
     expect(validateInvoiceState({ ...base, kdvExemptionCode: '702' }).map(w => w.field)).toContain(GTIP_FIELD);
     expect(validateInvoiceState({ ...base }).map(w => w.field)).not.toContain(GTIP_FIELD);
+  });
+});
+
+// ─── S5 düzeltme turu 1 ──────────────────────────────────────────────────────
+
+/** Satır düzeyi KDV istisna kodları, satır sırasıyla. */
+function lineCodesOf(xml: string): Array<string | undefined> {
+  return xml.split('<cac:InvoiceLine>').slice(1).map(seg => /<cbc:TaxExemptionReasonCode>([^<]+)</.exec(seg)?.[1]);
+}
+
+/*
+ * ÖNEMLİ-1 — İHRAÇ KAYITLI'da %0 kalemin kendi kodu 701–704 DIŞINDAYSA (301, 350 …).
+ * GİB kalemde istisna listesine bu tipte izin verir (Common:320); kütüphanenin özet
+ * kuralı 701–704 ister (`validateIhracKayitli`). 5.1.0 bu girdiyi kabul ediyor, özete
+ * belge kodunu (yoksa 701) yazıyor ve belge GİB'den geçiyordu. 5.2.0 aynısını yapar:
+ * kalem kodu kalemde kalır, özete taşınmaz.
+ */
+const NON_IHRAC_CODES = ['301', '350', '201', '213', '322'];
+const NON_IHRAC_CASES = NON_IHRAC_CODES.flatMap(code => [
+  { code, docCode: undefined, summary: ['701'], scope: false },
+  { code, docCode: '704', summary: ['704'], scope: false },
+  { code, docCode: '702', summary: ['702'], scope: true },
+]);
+
+describe('ÖNEMLİ-1 — İHRAÇ KAYITLI\'da 701–704 dışı kalem kodu 5.1.0\'daki gibi kabul edilir', () => {
+  describe.each(NON_IHRAC_CASES)('kalem $code, belge $docCode', (c) => {
+    const input = invoice(c.docCode, [line('A', c.code, 'full'), line('B', undefined, 'full')]);
+
+    it(`katı kurulum geçer; özet ${c.summary.join(' + ')}, kalem kendi kodunu korur`, () => {
+      expect(strictVerdict(input)).toEqual({ ok: true, codes: [] });
+      const xml = xmlOf(input);
+      expect(summaryCodes(xml)).toEqual(c.summary);
+      expect(lineCodesOf(xml)).toEqual([c.code, c.docCode ?? '701']);
+    });
+
+    it(`702 kapsamı ${c.scope ? 'açık (belge kodu 702 bu kalemden de uygulanır)' : 'kapalı'}`, () => {
+      expect(isIhracKayitli702Invoice(input)).toBe(c.scope);
+      const flags = new InvoiceSession({ initialInput: input }).uiState.lineFields;
+      expect(flags.map(f => f.showCommodityClassification)).toEqual([c.scope, c.scope]);
+    });
+
+    liveIt('GİB şematronu geçerli', async () => {
+      const result = await validateLive(xmlOf(input), 'efatura');
+      expect((result.schematronValidationErrors ?? []).map(e => e.ruleId)).toEqual([]);
+    }, 30_000);
+  });
+
+  it('inceleme durumları E2/E3/E4: hata yok, özet 701–704 dışı kod taşımaz', () => {
+    const e2 = invoice('702', [line('A', '701', 'full'), line('B', '350', 'full')]);
+    const e3 = invoice(undefined, [line('A', '301', 'full')]);
+    const e4 = invoice('704', [line('A', '301', 'full'), line('B', undefined, 'full')]);
+    expect([e2, e3, e4].map(strictVerdict)).toEqual([{ ok: true, codes: [] }, { ok: true, codes: [] }, { ok: true, codes: [] }]);
+    expect(summaryCodes(xmlOf(e2))).toEqual(['701', '702']);
+    expect(summaryCodes(xmlOf(e3))).toEqual(['701']);
+    expect(summaryCodes(xmlOf(e4))).toEqual(['704']);
+  });
+
+  it('karışık: 702 kalemi kendi kodunu taşır, 301 kalemi belge koduna (701) katılır', () => {
+    const input = invoice(undefined, [line('A', '702', 'full'), line('B', '301', 'full')]);
+    expect(summaryCodes(xmlOf(input))).toEqual(['702', '701']);
+    expect(isIhracKayitli702Invoice(input)).toBe(true);
+    expect(strictVerdict(input).ok).toBe(true);
+  });
+
+  it('`resolveSummaryExemptionCode`: İHRAÇ KAYITLI\'da 701–704 dışı kod belge koduna düşer, başka tipte düşmez', () => {
+    expect(resolveSummaryExemptionCode({ kdvPercent: 0, kdvExemptionCode: '301' }, '702', { invoiceType: 'IHRACKAYITLI' })).toBe('702');
+    expect(resolveSummaryExemptionCode({ kdvPercent: 0, kdvExemptionCode: '301' }, undefined, { invoiceType: 'IHRACKAYITLI' })).toBeUndefined();
+    expect(resolveSummaryExemptionCode({ kdvPercent: 0, kdvExemptionCode: '703' }, '701', { invoiceType: 'IHRACKAYITLI' })).toBe('703');
+    expect(resolveSummaryExemptionCode({ kdvPercent: 0, kdvExemptionCode: '301' }, '350', { invoiceType: 'ISTISNA' })).toBe('301');
+  });
+});
+
+/*
+ * KÜÇÜK-2 — KDV'li ama KDV tutarı 0 olan kalem (%100 iskonto / bedelsiz). Kalem
+ * istisna DEĞİLDİR: kalem XML'i de, özet de, 702 kapsamı da kendi kodunu yok sayar.
+ * Eskiden kalem XML'i "tutar 0" diye bakıp kendi 702'sini yazıyor, özet 701 yazıyordu.
+ */
+describe('KÜÇÜK-2 — KDV\'li, tutarı 0 kalem: kalem XML\'i ile özet aynı yüklemi okur', () => {
+  const freeLine = (code: string | undefined): SimpleLineInput => {
+    const l = line('A', code, 'none', 20);
+    l.allowancePercent = 100;
+    return l;
+  };
+
+  it('%100 iskontolu %20 kalemin kendi 702 kodu: kalem XML\'inde de özette de yok, kapsam kapalı', () => {
+    const input = invoice(undefined, [freeLine('702'), line('B', '701', 'none')]);
+    const xml = xmlOf(input);
+    expect(lineCodesOf(xml)).toEqual([undefined, '701']);
+    expect(summaryCodes(xml)).toEqual(['701', '701']);
+    expect(isIhracKayitli702Invoice(input)).toBe(false);
+    expect(strictVerdict(input).ok).toBe(true);
+  });
+
+  it('bedelsiz (fiyat 0) %20 kalem de istisna sayılmaz', () => {
+    const l = line('A', '702', 'none', 20);
+    l.price = 0;
+    const xml = xmlOf(invoice(undefined, [l, line('B', '701', 'none')]));
+    expect(lineCodesOf(xml)[0]).toBeUndefined();
+    expect(summaryCodes(xml)).not.toContain('702');
+  });
+
+  it('elle kurulmuş InvoiceInput: %20 satır alt toplamındaki 702 kapsamı açmaz (istisna satırı değil)', () => {
+    const mapped = mapSimpleToInvoiceInput(invoice(undefined, [line('A', '701', 'none'), line('B', undefined, 'none', 20)]));
+    const kdv = mapped.lines[1].taxTotal.taxSubtotals.find(ts => ts.taxTypeCode === '0015')!;
+    kdv.taxExemptionReasonCode = '702';
+    kdv.taxAmount = 0;
+    expect(validateIhrackayitli702(mapped)).toEqual([]);
+    // aynı kod %0 satırda olsaydı kapsam açılırdı
+    mapped.lines[0].taxTotal.taxSubtotals[0].taxExemptionReasonCode = '702';
+    expect(validateIhrackayitli702(mapped).map(e => e.code)).toContain('IHRACKAYITLI_702_REQUIRES_GTIP');
+  });
+});
+
+/*
+ * NOT-1 — belge istisna kodu XML'den düştüğünde ENGELLEMEYEN uyarı.
+ */
+describe('NOT-1 — belge kodu hiçbir kaleme uygulanmıyorsa uyarı (engellemez)', () => {
+  const unused = (input: SimpleInvoiceInput) =>
+    new InvoiceSession({ initialInput: input }).validate().filter(w => w.code === 'DOCUMENT_EXEMPTION_CODE_UNUSED');
+
+  it('belge 702, bütün kalemler kendi koduyla 701 → tek uyarı, severity "warning"', () => {
+    const w = unused(invoice('702', [line('A', '701', 'full'), line('B', '701', 'full')]));
+    expect(w).toHaveLength(1);
+    expect(w[0]).toMatchObject({ field: 'kdvExemptionCode', severity: 'warning' });
+    expect(w[0].message).toContain('702');
+  });
+
+  it('kodsuz kalem, KDV\'li kalem ya da belge koduna katılan kalem varsa uyarı yok', () => {
+    expect(unused(invoice('702', [line('A', '701', 'full'), line('B', undefined, 'full')]))).toEqual([]);
+    expect(unused(invoice('702', [line('A', '701', 'full'), line('B', undefined, 'full', 20)]))).toEqual([]);
+    expect(unused(invoice('702', [line('A', '301', 'full')]))).toEqual([]);
+    expect(unused(invoice(undefined, [line('A', '701', 'full')]))).toEqual([]);
+  });
+
+  it('uyarı katı kurulumu durdurmaz', () => {
+    expect(strictVerdict(invoice('702', [line('A', '701', 'full'), line('B', '701', 'full')])).ok).toBe(true);
   });
 });

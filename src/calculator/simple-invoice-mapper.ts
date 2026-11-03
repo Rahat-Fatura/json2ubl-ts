@@ -42,11 +42,11 @@ import type {
   AdditionalItemIdInput,
   DeliveryInput,
 } from '../types/common';
-import { isNonEmpty, normalizeTime } from '../utils/formatters';
+import { formatDecimal, isNonEmpty, normalizeTime } from '../utils/formatters';
 import { canBuildCarrierParty } from '../documents/invoice/validators/online-sale-validator';
 import { genericDocumentAllowanceChargeErrors } from '../documents/invoice/validators/hks-charge-validator';
 import { isHksChargePlane } from '../ubltr/vocabulary/hks-charge-codes';
-import { resolveSummaryExemptionCode } from '../ubltr/vocabulary/schematron-scopes';
+import { isKdvExemptLine, resolveSummaryExemptionCode } from '../ubltr/vocabulary/schematron-scopes';
 import { UblBuildError } from '../errors/ubl-build-error';
 
 
@@ -371,16 +371,22 @@ function buildTaxTotals(
       return;
     }
 
-    for (const part of parts) {
+    /* Parçalar kuruşa EN BÜYÜK KALAN yöntemiyle dağıtılır: XML'e yazılan
+     * parçaların toplamı, bölünmeden yazılacak tek alt toplamın XML değerine
+     * BİREBİR eşittir (matrah ve vergi ayrı ayrı). Ayrı ayrı yuvarlansalardı
+     * oran başına toplam 1-2 kuruş kayabilirdi. */
+    const taxables = distributeCents(parts.map(p => p.taxable), ts.taxable);
+    const amounts = distributeCents(parts.map(p => p.amount), ts.amount);
+    parts.forEach((part, k) => {
       const piece: TaxSubtotalInput = {
         ...subtotal,
-        taxableAmount: part.taxable,
-        taxAmount: part.amount,
+        taxableAmount: taxables[k],
+        taxAmount: amounts[k],
         taxExemptionReasonCode: part.code,
         taxExemptionReason: part.code === legacyCode ? legacyName : exemptionNameOf(part.code),
       };
       taxSubtotals.push(piece);
-    }
+    });
   });
 
   // calc.taxes.taxTotal phantom satırların KDV'si hariç (document-calculator 8d.2
@@ -389,6 +395,34 @@ function buildTaxTotals(
     taxAmount: calc.taxes.taxTotal,
     taxSubtotals,
   }];
+}
+
+/**
+ * Parça değerlerini kuruşa dağıtır: dönen değerler 2 ondalıklıdır ve toplamları
+ * `total`'ın XML'e yazılacak değerine (`formatDecimal`, 2 hane) BİREBİR eşittir.
+ *
+ * En büyük kalan yöntemi: her parça kuruşa aşağı yuvarlanır, eksik kalan kuruşlar
+ * kesir payı en büyük parçalara birer birer verilir (eşitlikte önce gelen).
+ * Fazla çıkarsa (kayan nokta farkı) kesir payı en küçük parçalardan alınır.
+ */
+function distributeCents(values: number[], total: number): number[] {
+  const target = Math.round(parseFloat(formatDecimal(total)) * 100);
+  const raw = values.map(v => v * 100);
+  const cents = raw.map(q => Math.floor(q + 1e-9));
+  const order = raw
+    .map((q, i) => ({ i, frac: q - cents[i] }))
+    .sort((a, b) => b.frac - a.frac || a.i - b.i);
+  let diff = target - cents.reduce((a, c) => a + c, 0);
+  for (let k = 0; diff !== 0 && order.length > 0; k++) {
+    if (diff > 0) {
+      cents[order[k % order.length].i] += 1;
+      diff -= 1;
+    } else {
+      cents[order[order.length - 1 - (k % order.length)].i] -= 1;
+      diff += 1;
+    }
+  }
+  return cents.map(c => c / 100);
 }
 
 /** İstisna kodunun adı; kod tanımsızsa `undefined` (satır düzeyiyle aynı davranış). */
@@ -415,10 +449,15 @@ function exemptionNameOf(code: string | undefined): string | undefined {
  * eskisiyle aynıdır. Belge kodu da yoksa kalem, eski geri-dönüşün seçtiği
  * koda katılır (`legacyCode`).
  *
- * Tutarlar kalemlerin alt toplamlarından, hesap motorunun sırasıyla toplanır.
- * Parçaların toplamı alt toplamın kendisine eşittir: matrah ve vergi
- * toplamları değişmez, yalnız dağılım değişir. Belge `TaxTotal/TaxAmount` ve
- * `LegalMonetaryTotal` hesap motorundan okunmaya devam eder.
+ * Tutarlar kalemlerin alt toplamlarından, hesap motorunun sırasıyla toplanır;
+ * çağıran parçaları kuruşa en büyük kalanla dağıtır (`distributeCents`). XML'deki
+ * parçaların toplamı bölünmemiş alt toplamın XML değerine birebir eşittir:
+ * matrah ve vergi toplamları değişmez, yalnız dağılım değişir. Belge
+ * `TaxTotal/TaxAmount` ve `LegalMonetaryTotal` hesap motorundan okunmaya devam
+ * eder.
+ *
+ * İHRAÇ KAYITLI'da kalemin 701–704 dışı kendi kodu (301, 350 …) özete taşınmaz,
+ * kalem belge kodunun parçasına katılır (`resolveSummaryExemptionCode`).
  *
  * Dönüş, kodların kalemlerde ilk göründüğü sırayla parçalardır. Katkı veren
  * kalem yoksa boş dizi döner.
@@ -437,7 +476,10 @@ function splitSubtotalByExemption(
     if (!contribution) return;
     const line = simple.lines[i];
     const code = (line
-      ? resolveSummaryExemptionCode(line, calc.taxExemptionReason.kdv, cl.phantomKdv === true)
+      ? resolveSummaryExemptionCode(line, calc.taxExemptionReason.kdv, {
+        invoiceType: calc.type,
+        phantomKdv: cl.phantomKdv === true,
+      })
       : undefined) ?? legacyCode;
     const part = parts.find(p => p.code === code);
     if (part) {
@@ -598,7 +640,11 @@ function buildSingleLine(
 
     // İstisna kodu: klasik KDV=0 istisna satırı VEYA phantom KDV satırı (§2.1.4 stili)
     const isPhantomKdvSub = ts.code === '0015' && cl.phantomKdv;
-    const isZeroKdvExemption = ts.amount === 0 && ts.code === '0015' && !!lineExemptionCode;
+    /* 5.2.0: "KDV tutarı 0" değil "kalem KDV'den istisna" (`isKdvExemptLine`).
+     * %100 iskontolu ya da bedelsiz %20 kalemin KDV tutarı 0'dır ama kalem istisna
+     * değildir; eskiden kalem XML'i kendi kodunu, belge özeti belge kodunu
+     * yazıyordu (iki ayrı yüklem). Artık üç yer de aynı yüklemi okur. */
+    const isZeroKdvExemption = ts.code === '0015' && isKdvExemptLine(ts.percent) && !!lineExemptionCode;
     if ((isPhantomKdvSub || isZeroKdvExemption) && lineExemptionCode) {
       subtotal.taxExemptionReasonCode = lineExemptionCode;
       subtotal.taxExemptionReason = lineExemptionName;

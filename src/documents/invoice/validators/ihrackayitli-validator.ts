@@ -49,7 +49,7 @@ import type { InvoiceInput } from '../../../types/invoice-input';
 import type { ValidationError } from '../../../errors/ubl-build-error';
 import { isNonEmpty } from '../../../utils/formatters';
 import { isValidGtip, describeGtipDefect, GTIP_DIGIT_COUNT } from '../../../utils/gtip';
-import { isIhracKayitli702Scope } from '../../../ubltr/vocabulary/schematron-scopes';
+import { isIhracKayitli702Scope, isKdvExemptLine } from '../../../ubltr/vocabulary/schematron-scopes';
 
 /** IHRACKAYITLI CustomsDeclaration PartyIdentification schemeID whitelist (Schematron satır 451) */
 const IHRAC_KAYITLI_SCHEME_IDS: ReadonlySet<string> = new Set([
@@ -68,7 +68,7 @@ export function validateIhrackayitli702(input: InvoiceInput): ValidationError[] 
    * kapsamı açmaz — o kod belge özetine de taşınmaz (`resolveSummaryExemptionCode`). */
   const exemptLineCodes = input.lines.flatMap(line =>
     line.taxTotal.taxSubtotals
-      .filter(ts => (ts.percent ?? 0) === 0 || ts.calculationSequenceNumeric === -1)
+      .filter(ts => isKdvExemptLine(ts.percent ?? 0, ts.calculationSequenceNumeric === -1))
       .map(ts => ts.taxExemptionReasonCode),
   );
   if (!isIhracKayitli702Scope(input.invoiceTypeCode, summaryCodes, exemptLineCodes)) return [];

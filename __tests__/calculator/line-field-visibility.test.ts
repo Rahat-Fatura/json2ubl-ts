@@ -6,6 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+  deriveAllLineFieldVisibility,
   deriveLineFieldVisibility,
   deriveTypeProfileFlags,
   type LineFieldVisibility,
@@ -351,5 +352,34 @@ describe('belge ↔ satır seviyesi tevkifat kapısı AYNI olmalı (4.1.6)', () 
 
     expect(session.uiState.lineFields[0].showWithholdingTaxSelector).toBe(true);
     expect(session.uiState.lineFields[1].showWithholdingTaxSelector).toBe(true);
+  });
+});
+
+describe('deriveAllLineFieldVisibility — belge düzeyi kararlar bir kez (5.2.0, KÜÇÜK-3)', () => {
+  it('702 kapsamı satır başına yeniden hesaplanmaz: kalem kodu okuma sayısı satır sayısıyla doğrusal', () => {
+    let reads = 0;
+    const n = 200;
+    const lines = Array.from({ length: n }, (_, i) => {
+      const l = { name: `K${i}`, quantity: 1, price: 10, kdvPercent: 0 } as SimpleLineInput;
+      Object.defineProperty(l, 'kdvExemptionCode', {
+        enumerable: true,
+        get() { reads++; return i % 2 ? '701' : '702'; },
+      });
+      return l;
+    });
+    const fields = deriveAllLineFieldVisibility({ type: 'IHRACKAYITLI', profile: 'TEMELFATURA', lines });
+    expect(fields).toHaveLength(n);
+    expect(fields.every(f => f.showCommodityClassification && f.showAlicidibsatirkod)).toBe(true);
+    expect(reads).toBeLessThanOrEqual(3 * n);   // karesel olsaydı ~n² = 40.000
+  });
+
+  it('tek tek türetmeyle aynı sonuç', () => {
+    const lines: SimpleLineInput[] = [
+      { ...baseLine, kdvPercent: 0, kdvExemptionCode: '701' },
+      { ...baseLine, kdvPercent: 0, kdvExemptionCode: '702' },
+      { ...baseLine, kdvPercent: 20 },
+    ];
+    const doc = { type: 'IHRACKAYITLI', profile: 'TEMELFATURA', lines };
+    expect(deriveAllLineFieldVisibility(doc)).toEqual(lines.map((l, i) => deriveLineFieldVisibility(l, doc, i)));
   });
 });

@@ -216,6 +216,7 @@ export {
     isIhracKayitli702Scope,
     resolveSummaryExemptionCode,
 } from "./ubltr/vocabulary/schematron-scopes";
+export type { SummaryExemptionContext } from "./ubltr/vocabulary/schematron-scopes";
 
 /* 🔑 HKS komisyoncu MASRAF SÖZLÜĞÜ — 4.5.1 ölçütünü karşılar.
  *

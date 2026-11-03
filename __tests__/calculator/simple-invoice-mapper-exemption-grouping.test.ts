@@ -23,6 +23,7 @@ import { calculateDocument } from '../../src/calculator/document-calculator';
 import { mapSimpleToInvoiceInput } from '../../src/calculator/simple-invoice-mapper';
 import type { SimpleInvoiceInput, SimpleLineInput } from '../../src/calculator/simple-types';
 import { probeValidator, validateLive } from '../support/validator';
+import { formatDecimal } from '../../src/utils/formatters';
 
 const MATRIX = path.join(__dirname, '..', '..', 'examples-matrix', 'valid');
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
@@ -121,14 +122,13 @@ describe('istisnalı alt toplam kalem koduna göre bölünür', () => {
 describe('toplamlar değişmez, yalnız dağılım değişir', () => {
   const mixed = ihracKayitli(['702', '701', undefined, '703'], '701');
 
-  it('parçaların matrah/vergi toplamı hesap motorunun alt toplamına eşit', () => {
+  it('parçaların matrah/vergi toplamı hesap motorunun alt toplamına eşit (XML değeri kuruşu kuruşuna)', () => {
     const calc = calculateDocument(mixed);
     const subs = docSubtotals(mixed);
     expect(calc.taxes.taxSubtotals).toHaveLength(1);           // hesap motoru (kod, oran) ikilisinde kalır
-    const sumTaxable = subs.reduce((a, s) => a + s.taxableAmount, 0);
-    const sumTax = subs.reduce((a, s) => a + s.taxAmount, 0);
-    expect(sumTaxable).toBeCloseTo(calc.taxes.taxSubtotals[0].taxable, 9);
-    expect(sumTax).toBeCloseTo(calc.taxes.taxSubtotals[0].amount, 9);
+    const cents = (v: number) => Math.round(parseFloat(formatDecimal(v)) * 100);
+    expect(subs.reduce((a, s) => a + cents(s.taxableAmount), 0)).toBe(cents(calc.taxes.taxSubtotals[0].taxable));
+    expect(subs.reduce((a, s) => a + cents(s.taxAmount), 0)).toBe(cents(calc.taxes.taxSubtotals[0].amount));
   });
 
   it('belge TaxTotal/TaxAmount ve LegalMonetaryTotal hesap motorundan okunur', () => {
@@ -227,5 +227,87 @@ describe('çok kodlu belgeler — bölünmüş özet GİB şematronundan geçer'
       expect(rules).toEqual(c.valid ? [] : ['TaxExemptionReasonCodeCheck']);
       expect(result.validSchematron).toBe(c.valid);
     }, 30_000);
+  });
+});
+
+// ─── KÜÇÜK-1: parçalar kuruşa en büyük kalanla dağıtılır ─────────────────────
+
+describe('bölünen parçaların XML toplamı, bölünmemiş alt toplamın XML değerine BİREBİR eşit', () => {
+  /** mulberry32 — sabit tohumlu, tekrarlanabilir. */
+  function prng(seed: number) {
+    return () => {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const rnd = prng(20261103);
+  const pick = <T>(a: T[]): T => a[Math.floor(rnd() * a.length)];
+  const price = () => { const d = pick([2, 3, 4]); return Math.round((rnd() * 500 + 0.001) * 10 ** d) / 10 ** d; };
+  const qty = () => (rnd() < 0.5 ? 1 + Math.floor(rnd() * 9) : Math.round((rnd() * 7 + 0.1) * 1000) / 1000);
+
+  function randomDoc(i: number): SimpleInvoiceInput {
+    const family = i % 3;
+    let doc: SimpleInvoiceInput;
+    let codes: Array<string | undefined>;
+    if (family === 0) {
+      codes = [undefined, '701', '702', '703', '704'];
+      doc = ihracKayitli(['702'], null);
+    } else if (family === 1) {
+      codes = [undefined, '301', '302', '350', '201', '213'];
+      doc = clone(istisnaCoklu);
+    } else {
+      doc = phantomMix('yatirimtesvik/yatirimtesvik-istisna-phantom-308-makine', 'yatirimtesvik/yatirimtesvik-istisna-phantom-339-insaat');
+      codes = ['308', '339'];
+    }
+    const templates = clone(doc.lines);
+    doc.lines = Array.from({ length: 2 + Math.floor(rnd() * 4) }, (_, k) => {
+      const l: SimpleLineInput = clone(templates[k % templates.length]);
+      l.price = price();
+      l.quantity = qty();
+      const c = family === 2 ? (l.itemClassificationCode === '02' ? '339' : '308') : pick(codes);
+      if (c) l.kdvExemptionCode = c; else delete l.kdvExemptionCode;
+      if (rnd() < 0.2) l.allowancePercent = 1 + Math.floor(rnd() * 30);
+      return l;
+    });
+    return doc;
+  }
+
+  const cents = (v: number) => Math.round(parseFloat(formatDecimal(v)) * 100);
+
+  it('600 rastgele belge: (vergi kodu, oran) başına Σ matrah ve Σ vergi kuruşu kuruşuna aynı', () => {
+    let split = 0;
+    const drift: string[] = [];
+    for (let i = 0; i < 600; i++) {
+      const doc = randomDoc(i);
+      const calc = calculateDocument(doc);
+      const subs = mapSimpleToInvoiceInput(doc, calc).taxTotals[0].taxSubtotals;
+      if (subs.length > calc.taxes.taxSubtotals.length) split++;
+      for (const ts of calc.taxes.taxSubtotals) {
+        const parts = subs.filter(s => s.taxTypeCode === ts.code && s.percent === ts.percent);
+        const sumTaxable = parts.reduce((a, p) => a + cents(p.taxableAmount), 0);
+        const sumTax = parts.reduce((a, p) => a + cents(p.taxAmount), 0);
+        if (sumTaxable !== cents(ts.taxable) || sumTax !== cents(ts.amount)) {
+          drift.push(`#${i} ${ts.code}/${ts.percent}: ${sumTaxable}≠${cents(ts.taxable)} · ${sumTax}≠${cents(ts.amount)}`);
+        }
+        // her parça 2 ondalıklı yazılabilir bir değerdir
+        for (const p of parts) expect(cents(p.taxableAmount) / 100).toBe(parseFloat(formatDecimal(p.taxableAmount)));
+      }
+    }
+    expect(drift).toEqual([]);
+    expect(split).toBeGreaterThan(300);   // örneklem gerçekten bölünen belge içeriyor
+  });
+
+  it('elle seçilmiş durum: üç kalem 1,005 TL (702, 701, 702) — parçalar 2,01 + 1,00, toplam 3,01', () => {
+    const doc = ihracKayitli(['702', '701', '702'], null);
+    doc.lines.forEach(l => { l.price = 1.005; l.quantity = 1; });
+    const calc = calculateDocument(doc);
+    const subs = mapSimpleToInvoiceInput(doc, calc).taxTotals[0].taxSubtotals;
+    expect(subs.map(s => [s.taxExemptionReasonCode, formatDecimal(s.taxableAmount)])).toEqual([
+      ['702', '2.01'],
+      ['701', '1.00'],
+    ]);
+    expect(formatDecimal(calc.taxes.taxSubtotals[0].taxable)).toBe('3.01');
   });
 });

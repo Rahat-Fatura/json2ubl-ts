@@ -188,6 +188,34 @@ export interface LineFieldVisibility {
   showSerialId: boolean;
 }
 
+/** Satır bayraklarının belge düzeyi girdileri — her satır için yeniden hesaplanmaz. */
+export interface LineVisibilityContext {
+  flags: TypeProfileFlags;
+  /** İHRAÇ KAYITLI 702 etkin kapsamı (`isIhracKayitli702Invoice`). */
+  ihracKayitli702: boolean;
+}
+
+/**
+ * Bütün satırların bayrakları — belge düzeyi kararlar (tip/profil bayrakları,
+ * 702 kapsamı) BİR KEZ hesaplanır (5.2.0).
+ *
+ * 702 kapsamı bütün satırları okur. Her satır için ayrı hesaplansaydı bir
+ * yeniden türetme satır sayısının karesiyle büyürdü (3.000 satırda 140 ms /
+ * güncelleme, S5 incelemesi). `InvoiceSession` bütün satırları bu fonksiyonla
+ * türetir; maliyet satır sayısıyla doğrusal.
+ */
+export function deriveAllLineFieldVisibility(
+  doc: Pick<SimpleInvoiceInput, 'type' | 'profile' | 'lines'>
+    & Partial<Pick<SimpleInvoiceInput, 'kdvExemptionCode'>>,
+): LineFieldVisibility[] {
+  const flags = deriveTypeProfileFlags(doc.type ?? 'SATIS', doc.profile ?? 'TICARIFATURA');
+  const context: LineVisibilityContext = {
+    flags,
+    ihracKayitli702: flags.isIhracKayitli && isIhracKayitli702Invoice(doc),
+  };
+  return doc.lines.map((line, idx) => deriveLineFieldVisibility(line, doc, idx, context));
+}
+
 /**
  * Bir satır için visibility map türetir. `idx` parametresi şu an sadece
  * dokümantasyon için (gelecekte satır-spesifik kuralda kullanılabilir).
@@ -203,13 +231,17 @@ export function deriveLineFieldVisibility(
     & Partial<Pick<SimpleInvoiceInput, 'kdvExemptionCode' | 'lines'>>,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _idx: number,
+  /** İç kullanım: belge düzeyi kararlar bir kez hesaplanıp verilir (`deriveAllLineFieldVisibility`). */
+  precomputed?: LineVisibilityContext,
 ): LineFieldVisibility {
-  const flags = deriveTypeProfileFlags(doc.type ?? 'SATIS', doc.profile ?? 'TICARIFATURA');
-  const ihracKayitli702 = flags.isIhracKayitli && isIhracKayitli702Invoice({
-    type: doc.type,
-    kdvExemptionCode: doc.kdvExemptionCode,
-    lines: doc.lines ?? [line],
-  });
+  const flags = precomputed?.flags
+    ?? deriveTypeProfileFlags(doc.type ?? 'SATIS', doc.profile ?? 'TICARIFATURA');
+  const ihracKayitli702 = precomputed?.ihracKayitli702
+    ?? (flags.isIhracKayitli && isIhracKayitli702Invoice({
+      type: doc.type,
+      kdvExemptionCode: doc.kdvExemptionCode,
+      lines: doc.lines ?? [line],
+    }));
 
   return {
     showKdvExemptionCodeSelector:

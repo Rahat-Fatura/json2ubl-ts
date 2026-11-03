@@ -7,7 +7,9 @@
  * gruplarken kullandığı AYNI fonksiyonla hesaplanır (`resolveSummaryExemptionCode`):
  *
  *   • KDV'den istisna kalem (oran 0) kendi kodunu taşır, kodu yoksa belge kodunu;
- *   • KDV'li kalem belge kodunu taşır.
+ *   • KDV'li kalem belge kodunu taşır;
+ *   • kalemin 701–704 dışı kendi kodu (301, 350 …) özete taşınmaz, kalem belge
+ *     koduna katılır — belge kodu 702 ise kapsam bu kalemden de açılır.
  *
  * Sonuç: kapsam açık ⇔ üretilecek XML'in vergi özetinde 702 var ⇔ GİB
  * `TaxExemptionReasonCodeCheck` bütün satırlarda GTİP + ALICIDIBSATIRKOD ister.
@@ -44,7 +46,8 @@ export interface IhracKayitli702ScopeInput {
 
 /** Kalemlerin belge vergi özetine taşıyacağı istisna kodları, satır sırasıyla. */
 export function ihracKayitli702SummaryCodes(input: IhracKayitli702ScopeInput): Array<string | undefined> {
-  return (input.lines ?? []).map(line => resolveSummaryExemptionCode(line, input.kdvExemptionCode));
+  return (input.lines ?? []).map(line =>
+    resolveSummaryExemptionCode(line, input.kdvExemptionCode, { invoiceType: input.type }));
 }
 
 /**

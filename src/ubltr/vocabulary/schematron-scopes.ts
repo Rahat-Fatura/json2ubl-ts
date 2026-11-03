@@ -27,9 +27,13 @@
  * Tek ayrık: İHRAÇ KAYITLI 702 kapsamı (`isIhracKayitli702Scope`, 5.2.0).
  * Şematronun o kuralı tipe ek olarak istisna KODUNA bakar; yüklem bu yüzden
  * kodları da alır. Yine saftır: kodları çağıran verir, yüklem girdiye uzanmaz.
+ * `resolveSummaryExemptionCode` İHRAÇ KAYITLI'nın 701–704 kümesini okur; küme
+ * `configManager`dan türer (`IHRAC_EXEMPTION_REASON_CODES`) — özet kuralı
+ * (`validateIhracKayitli`) aynı kümeyi okusun diye.
  */
 
 import {
+  IHRAC_EXEMPTION_REASON_CODES,
   YATIRIM_TESVIK_IADE_TYPES,
   YATIRIM_TESVIK_SCHEMATRON_EARSIV_TYPES,
 } from './constants';
@@ -231,14 +235,48 @@ export function resolveEffectiveExemptionCode(
 }
 
 /**
+ * Kalem KDV'den istisna mı — kendi istisna kodu XML'e yazılır mı? (5.2.0)
+ *
+ * Oran 0 ya da vazgeçilen KDV (`phantomKdv`, YTB İSTİSNA) kalemi. KDV'li kalem
+ * (oran > 0) istisna DEĞİLDİR; KDV tutarı 0 olsa bile (bedelsiz kalem, %100
+ * iskonto) tutar istisnadan değil matrahın 0 olmasından gelir.
+ *
+ * ÜÇ yer bu yüklemi okur ve aynı cevabı almak zorundadır: kalem XML'i
+ * (`buildSingleLine`), belge vergi özeti (`resolveSummaryExemptionCode`) ve
+ * 702 kapsamı. 5.2.0 öncesinde kalem XML'i "KDV tutarı 0" diye bakıyordu;
+ * %100 iskontolu %20 kalemde kalem kendi kodunu, özet belge kodunu yazıyordu.
+ */
+export function isKdvExemptLine(kdvPercent: number, phantomKdv = false): boolean {
+  return phantomKdv || kdvPercent === 0;
+}
+
+/** `resolveSummaryExemptionCode` bağlamı. */
+export interface SummaryExemptionContext {
+  /** Belgenin (hesap motorunun çözdüğü) fatura tipi. */
+  invoiceType?: string | null;
+  /** Kalem vazgeçilen KDV taşıyor mu (YTB İSTİSNA). */
+  phantomKdv?: boolean;
+}
+
+/**
  * Bir kalemin BELGE VERGİ ÖZETİNE taşıdığı KDV istisna kodu (5.2.0).
  *
- *   • KDV'den istisna kalem (oran 0 ya da vazgeçilen KDV, `phantomKdv`) kendi
- *     kodunu taşır; kodu yoksa belge kodunu.
+ *   • KDV'den istisna kalem (`isKdvExemptLine`) kendi kodunu taşır; kodu yoksa
+ *     belge kodunu.
  *   • KDV'li kalem belge kodunu taşır. Kalem düzeyinde de istisna kodu yazılmaz
  *     (`buildSingleLine`); kalemin kendi kodu belge özetine sızmaz. 555 gibi
  *     belge düzeyi kodlar böyle çalışır: kodu belge seçer, KDV'li kalemler onu
  *     taşır.
+ *   • İHRAÇ KAYITLI'da kalemin kendi kodu yalnız 701–704 ise özete taşınır.
+ *     GİB kalemde istisna listesindeki kodlara (301, 350 …) bu tipte izin verir
+ *     (Common:320); kütüphanenin özet kuralı ise 701–704 ister
+ *     (`validateIhracKayitli`, B-NEW-06). 5.1.0 bu kodları yalnız kalemde bırakıp
+ *     özete belge kodunu (yoksa 701) yazıyordu ve belge GİB'den geçiyordu. Kod
+ *     özete taşınsaydı aynı girdi katı kurulumda hata verirdi. Böyle kalem
+ *     5.1.0'daki gibi belge koduna katılır; kalem XML'i kendi kodunu korur.
+ *     Küme, özet kuralının okuduğu kümedir (`IHRAC_EXEMPTION_REASON_CODES`).
+ *     Başka tipte bu asimetri yok: tip × kod taraması (S5 düzeltme turu 1)
+ *     yalnız İHRAÇ KAYITLI'da buldu.
  *
  * İki katman bu fonksiyonu çağırır ve ikisi de AYNI cevabı almak zorundadır:
  *   • eşleyicinin vergi özeti gruplaması (`buildTaxTotals`) — alt toplamlar
@@ -250,10 +288,13 @@ export function resolveEffectiveExemptionCode(
 export function resolveSummaryExemptionCode(
   line: { kdvExemptionCode?: string | null; kdvPercent: number },
   documentCode: string | null | undefined,
-  phantomKdv = false,
+  context: SummaryExemptionContext = {},
 ): string | undefined {
-  const exemptLine = phantomKdv || line.kdvPercent === 0;
-  return resolveEffectiveExemptionCode(exemptLine ? line.kdvExemptionCode : undefined, documentCode);
+  let own = isKdvExemptLine(line.kdvPercent, context.phantomKdv) ? line.kdvExemptionCode : undefined;
+  if (context.invoiceType === 'IHRACKAYITLI' && isNonEmpty(own) && !IHRAC_EXEMPTION_REASON_CODES.has(own)) {
+    own = undefined;
+  }
+  return resolveEffectiveExemptionCode(own, documentCode);
 }
 
 /**

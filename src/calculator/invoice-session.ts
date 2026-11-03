@@ -47,9 +47,11 @@ import type { InvoiceSessionUpdateOverloads } from './session-paths.generated';
 import { KNOWN_PATH_TEMPLATES, READ_ONLY_PATHS } from './session-paths.generated';
 import { applyPathUpdate, readPath, deepEqual } from './session-path-utils';
 import { runPathGates, diffVisibility, createArrayField, type PathTokens, type ArrayFieldOps } from '../session';
-import { deriveLineFieldVisibility } from './line-field-visibility';
+import { deriveAllLineFieldVisibility } from './line-field-visibility';
 import { isIhracKayitli702Invoice } from './ihrackayitli-702-scope';
-import { isYatirimTesvikKdvScope } from '../ubltr/vocabulary/schematron-scopes';
+import { isYatirimTesvikKdvScope, resolveSummaryExemptionCode } from '../ubltr/vocabulary/schematron-scopes';
+import { isPhantomKdvCombination } from './phantom-kdv-rules';
+import { isNonEmpty } from '../utils/formatters';
 import type { ValidationError } from '../errors/ubl-build-error';
 import { UblBuildError } from '../errors/ubl-build-error';
 import { validateSimpleLineRanges } from '../documents/invoice/validators/simple-line-range-validator';
@@ -419,9 +421,7 @@ export class InvoiceSession extends EventEmitter {
        * açar/kapatır. Yalnız değişen satırı türetmek o satırları eski hâlinde
        * bırakırdı. `write` önce koştuğu için `_input` burada günceldir. */
       afterWrite: () => {
-        this._uiState.lineFields = this._input.lines.map((line, idx) =>
-          deriveLineFieldVisibility(line, this._input, idx),
-        );
+        this._uiState.lineFields = deriveAllLineFieldVisibility(this._input);
       },
       afterChange: () => {
         this.onChanged();
@@ -612,11 +612,12 @@ export class InvoiceSession extends EventEmitter {
           value,
           previousValue,
         });
-        // 8h.5: lineFields re-derive. 5.2.0: BÜTÜN satırlar — İHRAÇ KAYITLI 702
-        // kapsamı bir satırın kodundan öbür satırlara yayılır (bkz. dizi makinesi).
-        this._uiState.lineFields = this._input.lines.map((line, idx) =>
-          deriveLineFieldVisibility(line, this._input, idx),
-        );
+        /* 8h.5: lineFields re-derive. 5.2.0: burada AYRICA türetilmez — hemen
+         * aşağıdaki `updateUIState()` bütün satırları zaten yeniden türetir
+         * (`deriveAllLineFieldVisibility`) ve ikisinin arasında olay yayılmaz.
+         * İHRAÇ KAYITLI 702 kapsamı bir satırın kodundan öbür satırlara
+         * yayıldığı için tek satırı türetmek yetmezdi; iki tam geçiş ise
+         * gereksiz maliyetti (S5 incelemesi, KÜÇÜK-3). */
       }
     }
 
@@ -1163,6 +1164,22 @@ export class InvoiceSession extends EventEmitter {
      * (bkz. hks-owner-validator başlık notu). */
     warnings.push(...validateHksOwnerFields(this._input));
 
+    /* 5.2.0 — belge istisna kodu XML'den düştü mü? ENGELLEMEZ (severity 'warning').
+     * Belge vergi özeti kalemlerin kodlarıyla gruplanır; bütün istisna kalemleri
+     * kendi kodunu taşıyorsa belge kodu hiçbir kaleme uygulanmaz ve XML'e
+     * yazılmaz (ör. belge 702, kalemler 701). Doğrudur, ama kullanıcı seçtiği
+     * kodun nereye gittiğini bilmeli. */
+    const unusedDocumentCode = this._unusedDocumentExemptionCode();
+    if (unusedDocumentCode) {
+      warnings.push({
+        field: 'kdvExemptionCode',
+        message: `Faturanın istisna kodu (${unusedDocumentCode}) hiçbir kaleme uygulanmıyor: `
+          + 'bütün istisna kalemleri kendi kodunu taşıyor. Bu kod XML\'e yazılmaz.',
+        severity: 'warning',
+        code: 'DOCUMENT_EXEMPTION_CODE_UNUSED',
+      });
+    }
+
     // Sprint 8h.7: 6 validator pipeline (D-3 deterministic)
     const errors: ValidationError[] = [];
 
@@ -1334,6 +1351,26 @@ export class InvoiceSession extends EventEmitter {
 
   // ─── Private ───────────────────────────────────────────────────────────
 
+  /**
+   * Belge düzeyi istisna kodu hiçbir kalemin özet koduna dönüşmüyorsa o kod.
+   *
+   * Kalemin özete taşıdığı kod eşleyicinin kullandığı fonksiyonla çözülür
+   * (`resolveSummaryExemptionCode`); KDV'li kalem ve kodsuz kalem belge kodunu
+   * taşır, dolayısıyla uyarı yalnız BÜTÜN kalemler kendi koduyla istisnalıyken
+   * çıkar.
+   */
+  private _unusedDocumentExemptionCode(): string | undefined {
+    const documentCode = this._input.kdvExemptionCode;
+    if (!isNonEmpty(documentCode) || this._input.lines.length === 0) return undefined;
+    const type = this._input.type ?? this._calculation?.type ?? 'SATIS';
+    const profile = this._input.profile ?? this._calculation?.profile ?? 'TICARIFATURA';
+    const context = { invoiceType: type, phantomKdv: isPhantomKdvCombination(profile, type) };
+    const used = this._input.lines.some(
+      line => resolveSummaryExemptionCode(line, documentCode, context) === documentCode,
+    );
+    return used ? undefined : documentCode;
+  }
+
   private updateUIState(): void {
     const type = this._input.type ?? this._calculation?.type ?? 'SATIS';
     const profile = this._input.profile ?? this._calculation?.profile ?? 'TICARIFATURA';
@@ -1344,9 +1381,7 @@ export class InvoiceSession extends EventEmitter {
     const newUIState = deriveUIState(type, profile, this._input.currencyCode, this._liability, this._isExport);
 
     // Sprint 8h.5: doc-level değişim → tüm lineFields re-derive
-    newUIState.lineFields = this._input.lines.map((line, idx) =>
-      deriveLineFieldVisibility(line, this._input, idx)
-    );
+    newUIState.lineFields = deriveAllLineFieldVisibility(this._input);
 
     /* Uyarılar `deriveUIState` tarafından üretilmez (o saf bir kapsam
      * hesabıdır); mevcut anlık görüntüden TAŞINIR. Taşınmazsa her
