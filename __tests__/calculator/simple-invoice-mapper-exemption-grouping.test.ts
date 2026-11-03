@@ -299,6 +299,19 @@ describe('bölünen parçaların XML toplamı, bölünmemiş alt toplamın XML d
     expect(split).toBeGreaterThan(300);   // örneklem gerçekten bölünen belge içeriyor
   });
 
+  it('eksik kuruş, kesir payı EN BÜYÜK parçaya gider (0,333 + 0,333 + 0,334 → 0,33 + 0,33 + 0,34)', () => {
+    const doc = ihracKayitli(['701', '702', '703'], null);
+    doc.lines.forEach((l, k) => { l.price = [0.333, 0.333, 0.334][k]; l.quantity = 1; });
+    const calc = calculateDocument(doc);
+    const subs = mapSimpleToInvoiceInput(doc, calc).taxTotals[0].taxSubtotals;
+    expect(subs.map(s => [s.taxExemptionReasonCode, formatDecimal(s.taxableAmount)])).toEqual([
+      ['701', '0.33'],
+      ['702', '0.33'],
+      ['703', '0.34'],
+    ]);
+    expect(formatDecimal(calc.taxes.taxSubtotals[0].taxable)).toBe('1.00');
+  });
+
   it('elle seçilmiş durum: üç kalem 1,005 TL (702, 701, 702) — parçalar 2,01 + 1,00, toplam 3,01', () => {
     const doc = ihracKayitli(['702', '701', '702'], null);
     doc.lines.forEach(l => { l.price = 1.005; l.quantity = 1; });

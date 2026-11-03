@@ -386,6 +386,20 @@ describe('ÖNEMLİ-1 — İHRAÇ KAYITLI\'da 701–704 dışı kalem kodu 5.1.0\
     expect(summaryCodes(xmlOf(e4))).toEqual(['704']);
   });
 
+  it('belge 702, BÜTÜN kalemler 701–704 dışı kodlu: özet 702 (5.1.0 gibi), dört yer kapsamı açık sayar', () => {
+    const filled = invoice('702', [line('A', '301', 'full'), line('B', '350', 'full')]);
+    expect(summaryCodes(xmlOf(filled))).toEqual(['702']);
+    expect(isIhracKayitli702Invoice(filled)).toBe(true);
+    expect(new InvoiceSession({ initialInput: filled }).uiState.lineFields.map(f => f.showCommodityClassification))
+      .toEqual([true, true]);
+    expect(strictVerdict(filled).ok).toBe(true);
+
+    const missing = invoice('702', [line('A', '301', 'full'), line('B', '350', 'none')]);
+    expect(strictVerdict(missing).codes).toContain('IHRACKAYITLI_702_REQUIRES_GTIP');
+    const warnings = new InvoiceSession({ initialInput: missing }).validate();
+    expect(warnings.some(w => w.field === GTIP_FIELD)).toBe(true);
+  });
+
   it('karışık: 702 kalemi kendi kodunu taşır, 301 kalemi belge koduna (701) katılır', () => {
     const input = invoice(undefined, [line('A', '702', 'full'), line('B', '301', 'full')]);
     expect(summaryCodes(xmlOf(input))).toEqual(['702', '701']);
