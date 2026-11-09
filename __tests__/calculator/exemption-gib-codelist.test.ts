@@ -132,6 +132,15 @@ describe('501 — GİB listesinde var, anlamı yayımlanmadı', () => {
     expect(isValidExemptionCode('501')).toBe(true);
   });
 
+  it('adı yansız: belgeye TaxExemptionReason olarak yazılır, anlam iddia etmez', () => {
+    // Common şematronu İSTİSNA'da KDV tutarı 0 olan 0015 alt toplamında
+    // TaxExemptionReason'ı ZORUNLU ve boş olmayan ister; "yalnız kod" yazılamaz.
+    // GİB adı yayımlamadığı için metin yalnız kodu adlandırır.
+    expect(EXEMPTION_MAP.get('501')?.name).toBe('İstisna Kodu 501');
+    const xml = new SimpleInvoiceBuilder({ validationLevel: 'strict' }).build(istisnaInvoice('501')).xml;
+    expect(xml).toContain('<cbc:TaxExemptionReason>İstisna Kodu 501</cbc:TaxExemptionReason>');
+  });
+
   it('bayrak YALNIZ 501\'de — öbür bütün kodların anlamı yayımlı', () => {
     const flagged = EXEMPTION_DEFINITIONS.filter(d => d.meaningUnpublished).map(d => d.code);
     expect(flagged).toEqual(['501']);

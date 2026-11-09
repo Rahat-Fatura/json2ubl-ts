@@ -138,7 +138,11 @@ export const EXEMPTION_DEFINITIONS: ReadonlyArray<ExemptionDefinition> = [
   // belgesinde tanımlı değil. Geçerli kod; kullanıcıya seçenek olarak
   // sunulmamalı (`meaningUnpublished`). Kütüphane onu öbür kodlar gibi KDV alt
   // toplamına yazar.
-  { code: '501', name: 'Anlamı GİB Tarafından Yayımlanmamış İstisna Kodu', type: 'KDV', documentType: 'ISTISNA', meaningUnpublished: true },
+  // Ad belgeye `TaxExemptionReason` olarak yazılır. Common şematronu İSTİSNA'da
+  // KDV tutarı 0 olan 0015 alt toplamında gerekçeyi zorunlu ve boş olmayan
+  // ister ("yalnız kod" yazılamaz); GİB adı olmadığı için metin anlam iddia
+  // etmez, yalnız kodu adlandırır.
+  { code: '501', name: 'İstisna Kodu 501', type: 'KDV', documentType: 'ISTISNA', meaningUnpublished: true },
 
   // KDV Satış — istisna olmayan diğer
   { code: '351', name: 'KDV İstisna Olmayan Diğer', type: 'KDV', documentType: 'SATIS' },
