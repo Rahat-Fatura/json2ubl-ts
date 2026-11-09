@@ -265,6 +265,7 @@ type	SimpleSelfEmployedVoucherLineInput	InterfaceDeclaration
 type	SimpleSgkInput	InterfaceDeclaration
 type	SimpleSgkType	TypeAliasDeclaration
 type	SimpleShipmentInput	InterfaceDeclaration
+type	SimpleTrailerPlateInput	InterfaceDeclaration
 type	SimpleTrailerPlateScheme	TypeAliasDeclaration
 type	Suggestion	InterfaceDeclaration
 type	SuggestionRule	InterfaceDeclaration
