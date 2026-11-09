@@ -2,7 +2,7 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
-## [Yayımlanmamış]
+## [5.3.0] — 2026-11-09
 
 > **İstisna kodları GİB kod listesiyle eşit ve kendi vergilerinin alt toplamına
 > yazılıyor; vazgeçilen KDV kaleminde KDV dışı vergiler toplama giriyor.** GİB
