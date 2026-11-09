@@ -17,7 +17,8 @@
  *   • ÖTV/konaklama kodu KDV alt toplamına yazılamaz (151 hariç: 5.2.0'dan beri
  *     KDV'de kabul ediliyordu, geriye uyum), KDV kodu ÖTV/konaklama alt
  *     toplamına yazılamaz;
- *   • `getAvailableExemptions(tip, vergiTürü = 'KDV')`.
+ *   • `getAvailableExemptions(tip, vergiTürü)`: varsayılan (KDV) liste 5.2.0 ile
+ *     aynı + 501; ÖTV ve konaklama kodları kendi türleriyle istenir.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -218,16 +219,19 @@ describe('kod ↔ vergi türü uyuşmazlığı reddedilir', () => {
 describe('getAvailableExemptions — vergi türüne göre', () => {
   const codes = (xs: Array<{ code: string }>) => xs.map(x => x.code);
 
-  it('varsayılan KDV: yalnız type === "KDV" kodları', () => {
+  it('varsayılan KDV: KDV alt toplamında kabul edilen kodlar — ÖTV/konaklama kodu yok, 5.2.0 listeleri korunur', () => {
     for (const type of ['ISTISNA', 'SATIS', 'IHRACKAYITLI', 'OZELMATRAH', 'IADE', 'SGK', 'YTBISTISNA']) {
       const list = getAvailableExemptions(type);
       expect(list.length).toBeGreaterThan(0);
-      expect(list.every(d => d.type === 'KDV')).toBe(true);
+      expect(list.some(d => d.type === 'KONAKLAMA' || (d.type === 'OTV' && d.code !== '151'))).toBe(false);
       expect(getAvailableExemptions(type, 'KDV')).toEqual(list);
     }
     expect(codes(getAvailableExemptions('ISTISNA'))).toContain('301');
     expect(codes(getAvailableExemptions('ISTISNA'))).not.toContain('101');
-    expect(codes(getAvailableExemptions('SATIS'))).not.toContain('151');
+    expect(codes(getAvailableExemptions('ISTISNA'))).not.toContain('001');
+    // 151 ve SGK sembolik kodları KDV alt toplamında 5.2.0'daki gibi kabul edilir → seçicide kalır.
+    expect(codes(getAvailableExemptions('SATIS'))).toContain('151');
+    expect(codes(getAvailableExemptions('SGK'))).toContain('SAGLIK_ECZ');
   });
 
   it('ÖTV: İSTİSNA\'da 101–108, SATIŞ\'ta 151', () => {
@@ -240,7 +244,7 @@ describe('getAvailableExemptions — vergi türüne göre', () => {
     expect(getAvailableExemptions('KONAKLAMAVERGISI', 'KONAKLAMA')).toEqual([]);
   });
 
-  it('SGK sembolik kodları yalnız açıkça istenince: getAvailableExemptions("SGK", "SGK")', () => {
+  it('SGK açık süzgeci yalnız sembolik kodları döndürür: getAvailableExemptions("SGK", "SGK")', () => {
     expect(codes(getAvailableExemptions('SGK', 'SGK'))).toEqual(
       ['SAGLIK_ECZ', 'SAGLIK_HAS', 'SAGLIK_OPT', 'SAGLIK_MED', 'ABONELIK', 'MAL_HIZMET', 'DIGER'],
     );

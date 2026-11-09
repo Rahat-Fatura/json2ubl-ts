@@ -231,8 +231,9 @@ export function getExemptionTypeForTax(taxCode: string): 'KDV' | 'OTV' | 'KONAKL
 
 /**
  * 5.2.0'da KDV alt toplamında (`kdvExemptionCode`) kabul edilen ÖTV kodu.
- * Geriye uyum için KDV'de kabul edilmeye devam eder; seçicide KDV listesinde
- * sunulmaz (`type: 'OTV'`). Doğru yeri ÖTV %0 alt toplamıdır.
+ * Geriye uyum için KDV'de kabul edilmeye ve KDV seçicisinde (5.2.0 listesi)
+ * sunulmaya devam eder. Doğru yeri ÖTV %0 alt toplamıdır; KDV seçicisinden
+ * çıkarılması ayrı bir sürümde, sahip kararıyla.
  */
 export const LEGACY_KDV_SUBTOTAL_EXEMPTION_CODES: ReadonlySet<string> = new Set(['151']);
 

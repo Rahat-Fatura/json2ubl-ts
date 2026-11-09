@@ -10,7 +10,8 @@
 
 import { configManager } from './config-manager';
 import type { WithholdingTaxDefinition } from './withholding-config';
-import type { ExemptionDefinition } from './exemption-config';
+import { isExemptionAllowedOnTax, type ExemptionDefinition } from './exemption-config';
+import { KDV_TAX_CODE } from './tax-config';
 import { BillingDocumentTypeCode } from './simple-types';
 import { PROFILE_TYPE_MATRIX, WITHHOLDING_ALLOWED_TYPES } from '../ubltr/vocabulary/constants';
 import { isYatirimTesvikScope, isYatirimTesvikKdvScope, isIhracKayitli702Scope } from '../ubltr/vocabulary/schematron-scopes';
@@ -441,25 +442,25 @@ export function deriveFieldVisibility(type: string, profile: string, currencyCod
 /**
  * Tip bazında kullanılabilir istisna kodlarını döndürür.
  *
- * `taxType` hangi vergi alt toplamının seçicisi olduğunu söyler; varsayılan
- * `'KDV'` (KDV istisna kodu seçicisi, `uiState.availableExemptions`). Yalnız
- * `type` alanı bu değer olan tanımlar döner:
- *   • `'KDV'`  — `kdvExemptionCode` seçenekleri (301, 350, 501 …);
- *   • `'OTV'`  — ÖTV %0 alt toplamı (`taxes[].exemptionCode`): İSTİSNA'da 101–108,
- *                SATIŞ grubunda 151;
+ * `taxType` hangi vergi alt toplamının seçicisi olduğunu söyler:
+ *   • verilmezse ya da `'KDV'` — KDV istisna kodu seçicisi
+ *     (`kdvExemptionCode`, `uiState.availableExemptions`): KDV alt toplamında
+ *     KABUL EDİLEN kodlar (`isExemptionAllowedOnTax(def, '0015')`). 5.2.0
+ *     listeleri aynen korunur (SATIŞ grubunda 151, SGK'da sembolik kodlar
+ *     dahil); yalnız 501 eklenir. 101–108 ve 001 bu listede yoktur.
+ *   • `'OTV'` — yalnız ÖTV türü kodlar (`taxes[].exemptionCode`, ÖTV %0):
+ *     İSTİSNA'da 101–108, SATIŞ grubunda 151;
  *   • `'KONAKLAMA'` — konaklama vergisi %0 alt toplamı: İSTİSNA grubunda 001;
- *   • `'SGK'`  — SGK sembolik kodları (SGK tipinde).
+ *   • `'SGK'` — yalnız SGK sembolik kodları (SGK tipinde).
  * Bir vergi kodunun türü: `getExemptionTypeForTax`.
- *
- * Bu sürümden önce süzme yoktu: SATIŞ listesi ÖTV kodu 151'i, SGK listesi SGK
- * sembolik kodlarını da KDV seçicisinde sunuyordu. Onlar artık kendi
- * `taxType`ları ile istenir.
  */
 export function getAvailableExemptions(
   type: string,
   taxType: ExemptionDefinition['type'] = 'KDV',
 ): ExemptionDefinition[] {
-  return exemptionsAllowedForType(type).filter(def => def.type === taxType);
+  const allowed = exemptionsAllowedForType(type);
+  if (taxType === 'KDV') return allowed.filter(def => isExemptionAllowedOnTax(def, KDV_TAX_CODE));
+  return allowed.filter(def => def.type === taxType);
 }
 
 /** Fatura tipinde izinli bütün istisna kodları (vergi türünden bağımsız). */

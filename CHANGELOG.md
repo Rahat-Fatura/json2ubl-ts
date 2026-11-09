@@ -84,31 +84,35 @@ yazılıyordu.
 - **151 istisnası (geriye uyum):** 151 "ÖTV — İstisna Olmayan Diğer"dir ve doğru
   yeri ÖTV %0 alt toplamıdır. 5.2.0 onu `kdvExemptionCode` ile KDV alt
   toplamında kabul ediyordu; reddetmek önceden geçerli girdiyi kırardı. KDV'de
-  kabul edilmeye devam eder, KDV seçicisinde artık sunulmaz.
+  kabul edilmeye ve KDV seçicisinde sunulmaya devam eder.
 - Canlı şematron (24.08.2026): İSTİSNA + KDV %0 (301) + ÖTV 0071 %0 (101)
   geçer; İSTİSNA + KDV %0 (310) + 0059 %0 (001) geçer
   (`__tests__/calculator/non-kdv-tax-exemption.test.ts`).
 
-### Değişen — `getAvailableExemptions` vergi türüne göre süzülür
+### Eklenen — `getAvailableExemptions` vergi türü parametresi
 
-`getAvailableExemptions(tip, vergiTürü = 'KDV')` ve
-`InvoiceSession.getAvailableExemptions(vergiTürü?)`. Varsayılan liste KDV
-istisna kodu seçicisinin listesidir ve **yalnız `type === 'KDV'` tanımlarını**
-döndürür; `uiState.availableExemptions` bu listedir. **Davranış değişikliği:**
+`getAvailableExemptions(tip, vergiTürü?)` ve
+`InvoiceSession.getAvailableExemptions(vergiTürü?)`. Varsayılan (ya da `'KDV'`)
+KDV istisna kodu seçicisinin listesidir ve `uiState.availableExemptions` budur:
+KDV alt toplamında kabul edilen kodlar. **5.2.0 listeleri aynen korunur; tek
+fark 501'in eklenmesidir.** 101–108 ve 001 KDV listesine girmez; `'OTV'`,
+`'KONAKLAMA'` ve `'SGK'` açık süzgeçtir:
 
 | Çağrı | 5.2.0 | Bu sürüm |
 |---|---|---|
-| `getAvailableExemptions('SATIS')` (ve SATIŞ grubu tipler) | 151, 351, 555 | 351, 555 — 151 için `('SATIS', 'OTV')` |
-| `getAvailableExemptions('SGK')` | SGK sembolik kodları (SAGLIK_ECZ …) + İSTİSNA kodları | İSTİSNA KDV kodları — sembolik kodlar için `('SGK', 'SGK')` |
-| `getAvailableExemptions('ISTISNA')` | 201–350 | aynı + 501 (101–108 ve 001 KDV listesinde değil) |
+| `getAvailableExemptions('SATIS')` (ve SATIŞ grubu tipler) | 151, 351, 555 | aynı |
+| `getAvailableExemptions('SGK')` | SGK sembolik kodları + İSTİSNA kodları | aynı + 501 |
+| `getAvailableExemptions('ISTISNA')` (ve İSTİSNA kodlarını sunan tipler) | 201–350 | aynı + 501 |
 | `getAvailableExemptions('ISTISNA', 'OTV')` | — | 101–108 |
+| `getAvailableExemptions('SATIS', 'OTV')` | — | 151 |
 | `getAvailableExemptions('ISTISNA', 'KONAKLAMA')` | — | 001 |
+| `getAvailableExemptions('SGK', 'SGK')` | — | 7 SGK sembolik kodu |
 
-SGK sembolik kodları bir vergi istisna kodu değildir: GİB
-`$TaxExemptionReasonCodeType` listesinde yoktur (`$AccountingCostCodeList`
-değeridir) ve şematronun `TaxExemptionReasonCodeCheck` kuralı belge vergi
-özetindeki gerekçeli istisna kodunun bu listede olmasını ister. Kütüphanenin
-`sgk.type` doğrulaması bu listeyi kullanmaz.
+20 fatura tipinin hepsinde `getAvailableExemptions(tip)` ve
+`uiState.availableExemptions` 5.2.0 kaynağından dondurulmuş listelerle
+karşılaştırılır (`__tests__/calculator/available-exemptions-5.2.0.test.ts`,
+`__tests__/fixtures/available-exemptions/5.2.0.json`): çıkan kod yok, sıra
+aynı, eklenen yalnız 501.
 
 ### Düzeltilen — vazgeçilen KDV kaleminde KDV dışı vergiler toplamdan düşüyordu (KN-092)
 
@@ -187,6 +191,11 @@ geçer; basit girdide ülke adından kod üretilmez
   (`taxes[].exemptionCode`) reddedilir.
 - 151'in KDV alt toplamında kabulü geriye uyum içindir; bir sonraki MAJOR'da
   kaldırılabilir.
+- 151 ve SGK sembolik kodları (SAGLIK_ECZ, SAGLIK_HAS, SAGLIK_OPT, SAGLIK_MED,
+  ABONELIK, MAL_HIZMET, DIGER) KDV seçicisinde kalır. İkisi de KDV alt
+  toplamında kabul ediliyor ve kütüphanenin ürettiği XML canlı şematrondan
+  geçiyor. Seçiciden çıkarılmaları tüketicide ÖTV satır seçicisi geldikten
+  sonra, ayrı bir sürümde ve sahip kararıyla yapılır.
 
 ### Sürüm önerisi: MINOR
 
@@ -201,15 +210,13 @@ geçer; basit girdide ülke adından kod üretilmez
   meaningUnpublished`, `type` birliğine `'KONAKLAMA'`,
   `SimpleLineTaxInput.exemptionCode`, `CalculatedTaxSubtotal.exemptionCode`,
   `getAvailableExemptions`'a isteğe bağlı ikinci parametre,
-  `getExemptionTypeForTax`. `getAvailableExemptions` varsayılan listesinin
-  içeriği değişti (yukarıda tablo); bu bir ad ya da tip daralması değil,
-  seçici davranışının değişmesidir.
+  `getExemptionTypeForTax`. `getAvailableExemptions` varsayılan listeleri 5.2.0
+  ile aynı, yalnız 501 eklendi (20 tipte test edildi); hiçbir liste daralmadı.
 
 ### Tüketici için
 
-- **KDV seçicisi:** `uiState.availableExemptions` artık yalnız KDV kodlarıdır;
-  ÖTV kodu 151 ve SGK sembolik kodları buradan çıktı. 501'i
-  (`meaningUnpublished === true`) seçim listesinde gösterme.
+- **KDV seçicisi:** `uiState.availableExemptions` 5.2.0 ile aynı, yalnız 501
+  eklendi. 501'i (`meaningUnpublished === true`) seçim listesinde gösterme.
 - **ÖTV/konaklama kalemi:** vergi satırına istisna kodu seçicisi eklenirse
   seçenekler `getAvailableExemptions(tip, getExemptionTypeForTax(vergiKodu))`;
   kod `taxes[i].exemptionCode`a, oran 0 ile yazılır.
