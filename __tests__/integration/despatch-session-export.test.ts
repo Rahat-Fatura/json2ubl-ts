@@ -25,6 +25,7 @@ import {
   type SimpleDriverInput,
   type SimpleLicensePlateInput,
   type SimpleLicensePlateScheme,
+  type SimpleTrailerPlateScheme,
   type SimpleItemIdentificationInput,
   type SimpleDespatchOrderReferenceInput,
   type SimpleDespatchAdditionalDocumentInput,
@@ -84,7 +85,8 @@ describe('e-İrsaliye oturum katmanı — paket yüzeyi', () => {
     const driver: SimpleDriverInput = {
       firstName: 'Ad', familyName: 'Soyad', nationalityId: '12345678901',
     };
-    const scheme: SimpleLicensePlateScheme = 'DORSEPLAKA';
+    const scheme: SimpleLicensePlateScheme = 'YABANCIPLAKA';
+    const trailerScheme: SimpleTrailerPlateScheme = 'DORSEPLAKA';
     const plate: SimpleLicensePlateInput = { value: '34ABC123', scheme };
     const address: SimpleDeliveryAddressInput = {
       address: 'Adres', district: 'İlçe', city: 'İl', zipCode: '34710',
@@ -94,6 +96,7 @@ describe('e-İrsaliye oturum katmanı — paket yüzeyi', () => {
       deliveryAddress: address,
       drivers: [driver],
       licensePlates: [plate],
+      trailerPlates: [{ value: '34DRS456', scheme: trailerScheme }],
       carrier: party,
     };
     const itemId: SimpleItemIdentificationInput = { scheme: 'KUNYENO', value: 'X'.repeat(19) };

@@ -84,9 +84,9 @@ export interface DespatchShipmentInput {
    *
    * 🔴 DORSE/RÖMORK BURAYA YAZILMAZ. Kanonik yeri `transportHandlingUnits`tir
    * (`cac:TransportHandlingUnit/cac:TransportEquipment/cbc:ID`, B-49); GİB'in
-   * kendi örneği de dorseyi aşamanın DIŞINDA gösterir. Dorseyi çekici gibi
-   * yazmak belgeyi artık geçersiz kılmaz ama YANLIŞ BEYAN eder — dorse ayrı bir
-   * araç değildir, bir ekipmandır.
+   * kendi örneği de dorseyi aşamanın DIŞINDA gösterir. Dorse şemalı çekici
+   * plakası GİB paketi 24.08.2026'dan beri geçersizdir (GİB TEST: 1150); dorse
+   * ayrı bir araç değil, bir ekipmandır.
    */
   licensePlates?: LicensePlateInput[];
   /** B-72: Shipment/cbc:ID değeri (default: '1') */
@@ -137,26 +137,22 @@ export interface DriverPersonInput {
 export type CarrierPartyInput = PartyInput;
 
 /**
- * Plaka schemeID — Schematron `$LicensePlateIDSchemeIDType` (20260701, Sprint 9).
+ * Çekici plakası schemeID — Schematron `$LicensePlateIDSchemeIDType`
+ * (`UBL-TR_Codelist.xml:37`, GİB paketi 24.08.2026).
  *
- * `YABANCI*` varyantları TR plaka formatından muaftır (`^[A-Z0-9_-]+$`).
+ * `YABANCIPLAKA` TR plaka formatından muaftır (`^[A-Z0-9_-]+$`). Dorse şemaları
+ * burada geçersizdir; dorse `transportHandlingUnits` altında taşınır.
  */
-export type LicensePlateSchemeId =
-  | 'PLAKA'
-  | 'DORSE'
-  | 'DORSEPLAKA'
-  | 'YABANCIPLAKA'
-  | 'YABANCIDORSE'
-  | 'YABANCIDORSEPLAKA';
+export type LicensePlateSchemeId = 'PLAKA' | 'YABANCIPLAKA';
 
 /** Plaka bilgisi */
 export interface LicensePlateInput {
   /**
-   * Plaka numarası. TR schemeID'lerinde `^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$`,
-   * `YABANCI*` schemeID'lerinde `^[A-Z0-9_-]+$` formatında olmalıdır.
+   * Plaka numarası. `PLAKA` için `^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$`,
+   * `YABANCIPLAKA` için `^[A-Z0-9_-]+$` formatında olmalıdır.
    */
   plateNumber: string;
-  /** Schematron `$LicensePlateIDSchemeIDType` — 6 değer (Sprint 9'da 2'den genişledi) */
+  /** Schematron `$LicensePlateIDSchemeIDType` — 2 değer (paket 24.08.2026; Sprint 9'da 6 değerdi) */
   schemeId: LicensePlateSchemeId;
 }
 

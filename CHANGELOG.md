@@ -2,6 +2,20 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [5.3.1] — 2026-11-10
+
+- **e-İrsaliye çekici plakası şemaları GİB listesine indirildi (T-KOD-9, GT-03).**
+  `cbc:LicensePlateID/@schemeID` artık yalnız `PLAKA` ve `YABANCIPLAKA` kabul eder
+  (`UBL-TR_Codelist.xml:37`, paket 24.08.2026). `DORSE`, `DORSEPLAKA`, `YABANCIDORSE`
+  ve `YABANCIDORSEPLAKA` çekici plakasında reddedilir ve plaka zorunluluğunu
+  karşılamaz; bu belgeyi GİB TEST 1150 ile reddediyordu. Bu dört şema dorse
+  düğümünde (`TransportEquipment/cbc:ID`, `:38`) geçerlidir, o düğüm değişmedi.
+  `LicensePlateSchemeId` ve `SimpleLicensePlateScheme` daraldı; dorse için yeni
+  `SimpleTrailerPlateScheme` tipi eklendi (`trailerPlates[].scheme` artık `PLAKA` ve
+  `YABANCIPLAKA` almaz). Geçerli belgelerin XML'i değişmez. Sürüm politikasına göre
+  daraltma MAJOR kapsamındadır; GİB'in reddettiği değerleri kapattığı için istenerek
+  5.3.1 olarak çıktı.
+
 ## [5.3.0] — 2026-11-09
 
 > **İstisna kodları GİB kod listesiyle eşit ve kendi vergilerinin alt toplamına

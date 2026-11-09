@@ -48,12 +48,13 @@ export interface SimpleDriverInput {
   nationalityId: string;
 }
 
-/** Plaka şema kimlikleri — `LicensePlateIDSchemeIDCheck` (Codelist:37). */
-export type SimpleLicensePlateScheme =
-  | 'PLAKA'
+/** Çekici plaka şema kimlikleri — `LicensePlateIDSchemeIDCheck` (Codelist:37, paket 24.08.2026). */
+export type SimpleLicensePlateScheme = 'PLAKA' | 'YABANCIPLAKA';
+
+/** Dorse plaka şema kimlikleri — `TransportEquipmentIDSchemeIDCheck` (Codelist:38). */
+export type SimpleTrailerPlateScheme =
   | 'DORSE'
   | 'DORSEPLAKA'
-  | 'YABANCIPLAKA'
   | 'YABANCIDORSE'
   | 'YABANCIDORSEPLAKA';
 
@@ -63,8 +64,8 @@ export type SimpleLicensePlateScheme =
  * 🔴 `LicensePlateIDCheck` (Common:786-788): geçerli şemalı, BOŞ OLMAYAN en az bir
  * plaka HER İRSALİYEDE zorunludur — taşıyıcı firma verilse BİLE. Ekran "kargoya
  * verdim" dese de plaka istemek zorundadır.
- * TR şemalarında biçim `^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$`; `YABANCI*`
- * şemalarında `^[A-Z0-9_-]+$`. Şematron her plakayı AYRI AYRI denetler
+ * `PLAKA` şemasında biçim `^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$`; `YABANCIPLAKA`
+ * şemasında `^[A-Z0-9_-]+$`. Şematron her plakayı AYRI AYRI denetler
  * (`LicensePlateIDSchemeIDCheck` bağlamı plakanın kendisidir), yani ikinci aracın
  * hatalı plakası da yakalanır.
  */
@@ -85,15 +86,15 @@ export interface SimpleLicensePlateInput {
  * iki dorse orada iki `TransportEquipment` olur. `licensePlates` ise ÇEKİCİ
  * listesidir ve her kaydı ayrı bir `cac:ShipmentStage` üretir.
  *
- * Yani ayrım artık "XSD ikinci plakaya izin vermiyor" diye değil, BEYAN DOĞRU
- * OLSUN diye vardır: dorseyi `licensePlates`e koymak onu ikinci bir çekici
- * olarak beyan eder.
+ * Ayrım BEYAN DOĞRU OLSUN diye vardır: dorseyi `licensePlates`e koymak onu ikinci
+ * bir çekici olarak beyan eder. GİB paketi 24.08.2026'dan beri dorse şemaları
+ * `LicensePlateID`de zaten geçersizdir (Codelist:37-38).
  */
 export interface SimpleTrailerPlateInput {
   /** Plaka metni — `licensePlates` ile AYNI biçim kurallarına tabidir. */
   value: string;
   /** Şema — varsayılan: "DORSEPLAKA" */
-  scheme?: SimpleLicensePlateScheme;
+  scheme?: SimpleTrailerPlateScheme;
 }
 
 /** Sevkiyat bilgileri — `cac:Shipment` (XSD'de zorunlu). */

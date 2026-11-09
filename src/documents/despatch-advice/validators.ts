@@ -137,7 +137,7 @@ export function validateDespatch(
       }
     });
 
-    // Plaka schemeID + format kontrolü — LicensePlateIDSchemeIDCheck (Sprint 9)
+    // Plaka schemeID + format kontrolü — LicensePlateIDSchemeIDCheck (Sprint 9; küme GİB paketi 24.08.2026)
     s.licensePlates?.forEach((lp, i) => {
       if (!LICENSE_PLATE_SCHEME_IDS.has(lp.schemeId)) {
         errors.push(invalidFormat(`shipment.licensePlates[${i}].schemeId`,

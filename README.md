@@ -2,8 +2,8 @@
 
 JSON verilerinden resmi **UBL-TR 2.1** XML belgeleri oluşturan kapsamlı TypeScript kütüphanesi.
 
-GİB e-Fatura Paketi **Schematron 20260701** ve **UBL-TR Kod Listeleri v1.43** kurallarını
-hedefler (yürürlük 14.09.2026). İki katmanlı API sunar:
+GİB e-Fatura Paketi **Schematron 24.08.2026** (önceki referans: 20260701) ve **UBL-TR Kod
+Listeleri v1.43** kurallarını hedefler (yürürlük 14.09.2026). İki katmanlı API sunar:
 
 1. **SimpleInvoiceBuilder** — Basit JSON gir, SDK tüm hesaplamaları otomatik yapsın
 2. **InvoiceBuilder** — Tam kontrol — tüm alanları kendin belirle
@@ -817,7 +817,7 @@ Tevkifatlı iadenin doğru yapısı: tip `IADE` + kalemde tevkifat kodu.
 | **KAMU** | `paymentMeans` + IBAN (TR + 24 karakter) |
 | **SARJ** (v4.0.0) | `invoicePeriod` (4 alan: startDate/startTime/endDate/endTime, tarih ≥ 2005-01-01) + `additionalDocuments` içinde `schemeId: 'ESURaporID'` GUID + IssueDate + alıcıda **tam 1** `PLAKA` kimliği |
 | **SARJANLIK** (v4.0.0) | `invoicePeriod` (4 alan) + alıcıda **tam 1** `PLAKA` kimliği + **her satırda** `serialId` |
-| **e-İrsaliye** (v4.0.0) | `shipment.licensePlates` — en az 1 geçerli plaka **zorunlu**; TR formatı `^(0[1-9]\|[1-7][0-9]\|8[01])[A-Z]+[0-9]+$`, yabancı `^[A-Z0-9_-]+$` |
+| **e-İrsaliye** (v4.0.0, küme v5.3.1) | `shipment.licensePlates` — en az 1 geçerli plaka **zorunlu**, şoför olmasa da; `schemeID` yalnız `PLAKA` (`^(0[1-9]\|[1-7][0-9]\|8[01])[A-Z]+[0-9]+$`) ve `YABANCIPLAKA` (`^[A-Z0-9_-]+$`). Dorse şemaları (`DORSE`, `DORSEPLAKA`, `YABANCIDORSE`, `YABANCIDORSEPLAKA`) yalnız `trailerPlates` / `transportHandlingUnits` içindir |
 | **Döviz** | `currencyCode` + `exchangeRate` |
 
 ---

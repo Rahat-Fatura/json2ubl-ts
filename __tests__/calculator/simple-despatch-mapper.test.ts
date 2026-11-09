@@ -127,9 +127,9 @@ describe('mapSimpleToDespatchInput — sevkiyat', () => {
 
   it('verilen plaka şemasını korur', () => {
     const input = baseInput();
-    input.shipment.licensePlates = [{ value: '34XYZ99', scheme: 'DORSEPLAKA' }];
+    input.shipment.licensePlates = [{ value: '34XYZ99', scheme: 'YABANCIPLAKA' }];
     const out = mapSimpleToDespatchInput(input);
-    expect(out.shipment.licensePlates?.[0].schemeId).toBe('DORSEPLAKA');
+    expect(out.shipment.licensePlates?.[0].schemeId).toBe('YABANCIPLAKA');
   });
 
   /* 🔴 BU TEST ESKİDEN KUSURU ÇİVİLİYORDU: girdi adresi taşıyor, beklenen çıktı

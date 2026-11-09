@@ -156,6 +156,12 @@ Schematron 20260701 üç değişiklik getirdi:
 3. Yeni `LicensePlateIDCheck` — context `desp:DespatchAdvice/cac:Shipment`:
    irsaliyede geçerli schemeID'li, boş olmayan **en az 1** `LicensePlateID` **zorunlu**
 
+> **Güncelleme (5.3.1, GİB paketi 24.08.2026):** `$LicensePlateIDSchemeIDType` yalnız
+> `PLAKA, YABANCIPLAKA`; dorse şemaları `$TransportEquipmentIDSchemeIDType` listesine
+> taşındı ve `TransportEquipment/cbc:ID` bağlamına bağlandı (`UBL-TR_Codelist.xml:37-38`,
+> `UBL-TR_Main_Schematron.xml:518-520`). Bu adımdaki 6 değerli küme ve aşağıdaki
+> "`TransportEquipment/ID` kontrollere girmiyor" notu 20260701 içindir.
+
 > Kapsam notu: bu kurallar yalnız `DespatchAdvice/.../RoadTransport/cbc:LicensePlateID`
 > context'ine bağlı. `TransportHandlingUnit/TransportEquipment/ID` (B-49 DORSEPLAKA yolu)
 > bu kontrollere **girmiyor** — Main Schematron'da o context'e `extends` yok.

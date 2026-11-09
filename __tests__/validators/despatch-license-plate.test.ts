@@ -9,17 +9,23 @@ import {
 import type { DespatchInput, LicensePlateInput } from '../../src/types/despatch-input';
 
 /**
- * Sprint 9 — Schematron 20260701 plaka kuralları (History.txt md.5, 10, 14).
+ * Plaka kuralları — Sprint 9 (Schematron 20260701, History.txt md.5, 10, 14) ve
+ * GİB paketi 24.08.2026 (T-KOD-9).
  *
- * - `LicensePlateIDSchemeIDType`: 2 → 6 değer
- * - `LicensePlateIDSchemeIDCheck`: TR / yabancı plaka format assert'leri eklendi
- * - `LicensePlateIDCheck` (YENİ): irsaliyede LicensePlateID ZORUNLU
+ * - `LicensePlateIDSchemeIDType`: 20260701'de 6 değerdi; 24.08.2026 paketinde
+ *   yalnız `PLAKA`, `YABANCIPLAKA` (`UBL-TR_Codelist.xml:37`).
+ * - `LicensePlateIDSchemeIDCheck`: TR / yabancı plaka format assert'leri
+ * - `LicensePlateIDCheck`: kütüphanede plaka her irsaliyede ZORUNLU
  *
- * Kapsam notu: kurallar yalnız
+ * Kapsam notu: bu kurallar yalnız
  * `desp:DespatchAdvice/cac:Shipment/cac:ShipmentStage/cac:TransportMeans/cac:RoadTransport/cbc:LicensePlateID`
- * context'ine bağlı. TransportHandlingUnit/TransportEquipment/ID (B-49 DORSEPLAKA
- * yolu) Main Schematron'da bu kurallara extends edilmemiş — kapsam dışı.
+ * context'ine bağlı. `TransportHandlingUnit/TransportEquipment/cbc:ID` (B-49 dorse
+ * yolu) ayrı kümeye tabidir: `$TransportEquipmentIDSchemeIDType`
+ * (`UBL-TR_Codelist.xml:38`), kural `TransportEquipmentIDSchemeIDCheck`.
  */
+
+/** `$TransportEquipmentIDSchemeIDType` — `UBL-TR_Codelist.xml:38`, yalnız dorse düğümünde geçerli. */
+const TRAILER_SCHEME_IDS = ['DORSE', 'DORSEPLAKA', 'YABANCIDORSE', 'YABANCIDORSEPLAKA'] as const;
 
 function createValidInput(plates?: LicensePlateInput[]): DespatchInput {
   return {
@@ -55,30 +61,38 @@ const plateErrors = (input: DespatchInput) =>
   validateDespatch(input).filter(e => e.path?.includes('licensePlate'));
 
 // ============================================================
-// schemeID seti — 2 → 6
+// schemeID seti — paket 24.08.2026: çekici plakası yalnız 2 değer
 // ============================================================
 
-describe('Sprint 9 — LicensePlateIDSchemeIDType 6 değere genişledi', () => {
-  const expected = [
-    'PLAKA', 'DORSE', 'DORSEPLAKA',
-    'YABANCIPLAKA', 'YABANCIDORSE', 'YABANCIDORSEPLAKA',
-  ];
-
-  it('sabit tam 6 değer içeriyor', () => {
-    expect(LICENSE_PLATE_SCHEME_IDS).toEqual(new Set(expected));
+describe('GİB 24.08.2026 — LicensePlateIDSchemeIDType yalnız PLAKA ve YABANCIPLAKA', () => {
+  it('sabit tam 2 değer içeriyor', () => {
+    expect(LICENSE_PLATE_SCHEME_IDS).toEqual(new Set(['PLAKA', 'YABANCIPLAKA']));
   });
 
-  for (const schemeId of ['PLAKA', 'DORSE', 'DORSEPLAKA'] as const) {
-    it(`${schemeId} + geçerli TR plaka → kabul`, () => {
-      const errors = plateErrors(createValidInput([{ plateNumber: '34ABC123', schemeId }]));
-      expect(errors).toEqual([]);
-    });
-  }
+  it('PLAKA + geçerli TR plaka → kabul', () => {
+    const errors = plateErrors(createValidInput([{ plateNumber: '34ABC123', schemeId: 'PLAKA' }]));
+    expect(errors).toEqual([]);
+  });
 
-  for (const schemeId of ['YABANCIPLAKA', 'YABANCIDORSE', 'YABANCIDORSEPLAKA'] as const) {
-    it(`${schemeId} + yabancı plaka → kabul`, () => {
-      const errors = plateErrors(createValidInput([{ plateNumber: 'DE-AB-1234', schemeId }]));
-      expect(errors).toEqual([]);
+  it('YABANCIPLAKA + yabancı plaka → kabul', () => {
+    const errors = plateErrors(createValidInput([{ plateNumber: 'DE-AB-1234', schemeId: 'YABANCIPLAKA' }]));
+    expect(errors).toEqual([]);
+  });
+
+  /* GT-03: GİB TEST, çekici plakasında dorse şeması taşıyan belgeyi 1150 ile
+   * reddediyor. Hem TR hem yabancı biçimli değer aynı şekilde reddedilir:
+   * şema geçersizse biçim regex'i hiç seçilmez. */
+  for (const schemeId of TRAILER_SCHEME_IDS) {
+    for (const plateNumber of ['34ABC123', 'DE-AB-1234']) {
+      it(`${schemeId} çekici plakasında (${plateNumber}) → reddedilir`, () => {
+        const errors = plateErrors(createValidInput([{ plateNumber, schemeId: schemeId as never }]));
+        expect(errors.some(e => e.path === 'shipment.licensePlates[0].schemeId')).toBe(true);
+      });
+    }
+
+    it(`${schemeId} tek çekici plakasıysa plaka zorunluluğunu karşılamaz`, () => {
+      const errors = validateDespatch(createValidInput([{ plateNumber: '34ABC123', schemeId: schemeId as never }]));
+      expect(errors.some(e => e.code === 'DESPATCH_LICENSE_PLATE_REQUIRED')).toBe(true);
     });
   }
 
@@ -95,6 +109,23 @@ describe('Sprint 9 — LicensePlateIDSchemeIDType 6 değere genişledi', () => {
     const errors = validateDespatch(input);
     expect(errors.some(e => e.code === 'DESPATCH_LICENSE_PLATE_REQUIRED')).toBe(true);
   });
+});
+
+// ============================================================
+// Dorse düğümü — çekici kümesi buna uygulanmaz
+// ============================================================
+
+describe('Dorse düğümü — TransportEquipment/cbc:ID şemaları değişmedi', () => {
+  for (const schemeId of TRAILER_SCHEME_IDS) {
+    it(`${schemeId} dorse düğümünde → hata yok`, () => {
+      const input = createValidInput();
+      input.shipment!.transportHandlingUnits = [{ transportEquipmentId: '34DRS456', schemeId }];
+      const errors = validateDespatch(input).filter(
+        e => e.path?.includes('licensePlate') || e.path?.includes('transportHandlingUnits'),
+      );
+      expect(errors).toEqual([]);
+    });
+  }
 });
 
 // ============================================================
@@ -126,11 +157,6 @@ describe('Sprint 9 — TR plaka format regex', () => {
     const errors = plateErrors(createValidInput([{ plateNumber: '82ABC123', schemeId: 'PLAKA' }]));
     expect(errors).toHaveLength(1);
     expect(errors[0].path).toBe('shipment.licensePlates[0].plateNumber');
-  });
-
-  it('DORSEPLAKA da TR regex\'ine tabi', () => {
-    const errors = plateErrors(createValidInput([{ plateNumber: '34abc123', schemeId: 'DORSEPLAKA' }]));
-    expect(errors).toHaveLength(1);
   });
 });
 

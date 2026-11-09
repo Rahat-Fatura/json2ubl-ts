@@ -493,20 +493,18 @@ export const PAYMENT_MEANS_CODES = new Set<string>([
 ]);
 
 /**
- * Plaka schemeID değerleri — Schematron `$LicensePlateIDSchemeIDType`.
+ * Çekici plakası schemeID değerleri — Schematron `$LicensePlateIDSchemeIDType`
+ * (`UBL-TR_Codelist.xml:37`, GİB paketi 24.08.2026).
  *
- * Sprint 9 (Schematron 20260701): 2 → 6 değer. Yabancı plakalar için ayrı
- * `YABANCI*` varyantları eklendi.
+ * Sprint 9'da (Schematron 20260701) liste 6 değerdi. 24.08.2026 paketinde yalnız
+ * `PLAKA` ve `YABANCIPLAKA` kaldı; GİB TEST dorse şemalı çekici plakasını 1150 ile
+ * reddediyor (T-KOD-9, GT-03). Dorse şemaları `$TransportEquipmentIDSchemeIDType`
+ * (`:38`) listesindedir ve yalnız `TransportEquipment/cbc:ID` düğümünde geçerlidir.
  */
-export const LICENSE_PLATE_SCHEME_IDS = new Set([
-  'PLAKA', 'DORSE', 'DORSEPLAKA',
-  'YABANCIPLAKA', 'YABANCIDORSE', 'YABANCIDORSEPLAKA',
-]);
+export const LICENSE_PLATE_SCHEME_IDS = new Set(['PLAKA', 'YABANCIPLAKA']);
 
-/** Yabancı plaka schemeID'leri — TR format kontrolünden muaf, ayrı regex'e tabi */
-export const FOREIGN_LICENSE_PLATE_SCHEME_IDS = new Set([
-  'YABANCIPLAKA', 'YABANCIDORSE', 'YABANCIDORSEPLAKA',
-]);
+/** Yabancı plaka schemeID'si — TR format kontrolünden muaf, ayrı regex'e tabi */
+export const FOREIGN_LICENSE_PLATE_SCHEME_IDS = new Set(['YABANCIPLAKA']);
 
 /** Muhasebe maliyet kodları */
 export const ACCOUNTING_COST_CODES = new Set([
@@ -583,7 +581,7 @@ export const VKN_REGEX = /^\d{10}$/;
  * TR plaka formatı — Schematron `LicensePlateIDSchemeIDCheck` (20260701, Sprint 9).
  *
  * `^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$` — il kodu 01-81, ardından en az bir
- * büyük harf ve en az bir rakam. `PLAKA`, `DORSE`, `DORSEPLAKA` schemeID'lerine uygulanır.
+ * büyük harf ve en az bir rakam. Çekici plakasında `PLAKA` schemeID'sine uygulanır.
  *
  * NOT: Enerji/Şarj faturalarındaki müşteri PLAKA kimliği bu regex'e **tabi değildir**
  * — orada Schematron `^[A-Z0-9_-]+$` kullanıyor (`ENERJI_PLATE_REGEX`).
@@ -593,7 +591,7 @@ export const TR_LICENSE_PLATE_REGEX = /^(0[1-9]|[1-7][0-9]|8[01])[A-Z]+[0-9]+$/;
 /**
  * Yabancı plaka formatı — Schematron `LicensePlateIDSchemeIDCheck` (20260701, Sprint 9).
  *
- * `YABANCIPLAKA`, `YABANCIDORSE`, `YABANCIDORSEPLAKA` schemeID'lerine uygulanır.
+ * Çekici plakasında `YABANCIPLAKA` schemeID'sine uygulanır.
  */
 export const FOREIGN_LICENSE_PLATE_REGEX = /^[A-Z0-9_-]+$/;
 

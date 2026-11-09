@@ -405,6 +405,44 @@ describe('DespatchSession — validate() ve buildXml()', () => {
     expect(() => session.buildXml({ validationLevel: 'strict' })).toThrow();
   });
 
+  /* GİB paketi 24.08.2026: çekici `UBL-TR_Codelist.xml:37`, dorse `:38`. */
+  describe('strict kip — çekici ve dorse plaka şemaları', () => {
+    const TRAILER_SCHEMES = ['DORSE', 'DORSEPLAKA', 'YABANCIDORSE', 'YABANCIDORSEPLAKA'] as const;
+
+    it.each(['PLAKA', 'YABANCIPLAKA'] as const)('çekici plakası %s → geçer', scheme => {
+      const input = completeInput();
+      input.shipment.licensePlates = [{ value: '34ABC123', scheme }];
+      const xml = new DespatchSession({ initialInput: input }).buildXml({ validationLevel: 'strict' });
+      expect(xml).toContain(`<cbc:LicensePlateID schemeID="${scheme}">34ABC123</cbc:LicensePlateID>`);
+    });
+
+    it.each(TRAILER_SCHEMES)('çekici plakası %s → reddedilir (GT-03, GİB 1150)', scheme => {
+      const input = completeInput();
+      input.shipment.licensePlates = [{ value: '34ABC123', scheme: scheme as never }];
+      const session = new DespatchSession({ initialInput: input });
+      expect(() => session.buildXml({ validationLevel: 'strict' })).toThrow();
+    });
+
+    it('🔴 şoför yokken de dorse şemalı tek plaka zorunluluğu karşılamaz', () => {
+      const input = completeInput();
+      input.shipment.drivers = undefined;
+      input.shipment.carrier = {
+        taxNumber: '1112223334', name: 'Nakliyeci A.Ş.',
+        address: 'Liman Cad. 5', district: 'Konak', city: 'İzmir',
+      };
+      input.shipment.licensePlates = [{ value: '34ABC123', scheme: 'DORSE' as never }];
+      const session = new DespatchSession({ initialInput: input });
+      expect(session.validate().some(w => w.code === 'DESPATCH_LICENSE_PLATE_REQUIRED')).toBe(true);
+    });
+
+    it.each(TRAILER_SCHEMES)('dorse düğümü %s → geçmeye devam eder', scheme => {
+      const input = completeInput();
+      input.shipment.trailerPlates = [{ value: '34DRS456', scheme }];
+      const xml = new DespatchSession({ initialInput: input }).buildXml({ validationLevel: 'strict' });
+      expect(xml).toContain(`<cbc:ID schemeID="${scheme}">34DRS456</cbc:ID>`);
+    });
+  });
+
   it('buildXml() varsayılanı doğrulamasızdır (fatura oturumuyla aynı)', () => {
     const session = new DespatchSession({ initialInput: completeInput() });
     expect(() => session.buildXml()).not.toThrow();

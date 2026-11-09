@@ -70,6 +70,7 @@ export type {
     SimpleDriverInput,
     SimpleLicensePlateInput,
     SimpleLicensePlateScheme,
+    SimpleTrailerPlateScheme,
     SimpleItemIdentificationInput,
 } from "./simple-despatch-types";
 
