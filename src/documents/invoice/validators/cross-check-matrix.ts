@@ -17,14 +17,16 @@
  *   oranında kesim. KDV oranından bağımsız — KDV=0 VE KDV>0 kalemlerinde de geçerli.
  *   - Allowed: SATIS, TEVKIFAT, KOMISYONCU
  * - **151** (OTV SATIS): SATIS grubu — `exemption-config` documentType semantiği korunur.
- * - **201-250, 301-350**: İstisna serisi — ISTISNA/IADE/IHRACKAYITLI/SGK/YTBISTISNA/YTBIADE
+ * - **201-250, 301-350, 101-108 (ÖTV), 001 (konaklama), 501**: İstisna serisi
+ *   (`$istisnaTaxExemptionReasonCodeType`) — ISTISNA/IADE/IHRACKAYITLI/SGK/YTBISTISNA/YTBIADE
  * - **701-704**: İhraç kayıtlı — IHRACKAYITLI/IADE
  * - **801-812**: Özel matrah — OZELMATRAH/IADE/SGK
  * - **SGK sembolik** (SAGLIK_*, ABONELIK, MAL_HIZMET, DIGER): SGK grubu
  * - **555**: "KDV Oran Kontrolüne Tabi Olmayan Satışlar" — SATIS/TEVKIFAT/KOMISYONCU.
  *   KDV oranından bağımsız kullanılabilir (KDV=0 zorunlu değil). M4 `allowReducedKdvRate`
  *   opt-in flag gate'i `reduced-kdv-detector.ts`'te korunur.
- * - **501**: Schematron özel — `exemption-config`'de tanımlı değil (validator UNKNOWN döner)
+ * - **501**: GİB listesinde var, anlamı yayımlanmadı — istisna serisinde geçerli;
+ *   tanımı `meaningUnpublished` taşır (seçim listesinde gösterilmez).
  *
  * ## Türetme (M7 pattern + 4.1.0 CANLI bağ)
  * `configManager.exemptions[].documentType` → `allowedInvoiceTypes` mapping otomatik.
@@ -256,7 +258,6 @@ function buildMatrix(): Map<string, TaxExemptionRule> {
  *
  * **Matris dışı kodlar (bilinçli):**
  * - `555` (Demirbaş KDV) — M4 flag ile bypass; matris'te YOK ki validator UNKNOWN dönmesin diye ayrı gate
- * - `501` — Schematron özel; `exemption-config` eksik (Sprint 6+ analizi gerekebilir)
  */
 export const TAX_EXEMPTION_MATRIX: ReadonlyMap<string, TaxExemptionRule> =
   derivedMap<string, TaxExemptionRule>(() => buildMatrix());

@@ -1,15 +1,26 @@
 /**
- * KDV İstisna/Muafiyet kodu konfigürasyonu — DB Exemption tablosundan embed edilmiştir.
+ * İstisna/Muafiyet kodu konfigürasyonu — DB Exemption tablosundan embed edilmiştir.
+ *
+ * Kod kümesi GİB `UBL-TR_Codelist.xml` (paket 24.08.2026) ile birebir aynıdır;
+ * `__tests__/calculator/exemption-gib-codelist.test.ts` bunu paketteki XML'den
+ * okuyarak denetler.
  *
  * documentType: Bu istisna kodunun hangi fatura tipinde kullanılacağını belirtir.
- * type: Vergi tipi (KDV, SGK)
+ * type: Vergi tipi (KDV, ÖTV, konaklama vergisi, SGK)
  */
 
 export interface ExemptionDefinition {
   code: string;
   name: string;
-  type: 'KDV' | 'SGK' | 'OTV';
+  type: 'KDV' | 'SGK' | 'OTV' | 'KONAKLAMA';
   documentType: 'ISTISNA' | 'SATIS' | 'IHRACKAYITLI' | 'OZELMATRAH' | 'SGK';
+  /**
+   * `true`: kod GİB kod listesinde var ve kütüphane onu geçerli kabul eder, ama
+   * anlamı GİB'in hiçbir belgesinde yayımlanmadı. Kullanıcıya seçenek olarak
+   * SUNULMAMALI; seçim listesi kuran uygulama bu bayrağı taşıyan kodu gizler.
+   * Bugün yalnız 501. GİB anlamını yayımlayınca bayrak kalkar ve ad güncellenir.
+   */
+  meaningUnpublished?: boolean;
 }
 
 export const EXEMPTION_DEFINITIONS: ReadonlyArray<ExemptionDefinition> = [
@@ -101,6 +112,33 @@ export const EXEMPTION_DEFINITIONS: ReadonlyArray<ExemptionDefinition> = [
   { code: '343', name: 'Genel Bütçeli Kamu İdarelerine Bağışlanacak Konutların Yabancı Devlet Kurum ve Kuruluşlarına Teslimine İlişkin İstisna', type: 'KDV', documentType: 'ISTISNA' },
   { code: '344', name: '13/o Milli Savunma ve İç Güvenlik İhtiyaçlarında Kullanılmak Üzere Taşıt Teslimi', type: 'KDV', documentType: 'ISTISNA' },
   { code: '350', name: 'KDV İstisna Diğer', type: 'KDV', documentType: 'ISTISNA' },
+
+  // ÖTV istisna kodları (Kod Listeleri v1.43 §4.8.4). GİB bunları
+  // `$istisnaTaxExemptionReasonCodeType` listesine koyar: şematron
+  // (`TaxExemptionReasonCodeCheck`) yalnız ISTISNA, IADE, IHRACKAYITLI, SGK,
+  // YTBISTISNA ve YTBIADE tiplerinde kabul eder → documentType 'ISTISNA'.
+  { code: '101', name: 'İhracat İstisnası', type: 'OTV', documentType: 'ISTISNA' },
+  { code: '102', name: 'Diplomatik İstisna', type: 'OTV', documentType: 'ISTISNA' },
+  { code: '103', name: 'Askeri Amaçlı İstisna', type: 'OTV', documentType: 'ISTISNA' },
+  { code: '104', name: 'Petrol Arama Faaliyetlerinde Bulunanlara Yapılan Teslimler', type: 'OTV', documentType: 'ISTISNA' },
+  { code: '105', name: 'Uluslararası Anlaşmadan Doğan İstisna', type: 'OTV', documentType: 'ISTISNA' },
+  { code: '106', name: 'Diğer İstisnalar', type: 'OTV', documentType: 'ISTISNA' },
+  { code: '107', name: '7/a Maddesi Kapsamında Yapılan Teslimler', type: 'OTV', documentType: 'ISTISNA' },
+  { code: '108', name: 'Geçici 5. Madde Kapsamında Yapılan Teslimler', type: 'OTV', documentType: 'ISTISNA' },
+
+  // Konaklama vergisi istisnası (§4.8.5). Kod listesinin skill özetindeki §6
+  // tablosu onu KONAKLAMAVERGISI tipiyle eşler (metinden türetilmiş, TODO
+  // işaretli), ama şematron 001'i de `$istisnaTaxExemptionReasonCodeType`a
+  // koyar ve belge vergi özetinde KONAKLAMAVERGISI tipinde reddeder (Common
+  // `TaxExemptionReasonCodeCheck`). Kütüphane şematronu izler → 'ISTISNA'.
+  { code: '001', name: 'Diplomatik İstisna', type: 'KONAKLAMA', documentType: 'ISTISNA' },
+
+  // 501: GİB `UBL-TR_Codelist.xml` listelerinde var (genel ve istisna listesi),
+  // anlamı (vergi türü dahil) Kod Listeleri v1.43'te ve başka hiçbir GİB
+  // belgesinde tanımlı değil. Geçerli kod; kullanıcıya seçenek olarak
+  // sunulmamalı (`meaningUnpublished`). Kütüphane onu öbür kodlar gibi KDV alt
+  // toplamına yazar.
+  { code: '501', name: 'Anlamı GİB Tarafından Yayımlanmamış İstisna Kodu', type: 'KDV', documentType: 'ISTISNA', meaningUnpublished: true },
 
   // KDV Satış — istisna olmayan diğer
   { code: '351', name: 'KDV İstisna Olmayan Diğer', type: 'KDV', documentType: 'SATIS' },
