@@ -27,6 +27,8 @@ import { calculateDocument } from '../../src/calculator/document-calculator';
 import { SimpleInvoiceBuilder } from '../../src/calculator/simple-invoice-builder';
 import { InvoiceSession } from '../../src/calculator/invoice-session';
 import type { SimpleInvoiceInput, SimpleLineTaxInput } from '../../src/calculator/simple-types';
+import { TAX_DEFINITIONS } from '../../src/calculator/tax-config';
+import { formatDecimal } from '../../src/utils/formatters';
 import { probeValidator, validateLive } from '../support/validator';
 
 const MATRIX = resolve(__dirname, '../../examples-matrix/valid');
@@ -119,6 +121,68 @@ describe('KN-092 — fantom kalemde yalnız vazgeçilen KDV toplam dışı', () 
         expect(calc.monetary.payableAmount).toBe(1000);
         expect(calc.taxes.taxTotal).toBe(0);
       });
+    });
+  }
+});
+
+/**
+ * Bütün KDV dışı vergi kodları × dört fantom fikstürü (inceleme bulgusu).
+ *
+ * Beklenti hesap motorunun kendi yükleminden DEĞİL, bağımsız bir kıyastan
+ * gelir: aynı kalemlerle FANTOMSUZ belge (e-Fatura SATIŞ, e-Arşiv YTBSATIŞ)
+ * hesaplanır, ondan yalnız vazgeçilen KDV (0015) ve matrahı o KDV olan 9015
+ * çıkarılır. Toplam ve vergi tutarı bu farka eşit olmalı; XML aynı değerleri
+ * yazmalı.
+ */
+const ALL_PHANTOM_FIXTURES = [
+  'yatirimtesvik/yatirimtesvik-istisna-phantom-308-makine',
+  'yatirimtesvik/yatirimtesvik-istisna-phantom-339-insaat',
+  'earsivfatura/earsivfatura-ytbistisna-phantom-308-makine',
+  'earsivfatura/earsivfatura-ytbistisna-phantom-339-insaat',
+] as const;
+const NON_KDV_TAX_CODES = TAX_DEFINITIONS.map(t => t.code).filter(c => c !== '0015');
+const WAIVED = new Set(['0015', '9015']);
+
+describe('KN-092 — 30 vergi kodu × 4 fantom fikstürü: fantomsuz hesap eksi vazgeçilen KDV', () => {
+  it('vergi kodu sayısı (KDV hariç)', () => {
+    expect(NON_KDV_TAX_CODES).toHaveLength(30);
+  });
+
+  for (const rel of ALL_PHANTOM_FIXTURES) {
+    describe(rel.split('/')[1], () => {
+      for (const code of NON_KDV_TAX_CODES) {
+        it(`${code} %10`, () => {
+          const input = withTaxes(rel, [{ code, percent: 10 }]);
+          const phantom = calculateDocument(structuredClone(input));
+          expect(phantom.calculatedLines.every(l => l.phantomKdv)).toBe(true);
+
+          const plain = structuredClone(input);
+          plain.type = rel.startsWith('earsiv') ? 'YTBSATIS' : 'SATIS';
+          const reference = calculateDocument(plain);
+          expect(reference.calculatedLines.some(l => l.phantomKdv)).toBe(false);
+
+          const waived = reference.calculatedLines
+            .flatMap(l => l.taxes.taxSubtotals)
+            .filter(t => WAIVED.has(t.code));
+          const waivedEffect = waived.reduce((sum, t) => sum + t.taxForCalculate, 0);
+          const waivedAmount = waived.reduce((sum, t) => sum + t.amount, 0);
+
+          const expected = {
+            taxInclusive: reference.monetary.taxInclusiveAmount - waivedEffect,
+            payable: reference.monetary.payableAmount - waivedEffect,
+            taxTotal: reference.taxes.taxTotal - waivedAmount,
+          };
+          expect(phantom.monetary.taxInclusiveAmount).toBeCloseTo(expected.taxInclusive, 9);
+          expect(phantom.monetary.payableAmount).toBeCloseTo(expected.payable, 9);
+          expect(phantom.taxes.taxTotal).toBeCloseTo(expected.taxTotal, 9);
+
+          const t = totals(new SimpleInvoiceBuilder({ validationLevel: 'none' }).build(structuredClone(input)).xml);
+          expect(t.taxInclusive).toBe(formatDecimal(expected.taxInclusive));
+          expect(t.payable).toBe(formatDecimal(expected.payable));
+          expect(t.docTaxAmount).toBe(formatDecimal(expected.taxTotal));
+          expect(t.lineTaxAmount).toBe(formatDecimal(expected.taxTotal));
+        });
+      }
     });
   }
 });
