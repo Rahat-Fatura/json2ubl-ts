@@ -7,3 +7,4 @@ examples/output/
 schematrons/
 xmls/
 examples/_dev-*.ts
+.superpowers/
