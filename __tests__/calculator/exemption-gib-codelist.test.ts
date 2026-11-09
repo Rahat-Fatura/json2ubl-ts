@@ -161,8 +161,22 @@ describe('yeni kodlar fatura tipi matrisinde (şematron TaxExemptionReasonCodeCh
 });
 
 // ─── Canlı GİB şematronu: yeni kodlarla kurulan İSTİSNA faturası ───────────────
+//
+// Her kod KENDİ vergisinin alt toplamında: ÖTV kodları ÖTV 0071 %0'da (KDV %0,
+// 301), 001 konaklama vergisi 0059 %0'da (KDV %0, 310), 501 KDV'de. ÖTV ve
+// konaklama kodunun KDV alt toplamına yazılması reddedilir
+// (`non-kdv-tax-exemption.test.ts`).
 
 function istisnaInvoice(code: string): SimpleInvoiceInput {
+  const type = EXEMPTION_MAP.get(code)?.type;
+  const line: SimpleInvoiceInput['lines'][number] =
+    type === 'OTV'
+      ? { name: 'İstisna Kalem', quantity: 1, price: 100, unitCode: 'Adet', kdvPercent: 0, kdvExemptionCode: '301',
+        taxes: [{ code: '0071', percent: 0, exemptionCode: code }] }
+      : type === 'KONAKLAMA'
+        ? { name: 'İstisna Kalem', quantity: 1, price: 100, unitCode: 'Adet', kdvPercent: 0, kdvExemptionCode: '310',
+          taxes: [{ code: '0059', percent: 0, exemptionCode: code }] }
+        : { name: 'İstisna Kalem', quantity: 1, price: 100, unitCode: 'Adet', kdvPercent: 0, kdvExemptionCode: code };
   return {
     id: 'TST2026000000101',
     uuid: 'a1b2c3d4-0101-4000-8101-000000000101',
@@ -170,7 +184,6 @@ function istisnaInvoice(code: string): SimpleInvoiceInput {
     profile: 'TEMELFATURA',
     type: 'ISTISNA',
     currencyCode: 'TRY',
-    kdvExemptionCode: code,
     sender: {
       taxNumber: '1234567890', name: 'Sınır Tanımaz Ticaret A.Ş.', taxOffice: 'Üsküdar',
       address: 'Barbaros Bulvarı No:123', district: 'Üsküdar', city: 'İstanbul', zipCode: '34664',
@@ -179,7 +192,7 @@ function istisnaInvoice(code: string): SimpleInvoiceInput {
       taxNumber: '9876543210', name: 'Yeşil Alıcı Ltd. Şti.', taxOffice: 'Kadıköy',
       address: 'Bağdat Caddesi No:456', district: 'Kadıköy', city: 'İstanbul', zipCode: '34710',
     },
-    lines: [{ name: 'İstisna Kalem', quantity: 1, price: 100, unitCode: 'Adet', kdvPercent: 0 }],
+    lines: [line],
   };
 }
 
@@ -188,7 +201,7 @@ const liveIt = it.skipIf(!validator.up);
 
 describe('yeni kodlarla katı kurulum ve canlı GİB şematronu', () => {
   for (const code of ['001', '101', '102', '103', '104', '105', '106', '107', '108', '501']) {
-    liveIt(`${code}: TEMELFATURA İSTİSNA katı kurulumdan ve şematrondan geçer`, async () => {
+    liveIt(`${code}: TEMELFATURA İSTİSNA, kendi vergisinin alt toplamında, katı kurulumdan ve şematrondan geçer`, async () => {
       const xml = new SimpleInvoiceBuilder({ validationLevel: 'strict' }).build(istisnaInvoice(code)).xml;
       expect(xml).toContain(`<cbc:TaxExemptionReasonCode>${code}</cbc:TaxExemptionReasonCode>`);
       const result = await validateLive(xml, 'efatura');

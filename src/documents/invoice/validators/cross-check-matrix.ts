@@ -37,6 +37,11 @@
 
 import { InvoiceTypeCode } from '../../../types/enums';
 import { configManager } from '../../../calculator/config-manager';
+import {
+  isExemptionAllowedOnTax,
+  LEGACY_KDV_SUBTOTAL_EXEMPTION_CODES,
+  type ExemptionDefinition,
+} from '../../../calculator/exemption-config';
 import { derivedMap } from '../../../ubltr/vocabulary/derived-config';
 import type { ValidationError } from '../../../errors/ubl-build-error';
 
@@ -322,4 +327,54 @@ export function validateExemptionCode(
   }
 
   return null;
+}
+
+/**
+ * İstisna kodu ↔ vergi türü yerleşimi InvoiceInput düzeyinde mi denetlenir?
+ *
+ * ÖTV ve konaklama türü kodlar (101–108, 001) 5.2.0'da tanımsızdı; yanlış
+ * alt toplamda (ör. KDV'de) reddedilmeleri önceden geçerli hiçbir girdiyi
+ * kırmaz. KDV türü kodlar ve 5.2.0'da bilinen 151 ise elle kurulmuş
+ * `InvoiceInput`ta herhangi bir alt toplamda kabul ediliyordu (şematron vergi
+ * türünü denetlemez); onlar burada değil, yeni giriş alanının
+ * (`lines[].taxes[].exemptionCode`) doğrulayıcısında denetlenir
+ * (`validateLineTaxExemptions`). İki yer aynı yüklemi okur, aynı durumu iki
+ * kez raporlamaz.
+ */
+export function isExemptionPlacementCheckedOnInvoiceInput(def: ExemptionDefinition): boolean {
+  return (def.type === 'OTV' || def.type === 'KONAKLAMA')
+    && !LEGACY_KDV_SUBTOTAL_EXEMPTION_CODES.has(def.code);
+}
+
+/**
+ * İstisna kodunun yazıldığı alt toplamın vergi türüyle uyuşması: ÖTV kodu
+ * ÖTV (0071, 0073–0077) alt toplamına, konaklama kodu 0059'a yazılır; KDV
+ * alt toplamına yazılamaz. Kapsam `isExemptionPlacementCheckedOnInvoiceInput`.
+ */
+export function validateExemptionPlacement(
+  code: string,
+  taxTypeCode: string,
+  pathPrefix: string,
+): ValidationError | null {
+  const def = configManager.getExemption(code);
+  if (!def || !isExemptionPlacementCheckedOnInvoiceInput(def)) return null;
+  if (isExemptionAllowedOnTax(def, taxTypeCode)) return null;
+  return exemptionTaxTypeMismatch(def, taxTypeCode, pathPrefix);
+}
+
+/** `EXEMPTION_TAX_TYPE_MISMATCH` hatası — iki doğrulayıcının ortak biçimi. */
+export function exemptionTaxTypeMismatch(
+  def: ExemptionDefinition,
+  taxTypeCode: string,
+  path: string,
+): ValidationError {
+  return {
+    code: 'EXEMPTION_TAX_TYPE_MISMATCH',
+    message: `'${def.code}' istisna kodu (${def.type}) '${taxTypeCode}' vergi alt toplamına yazılamaz`,
+    path,
+    expected: def.type === 'OTV'
+      ? 'ÖTV alt toplamı (0071, 0073–0077)'
+      : def.type === 'KONAKLAMA' ? 'Konaklama vergisi alt toplamı (0059)' : 'KDV alt toplamı (0015)',
+    actual: taxTypeCode,
+  };
 }

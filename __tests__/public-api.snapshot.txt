@@ -6,7 +6,7 @@
 # Bir satırın KAYBOLMASI = tüketici derlemesinin kırılması. Bu dosyadaki
 # bir satırı silen commit, o kırılmayı BİLEREK yaptığını beyan etmiş olur.
 #
-# Toplam: 364 ad
+# Toplam: 365 ad
 value	ADDITIONAL_ITEM_ID_SCHEME_IDS	VariableDeclaration
 value	AMOUNT_IN_WORDS_NOTE_PATTERN	VariableDeclaration
 value	AMOUNT_IN_WORDS_PREFIX	VariableDeclaration
@@ -324,6 +324,7 @@ value	getAvailableBillingDocumentTypeCodes	FunctionDeclaration
 value	getAvailableExemptions	FunctionDeclaration
 value	getCurrencyDefinition	FunctionDeclaration
 value	getExemptionDefinition	FunctionDeclaration
+value	getExemptionTypeForTax	FunctionDeclaration
 value	getExemptionsByDocumentType	FunctionDeclaration
 value	getPackagingTypeCodeDefinition	FunctionDeclaration
 value	getPaymentMeansDefinition	FunctionDeclaration

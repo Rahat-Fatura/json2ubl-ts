@@ -2,7 +2,7 @@ import type { ValidationError } from '../../../errors/ubl-build-error';
 import type { InvoiceInput } from '../../../types/invoice-input';
 import { PROFILE_TYPE_MATRIX } from '../../../ubltr/vocabulary/constants';
 import { crossMatrixError } from '../../../ubltr/rules/validation-result';
-import { validateExemptionCode } from './cross-check-matrix';
+import { validateExemptionCode, validateExemptionPlacement } from './cross-check-matrix';
 import { validateIhrackayitli702 } from './ihrackayitli-validator';
 import {
   validateYatirimTesvikKdvDocument,
@@ -62,6 +62,9 @@ export function validateCrossMatrix(input: InvoiceInput): ValidationError[] {
  * `requiresZeroKdvLine: true` olan kodlar (ör: 351) için hem belge hem satır
  * seviyesindeki KDV (0015) subtotal'ları havuzu kontrol edilir — en az bir
  * subtotal'da `taxAmount = 0` olmalı.
+ *
+ * Ayrıca ÖTV/konaklama türü kodun doğru vergi alt toplamında olduğu denetlenir
+ * (`validateExemptionPlacement`): 101–108 ÖTV'de, 001 0059'da; KDV'de değil.
  */
 export function validateTaxExemptionMatrix(input: InvoiceInput): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -97,6 +100,8 @@ export function validateTaxExemptionMatrix(input: InvoiceInput): ValidationError
         path,
       );
       if (err) errors.push(err);
+      const placement = validateExemptionPlacement(ts.taxExemptionReasonCode, ts.taxTypeCode, path);
+      if (placement) errors.push(placement);
     });
   });
 
@@ -112,6 +117,8 @@ export function validateTaxExemptionMatrix(input: InvoiceInput): ValidationError
         path,
       );
       if (err) errors.push(err);
+      const placement = validateExemptionPlacement(ts.taxExemptionReasonCode, ts.taxTypeCode, path);
+      if (placement) errors.push(placement);
     });
   });
 

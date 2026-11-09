@@ -23,6 +23,7 @@ import type { BuilderOptions } from '../types/builder-options';
 import type { InvoiceInput } from '../types/invoice-input';
 import type { ValidationError } from '../errors/ubl-build-error';
 import { validateManualExemption } from '../documents/invoice/validators/manual-exemption-validator';
+import { validateLineTaxExemptions } from '../documents/invoice/validators/line-tax-exemption-validator';
 import { validateSgkInput } from '../documents/invoice/validators/sgk-input-validator';
 import { validateSimpleLineRanges } from '../documents/invoice/validators/simple-line-range-validator';
 import { validateProfileRequirements } from '../documents/invoice/validators/profile-requirement-validator';
@@ -78,6 +79,8 @@ export class SimpleInvoiceBuilder {
       const simpleInputErrors: ValidationError[] = [
         ...validateSimpleLineRanges(input),
         ...validateManualExemption(input),
+        // Kalem vergisi istisna kodu (yeni alan — basic'te de koşar, kimseyi kırmaz).
+        ...validateLineTaxExemptions(input),
         ...validateSgkInput(input),
         ...validateProfileRequirements(input),
         ...validateSimpleFormats(input),

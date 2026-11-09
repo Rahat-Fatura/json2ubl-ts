@@ -332,6 +332,15 @@ function buildTaxTotals(
       subtotal.calculationSequenceNumeric = ts.calculationSequenceNumeric;
     }
 
+    // KDV dışı verginin kendi istisna kodu (ÖTV %0 → 101–108/151, 0059 %0 → 001).
+    // Hesap motoru alt toplamı (vergi kodu, oran, istisna kodu) ile gruplar.
+    if (isNonEmpty(ts.exemptionCode)) {
+      subtotal.taxExemptionReasonCode = ts.exemptionCode;
+      subtotal.taxExemptionReason = exemptionNameOf(ts.exemptionCode);
+      taxSubtotals.push(subtotal);
+      return;
+    }
+
     // İstisna kodu ekle — phantom subtotal'da (CalcSeqNum=-1) her zaman yazılır (§2.1.4)
     const isPhantomSub = ts.calculationSequenceNumeric === -1;
     if (!(shouldAddExemption(ts, calc, simple) || isPhantomSub)) {
@@ -650,6 +659,12 @@ function buildSingleLine(
     if ((isPhantomKdvSub || isZeroKdvExemption) && lineExemptionCode) {
       subtotal.taxExemptionReasonCode = lineExemptionCode;
       subtotal.taxExemptionReason = lineExemptionName;
+    }
+
+    // KDV dışı verginin kendi istisna kodu — belge özetiyle aynı kaynak.
+    if (isNonEmpty(ts.exemptionCode)) {
+      subtotal.taxExemptionReasonCode = ts.exemptionCode;
+      subtotal.taxExemptionReason = exemptionNameOf(ts.exemptionCode);
     }
 
     return subtotal;

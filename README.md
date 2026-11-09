@@ -206,6 +206,28 @@ Kurallar (`resolveSummaryExemptionCode`):
   `DOCUMENT_EXEMPTION_CODE_UNUSED` uyarısı verir. İstisna: ÖZEL MATRAH'ta belge
   kodu özel matrah ek alt toplamına yine yazılır; orada uyarı çıkmaz.
 
+**ÖTV ve konaklama vergisi istisnası.** KDV dışı verginin istisna kodu o verginin
+kendi alt toplamına `taxes[].exemptionCode` ile yazılır; vergi oranı 0 olmalıdır.
+ÖTV (0071, 0073–0077) için 101–108 (İSTİSNA tipi) ya da 151, konaklama vergisi
+(0059) için 001. ÖTV/konaklama kodu `kdvExemptionCode`a, KDV kodu
+`taxes[].exemptionCode`a verilirse `EXEMPTION_TAX_TYPE_MISMATCH`:
+
+```typescript
+// ÖTV istisnalı ihracat: KDV %0 (301) + ÖTV %0 (101)
+builder.build({
+  /* ... */
+  type: 'ISTISNA',
+  lines: [{
+    name: 'Akaryakıt', quantity: 1, price: 1000, kdvPercent: 0, kdvExemptionCode: '301',
+    taxes: [{ code: '0071', percent: 0, exemptionCode: '101' }],
+  }],
+});
+```
+
+Seçim listesi vergi türüne göre: `getAvailableExemptions('ISTISNA')` KDV kodları
+(varsayılan), `getAvailableExemptions('ISTISNA', 'OTV')` 101–108,
+`getAvailableExemptions('ISTISNA', getExemptionTypeForTax('0059'))` 001.
+
 ### Dövizli Fatura
 
 ```typescript

@@ -440,8 +440,30 @@ export function deriveFieldVisibility(type: string, profile: string, currencyCod
 
 /**
  * Tip bazında kullanılabilir istisna kodlarını döndürür.
+ *
+ * `taxType` hangi vergi alt toplamının seçicisi olduğunu söyler; varsayılan
+ * `'KDV'` (KDV istisna kodu seçicisi, `uiState.availableExemptions`). Yalnız
+ * `type` alanı bu değer olan tanımlar döner:
+ *   • `'KDV'`  — `kdvExemptionCode` seçenekleri (301, 350, 501 …);
+ *   • `'OTV'`  — ÖTV %0 alt toplamı (`taxes[].exemptionCode`): İSTİSNA'da 101–108,
+ *                SATIŞ grubunda 151;
+ *   • `'KONAKLAMA'` — konaklama vergisi %0 alt toplamı: İSTİSNA grubunda 001;
+ *   • `'SGK'`  — SGK sembolik kodları (SGK tipinde).
+ * Bir vergi kodunun türü: `getExemptionTypeForTax`.
+ *
+ * Bu sürümden önce süzme yoktu: SATIŞ listesi ÖTV kodu 151'i, SGK listesi SGK
+ * sembolik kodlarını da KDV seçicisinde sunuyordu. Onlar artık kendi
+ * `taxType`ları ile istenir.
  */
-export function getAvailableExemptions(type: string): ExemptionDefinition[] {
+export function getAvailableExemptions(
+  type: string,
+  taxType: ExemptionDefinition['type'] = 'KDV',
+): ExemptionDefinition[] {
+  return exemptionsAllowedForType(type).filter(def => def.type === taxType);
+}
+
+/** Fatura tipinde izinli bütün istisna kodları (vergi türünden bağımsız). */
+function exemptionsAllowedForType(type: string): ExemptionDefinition[] {
   switch (type) {
     case 'ISTISNA':
     case 'YTBISTISNA':

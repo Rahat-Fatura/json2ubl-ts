@@ -21,6 +21,12 @@ export interface CalculatedTaxSubtotal {
   taxForCalculate: number;
   /** M12 phantom KDV: YATIRIMTESVIK+ISTISNA / EARSIV+YTBISTISNA'da -1. */
   calculationSequenceNumeric?: number;
+  /**
+   * KDV dışı verginin istisna sebep kodu (`SimpleLineTaxInput.exemptionCode`):
+   * ÖTV %0'da 101–108/151, konaklama vergisi %0'da 001. KDV alt toplamında
+   * hiç bulunmaz (KDV kodu `kdvExemptionCode`tan çözülür).
+   */
+  exemptionCode?: string;
 }
 
 export interface CalculatedWithholdingSubtotal {
@@ -153,7 +159,7 @@ export function calculateLine(
    * Sıra sonucu: `0003` → `0015` → `9015`. Bu zaten e-SMM'in toplam zincirinin
    * okunma sırasıdır (brüt → stopaj → KDV → KDV tevkifatı) ve prod belgelerin
    * sırasıyla uyumludur. */
-  const deferredVatBasedTaxes: Array<{ percent: number; def: ReturnType<typeof configManager.getTax> }> = [];
+  const deferredVatBasedTaxes: Array<{ percent: number; def: ReturnType<typeof configManager.getTax>; exemptionCode?: string }> = [];
 
   if (line.taxes && line.taxes.length > 0) {
     for (const tax of line.taxes) {
@@ -170,7 +176,7 @@ export function calculateLine(
               `Matrahı hesaplanan KDV olan bir vergi, KDV matrahını DEĞİŞTİREMEZ.`,
           );
         }
-        deferredVatBasedTaxes.push({ percent: tax.percent, def: taxDef });
+        deferredVatBasedTaxes.push({ percent: tax.percent, def: taxDef, exemptionCode: tax.exemptionCode });
         continue;
       }
 
@@ -194,6 +200,8 @@ export function calculateLine(
         percent: tax.percent,
         code: taxDef.code,
         name: taxDef.name,
+        // Alan yalnız verildiğinde eklenir — kodsuz girdinin nesnesi aynı kalır.
+        ...(tax.exemptionCode !== undefined ? { exemptionCode: tax.exemptionCode } : {}),
       });
     }
   }
@@ -222,6 +230,7 @@ export function calculateLine(
       percent: deferred.percent,
       code: taxDef.code,
       name: taxDef.name,
+      ...(deferred.exemptionCode !== undefined ? { exemptionCode: deferred.exemptionCode } : {}),
     });
   }
 

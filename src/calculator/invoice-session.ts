@@ -58,6 +58,7 @@ import { validateSimpleLineRanges } from '../documents/invoice/validators/simple
 import { validateProfileRequirements } from '../documents/invoice/validators/profile-requirement-validator';
 import { validateSimpleFormats } from '../documents/invoice/validators/simple-format-validator';
 import { validateManualExemption } from '../documents/invoice/validators/manual-exemption-validator';
+import { validateLineTaxExemptions } from '../documents/invoice/validators/line-tax-exemption-validator';
 import { validatePhantomKdv } from '../documents/invoice/validators/phantom-kdv-validator';
 import { validateSgkInput } from '../documents/invoice/validators/sgk-input-validator';
 import { validateHksKunyeNo } from '../documents/invoice/validators/hks-kunyeno-validator';
@@ -1104,10 +1105,14 @@ export class InvoiceSession extends EventEmitter {
   }
 
   /**
-   * Mevcut tipe uygun istisna kodlarını döndürür.
+   * Mevcut tipe uygun istisna kodlarını döndürür. `taxType` verilmezse KDV
+   * seçicisinin listesi (`uiState.availableExemptions` ile aynı); ÖTV için
+   * `'OTV'`, konaklama vergisi için `'KONAKLAMA'`.
    */
-  getAvailableExemptions(): ReturnType<typeof getAvailableExemptions> {
-    return getAvailableExemptions(this._input.type ?? 'SATIS');
+  getAvailableExemptions(
+    taxType?: Parameters<typeof getAvailableExemptions>[1],
+  ): ReturnType<typeof getAvailableExemptions> {
+    return getAvailableExemptions(this._input.type ?? 'SATIS', taxType);
   }
 
   /**
@@ -1186,6 +1191,7 @@ export class InvoiceSession extends EventEmitter {
     // 5 simple-input validator (pure, throw atmaz)
     errors.push(...validateSimpleLineRanges(this._input));
     errors.push(...validateManualExemption(this._input));
+    errors.push(...validateLineTaxExemptions(this._input));
     errors.push(...validatePhantomKdv(this._input));
     errors.push(...validateSgkInput(this._input));
     errors.push(...validateProfileRequirements(this._input));

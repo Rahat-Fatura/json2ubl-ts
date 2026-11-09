@@ -196,3 +196,52 @@ export function isValidExemptionCode(code: string): boolean {
 export function getExemptionDefinition(code: string): ExemptionDefinition | undefined {
   return EXEMPTION_MAP.get(code);
 }
+
+/**
+ * İstisna kodu türü → kodun yazılabileceği vergi alt toplamları (TaxTypeCode).
+ *
+ * GİB pratiği: ÖTV istisnasında "fatura tipi İSTİSNA seçilip ÖTV 0 geçilir ve
+ * ilgili ÖTV istisna kodu seçilir" (forum, bug 28107/26888). Kod Listeleri
+ * §4.8.4 ÖTV kodlarını, §4.8.5 konaklama vergisi kodunu ayrı listeler; şematron
+ * vergi türünü denetlemez, kütüphane denetler.
+ * SGK türü (`SAGLIK_ECZ` …) bir vergi istisna kodu değildir, burada yoktur.
+ */
+const EXEMPTION_TYPE_TAX_CODES: Readonly<Record<'KDV' | 'OTV' | 'KONAKLAMA', ReadonlySet<string>>> = {
+  KDV: new Set(['0015']),
+  OTV: new Set(['0071', '0073', '0074', '0075', '0076', '0077']),
+  KONAKLAMA: new Set(['0059']),
+};
+
+/**
+ * Bir verginin alt toplamına hangi türden istisna kodu yazılır: '0015' → 'KDV',
+ * ÖTV kodları (0071, 0073–0077) → 'OTV', '0059' → 'KONAKLAMA'. İstisna kodu
+ * yazılamayan vergide `undefined`. Seçim listesi için:
+ * `getAvailableExemptions(tip, getExemptionTypeForTax(vergiKodu))`.
+ */
+export function getExemptionTypeForTax(taxCode: string): 'KDV' | 'OTV' | 'KONAKLAMA' | undefined {
+  for (const type of ['KDV', 'OTV', 'KONAKLAMA'] as const) {
+    if (EXEMPTION_TYPE_TAX_CODES[type].has(taxCode)) return type;
+  }
+  return undefined;
+}
+
+/**
+ * 5.2.0'da KDV alt toplamında (`kdvExemptionCode`) kabul edilen ÖTV kodu.
+ * Geriye uyum için KDV'de kabul edilmeye devam eder; seçicide KDV listesinde
+ * sunulmaz (`type: 'OTV'`). Doğru yeri ÖTV %0 alt toplamıdır.
+ */
+export const LEGACY_KDV_SUBTOTAL_EXEMPTION_CODES: ReadonlySet<string> = new Set(['151']);
+
+/**
+ * İstisna kodu bu vergi alt toplamına yazılabilir mi? Kodun türü verginin
+ * türüyle aynı olmalı (`getExemptionTypeForTax`). SGK türü yalnız KDV alt
+ * toplamında (SGK faturası, 5.2.0 davranışı); 151 KDV alt toplamında da (geriye
+ * uyum).
+ */
+export function isExemptionAllowedOnTax(def: ExemptionDefinition, taxCode: string): boolean {
+  const taxType = getExemptionTypeForTax(taxCode);
+  if (taxType === undefined) return false;
+  if (def.type === taxType) return true;
+  if (taxType === 'KDV') return def.type === 'SGK' || LEGACY_KDV_SUBTOTAL_EXEMPTION_CODES.has(def.code);
+  return false;
+}

@@ -70,6 +70,19 @@ export interface SimpleLineTaxInput {
     code: string;
     /** Vergi oranı (%) — zorunlu */
     percent: number;
+    /**
+     * Bu verginin istisna sebep kodu (`TaxExemptionReasonCode`) — opsiyonel.
+     *
+     * Kod bu verginin kalem ve belge alt toplamına, adıyla birlikte
+     * (`TaxExemptionReason`) yazılır. Yalnız oranı 0 olan vergide:
+     *   • ÖTV (0071, 0073–0077): 101–108 (İSTİSNA tipi) ya da 151 (istisna
+     *     olmayan diğer, 0 ÖTV'li fatura);
+     *   • konaklama vergisi (0059): 001.
+     * GİB: "fatura tipi İSTİSNA seçilip ÖTV 0 geçilir ve ilgili ÖTV istisna kodu
+     * seçilir". KDV istisna kodu burada değil `kdvExemptionCode`ta verilir.
+     * Seçenekler: `getAvailableExemptions(tip, getExemptionTypeForTax(code))`.
+     */
+    exemptionCode?: string;
 }
 
 // ─── Fatura Satırı ─────────────────────────────────────────────────────────────

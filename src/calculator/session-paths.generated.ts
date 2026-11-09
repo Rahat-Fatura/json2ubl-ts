@@ -241,6 +241,12 @@ export const SessionPaths = {
   lineTaxPercent: (i: number, ti: number) => `lines[${i}].taxes[${ti}].percent` as `lines[${number}].taxes[${number}].percent`,
 
   /**
+   * Bu verginin istisna sebep kodu (`TaxExemptionReasonCode`) — opsiyonel. Kod bu verginin kalem ve belge alt toplamına, adıyla birlikte (`TaxExemptionReason`) yazılır. Yalnız oranı 0 olan vergide:   • ÖTV (0071, 0073–0077): 101–108 (İSTİSNA tipi) ya da 151 (istisna     olmayan diğer, 0 ÖTV'li fatura);   • konaklama vergisi (0059): 001. GİB: "fatura tipi İSTİSNA seçilip ÖTV 0 geçilir ve ilgili ÖTV istisna kodu seçilir". KDV istisna kodu burada değil `kdvExemptionCode`ta verilir. Seçenekler: `getAvailableExemptions(tip, getExemptionTypeForTax(code))`.
+   * Expected type: string | undefined
+   */
+  lineTaxExemptionCode: (i: number, ti: number) => `lines[${i}].taxes[${ti}].exemptionCode` as `lines[${number}].taxes[${number}].exemptionCode`,
+
+  /**
    * KDV tevkifat kodu (ör: "602") — opsiyonel. Belgede `cac:WithholdingTaxTotal` ÜRETİR; bu yüzden fatura tipi şu küme içinde olmak zorundadır (Schematron `GeneralWithholdingTaxTotalCheck`): TEVKIFAT, YTBTEVKIFAT, IADE, YTBIADE, SGK, SARJ, SARJANLIK. ⚠️ Tip OTOMATİK ZORLANMAZ. `type` verilmediyse otomatik tespit TEVKIFAT'a düşer; `type` AÇIKÇA verildiyse kullanıcı seçimi korunur (B-41) ve uyumsuz kombinasyon doğrulamada hata olarak bildirilir — sessizce düzeltilmez.
    * Expected type: string | undefined
    */
@@ -948,6 +954,7 @@ export interface SessionPathMap {
   'lines[${number}].allowancePercent': number | undefined;
   'lines[${number}].taxes[${number}].code': string;
   'lines[${number}].taxes[${number}].percent': number;
+  'lines[${number}].taxes[${number}].exemptionCode': string | undefined;
   'lines[${number}].withholdingTaxCode': string | undefined;
   'lines[${number}].withholdingTaxPercent': number | undefined;
   'lines[${number}].description': string | undefined;
@@ -1160,6 +1167,7 @@ export const KNOWN_PATH_TEMPLATES: ReadonlySet<string> = new Set([
   'lines[*].sellerCode',
   'lines[*].serialId',
   'lines[*].taxes[*].code',
+  'lines[*].taxes[*].exemptionCode',
   'lines[*].taxes[*].percent',
   'lines[*].unitCode',
   'lines[*].withholdingTaxCode',
@@ -1275,6 +1283,7 @@ export interface InvoiceSessionUpdateOverloads {
   update(path: `lines[${number}].allowancePercent`, value: number | undefined): void;
   update(path: `lines[${number}].taxes[${number}].code`, value: string): void;
   update(path: `lines[${number}].taxes[${number}].percent`, value: number): void;
+  update(path: `lines[${number}].taxes[${number}].exemptionCode`, value: string | undefined): void;
   update(path: `lines[${number}].withholdingTaxCode`, value: string | undefined): void;
   update(path: `lines[${number}].withholdingTaxPercent`, value: number | undefined): void;
   update(path: `lines[${number}].description`, value: string | undefined): void;

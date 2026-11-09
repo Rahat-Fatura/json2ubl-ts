@@ -205,6 +205,7 @@ export {
     getExemptionsByDocumentType,
     isValidExemptionCode,
     getExemptionDefinition,
+    getExemptionTypeForTax,
 } from "./exemption-config";
 export type { ExemptionDefinition } from "./exemption-config";
 export {

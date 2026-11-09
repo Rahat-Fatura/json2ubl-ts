@@ -250,9 +250,11 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
     // 3a. Vergi subtotal gruplama (aynı code + percent → birleştir).
     // Phantom satırlar da dahil edilir — mapper bunları §2.1.4 stili için kullanır,
     // ama calculationSequenceNumeric=-1 işareti taşırlar.
+    // KDV dışı vergide istisna kodu da anahtardır: ÖTV %0'da 101 ve 102 taşıyan
+    // kalemler ayrı alt toplam olur. Kodsuz vergide anahtar eskisiyle aynıdır.
     for (const tax of line.taxes.taxSubtotals) {
       const existingIndex = taxSubtotals.findIndex(
-        t => t.code === tax.code && t.percent === tax.percent,
+        t => t.code === tax.code && t.percent === tax.percent && t.exemptionCode === tax.exemptionCode,
       );
       if (existingIndex === -1) {
         taxSubtotals.push({
@@ -263,6 +265,7 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
           code: tax.code,
           name: tax.name,
           calculationSequenceNumeric: tax.calculationSequenceNumeric,
+          ...(tax.exemptionCode !== undefined ? { exemptionCode: tax.exemptionCode } : {}),
         });
       } else {
         taxSubtotals[existingIndex].amount += tax.amount;

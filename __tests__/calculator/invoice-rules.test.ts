@@ -177,11 +177,17 @@ describe('invoice-rules — matris tekleştirme (Sprint 1, M1/M2/M8)', () => {
       expect(result.length).toBeGreaterThan(0);
     });
 
-    it('SGK tipinde hem SGK hem ISTISNA kodları birleşik döndürülür', () => {
-      const sgkOnly = getAvailableExemptions('SGK');
-      // ISTISNA kodları eklendi → toplam > sadece SGK
+    it('SGK tipinde ISTISNA kodları KDV seçicisinde, SGK sembolik kodları kendi türüyle döndürülür', () => {
+      // Bu sürümden önce SGK listesi SGK sembolik kodları (SAGLIK_ECZ …) ile
+      // ISTISNA kodlarını BİRLEŞİK döndürüyordu. Liste artık vergi türüne göre
+      // süzülür (varsayılan 'KDV'); sembolik kodlar bir vergi istisna kodu
+      // değildir (GİB $TaxExemptionReasonCodeType'ta yok), açıkça istenir.
+      const kdv = getAvailableExemptions('SGK');
       const istisnaOnly = getAvailableExemptions('ISTISNA');
-      expect(sgkOnly.length).toBeGreaterThanOrEqual(istisnaOnly.length);
+      expect(kdv).toEqual(istisnaOnly);
+      const sgk = getAvailableExemptions('SGK', 'SGK');
+      expect(sgk.length).toBe(7);
+      expect(sgk.every(d => d.type === 'SGK')).toBe(true);
     });
   });
 
