@@ -15,6 +15,7 @@ import { DEFAULT_CURRENCY_CODE } from './currency-config';
 import { KDV_TAX_CODE } from './tax-config';
 import {
   isPhantomKdvCombination,
+  phantomLineCountedTaxes,
   PHANTOM_KDV_CALCULATION_SEQUENCE_NUMERIC,
 } from './phantom-kdv-rules';
 import { isHksChargePlane } from '../ubltr/vocabulary/hks-charge-codes';
@@ -229,13 +230,17 @@ export function calculateDocument(input: SimpleInvoiceInput): CalculatedDocument
     withholdingTotalAmount += line.withholdingObject.taxTotal;
 
     if (line.phantomKdv) {
-      // Phantom: KDV parasal toplamlara girmez. taxInclusive = lineExtension,
-      // payable = lineExtension - withholding (tevkifat senaryosu olmaz ama kural gereği düşür).
-      taxInclusiveAmount += line.lineExtensionAmount;
-      payableAmount += line.lineExtensionAmount - line.withholdingObject.taxTotal;
-      // taxTotalAmount ve tax subtotal gruplama bypass edilir — phantom subtotal'lar
-      // XML'de satır seviyesinde taşınır, belge toplamı ayrı (mapper §2.1.4 uyarınca
-      // calc.taxes.taxSubtotals'ı phantom bilgisiyle kullanır).
+      // Phantom: YALNIZ vazgeçilen KDV (ve matrahı o KDV olan 9015) parasal
+      // toplamlara girmez. Kalemin öbür vergileri (ÖTV, stopaj …) fantomsuz
+      // yoldaki etkileriyle girer (KN-092; 5.2.0'a kadar hepsi atlanıyordu).
+      // payable'dan tevkifat düşülür (tevkifat senaryosu olmaz ama kural gereği).
+      // Alt toplam gruplaması aşağıda phantom satırları da kapsar; KDV alt
+      // toplamı -1 işaretini taşır (mapper §2.1.4).
+      const counted = phantomLineCountedTaxes(line.taxes.taxSubtotals);
+      const countedEffect = counted.reduce((sum, t) => sum + t.taxForCalculate, 0);
+      taxInclusiveAmount += line.lineExtensionAmount + countedEffect;
+      payableAmount += line.lineExtensionAmount + countedEffect - line.withholdingObject.taxTotal;
+      taxTotalAmount += counted.reduce((sum, t) => sum + t.amount, 0);
     } else {
       taxInclusiveAmount += line.taxInclusiveForMonetary;
       payableAmount += line.payableAmountForMonetary;

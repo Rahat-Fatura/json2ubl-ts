@@ -16,6 +16,7 @@ import { mapSimpleParty } from '../utils/party-mapper';
 import type { CalculatedDocument } from './document-calculator';
 import type { CalculatedLine } from './line-calculator';
 import { calculateDocument } from './document-calculator';
+import { phantomLineCountedTaxes } from './phantom-kdv-rules';
 import { InvoiceProfileId, InvoiceTypeCode } from '../types/enums';
 // 4.1.0: statik `EXEMPTION_MAP` yerine configManager — enjekte edilen istisna
 // kodunun ADI da XML'e doğru yazılsın diye (varsayılanda aynı veri).
@@ -389,8 +390,9 @@ function buildTaxTotals(
     });
   });
 
-  // calc.taxes.taxTotal phantom satırların KDV'si hariç (document-calculator 8d.2
-  // post-marking ile zaten doğru değeri tutar). Phantom kombinasyonda 0.
+  // calc.taxes.taxTotal phantom satırların vazgeçilen KDV'si (ve 9015) hariç
+  // (document-calculator, `phantomLineCountedTaxes`). Kalemlerde KDV dışı vergi
+  // yoksa phantom kombinasyonda 0.
   return [{
     taxAmount: calc.taxes.taxTotal,
     taxSubtotals,
@@ -653,10 +655,14 @@ function buildSingleLine(
     return subtotal;
   });
 
-  // M12: phantom satırda dış TaxTotal/TaxAmount=0 (PDF §2.1.4 "Vazgeçilen KDV Tutarı").
-  // Dip toplamlara girmediği için 0; iç TaxSubtotal phantom değerleri taşır.
+  // M12: phantom satırda dış TaxTotal/TaxAmount vazgeçilen KDV'yi içermez (PDF
+  // §2.1.4 "Vazgeçilen KDV Tutarı"); iç TaxSubtotal phantom değerleri taşır.
+  // Kalemin KDV dışı vergileri (ÖTV, stopaj …) dahildir — belge toplamıyla aynı
+  // yüklem (KN-092). Yalnız KDV'li phantom kalemde 0.
   const taxTotal: TaxTotalInput = {
-    taxAmount: cl.phantomKdv ? 0 : cl.taxes.taxTotal,
+    taxAmount: cl.phantomKdv
+      ? phantomLineCountedTaxes(cl.taxes.taxSubtotals).reduce((sum, t) => sum + t.amount, 0)
+      : cl.taxes.taxTotal,
     taxSubtotals,
   };
 

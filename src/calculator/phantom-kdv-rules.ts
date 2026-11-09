@@ -10,10 +10,14 @@
  *
  * Davranış: Satır KDV matematiği hesaplanır, TaxSubtotal XML'e yazılır
  * (TaxAmount, Percent dolu + CalculationSequenceNumeric=-1 + exemption code),
- * fakat LegalMonetaryTotal ve parent TaxTotal/TaxAmount'a dahil edilmez.
+ * fakat vazgeçilen KDV LegalMonetaryTotal ve parent TaxTotal/TaxAmount'a dahil
+ * edilmez. Kalemin öbür vergileri (ÖTV, stopaj …) olağan etkisiyle girer; bkz.
+ * `phantomLineCountedTaxes`.
  */
 
 import { isYatirimTesvikIstisnaScope } from '../ubltr/vocabulary/schematron-scopes';
+import { KDV_TAX_CODE } from './tax-config';
+import { configManager } from './config-manager';
 
 /** Kütüphane otomatik olarak set eder — kullanıcıdan alınmaz. */
 export const PHANTOM_KDV_CALCULATION_SEQUENCE_NUMERIC = -1;
@@ -48,4 +52,26 @@ export function phantomKdvExemptionCodeFor(itemClassificationCode: string): stri
  */
 export function isPhantomKdvCombination(profile: string, type: string): boolean {
   return isYatirimTesvikIstisnaScope(profile, type);
+}
+
+/**
+ * Vazgeçilen KDV (fantom) kaleminde belge ve satır toplamlarına GİREN vergiler
+ * (KN-092).
+ *
+ * GİB yalnız vazgeçilen KDV'yi fatura tutarı hesabının dışında bırakır
+ * (kılavuz §2.1.4; şematron -1'i yalnız 0015 alt toplamında arar). Dışarıda
+ * kalanlar:
+ *   • KDV (0015);
+ *   • matrahı hesaplanan KDV olan vergiler (`baseIsCalculatedVat`, bugün
+ *     yalnız 9015) — matrahları vazgeçilen KDV'dir.
+ * Öbür bütün vergiler (ÖTV, stopaj …) fantomsuz yoldaki işaretleriyle toplama
+ * girer. 5.2.0'a kadar fantom kalemin BÜTÜN vergileri toplamdan düşülüyordu.
+ *
+ * Hesap motoru (`calculateDocument`) ve XML eşleyicisi (satır `TaxTotal`)
+ * bu tek yüklemi okur.
+ */
+export function phantomLineCountedTaxes<T extends { code: string }>(subtotals: readonly T[]): T[] {
+  return subtotals.filter(
+    t => t.code !== KDV_TAX_CODE && !configManager.getTax(t.code)?.baseIsCalculatedVat,
+  );
 }
