@@ -2,6 +2,127 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) 1.1.0, sürümleme [SemVer](https://semver.org/lang/tr/).
 
+## [Yayımlanmamış]
+
+> **İstisna kodları GİB kod listesiyle eşit; vazgeçilen KDV kaleminde KDV dışı
+> vergiler toplama giriyor.** GİB düzeltme planı Dalga 7 (T-KOD-2, T-KOD-8,
+> KN-092). Kütüphane fikstürlerinin XML'i **birebir aynı** (1.230 koşum).
+> Değişen tek çıktı: YATIRIMTESVIK + ISTISNA ve EARSIVFATURA + YTBISTISNA
+> belgesinde KDV dışı vergi taşıyan kalemin toplamları.
+
+### Eklenen — eksik 10 istisna kodu (T-KOD-2)
+
+GİB `UBL-TR_Codelist.xml` (paket 24.08.2026) istisna listelerinde olup
+kütüphanede olmayan kodlar eklendi. 5.2.0'da bu kodlarla katı kurulum
+`UNKNOWN_EXEMPTION_CODE` veriyordu, `isValidExemptionCode` `false` dönüyordu.
+
+| Kod | Ad (Kod Listeleri v1.43) | `type` |
+|---|---|---|
+| 101 | İhracat İstisnası | `OTV` |
+| 102 | Diplomatik İstisna | `OTV` |
+| 103 | Askeri Amaçlı İstisna | `OTV` |
+| 104 | Petrol Arama Faaliyetlerinde Bulunanlara Yapılan Teslimler | `OTV` |
+| 105 | Uluslararası Anlaşmadan Doğan İstisna | `OTV` |
+| 106 | Diğer İstisnalar | `OTV` |
+| 107 | 7/a Maddesi Kapsamında Yapılan Teslimler | `OTV` |
+| 108 | Geçici 5. Madde Kapsamında Yapılan Teslimler | `OTV` |
+| 001 | Diplomatik İstisna (konaklama vergisi) | `KONAKLAMA` (yeni değer) |
+| 501 | Anlamı GİB Tarafından Yayımlanmamış İstisna Kodu | `KDV`, `meaningUnpublished: true` |
+
+- **Hangi fatura tiplerinde:** GİB on kodun hepsini
+  `$istisnaTaxExemptionReasonCodeType` listesine koyar; Common şematronu
+  (`TaxExemptionReasonCodeCheck`) o listedeki kodu belge vergi özetinde yalnız
+  ISTISNA, IADE, IHRACKAYITLI, SGK, YTBISTISNA ve YTBIADE tiplerinde kabul eder.
+  Kütüphanede `documentType: 'ISTISNA'`; matris, oturum listesi
+  (`availableExemptions`) ve katı kurulum bunu izler.
+- **001 ve KONAKLAMAVERGISI:** kod listesi özetindeki eşleme tablosu 001'i
+  KONAKLAMAVERGISI tipine bağlar, ama şematron bu tipte belge düzeyi 001'i
+  reddeder. Kütüphane şematronu izler: KONAKLAMAVERGISI'nde 001
+  `INVALID_EXEMPTION_FOR_TYPE`.
+- **501:** GİB listesinde var, anlamı hiçbir GİB belgesinde tanımlı değil.
+  Kütüphane geçerli kabul eder. `ExemptionDefinition` yeni isteğe bağlı
+  `meaningUnpublished` alanını taşır; bugün yalnız 501'de `true`.
+- Testler kod kümelerini paketteki XML'den okur (bütün kodlar, istisna, özel
+  matrah, ihraç kayıtlı); on kodun her biri TEMELFATURA İSTİSNA'da katı
+  kurulumdan ve canlı şematrondan geçer
+  (`__tests__/calculator/exemption-gib-codelist.test.ts`).
+
+### Düzeltilen — vazgeçilen KDV kaleminde KDV dışı vergiler toplamdan düşüyordu (KN-092)
+
+YATIRIMTESVIK + ISTISNA ve EARSIVFATURA + YTBISTISNA kaleminde GİB yalnız
+vazgeçilen KDV'yi (`CalculationSequenceNumeric = -1`) fatura tutarı
+hesabının dışında bırakır (Yatırım Teşvik kılavuzu V1.1 §2.1.4).
+`calculateDocument` ise kalemin **bütün** vergilerini atlıyordu, satır
+`TaxTotal/TaxAmount` koşulsuz 0 yazılıyordu. Fiyat 1.000, KDV %20 kalemde:
+
+| Kalem vergisi | 5.2.0 Payable / TaxAmount | Bu sürüm |
+|---|---|---|
+| yalnız KDV | 1.000,00 / 0,00 | 1.000,00 / 0,00 (değişmedi) |
+| ÖTV 0071 %10 | 1.000,00 / 0,00 | **1.100,00 / 100,00** |
+| stopaj 0003 %10 | 1.000,00 / 0,00 | **900,00 / 100,00** |
+| KDV tevkifatı 9015 %50 | 1.000,00 / 0,00 | 1.000,00 / 0,00 (değişmedi) |
+
+- Yeni yüklem `phantomLineCountedTaxes` (iç işlev, dışa açık değil): toplam
+  dışında kalan yalnız KDV (0015) ve matrahı hesaplanan KDV olan vergiler
+  (`baseIsCalculatedVat`, bugün 9015). Öbür vergiler fantomsuz yoldaki
+  işaretleriyle girer (ÖTV ekler, stopaj düşer).
+- Hesap motoru (`TaxInclusiveAmount`, `PayableAmount`, belge `TaxAmount`) ve
+  XML eşleyicisi (satır `TaxAmount`) aynı yüklemi okur. KDV alt toplamının -1
+  işareti ve vazgeçilen KDV tutarı değişmedi.
+- **Açık kalan:** 9015 alt toplamı toplam dışında kalır ama -1 taşımaz;
+  şematron -1'i yalnız 0015'te arar. Bu sürümde değiştirilmedi.
+
+### Testler — ülke kodları (T-KOD-8)
+
+Kütüphanede ülke adı → kod eşlemesi **yoktur**: kod addan türetilmez,
+`cbc:IdentificationCode` yalnız çağıranın `countryCode` /
+`originCountryCode` değeriyle ve olduğu gibi yazılır. `SimpleInvoiceInput`
+ülke kodu alanı taşımaz. GİB `$CountryCodeList`'in tamamı (254 değer, ISO
+dışı `CTR` dahil) `cac:Country` ve `cac:OriginCountry` altına harfi harfine
+geçer; basit girdide ülke adından kod üretilmez
+(`__tests__/utils/country-codes-gib.test.ts`). Kod değişikliği yok.
+
+### Çıktı değişimi
+
+Yalnız vazgeçilen KDV kalemi KDV dışı vergi taşıdığında. Ölçüm (main 374ce6b
+↔ bu dal, aynı girdiler):
+
+| Örneklem | Koşum | XML birebir aynı |
+|---|---|---|
+| Kütüphane fikstürleri (`examples/` 33, `examples-matrix/` geçerli 113 + geçersiz 49, golden 10; 4 fantom fikstürü dahil) × `strict`/`basic`/`none` × builder/oturum | 1.230 | 1.230 |
+| 4 fantom fikstürü × 30 KDV dışı vergi kodu, %10, `none` | 120 | 4 (yalnız 9015) |
+
+Değişen 116 XML'de değişen eleman yalnız şunlar: belge ve satır
+`TaxTotal/TaxAmount`, `TaxInclusiveAmount`, `PayableAmount` ve yazıyla tutar
+notu (`cbc:Note`). %1 ve %33 oranlarıyla aynı tarama aynı eleman kümesini
+verdi. Katı kurulumun hükmü 120 durumun 120'sinde aynı (4171 iki sürümde de
+başka kuralla red). Canlı şematron hükmü 120'sinde aynı (116 geçer → geçer,
+4171'de 4 red → red); şematron toplam eşitliğini denetlemez.
+
+### Sürüm önerisi: MINOR
+
+`docs/surum-politikasi.md` §1:
+
+- XML çıktısı değişiyor (KN-092, yasaya aykırı toplamın düzeltilmesi) → en
+  az MINOR, "Çıktı değişimi" yukarıda.
+- Yeni kodlar önceden hata veren girdiyi kabul eder; önceden geçerli olup
+  artık hata veren girdi yok.
+- Kaldırılan ya da daralan ad yok. `ExemptionDefinition`'a isteğe bağlı
+  `meaningUnpublished` alanı eklendi, `type` birliğine `'KONAKLAMA'` değeri
+  eklendi (genişleme). Cephe adları değişmedi.
+
+### Tüketici için
+
+- **Seçim listesinde 501'i gizleyin:** `availableExemptions`,
+  `getExemptionsByDocumentType('ISTISNA')` ve `EXEMPTION_DEFINITIONS` artık
+  501'i içerir. Kullanıcıya kod listesi gösteren ekran
+  `meaningUnpublished === true` olan tanımı göstermemelidir.
+- `ExemptionDefinition.type` üzerinde her değeri ele alan (`never` denetimli)
+  bir `switch` varsa `'KONAKLAMA'` eklenmelidir.
+- ÖTV ya da stopaj taşıyan yatırım teşvik istisna kalemi olan belgelerde
+  ödenecek tutar ve vergi toplamı değişir; yalnız KDV'li fantom kalem
+  değişmez.
+
 ## [5.2.0] — 2026-11-03
 
 > **İHRAÇ KAYITLI 702: tek etkin kapsam. Belge vergi özeti istisna koduna göre
